@@ -30,37 +30,21 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/private/c4/parser/fundamental_scalar_def --
+ * src/c4/include/c4/ast/fn_call_fusion --
  *   
  */
-#ifndef FUNDAMENTAL_SCALAR_DEF_HXX
-#define FUNDAMENTAL_SCALAR_DEF_HXX
+#ifndef AST_FN_CALL_FUSION_HXX
+#define AST_FN_CALL_FUSION_HXX
 
-#include <boost/spirit/home/x3.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+#include <c4/ast/fn_call.hxx>
 
-#include <c4/parser/fundamental_scalar.hxx>
-#include <c4/parser/error_handler_callback.hxx>
-#include <c4/parser/position_annotator.hxx>
+BOOST_FUSION_ADAPT_STRUCT(c4::ast::call_expr,
+                          expr,
+                          call_arity)
 
-namespace c4::parser {
-    namespace x3 = boost::spirit::x3;
-
-    struct fundamental_scalar_parser;
-
-    constexpr fundamental_scalar_parser_type fundamental_scalar_parser = "fundamental scalar";
-
-    struct fundamental_scalar_parser : position_annotator
-                                     , error_handler_callback {};
-
-    constexpr auto fundamental_scalar_parser_def =
-        x3::int64
-        | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
-
-    BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
-
-    constexpr fundamental_scalar_parser_type
-    fundamental_scalar() { return fundamental_scalar_parser; }
-}
+BOOST_FUSION_ADAPT_STRUCT(c4::ast::fn_call,
+                          callee,
+                          args)
 
 #endif

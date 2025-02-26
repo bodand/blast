@@ -30,37 +30,24 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/private/c4/parser/fundamental_scalar_def --
+ * src/c4/include/c4/parser/fn_call --
  *   
  */
-#ifndef FUNDAMENTAL_SCALAR_DEF_HXX
-#define FUNDAMENTAL_SCALAR_DEF_HXX
+#ifndef PARSER_FN_CALL_HXX
+#define PARSER_FN_CALL_HXX
 
+#include <c4/ast/fn_call.hxx>
 #include <boost/spirit/home/x3.hpp>
-
-#include <c4/parser/fundamental_scalar.hxx>
-#include <c4/parser/error_handler_callback.hxx>
-#include <c4/parser/position_annotator.hxx>
 
 namespace c4::parser {
     namespace x3 = boost::spirit::x3;
 
-    struct fundamental_scalar_parser;
+    struct fn_call_parser;
+    using fn_call_parser_type = x3::rule<fn_call_parser, ast::fn_call>;
 
-    constexpr fundamental_scalar_parser_type fundamental_scalar_parser = "fundamental scalar";
+    BOOST_SPIRIT_DECLARE(fn_call_parser_type);
 
-    struct fundamental_scalar_parser : position_annotator
-                                     , error_handler_callback {};
-
-    constexpr auto fundamental_scalar_parser_def =
-        x3::int64
-        | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
-
-    BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
-
-    constexpr fundamental_scalar_parser_type
-    fundamental_scalar() { return fundamental_scalar_parser; }
+    constexpr fn_call_parser_type fn_call();
 }
 
 #endif

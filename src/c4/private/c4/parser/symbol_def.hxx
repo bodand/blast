@@ -80,10 +80,10 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DEFINE(symbol_parser, bare_symbol_parser, symbol_name)
 
-    inline symbol_parser_type
+    constexpr symbol_parser_type
     symbol() { return symbol_parser; }
 
-    inline bare_symbol_parser_type
+    constexpr bare_symbol_parser_type
     bare_symbol() { return bare_symbol_parser; }
 }
 

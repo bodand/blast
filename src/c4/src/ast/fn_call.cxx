@@ -30,37 +30,29 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/private/c4/parser/fundamental_scalar_def --
+ * src/c4/src/ast/fn_call --
  *   
  */
-#ifndef FUNDAMENTAL_SCALAR_DEF_HXX
-#define FUNDAMENTAL_SCALAR_DEF_HXX
 
-#include <boost/spirit/home/x3.hpp>
+#include <c4/ast/fn_call.hxx>
 
-#include <c4/parser/fundamental_scalar.hxx>
-#include <c4/parser/error_handler_callback.hxx>
-#include <c4/parser/position_annotator.hxx>
+namespace {
+    struct call_arity_counter {
+        using result_type = unsigned;
 
-namespace c4::parser {
-    namespace x3 = boost::spirit::x3;
+        unsigned
+        operator()(const c4::ast::call_expr& expr) const {
+            return expr.call_arity;
+        }
 
-    struct fundamental_scalar_parser;
-
-    constexpr fundamental_scalar_parser_type fundamental_scalar_parser = "fundamental scalar";
-
-    struct fundamental_scalar_parser : position_annotator
-                                     , error_handler_callback {};
-
-    constexpr auto fundamental_scalar_parser_def =
-        x3::int64
-        | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
-
-    BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
-
-    constexpr fundamental_scalar_parser_type
-    fundamental_scalar() { return fundamental_scalar_parser; }
+        unsigned
+        operator()(const c4::ast::symbol& symbol) const {
+            return symbol.arity;
+        }
+    };
 }
 
-#endif
+unsigned
+c4::ast::callable::arity() const noexcept {
+    return boost::apply_visitor(call_arity_counter(), *this);
+}

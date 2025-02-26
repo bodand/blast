@@ -80,7 +80,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DEFINE(block_parameters_parser, block_expression_parser)
 
-    inline block_expression_parser_type
+    constexpr block_expression_parser_type
     block_expression() { return block_expression_parser; }
 }
 

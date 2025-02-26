@@ -47,7 +47,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DECLARE(expression_parser_type)
 
-    expression_parser_type expression();
+    constexpr expression_parser_type expression();
 }
 
 #endif

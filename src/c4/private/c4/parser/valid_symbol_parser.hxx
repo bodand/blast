@@ -30,37 +30,51 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/private/c4/parser/fundamental_scalar_def --
+ * src/c4/private/c4/parser/valid_symbol_parser --
  *   
  */
-#ifndef FUNDAMENTAL_SCALAR_DEF_HXX
-#define FUNDAMENTAL_SCALAR_DEF_HXX
+#ifndef PARSER_VALID_SYMBOL_PARSER_HXX
+#define PARSER_VALID_SYMBOL_PARSER_HXX
 
 #include <boost/spirit/home/x3.hpp>
 
-#include <c4/parser/fundamental_scalar.hxx>
-#include <c4/parser/error_handler_callback.hxx>
-#include <c4/parser/position_annotator.hxx>
+#include <c4/ast/symbol.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/symbol_def.hxx>
 
 namespace c4::parser {
     namespace x3 = boost::spirit::x3;
 
-    struct fundamental_scalar_parser;
+    struct valid_symbol_parser_t : x3::parser<valid_symbol_parser_t> {
+        using attribute_type = ast::symbol;
 
-    constexpr fundamental_scalar_parser_type fundamental_scalar_parser = "fundamental scalar";
+        template<class It, class Ctx, class RCtx, class Attr>
+        bool
+        parse(It& begin,
+              It end,
+              Ctx& ctx,
+              RCtx&& rctx,
+              Attr& attr) const {
+            auto& scope = x3::get<symbol_scope_tag>(ctx).get();
+            x3::symbols<attribute_type> symbols;
+            scope.load_parser(symbols);
 
-    struct fundamental_scalar_parser : position_annotator
-                                     , error_handler_callback {};
+            It memory = begin;
 
-    constexpr auto fundamental_scalar_parser_def =
-        x3::int64
-        | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
+            x3::skip_over(begin, end, ctx);
+            if (symbols.parse(begin, end,
+                              std::forward<Ctx>(ctx),
+                              std::forward<RCtx>(rctx),
+                              attr)) {
+                return true;
+            }
 
-    BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
+            begin = memory;
+            return false;
+        }
+    };
 
-    constexpr fundamental_scalar_parser_type
-    fundamental_scalar() { return fundamental_scalar_parser; }
+    constexpr static valid_symbol_parser_t valid_symbol_parser;
 }
 
 #endif

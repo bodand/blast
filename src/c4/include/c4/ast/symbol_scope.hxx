@@ -36,12 +36,17 @@
 #ifndef AST_SYMBOL_SCOPE_HXX
 #define AST_SYMBOL_SCOPE_HXX
 
+#include <boost/spirit/home/x3.hpp>
+
 #include <c4/ast/symbol.hxx>
+
 #include <unordered_map>
 #include <forward_list>
 #include <format>
 
 namespace c4::ast {
+    namespace x3 = boost::spirit::x3;
+
     struct symbol_redefinition final : std::runtime_error {
         explicit
         symbol_redefinition(const symbol& symbol)
@@ -107,6 +112,9 @@ namespace c4::ast {
 
         [[nodiscard]] symbol_scope&
         parent() const { return *_parent; }
+
+        void
+        load_parser(x3::symbols<symbol>& symbols);
 
     private:
         symbol_scope* _parent{};

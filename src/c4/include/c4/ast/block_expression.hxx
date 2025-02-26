@@ -36,8 +36,11 @@
 #ifndef AST_BLOCK_EXPRESSION_HXX
 #define AST_BLOCK_EXPRESSION_HXX
 
-#include <vector>
+#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
+
 #include <c4/ast/symbol_scope.hxx>
+
+#include <vector>
 
 namespace c4::ast {
     struct expression;

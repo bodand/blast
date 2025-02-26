@@ -30,37 +30,39 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/private/c4/parser/fundamental_scalar_def --
+ * src/c4/include/c4/ast/fn_call --
  *   
  */
-#ifndef FUNDAMENTAL_SCALAR_DEF_HXX
-#define FUNDAMENTAL_SCALAR_DEF_HXX
+#ifndef AST_FN_CALL_HXX
+#define AST_FN_CALL_HXX
 
-#include <boost/spirit/home/x3.hpp>
+#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
+#include <boost/spirit/home/x3/support/ast/variant.hpp>
 
-#include <c4/parser/fundamental_scalar.hxx>
-#include <c4/parser/error_handler_callback.hxx>
-#include <c4/parser/position_annotator.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/symbol.hxx>
 
-namespace c4::parser {
+namespace c4::ast {
     namespace x3 = boost::spirit::x3;
 
-    struct fundamental_scalar_parser;
+    struct call_expr : x3::position_tagged {
+        expression expr;
+        unsigned call_arity;
+    };
 
-    constexpr fundamental_scalar_parser_type fundamental_scalar_parser = "fundamental scalar";
+    struct callable : x3::position_tagged,
+                      x3::variant<call_expr, symbol> {
+        using base_type::base_type;
+        using base_type::operator=;
 
-    struct fundamental_scalar_parser : position_annotator
-                                     , error_handler_callback {};
+        [[nodiscard]] unsigned
+        arity() const noexcept;
+    };
 
-    constexpr auto fundamental_scalar_parser_def =
-        x3::int64
-        | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
-
-    BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
-
-    constexpr fundamental_scalar_parser_type
-    fundamental_scalar() { return fundamental_scalar_parser; }
+    struct fn_call : x3::position_tagged {
+        callable callee;
+        std::vector<expression> args;
+    };
 }
 
 #endif

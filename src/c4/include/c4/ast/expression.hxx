@@ -38,17 +38,16 @@
 
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 #include <boost/spirit/home/x3/support/ast/variant.hpp>
-#include <boost/spirit/home/x3.hpp>
 
 namespace c4::ast {
     namespace x3 = boost::spirit::x3;
 
     struct block_expression;
-    struct let_expression;
+    // struct let_expression;
 
     struct expression : x3::variant<
-                            x3::forward_ast<block_expression>,
-                            x3::forward_ast<let_expression>
+                            x3::forward_ast<block_expression>
+                            // , x3::forward_ast<let_expression>
                         >,
                         x3::position_tagged { };
 }

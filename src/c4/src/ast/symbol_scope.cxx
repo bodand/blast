@@ -34,6 +34,10 @@
  *   
  */
 
+#include <tuple>
+#include <algorithm>
+#include <ranges>
+
 #include <c4/ast/symbol_scope.hxx>
 
 void
@@ -41,6 +45,13 @@ c4::ast::symbol_scope::define(symbol symbol, bool is_mutable, int precedence) {
     auto [it, success] = _definitions.try_emplace(symbol,
                                                   symbol, is_mutable, precedence);
     if (!success) throw symbol_redefinition(symbol);
+}
+
+void
+c4::ast::symbol_scope::load_parser(x3::symbols<symbol>& symbols) {
+    for (const auto& symbol: _definitions | std::views::keys)
+        std::ignore = symbols.add(symbol.name, symbol);
+    if (_parent) _parent->load_parser(symbols);
 }
 
 c4::ast::symbol_scope*
