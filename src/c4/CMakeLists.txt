@@ -71,6 +71,7 @@ add_ast_elem(blast fundamental_scalar)
 add_ast_elem(blast block_expression)
 add_ast_elem(blast expression)
 add_ast_elem(blast fn_call)
+add_ast_elem(blast op_call)
 
 target_link_libraries(blast PRIVATE
                       Boost::spirit

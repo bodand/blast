@@ -30,16 +30,56 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/src/parser/fn_call --
+ * src/c4/include/c4/ast/op_call --
  *   
  */
+#ifndef AST_OP_CALL_HXX
+#define AST_OP_CALL_HXX
 
-#include <c4/parser/config.hxx>
-#include <c4/parser/fn_call_def.hxx>
-#include <c4/parser/op_call.hxx>
+#include <boost/spirit/home/x3/support/ast/variant.hpp>
+#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 
-#include <boost/spirit/home/x3.hpp>
+#include <c4/ast/block_expression.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/fn_call.hxx>
+#include <c4/ast/fundamental_scalar.hxx>
+#include <c4/ast/symbol.hxx>
 
-namespace c4::parser {
-    BOOST_SPIRIT_INSTANTIATE(fn_call_parser_type, iterator_type, context_type);
+#include <vector>
+
+namespace c4::ast {
+    namespace x3 = boost::spirit::x3;
+
+    template<unsigned Precedence>
+    struct precedence_op_expr : x3::position_tagged {
+        using next_precedence = precedence_op_expr<Precedence - 1>;
+
+        struct op_chain {
+            std::string op;
+            next_precedence precedence;
+        };
+
+        next_precedence next;
+        std::vector<op_chain> ops;
+    };
+
+    template<>
+    struct precedence_op_expr<0> : x3::position_tagged,
+                                   x3::variant<
+                                       expression, // from '(' <expr> ')'
+                                       fundamental_scalar,
+                                       symbol,
+                                       block_expression,
+                                       // TODO prefix expr
+                                       fn_call
+                                   > {
+        using base_type::base_type;
+        using base_type::operator=;
+    };
+
+    struct op_call : x3::position_tagged {
+        precedence_op_expr<0> expression;
+    };
 }
+
+#endif

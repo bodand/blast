@@ -30,16 +30,58 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/src/parser/fn_call --
+ * src/c4/private/c4/parser/op_call_def --
  *   
  */
-
-#include <c4/parser/config.hxx>
-#include <c4/parser/fn_call_def.hxx>
-#include <c4/parser/op_call.hxx>
+#ifndef PARSER_OP_CALL_DEF_HXX
+#define PARSER_OP_CALL_DEF_HXX
 
 #include <boost/spirit/home/x3.hpp>
+#include <c4/parser/block_expression.hxx>
+
+#include <c4/parser/symbol.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/error_handler_callback.hxx>
+#include <c4/parser/fn_call.hxx>
+#include <c4/parser/fundamental_scalar.hxx>
+#include <c4/parser/op_call.hxx>
+#include <c4/parser/position_annotator.hxx>
+#include <c4/parser/valid_symbol_parser.hxx>
+
+#include <format>
 
 namespace c4::parser {
-    BOOST_SPIRIT_INSTANTIATE(fn_call_parser_type, iterator_type, context_type);
+    namespace x3 = boost::spirit::x3;
+
+    struct op_call_parser;
+    template<unsigned Precedence>
+    struct precedence_op_expr_parser;
+
+    constexpr op_call_parser_type op_call_parser = "operator call";
+
+    constexpr x3::rule<precedence_op_expr_parser<0>, ast::precedence_op_expr<0>>
+    precedence_op_expr0 = "operand expression";
+
+    constexpr auto precedence_op_expr0_def =
+            "(" >> expression() > ")"
+            | fundamental_scalar()
+            | symbol()
+            | block_expression()
+            | fn_call();
+
+    constexpr auto op_call_parser_def = precedence_op_expr0_def;
+
+    struct op_call_parser : position_annotator,
+                            error_handler_callback { };
+
+    template<>
+    struct precedence_op_expr_parser<0> : position_annotator,
+                                          error_handler_callback { };
+
+    BOOST_SPIRIT_DEFINE(op_call_parser, precedence_op_expr0)
+
+    constexpr op_call_parser_type
+    op_call() { return op_call_parser; }
 }
+
+#endif

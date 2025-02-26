@@ -33,24 +33,24 @@ callable ::= bare-symbol
 
 call-expr ::= '&' op-call '/' UINTEGER
 
-       op-call ::= prec1-op-expr  ( PREC1_OP  prec1-op-expr )*  <1>
- prec1-op-expr ::= prec2-op-expr  ( PREC2_OP  prec2-op-expr )*  <1>
- prec2-op-expr ::= prec3-op-expr  ( PREC3_OP  prec3-op-expr )*  <1>
- prec3-op-expr ::= prec4-op-expr  ( PREC4_OP  prec4-op-expr )*  <1>
- prec4-op-expr ::= prec5-op-expr  ( PREC5_OP  prec5-op-expr )*  <1>
- prec5-op-expr ::= prec6-op-expr  ( PREC6_OP  prec6-op-expr )*  <1>
- prec6-op-expr ::= prec7-op-expr  ( PREC7_OP  prec7-op-expr )*  <1>
- prec7-op-expr ::= prec8-op-expr  ( PREC8_OP  prec8-op-expr )*  <1>
- prec8-op-expr ::= prec9-op-expr  ( PREC9_OP  prec9-op-expr )*  <1>
- prec9-op-expr ::= prec10-op-expr ( PREC10_OP prec10-op-expr )* <1>
-prec10-op-expr ::= '(' expression ')'
-                 | scalar
-                 | PREFIX_OP prec10-op-expr <2>
-                 | fn-call
+      op-call ::= op-expr
+      op-expr ::= prec9-op-expr ( PREC9_OP prec9-op-expr )* <1>
+prec9-op-expr ::= prec8-op-expr ( PREC8_OP prec8-op-expr )* <1>
+prec8-op-expr ::= prec7-op-expr ( PREC7_OP prec7-op-expr )* <1>
+prec7-op-expr ::= prec6-op-expr ( PREC6_OP prec6-op-expr )* <1>
+prec6-op-expr ::= prec5-op-expr ( PREC5_OP prec5-op-expr )* <1>
+prec5-op-expr ::= prec4-op-expr ( PREC4_OP prec4-op-expr )* <1>
+prec4-op-expr ::= prec3-op-expr ( PREC3_OP prec3-op-expr )* <1>
+prec3-op-expr ::= prec2-op-expr ( PREC2_OP prec2-op-expr )* <1>
+prec2-op-expr ::= prec1-op-expr ( PREC1_OP prec1-op-expr )* <1>
+prec1-op-expr ::= prec0-op-expr ( PREC0_OP prec0-op-expr )* <1>
+prec0-op-expr ::= '(' expression ')'
+                | fundamental-scalar
+                | symbol
+                | block
+                | PREFIX_OP prec10-op-expr <2>
+                | fn-call
 
-scalar ::= fundamental-scalar
-         | symbol
-         | block
 fundamental-scalar ::= STRING
                      | INTEGER
                      | FLOAT

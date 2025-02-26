@@ -30,16 +30,27 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/src/parser/fn_call --
+ * src/c4/include/c4/parser/op_call --
  *   
  */
+#ifndef PARSER_OP_CALL_HXX
+#define PARSER_OP_CALL_HXX
 
-#include <c4/parser/config.hxx>
-#include <c4/parser/fn_call_def.hxx>
-#include <c4/parser/op_call.hxx>
 
+#include <c4/ast/op_call.hxx>
+#include <c4/ast/op_call_fusion.hxx>
 #include <boost/spirit/home/x3.hpp>
 
 namespace c4::parser {
-    BOOST_SPIRIT_INSTANTIATE(fn_call_parser_type, iterator_type, context_type);
+    namespace x3 = boost::spirit::x3;
+
+    struct op_call_parser;
+    using op_call_parser_type = x3::rule<op_call_parser, ast::op_call>;
+
+    BOOST_SPIRIT_DECLARE(op_call_parser_type)
+
+    constexpr op_call_parser_type op_call();
 }
+
+
+#endif

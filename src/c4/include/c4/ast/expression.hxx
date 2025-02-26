@@ -43,11 +43,12 @@ namespace c4::ast {
     namespace x3 = boost::spirit::x3;
 
     struct block_expression;
+    struct op_call;
     // struct let_expression;
 
     struct expression : x3::variant<
-                            x3::forward_ast<block_expression>
                             // , x3::forward_ast<let_expression>
+                            x3::forward_ast<op_call>
                         >,
                         x3::position_tagged { };
 }
