@@ -1,0 +1,15 @@
+use std
+
+let else { |x| x }
+
+let op **/2 1 { |a x| pow a x }
+let f { |a b c|
+  true
+}
+let x 42
+
+if f 1 2 3 {
+  print "a" 321
+} else {
+  print "b" 123
+}

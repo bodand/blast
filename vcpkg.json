@@ -1,0 +1,10 @@
+{
+  "name": "demo",
+  "version-semver": "0.2.3",
+  "license": "BSD-3-Clause",
+  "builtin-baseline": "edc84ff66e6262a9f7565c28eb76577aeab9c5aa",
+  "dependencies": [
+    "mio",
+    "boost-spirit"
+  ]
+}
