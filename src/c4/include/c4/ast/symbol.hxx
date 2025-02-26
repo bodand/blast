@@ -33,8 +33,8 @@
  * src/c4/ast/symbol --
  *   
  */
-#ifndef DEMO_AST_SYMBOL_HXX
-#define DEMO_AST_SYMBOL_HXX
+#ifndef AST_SYMBOL_HXX
+#define AST_SYMBOL_HXX
 
 #include <string>
 
@@ -56,5 +56,16 @@ namespace c4::ast {
         operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
     };
 }
+
+template<>
+struct std::hash<c4::ast::symbol> {
+    std::size_t
+    operator()(const c4::ast::symbol& obj) const noexcept {
+        std::size_t seed = 0x484DB776;
+        seed ^= (seed << 6) + (seed >> 2) + 0x53385480 + hash<std::string>()(obj.name);
+        seed ^= (seed << 6) + (seed >> 2) + 0x1D082437 + static_cast<std::size_t>(obj.arity);
+        return seed;
+    }
+};
 
 #endif

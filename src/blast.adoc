@@ -48,16 +48,18 @@ prec10-op-expr ::= '(' expression ')'
                  | PREFIX_OP prec10-op-expr <2>
                  | fn-call
 
-scalar ::= STRING
-         | INTEGER
-         | FLOAT
+scalar ::= fundamental-scalar
          | symbol
          | block
+fundamental-scalar ::= STRING
+                     | INTEGER
+                     | FLOAT
 
 symbol ::= SYMBOL '/' UINTEGER
 bare-symbol ::= SYMBOL
 
 block ::= '{' [block-args] expression* '}'
+        | '\' [block-args] expression
 block-args ::= '|' block-arg* '|'
 block-arg ::= bare-symbol
 ----
@@ -70,7 +72,7 @@ With the exception that `+#+` cannot stand by itself as that will be taken as a 
 [source]
 ----
 let nil {}
-let cons/2 { |x y| { |op| when op is car/0 { x } is cdr/0 { y } otherwise nil } }
+let cons/2 { |x y| { |op| when op is car/0 \x is cdr/0 \y otherwise nil } }
 let car/1 { |x| &x/1 car/0 }
 let cdr/1 { |x| &x/1 cdr/0 }
 

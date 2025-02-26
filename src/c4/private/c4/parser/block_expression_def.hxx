@@ -30,45 +30,59 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/parser/config --
+ * src/c4/private/c4/parser/block_expression_def --
  *   
  */
-#ifndef CONFIG_HXX
-#define CONFIG_HXX
+#ifndef PARSER_BLOCK_EXPRESSION_DEF_HXX
+#define PARSER_BLOCK_EXPRESSION_DEF_HXX
 
 #include <boost/spirit/home/x3.hpp>
-#include <boost/spirit/home/x3/support/utility/error_reporting.hpp>
 
-#include <c4/ast/symbol_scope.hxx>
-
-#include <string>
-#include <vector>
+#include <c4/parser/block_expression.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/symbol.hxx>
+#include <c4/parser/error_handler_callback.hxx>
+#include <c4/parser/position_annotator.hxx>
 
 namespace c4::parser {
     namespace x3 = boost::spirit::x3;
 
-    struct position_cache_tag;
-    struct symbol_scope_tag;
+    struct block_expression_parser;
+    struct block_parameters_parser;
 
-    using iterator_type = std::string::const_iterator;
-    using phrase_context_type = x3::phrase_parse_context<x3::ascii::space_type>::type;
+    constexpr block_expression_parser_type block_expression_parser = "block expression";
+    constexpr x3::rule<block_parameters_parser, ast::block_parameters> block_parameters_parser = "block parameters";
 
-    using position_cache = x3::position_cache<std::vector<iterator_type> >;
-    using position_context_type = x3::context<
-        position_cache_tag,
-        std::reference_wrapper<position_cache>,
-        phrase_context_type>;
+    const auto push_scope = [](auto&& ctx) {
+        auto& current_scope = x3::get<symbol_scope_tag>(ctx).get();
+        x3::get<symbol_scope_tag>(ctx) = *current_scope.new_scope();
+    };
 
-    using error_handler = x3::error_handler<iterator_type>;
-    using error_context_type = x3::context<
-        x3::error_handler_tag,
-        std::reference_wrapper<error_handler>,
-        position_context_type>;
+    const auto pop_scope = [](auto&& ctx) {
+        auto& current_scope = x3::get<symbol_scope_tag>(ctx).get();
+        x3::get<symbol_scope_tag>(ctx) = current_scope.parent();
+    };
 
-    using context_type = x3::context<
-        symbol_scope_tag,
-        std::reference_wrapper<ast::symbol_scope>,
-        error_context_type>;
+    constexpr auto block_parameters_parser_def =
+            "|" >> *symbol() > "|";
+
+    constexpr auto block_expression_parser_def =
+            x3::eps[push_scope]
+            >> ("{" >> -block_parameters_parser >> *expression() > "}"
+                | "\\" >> -block_expression_parser > expression())
+            >> x3::eps[pop_scope];
+
+    struct block_expression_parser : position_annotator,
+                                     error_handler_callback { };
+
+    struct block_parameters_parser : position_annotator,
+                                     error_handler_callback { };
+
+    BOOST_SPIRIT_DEFINE(block_parameters_parser, block_expression_parser)
+
+    inline block_expression_parser_type
+    block_expression() { return block_expression_parser; }
 }
+
 
 #endif

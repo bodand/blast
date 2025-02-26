@@ -34,9 +34,13 @@
 #
 
 macro(add_ast_elem tgt name)
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/c4/ast/${name}_fusion.hxx")
+        set(fusion "include/c4/ast/${name}_fusion.hxx")
+    endif ()
     target_sources(${tgt}
                    # AST node
                    PUBLIC include/c4/ast/${name}.hxx
+                   PUBLIC "${fusion}"
                    # Parser API
                    PUBLIC include/c4/parser/${name}.hxx
                    # Parser implementation & instantiation
@@ -53,10 +57,14 @@ add_executable(blast
                include/c4/parser/config.hxx
                private/c4/parser/position_annotator.hxx
                private/c4/parser/error_handler_callback.hxx
-               include/c4/ast/symbol_fusion.hxx
+               include/c4/ast/symbol_scope.hxx
+               src/ast/symbol_scope.cxx
                )
 
 add_ast_elem(blast symbol)
+add_ast_elem(blast fundamental_scalar)
+add_ast_elem(blast block_expression)
+add_ast_elem(blast expression)
 
 target_link_libraries(blast PRIVATE
                       Boost::spirit

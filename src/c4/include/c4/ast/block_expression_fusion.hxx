@@ -30,45 +30,21 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/parser/config --
+ * src/c4/include/c4/ast/block_expression_fusion --
  *   
  */
-#ifndef CONFIG_HXX
-#define CONFIG_HXX
+#ifndef AST_BLOCK_EXPRESSION_FUSION_HXX
+#define AST_BLOCK_EXPRESSION_FUSION_HXX
 
-#include <boost/spirit/home/x3.hpp>
-#include <boost/spirit/home/x3/support/utility/error_reporting.hpp>
+#include <c4/ast/block_expression.hxx>
 
-#include <c4/ast/symbol_scope.hxx>
+#include <boost/fusion/include/adapt_struct.hpp>
 
-#include <string>
-#include <vector>
+BOOST_FUSION_ADAPT_STRUCT(c4::ast::block_parameters,
+                          symbols)
 
-namespace c4::parser {
-    namespace x3 = boost::spirit::x3;
-
-    struct position_cache_tag;
-    struct symbol_scope_tag;
-
-    using iterator_type = std::string::const_iterator;
-    using phrase_context_type = x3::phrase_parse_context<x3::ascii::space_type>::type;
-
-    using position_cache = x3::position_cache<std::vector<iterator_type> >;
-    using position_context_type = x3::context<
-        position_cache_tag,
-        std::reference_wrapper<position_cache>,
-        phrase_context_type>;
-
-    using error_handler = x3::error_handler<iterator_type>;
-    using error_context_type = x3::context<
-        x3::error_handler_tag,
-        std::reference_wrapper<error_handler>,
-        position_context_type>;
-
-    using context_type = x3::context<
-        symbol_scope_tag,
-        std::reference_wrapper<ast::symbol_scope>,
-        error_context_type>;
-}
+BOOST_FUSION_ADAPT_STRUCT(c4::ast::block_expression,
+                          parameters,
+                          exprs)
 
 #endif

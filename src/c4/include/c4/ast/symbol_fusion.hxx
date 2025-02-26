@@ -33,8 +33,8 @@
  * src/c4/include/c4/ast/symbol_fusion --
  *   
  */
-#ifndef SYMBOL_FUSION_HXX
-#define SYMBOL_FUSION_HXX
+#ifndef AST_SYMBOL_FUSION_HXX
+#define AST_SYMBOL_FUSION_HXX
 
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <c4/ast/symbol.hxx>

@@ -37,7 +37,10 @@
 #include <c4/parser/config.hxx>
 #include <c4/parser/symbol_def.hxx>
 
+#include <boost/spirit/home/x3.hpp>
+
 namespace c4::parser {
     BOOST_SPIRIT_INSTANTIATE(symbol_parser_type, iterator_type, context_type);
+
     BOOST_SPIRIT_INSTANTIATE(bare_symbol_parser_type, iterator_type, context_type);
 }

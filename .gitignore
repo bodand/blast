@@ -1,3 +1,7 @@
+cmake-build-debug
+_build*
+.idea
+
 ### C++ template
 # Prerequisites
 *.d
