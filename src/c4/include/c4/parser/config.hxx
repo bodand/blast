@@ -48,6 +48,7 @@ namespace c4::parser {
     namespace x3 = boost::spirit::x3;
 
     struct position_cache_tag;
+    using error_handler_tag = x3::error_handler_tag;
     struct symbol_scope_tag;
 
     using iterator_type = std::string::const_iterator;

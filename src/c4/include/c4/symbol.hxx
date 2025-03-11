@@ -28,37 +28,58 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-02.
+ * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
- *   
+ * src/c4/include/c4/symbol --
+ *   This is a runtime representation of a symbol.
+ *   Differs from ast/symbol by virtue of not being bound to the source code.
+ *   The symbol in ast/symbol represents symbols arising from the parsing of the
+ *   source code, while this symbol refers to all symbols that are generated
+ *   during runtime.
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
+#ifndef SYMBOL_HXX
+#define SYMBOL_HXX
 
 #include <string>
-#include <cstdint>
+#include <utility>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+namespace c4 {
+    namespace ast {
+        struct symbol;
+    }
 
-#include <c4/value.hxx>
+    struct symbol {
+        std::string name;
+        unsigned arity;
 
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
+        symbol(std::string name, const unsigned arity)
+            : name{std::move(name)}
+            , arity{arity} { }
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
+        [[nodiscard]] static symbol
+        from_ast(const ast::symbol& sym);
 
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+        [[nodiscard]] static symbol
+        argument(size_t i);
+
+    private:
+        friend bool
+        operator==(const symbol& lhs, const symbol& rhs) = default;
+
+        friend bool
+        operator!=(const symbol& lhs, const symbol& rhs) = default;
     };
 }
+
+template<>
+struct std::hash<c4::symbol> {
+    std::size_t
+    operator()(const c4::symbol& obj) const noexcept {
+        std::size_t seed = 0x1BF1A69F;
+        seed ^= (seed << 6) + (seed >> 2) + 0x36195B63 + std::hash<std::string>()(obj.name);
+        seed ^= (seed << 6) + (seed >> 2) + 0x3ACC40D6 + static_cast<std::size_t>(obj.arity);
+        return seed;
+    }
+};
 
 #endif

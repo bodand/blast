@@ -62,6 +62,9 @@ namespace c4::ast {
     struct fn_call : x3::position_tagged {
         callable callee;
         std::vector<expression> args;
+
+        c4::value
+        evaluate(c4::evaluation_stack& stk) const;
     };
 }
 

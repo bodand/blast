@@ -28,37 +28,42 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-02.
+ * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/src/ast/expression --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
 
-#include <string>
-#include <cstdint>
-
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
-
+#include <c4/evaluation_stack.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/op_call.hxx>
+#include <c4/ast/let_expression.hxx>
 #include <c4/value.hxx>
 
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
+namespace {
+    struct expression_evaluator final {
+        c4::evaluation_stack& stk;
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
+        c4::value
+        operator()(std::monostate) const {
+            // reaching this is sus?
+            return c4::value::nil();
+        }
 
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+        c4::value
+        operator()(const c4::ast::op_call& op) const {
+            return op.evaluate(stk);
+        }
+
+        c4::value
+        operator()(const c4::ast::let_expression& le) const {
+            stk.set(c4::symbol::from_ast(le.symbol), &le.expression);
+            return c4::symbol::from_ast(le.symbol);
+        }
     };
 }
 
-#endif
+c4::value
+c4::ast::expression::evaluate(evaluation_stack& stk) const {
+    return boost::apply_visitor(expression_evaluator(stk), *this);
+}

@@ -47,7 +47,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DECLARE(fundamental_scalar_parser_type)
 
-    constexpr fundamental_scalar_parser_type fundamental_scalar();
+    fundamental_scalar_parser_type fundamental_scalar();
 }
 
 #endif

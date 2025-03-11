@@ -28,37 +28,57 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-02.
+ * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/src/ast/op_call --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
 
-#include <string>
-#include <cstdint>
+#include <c4/block.hxx>
+#include <c4/evaluation_stack.hxx>
+#include <c4/ast/op_call.hxx>
+#include <c4/ast/fn_call.hxx>
+#include <c4/ast/let_expression.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/fundamental_scalar.hxx>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+namespace {
+    struct op_expr_evaluator {
+        c4::evaluation_stack& stk;
 
-#include <c4/value.hxx>
+        c4::value
+        operator()(const c4::ast::expression& expr) const {
+            return expr.evaluate(stk);
+        }
 
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
+        c4::value
+        operator()(const c4::ast::fundamental_scalar& scalar) const {
+            return scalar.evaluate();
+        }
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
+        c4::value
+        operator()(const c4::ast::symbol& symbol) const {
+            return c4::symbol::from_ast(symbol);
+        }
 
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+        c4::value
+        operator()(const c4::ast::block_expression& blk_expr) const {
+            return c4::value::from_block_ast(&blk_expr);
+        }
+
+        c4::value
+        operator()(const c4::ast::fn_call& fn_call) const {
+            return fn_call.evaluate(stk);
+        }
     };
 }
 
-#endif
+c4::value
+c4::ast::precedence_op_expr<0>::evaluate(evaluation_stack& stk) const {
+    return boost::apply_visitor(op_expr_evaluator(stk), *this);
+}
+
+c4::value
+c4::ast::op_call::evaluate(evaluation_stack& stk) const {
+    return expression.evaluate(stk);
+}

@@ -30,35 +30,56 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/private/c4/parser/let_expression_def --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
+#ifndef PARSER_LET_EXPRESSION_DEF_HXX
+#define PARSER_LET_EXPRESSION_DEF_HXX
 
-#include <string>
-#include <cstdint>
+#include <boost/spirit/home/x3.hpp>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+#include <c4/parser/let_expression.hxx>
+#include <c4/ast/let_expression_fusion.hxx>
+#include <c4/parser/error_handler_callback.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/symbol.hxx>
+#include <c4/parser/fn_call.hxx>
+#include <c4/parser/position_annotator.hxx>
 
-#include <c4/value.hxx>
-
-namespace c4::ast {
+namespace c4::parser {
     namespace x3 = boost::spirit::x3;
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
+    struct let_expression_parser;
+    struct let_name_parser;
 
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+    constexpr let_expression_parser_type let_expression_parser = "let";
+    constexpr x3::rule<let_name_parser, ast::symbol> let_name = "name symbol";
+
+    struct let_expression_parser : position_annotator
+                                   , error_handler_callback { };
+
+    struct let_name_parser : position_annotator
+                             , error_handler_callback {
+        template<class T, class It, class Ctx>
+        void
+        on_success(const It& begin,
+                   const It& end,
+                   T& ast,
+                   const Ctx& ctx) {
+            position_annotator::on_success(begin, end, ast, ctx);
+            x3::get<symbol_scope_tag>(ctx).get().define(ast);
+        }
     };
+
+    const auto let_name_def = symbol();
+    const auto let_expression_parser_def =
+            "let" >> let_name >> x3::expect[expression()];
+
+    BOOST_SPIRIT_DEFINE(let_name, let_expression_parser);
+
+    let_expression_parser_type
+    let_expression() { return let_expression_parser; }
 }
+
 
 #endif

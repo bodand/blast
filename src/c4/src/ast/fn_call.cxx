@@ -34,7 +34,12 @@
  *   
  */
 
+#include <c4/evaluation_stack.hxx>
+#include <c4/value.hxx>
+
 #include <c4/ast/fn_call.hxx>
+#include <c4/ast/op_call.hxx>
+#include <c4/ast/let_expression.hxx>
 
 namespace {
     struct call_arity_counter {
@@ -50,6 +55,42 @@ namespace {
             return symbol.arity;
         }
     };
+
+    struct call_evaluator {
+        c4::evaluation_stack& stk;
+        const std::vector<c4::ast::expression>& args;
+
+        call_evaluator(c4::evaluation_stack& stk,
+                       const std::vector<c4::ast::expression>& args)
+            : stk{stk}
+            , args{args} { }
+
+        c4::value
+        operator()(const c4::ast::call_expr& expr) const {
+            const auto callee = expr.expr.evaluate(stk);
+            std::vector<const c4::ast::expression*> args;
+            std::ranges::transform(this->args,
+                                   std::back_inserter(args),
+                                   [](auto& arg) { return &arg; });
+            return callee.evaluate(stk, args);
+        }
+
+        c4::value
+        operator()(const c4::ast::symbol& symbol) const {
+            auto fn = stk.value_of(c4::symbol::from_ast(symbol));
+            std::vector<const c4::ast::expression*> args;
+            std::ranges::transform(this->args,
+                                   std::back_inserter(args),
+                                   [](auto& arg) { return &arg; });
+           return  (*fn)->evaluate(stk, args);
+        }
+    };
+}
+
+c4::value
+c4::ast::fn_call::evaluate(evaluation_stack& stk) const {
+    return boost::apply_visitor(call_evaluator(stk, args),
+                                callee);
 }
 
 unsigned

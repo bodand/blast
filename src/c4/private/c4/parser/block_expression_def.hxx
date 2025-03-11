@@ -39,6 +39,7 @@
 #include <boost/spirit/home/x3.hpp>
 
 #include <c4/parser/block_expression.hxx>
+#include <c4/ast/block_expression_fusion.hxx>
 #include <c4/parser/expression.hxx>
 #include <c4/parser/symbol.hxx>
 #include <c4/parser/error_handler_callback.hxx>
@@ -53,34 +54,65 @@ namespace c4::parser {
     constexpr block_expression_parser_type block_expression_parser = "block expression";
     constexpr x3::rule<block_parameters_parser, ast::block_parameters> block_parameters_parser = "block parameters";
 
-    const auto push_scope = [](auto&& ctx) {
+    const auto push_scope = [](auto& ctx) {
         auto& current_scope = x3::get<symbol_scope_tag>(ctx).get();
         x3::get<symbol_scope_tag>(ctx) = *current_scope.new_scope();
     };
 
-    const auto pop_scope = [](auto&& ctx) {
+    const auto pop_scope = [](auto& ctx) {
         auto& current_scope = x3::get<symbol_scope_tag>(ctx).get();
         x3::get<symbol_scope_tag>(ctx) = current_scope.parent();
     };
 
-    constexpr auto block_parameters_parser_def =
-            "|" >> *symbol() > "|";
+    const auto set_params = [](auto& ctx) {
+        const auto& params = _attr(ctx);
+        if (params) _val(ctx).parameters = *params;
+    };
 
-    constexpr auto block_expression_parser_def =
-            x3::eps[push_scope]
-            >> ("{" >> -block_parameters_parser >> *expression() > "}"
-                | "\\" >> -block_expression_parser > expression())
-            >> x3::eps[pop_scope];
+    const auto set_exprs = [](auto& ctx) {
+        const auto& exprs = _attr(ctx);
+        _val(ctx).exprs = exprs;
+    };
+
+    const auto set_expr = [](auto& ctx) {
+        const auto& expr = _attr(ctx);
+        _val(ctx).exprs.push_back(expr);
+    };
+
+    const auto block_parameters_parser_def =
+            "|" >> *bare_symbol() >> x3::expect["|"];
+
+    const auto block_expression_parser_def =
+            x3::lit("{")[push_scope]
+            >> (-block_parameters_parser)[set_params]
+            >> (*expression())[set_exprs]
+            >> x3::expect[x3::lit("}")][pop_scope]
+            |
+            x3::lit("\\")[push_scope]
+            >> (-block_parameters_parser)[set_params]
+            >> x3::expect[expression()[set_expr]][pop_scope];
 
     struct block_expression_parser : position_annotator,
                                      error_handler_callback { };
 
     struct block_parameters_parser : position_annotator,
-                                     error_handler_callback { };
+                                     error_handler_callback {
+        template<class T, class It, class Ctx>
+        void
+        on_success(const It& begin,
+                   const It& end,
+                   T& ast,
+                   const Ctx& ctx) {
+            position_annotator::on_success(begin, end, ast, ctx);
+            ast::symbol_scope& scope = x3::get<symbol_scope_tag>(ctx).get();
+            for (const auto& sym: ast.symbols)
+                scope.define(sym);
+        }
+    };
 
     BOOST_SPIRIT_DEFINE(block_parameters_parser, block_expression_parser)
 
-    constexpr block_expression_parser_type
+    block_expression_parser_type
     block_expression() { return block_expression_parser; }
 }
 

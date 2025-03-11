@@ -36,21 +36,34 @@
 #ifndef AST_EXPRESSION_HXX
 #define AST_EXPRESSION_HXX
 
+#include <variant>
+#include <c4/value.hxx>
+
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
 #include <boost/spirit/home/x3/support/ast/variant.hpp>
+
+namespace c4 {
+    struct evaluation_stack;
+}
 
 namespace c4::ast {
     namespace x3 = boost::spirit::x3;
 
-    struct block_expression;
     struct op_call;
-    // struct let_expression;
+    struct let_expression;
 
-    struct expression : x3::variant<
-                            // , x3::forward_ast<let_expression>
-                            x3::forward_ast<op_call>
-                        >,
-                        x3::position_tagged { };
+    struct expression : x3::position_tagged,
+                        x3::variant<
+                            std::monostate,
+                            x3::forward_ast<op_call>,
+                            x3::forward_ast<let_expression>
+                        > {
+        using base_type::base_type;
+        using base_type::operator=;
+
+        value
+        evaluate(evaluation_stack& stk) const;
+    };
 }
 
 #endif

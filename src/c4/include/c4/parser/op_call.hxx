@@ -49,7 +49,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DECLARE(op_call_parser_type)
 
-    constexpr op_call_parser_type op_call();
+    op_call_parser_type op_call();
 }
 
 

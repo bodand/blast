@@ -44,8 +44,13 @@
 #include <c4/ast/fn_call.hxx>
 #include <c4/ast/fundamental_scalar.hxx>
 #include <c4/ast/symbol.hxx>
+#include <c4/value.hxx>
 
 #include <vector>
+
+namespace c4 {
+    struct evaluation_stack;
+}
 
 namespace c4::ast {
     namespace x3 = boost::spirit::x3;
@@ -75,10 +80,16 @@ namespace c4::ast {
                                    > {
         using base_type::base_type;
         using base_type::operator=;
+
+        [[nodiscard]] value
+        evaluate(evaluation_stack& stk) const;
     };
 
     struct op_call : x3::position_tagged {
         precedence_op_expr<0> expression;
+
+        [[nodiscard]] value
+        evaluate(evaluation_stack& stk) const;
     };
 }
 

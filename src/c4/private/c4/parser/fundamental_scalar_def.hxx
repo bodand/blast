@@ -52,14 +52,14 @@ namespace c4::parser {
     struct fundamental_scalar_parser : position_annotator
                                      , error_handler_callback {};
 
-    constexpr auto fundamental_scalar_parser_def =
+    const auto fundamental_scalar_parser_def =
         x3::int64
         | x3::double_
-        | x3::lexeme['"' >> *~x3::char_('"') > '"'];
+        | x3::lexeme['"' >> *~x3::char_('"') >> x3::expect['"']];
 
     BOOST_SPIRIT_DEFINE(fundamental_scalar_parser);
 
-    constexpr fundamental_scalar_parser_type
+    fundamental_scalar_parser_type
     fundamental_scalar() { return fundamental_scalar_parser; }
 }
 

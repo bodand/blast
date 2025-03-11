@@ -23,7 +23,6 @@ expression ::= let-expr
 
 let-expr ::= 'let' let-name expression
 let-name ::= symbol
-           | bare-symbol
            | fn-call
 
 fn-call ::= callable expression*

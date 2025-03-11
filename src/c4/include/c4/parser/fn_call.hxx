@@ -47,7 +47,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DECLARE(fn_call_parser_type);
 
-    constexpr fn_call_parser_type fn_call();
+    fn_call_parser_type fn_call();
 }
 
 #endif

@@ -28,36 +28,68 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-02.
+ * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/include/c4/evaluation_stack --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
+#ifndef EVALUATION_STACK_HXX
+#define EVALUATION_STACK_HXX
 
-#include <string>
-#include <cstdint>
-
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+#include <unordered_map>
+#include <optional>
+#include <variant>
 
 #include <c4/value.hxx>
+#include <c4/symbol.hxx>
 
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
+namespace c4 {
+    namespace ast {
+        struct expression;
+    }
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
+    struct evaluation_stack final {
+        evaluation_stack() = default;
 
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+        evaluation_stack(const evaluation_stack&) = delete;
+
+        evaluation_stack&
+        operator=(const evaluation_stack&) = delete;
+
+        evaluation_stack
+        push() {
+            return evaluation_stack(this);
+        }
+
+        std::optional<value*>
+        value_of(const symbol& sym) {
+            if (const auto it = _symbol_values.find(sym);
+                it != _symbol_values.end()) {
+                return eval(it);
+            }
+            if (!_parent) return std::nullopt;
+            return _parent->value_of(sym);
+        }
+
+        void
+        set(const symbol& sym, value&& val);
+
+        void
+        set(const symbol& sym,const ast::expression* expr);
+
+    private:
+        using value_map = std::unordered_map<symbol,
+                                             std::variant<const ast::expression*, value>>;
+
+        std::optional<value*>
+        eval(value_map::iterator it);
+
+        explicit
+        evaluation_stack(evaluation_stack* parent)
+            : _parent{parent} { }
+
+        evaluation_stack* _parent{};
+        value_map _symbol_values{};
     };
 }
 

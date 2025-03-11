@@ -47,6 +47,7 @@
 
 #define C4_PARSER_SYMBOL_HEAD_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 #define C4_PARSER_SYMBOL_CHARS C4_PARSER_SYMBOL_HEAD_CHARS "0123456789'"
+#define C4_PARSER_OP_CHARS "-+*%&|~!?,.:^@#`<>="
 
 namespace c4::parser {
     namespace x3 = boost::spirit::x3;
@@ -54,36 +55,51 @@ namespace c4::parser {
     struct symbol_parser;
     struct bare_symbol_parser;
     struct symbol_name;
+    struct op_symbol;
 
     constexpr symbol_parser_type symbol_parser = "symbol";
     constexpr bare_symbol_parser_type bare_symbol_parser = "bare symbol";
     constexpr x3::rule<symbol_name, std::string> symbol_name = "symbol name";
+    constexpr x3::rule<op_symbol, std::string> op_symbol = "operator symbol";
 
     struct symbol_parser : position_annotator
-                           , error_handler_callback {};
+                           , error_handler_callback { };
 
     struct bare_symbol_parser : position_annotator
-                                , error_handler_callback {};
+                                , error_handler_callback { };
 
     struct symbol_name : position_annotator
-                         , error_handler_callback {};
+                         , error_handler_callback { };
 
-    // clang-format off
+    struct op_symbol : position_annotator
+                       , error_handler_callback { };
+
     const auto symbol_name_def =
             x3::lexeme[x3::char_(C4_PARSER_SYMBOL_HEAD_CHARS)
                        >> *x3::char_(C4_PARSER_SYMBOL_CHARS)];
 
-    constexpr auto symbol_parser_def = x3::lexeme[symbol_name > '/' > x3::uint_];
+    const auto op_symbol_def =
+            +(x3::char_(C4_PARSER_OP_CHARS)
+              | &x3::char_("/")
+              >> !("/" >> x3::uint_)
+              >> x3::char_("/"));
 
-    constexpr auto bare_symbol_parser_def = symbol_name >> x3::attr(0U);
-    // clang-format on
+    const auto symbol_parser_def = x3::lexeme[
+        (op_symbol | symbol_name)
+        >> x3::expect['/']
+        >> x3::expect[x3::uint_]];
 
-    BOOST_SPIRIT_DEFINE(symbol_parser, bare_symbol_parser, symbol_name)
+    const auto bare_symbol_parser_def = symbol_name >> x3::attr(0U);
 
-    constexpr symbol_parser_type
+    BOOST_SPIRIT_DEFINE(symbol_parser,
+                        bare_symbol_parser,
+                        symbol_name,
+                        op_symbol)
+
+    symbol_parser_type
     symbol() { return symbol_parser; }
 
-    constexpr bare_symbol_parser_type
+    bare_symbol_parser_type
     bare_symbol() { return bare_symbol_parser; }
 }
 

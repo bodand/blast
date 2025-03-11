@@ -56,7 +56,7 @@ c4::ast::symbol_scope::load_parser(x3::symbols<symbol>& symbols) {
 
 c4::ast::symbol_scope*
 c4::ast::symbol_scope::new_scope() {
-    _children_scopes.push_front(symbol_scope(this));
+    _children_scopes.emplace_front(this);
     return &_children_scopes.front();
 }
 

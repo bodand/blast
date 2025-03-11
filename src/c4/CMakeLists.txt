@@ -55,9 +55,22 @@ endmacro()
 
 add_executable(blast
                src/blast.cxx
+
                include/c4/ast.hxx
                include/c4/ast_fwd.hxx
+
+               include/c4/symbol.hxx
+               src/symbol.cxx
+
+               include/c4/block.hxx
+               src/block.cxx
+
+               include/c4/evaluation_stack.hxx
+               src/evaluation_stack.cxx
+
                include/c4/value.hxx
+               src/value.cxx
+
                include/c4/parser/config.hxx
                private/c4/parser/position_annotator.hxx
                private/c4/parser/error_handler_callback.hxx
@@ -72,10 +85,12 @@ add_ast_elem(blast block_expression)
 add_ast_elem(blast expression)
 add_ast_elem(blast fn_call)
 add_ast_elem(blast op_call)
+add_ast_elem(blast let_expression)
 
 target_link_libraries(blast PRIVATE
                       Boost::spirit
                       mio::mio_min_winapi)
+target_compile_definitions(blast PRIVATE SPIRIT_DEBUG)
 target_include_directories(blast
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private"
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"

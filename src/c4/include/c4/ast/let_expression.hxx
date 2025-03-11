@@ -30,34 +30,23 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/include/c4/ast/let_expression --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
-
-#include <string>
-#include <cstdint>
+#ifndef AST_LET_EXPRESSION_HXX
+#define AST_LET_EXPRESSION_HXX
 
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
 
-#include <c4/value.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/symbol.hxx>
 
 namespace c4::ast {
     namespace x3 = boost::spirit::x3;
 
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
-
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
+    struct let_expression : x3::position_tagged {
+        symbol symbol;
+        expression expression;
     };
 }
 

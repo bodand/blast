@@ -28,37 +28,23 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-02.
+ * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
- *   
+ * src/c4/src/symbol --
+ *
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
 
-#include <string>
-#include <cstdint>
+#include <format>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+#include <c4/symbol.hxx>
+#include <c4/ast/symbol.hxx>
 
-#include <c4/value.hxx>
-
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
-
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
-
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
-    };
+c4::symbol
+c4::symbol::from_ast(const ast::symbol& sym) {
+    return {sym.name, sym.arity};
 }
 
-#endif
+c4::symbol
+c4::symbol::argument(size_t i) {
+    return {std::format("${}", i), 0};
+}

@@ -39,8 +39,6 @@
 #include <boost/spirit/home/x3.hpp>
 
 #include <c4/ast/symbol.hxx>
-#include <c4/parser/expression.hxx>
-#include <c4/parser/symbol_def.hxx>
 
 namespace c4::parser {
     namespace x3 = boost::spirit::x3;

@@ -37,15 +37,7 @@
 #define DEMO_AST_FWD_HXX
 
 namespace c4::ast {
-  struct script;
-
-  struct block_expr;
-  struct value_expr;
-  struct function_call_expr;
-  struct operator_call_expr;
-
-  struct direct_call;
-  struct indirect_call;
+  struct block_expression;
 }
 
 #endif

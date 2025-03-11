@@ -43,6 +43,7 @@
 #include <c4/parser/expression.hxx>
 #include <c4/parser/error_handler_callback.hxx>
 #include <c4/parser/fn_call.hxx>
+#include <c4/parser/let_expression.hxx>
 #include <c4/parser/fundamental_scalar.hxx>
 #include <c4/parser/op_call.hxx>
 #include <c4/parser/position_annotator.hxx>
@@ -62,14 +63,15 @@ namespace c4::parser {
     constexpr x3::rule<precedence_op_expr_parser<0>, ast::precedence_op_expr<0>>
     precedence_op_expr0 = "operand expression";
 
-    constexpr auto precedence_op_expr0_def =
-            "(" >> expression() > ")"
+    const auto precedence_op_expr0_def =
+            "(" >> expression() >> x3::expect[")"]
             | fundamental_scalar()
+            | fn_call()
             | symbol()
             | block_expression()
-            | fn_call();
+    ;
 
-    constexpr auto op_call_parser_def = precedence_op_expr0_def;
+    const auto op_call_parser_def = precedence_op_expr0_def;
 
     struct op_call_parser : position_annotator,
                             error_handler_callback { };
@@ -80,7 +82,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DEFINE(op_call_parser, precedence_op_expr0)
 
-    constexpr op_call_parser_type
+    op_call_parser_type
     op_call() { return op_call_parser; }
 }
 

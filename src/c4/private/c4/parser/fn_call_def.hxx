@@ -40,6 +40,8 @@
 
 #include <c4/ast/fn_call_fusion.hxx>
 #include <c4/parser/fn_call.hxx>
+#include <c4/parser/op_call.hxx>
+#include <c4/parser/let_expression.hxx>
 #include <c4/parser/symbol.hxx>
 #include <c4/parser/expression.hxx>
 #include <c4/parser/error_handler_callback.hxx>
@@ -91,7 +93,7 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DEFINE(fn_call_parser, call_expr_parser, callable_parser)
 
-    constexpr fn_call_parser_type
+    fn_call_parser_type
     fn_call() { return fn_call_parser; }
 
     template<class It, class Ctx, class RCtx, class Attr>

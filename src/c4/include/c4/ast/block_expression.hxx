@@ -45,14 +45,13 @@
 namespace c4::ast {
     struct expression;
 
-    struct block_parameters : x3::position_tagged {
+    struct block_parameters final : x3::position_tagged {
         std::vector<symbol> symbols;
     };
 
-    struct block_expression : x3::position_tagged {
+    struct block_expression final : x3::position_tagged {
         block_parameters parameters;
         std::vector<expression> exprs;
-        symbol_scope* scope;
     };
 }
 

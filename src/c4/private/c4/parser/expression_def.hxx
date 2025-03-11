@@ -36,6 +36,32 @@
 #ifndef PARSER_EXPRESSION_DEF_HXX
 #define PARSER_EXPRESSION_DEF_HXX
 
+#include <boost/spirit/home/x3.hpp>
 
+#include <c4/parser/expression.hxx>
+#include <c4/parser/error_handler_callback.hxx>
+#include <c4/parser/let_expression.hxx>
+#include <c4/parser/op_call.hxx>
+#include <c4/parser/position_annotator.hxx>
+
+namespace c4::parser {
+    namespace x3 = boost::spirit::x3;
+
+    struct expression_parser;
+
+    constexpr expression_parser_type expression_parser = "expression";
+
+    struct expression_parser : position_annotator
+                               , error_handler_callback { };
+
+    const auto expression_parser_def =
+            let_expression()
+            | op_call();
+
+    BOOST_SPIRIT_DEFINE(expression_parser);
+
+    expression_parser_type
+    expression() { return expression_parser; }
+}
 
 #endif

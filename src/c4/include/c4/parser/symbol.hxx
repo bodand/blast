@@ -48,8 +48,8 @@ namespace c4::parser {
 
     BOOST_SPIRIT_DECLARE(symbol_parser_type, bare_symbol_parser_type);
 
-    constexpr symbol_parser_type symbol();
-    constexpr bare_symbol_parser_type bare_symbol();
+    symbol_parser_type symbol();
+    bare_symbol_parser_type bare_symbol();
 }
 
 #endif

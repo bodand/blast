@@ -33,32 +33,80 @@
  * src/c4/value --
  *   
  */
-#ifndef DEMO_VALUE_HXX
-#define DEMO_VALUE_HXX
+#ifndef VALUE_HXX
+#define VALUE_HXX
 
 #include <string>
 #include <variant>
 #include <cstdint>
-#include <unordered_map>
+#include <memory>
+#include <ostream>
+#include <span>
 
-#include <c4/ast_fwd.hxx>
+#include <c4/symbol.hxx>
 
 namespace c4 {
-    struct symbol_value {
-        std::string symbol;
-        unsigned arity;
-    };
+    namespace ast {
+        struct block_expression;
+        struct expression;
+    }
 
-    struct block_value {
-        const ast::block_expr& block;
+    struct block;
+    struct evaluation_stack;
+
+    struct block_deleter {
+        constexpr block_deleter() = default;
+
+        void operator()(block* b) const;
     };
 
     struct value {
+        explicit(false)
+        value(std::int64_t i64)
+            : impl(i64) { }
+
+        explicit(false)
+        value(double d)
+            : impl(d) { }
+
+        explicit(false)
+        value(std::string s)
+            : impl(s) { }
+
+        explicit(false)
+        value(symbol s)
+            : impl(s) { }
+
+        explicit(false)
+        value(std::unique_ptr<block, block_deleter>&& b);
+
+        [[nodiscard]] value
+        evaluate(evaluation_stack& stk, std::span<const ast::expression*> args) const;
+
+        [[nodiscard]] static value
+        from_block_ast(const ast::block_expression* blk_expr);
+
+        [[nodiscard]] static value
+        nil();
+
+        friend std::ostream&
+        operator<<(std::ostream& os, const value& obj);
+
+        std::int64_t coerce_to_int() const;
+
+        // double coerce_to_double() const;
+        //
+        // std::string coerce_to_string() const;
+        //
+        // symbol coerce_to_symbol() const;
+
+    private:
         std::variant<
             std::int64_t,
             double,
-            symbol_value,
-            block_value
+            std::string,
+            symbol,
+            std::unique_ptr<block, block_deleter>
         > impl;
     };
 }

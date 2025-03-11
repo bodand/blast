@@ -30,35 +30,18 @@
  *
  * Originally created: 2025-02-02.
  *
- * src/c4/include/c4/ast/fundamental_scalar --
+ * src/c4/src/let_expression --
  *   
  */
-#ifndef AST_FUNDAMENTAL_SCALAR_HXX
-#define AST_FUNDAMENTAL_SCALAR_HXX
+#include <c4/ast/let_expression.hxx>
+#include <c4/parser/let_expression.hxx>
+#include <c4/parser/let_expression_def.hxx>
 
-#include <string>
-#include <cstdint>
+#include <c4/parser/config.hxx>
+#include <c4/parser/op_call.hxx>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-#include <boost/spirit/home/x3/support/ast/variant.hpp>
+#include <boost/spirit/home/x3.hpp>
 
-#include <c4/value.hxx>
-
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
-
-    struct fundamental_scalar
-            : x3::variant<
-                  std::string,
-                  std::int64_t,
-                  double>,
-              x3::position_tagged {
-        using base_type::base_type;
-        using base_type::operator=;
-
-        [[nodiscard]] value
-        evaluate() const; // a scalar's value never depends on the current stack
-    };
+namespace c4::parser {
+    BOOST_SPIRIT_INSTANTIATE(let_expression_parser_type, iterator_type, context_type);
 }
-
-#endif

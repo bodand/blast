@@ -38,6 +38,14 @@
 
 #include <c4/ast_fwd.hxx>
 
+#include <c4/ast/block_expression.hxx>
+#include <c4/ast/expression.hxx>
+#include <c4/ast/fn_call.hxx>
+#include <c4/ast/fundamental_scalar.hxx>
+#include <c4/ast/let_expression.hxx>
+#include <c4/ast/op_call.hxx>
 #include <c4/ast/symbol.hxx>
+
+#include <c4/ast/symbol_scope.hxx>
 
 #endif

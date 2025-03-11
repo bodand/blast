@@ -36,6 +36,7 @@
 #ifndef AST_SYMBOL_HXX
 #define AST_SYMBOL_HXX
 
+#include <ostream>
 #include <string>
 
 #include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
@@ -47,6 +48,10 @@ namespace c4::ast {
         std::string name;
         unsigned arity;
 
+        symbol(const std::string& name = {}, unsigned arity = {})
+            : name{name}
+            , arity{arity} { }
+
         friend bool
         operator==(const symbol& lhs, const symbol& rhs) {
             return lhs.name == rhs.name && lhs.arity == rhs.arity;
@@ -54,6 +59,11 @@ namespace c4::ast {
 
         friend bool
         operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
+
+        friend std::ostream&
+        operator<<(std::ostream& os, const symbol& obj) {
+            return os << obj.name << "/" << obj.arity;
+        }
     };
 }
 

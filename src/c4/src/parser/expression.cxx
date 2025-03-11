@@ -33,3 +33,15 @@
  * src/c4/src/parser/expression --
  *   
  */
+#include <c4/ast/expression.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/expression_def.hxx>
+
+#include <c4/ast/op_call.hxx>
+#include <c4/parser/config.hxx>
+
+#include <boost/spirit/home/x3.hpp>
+
+namespace c4::parser {
+    BOOST_SPIRIT_INSTANTIATE(expression_parser_type, iterator_type, context_type);
+}
