@@ -82,14 +82,14 @@ namespace c4::ast {
         using base_type::operator=;
 
         [[nodiscard]] value
-        evaluate(evaluation_stack& stk) const;
+        evaluate(const std::shared_ptr<evaluation_stack>& stk) const;
     };
 
     struct op_call : x3::position_tagged {
         precedence_op_expr<0> expression;
 
         [[nodiscard]] value
-        evaluate(evaluation_stack& stk) const;
+        evaluate(const std::shared_ptr<evaluation_stack>& stk) const;
     };
 }
 

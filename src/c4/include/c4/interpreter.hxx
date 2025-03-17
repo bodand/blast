@@ -28,63 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-26.
+ * Originally created: 2025-03-03.
  *
- * src/c4/ast/symbol --
+ * src/c4/include/c4/interpreter --
  *   
  */
-#ifndef AST_SYMBOL_HXX
-#define AST_SYMBOL_HXX
+#ifndef INTERPRETER_HXX
+#define INTERPRETER_HXX
 
+#include <vector>
 #include <ostream>
-#include <string>
-#include <utility>
+#include <iostream>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
+#include <c4/ast.hxx>
+#include <c4/evaluation_stack.hxx>
 
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
+namespace c4 {
+    struct interpreter {
+        explicit
+        interpreter(std::ostream& error_stream = std::cerr)
+            : _error_stream{error_stream}
+            , _evaluation_stack{std::make_shared<evaluation_stack>()} { }
 
-    struct symbol : x3::position_tagged {
-        std::string name;
-        unsigned arity;
+        bool
+        parse(std::string_view str);
 
-        symbol(std::string name = {}, const unsigned arity = {})
-            : name{std::move(name)}
-            , arity{arity} { }
+        bool
+        parse(const std::string& str);
 
-        symbol(const std::string_view name, const unsigned arity)
-            : name{name}
-            , arity{arity} { }
+        int
+        exec() const;
 
-        symbol(const char* str, const unsigned arity)
-            : name{str}
-            , arity{arity} { }
-
-        friend bool
-        operator==(const symbol& lhs, const symbol& rhs) {
-            return lhs.name == rhs.name && lhs.arity == rhs.arity;
+        void
+        define(const std::string_view name,
+               const int arity,
+               std::unique_ptr<block, block_deleter> block) {
+            _global_scope.define(ast::symbol(name, arity));
+            _evaluation_stack->set(symbol(name, arity), std::move(block));
         }
 
-        friend bool
-        operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
-
-        friend std::ostream&
-        operator<<(std::ostream& os, const symbol& obj) {
-            return os << obj.name << "/" << obj.arity;
-        }
+    private:
+        std::ostream& _error_stream;
+        std::vector<ast::expression> _expressions{};
+        ast::symbol_scope _global_scope{};
+        std::shared_ptr<evaluation_stack> _evaluation_stack{};
     };
 }
-
-template<>
-struct std::hash<c4::ast::symbol> {
-    std::size_t
-    operator()(const c4::ast::symbol& obj) const noexcept {
-        std::size_t seed = 0x484DB776;
-        seed ^= (seed << 6) + (seed >> 2) + 0x53385480 + hash<std::string>()(obj.name);
-        seed ^= (seed << 6) + (seed >> 2) + 0x1D082437 + static_cast<std::size_t>(obj.arity);
-        return seed;
-    }
-};
 
 #endif

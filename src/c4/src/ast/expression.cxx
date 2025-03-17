@@ -42,7 +42,7 @@
 
 namespace {
     struct expression_evaluator final {
-        c4::evaluation_stack& stk;
+        const std::shared_ptr<c4::evaluation_stack>& stk;
 
         c4::value
         operator()(std::monostate) const {
@@ -57,13 +57,13 @@ namespace {
 
         c4::value
         operator()(const c4::ast::let_expression& le) const {
-            stk.set(c4::symbol::from_ast(le.symbol), &le.expression);
+            stk->set(c4::symbol::from_ast(le.symbol), &le.expression);
             return c4::symbol::from_ast(le.symbol);
         }
     };
 }
 
 c4::value
-c4::ast::expression::evaluate(evaluation_stack& stk) const {
+c4::ast::expression::evaluate(const std::shared_ptr<evaluation_stack>& stk) const {
     return boost::apply_visitor(expression_evaluator(stk), *this);
 }

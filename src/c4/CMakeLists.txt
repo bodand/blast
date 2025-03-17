@@ -56,6 +56,9 @@ endmacro()
 add_executable(blast
                src/blast.cxx
 
+               include/c4/interpreter.hxx
+               src/interpreter.cxx
+
                include/c4/ast.hxx
                include/c4/ast_fwd.hxx
 
@@ -89,7 +92,8 @@ add_ast_elem(blast let_expression)
 
 target_link_libraries(blast PRIVATE
                       Boost::spirit
-                      mio::mio_min_winapi)
+                      mio::mio_min_winapi
+                      fmt::fmt)
 target_compile_definitions(blast PRIVATE SPIRIT_DEBUG)
 target_include_directories(blast
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private"

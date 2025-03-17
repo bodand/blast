@@ -43,31 +43,41 @@
 #include <c4/ast_fwd.hxx>
 #include <c4/evaluation_stack.hxx>
 #include <c4/value.hxx>
+#include <c4/ast/block_expression.hxx>
 
 namespace c4 {
     struct block {
         explicit
-        block(const ast::block_expression* ast_block)
-            : ast_block{ast_block} { }
+        block(const ast::block_expression* ast_block,
+              std::shared_ptr<evaluation_stack> stk = {})
+            : ast_block{ast_block}
+            , _closure_stack{std::move(stk)} {
+            // make block nil if given block is already nil
+            if (ast_block && ast_block->exprs.empty()) this->ast_block = nullptr;
+        }
 
         [[nodiscard]] value
-        evaluate(evaluation_stack& stack, std::span<const ast::expression*> args) const;
+        evaluate(const std::shared_ptr<evaluation_stack>& stack, std::span<const ast::expression*> args) const;
 
         virtual void
         print(std::ostream& os) const;
+
+        [[nodiscard]] virtual bool
+        is_nil() const noexcept { return ast_block == nullptr; }
 
         virtual ~block() = default;
 
     protected:
         virtual value
-        do_evaluate(evaluation_stack& my_stack) const;
+        do_evaluate(const std::shared_ptr<evaluation_stack>& my_stack) const;
 
         virtual bool
         load_parameters(std::span<const ast::expression*> args,
-                        evaluation_stack& my_stack) const;
+                        std::shared_ptr<evaluation_stack>& my_stack) const;
 
     private:
         const ast::block_expression* ast_block;
+        std::shared_ptr<evaluation_stack> _closure_stack;
 
         friend bool
         operator==(const block& lhs, const block& rhs);
@@ -78,7 +88,7 @@ namespace c4 {
 
     struct native_block final : block {
         template<class Fn>
-            requires std::invocable<Fn, evaluation_stack&>
+            requires std::invocable<Fn, std::shared_ptr<evaluation_stack>&>
         explicit
         native_block(Fn&& fn)
             : block{nullptr}
@@ -87,14 +97,18 @@ namespace c4 {
         void
         print(std::ostream& os) const override;
 
+        [[nodiscard]] bool
+        is_nil() const noexcept override { return false; }
+
     protected:
         value
-        do_evaluate(evaluation_stack& my_stack) const override;
+        do_evaluate(const std::shared_ptr<evaluation_stack>& my_stack) const override;
 
-        bool load_parameters(std::span<const ast::expression*> args, evaluation_stack& my_stack) const override;
+        bool load_parameters(std::span<const ast::expression*> args,
+                             std::shared_ptr<evaluation_stack>& my_stack) const override;
 
     private:
-        std::function<value(evaluation_stack&)> _impl_fn;
+        std::function<value(const std::shared_ptr<evaluation_stack>&)> _impl_fn;
     };
 
     inline bool

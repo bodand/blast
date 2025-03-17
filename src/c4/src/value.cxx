@@ -35,6 +35,8 @@
  */
 
 #include <charconv>
+#include <format>
+#include <sstream>
 
 #include <c4/evaluation_stack.hxx>
 #include <c4/value.hxx>
@@ -46,7 +48,7 @@
 
 namespace {
     struct evaluator_visitor final {
-        c4::evaluation_stack& stk;
+        const std::shared_ptr<c4::evaluation_stack>& stk;
         std::span<const c4::ast::expression*> args;
 
         template<class Deleter>
@@ -94,14 +96,16 @@ c4::value::value(std::unique_ptr<block, block_deleter>&& b)
     : impl{std::move(b)} { }
 
 c4::value
-c4::value::evaluate(evaluation_stack& stk, const std::span<const ast::expression*> args) const {
+c4::value::evaluate(const std::shared_ptr<evaluation_stack>& stk,
+                    const std::span<const ast::expression*> args) const {
     return std::visit(evaluator_visitor(stk, args), impl);
 }
 
 c4::value
-c4::value::from_block_ast(const c4::ast::block_expression* blk_expr) {
+c4::value::from_block_ast(const ast::block_expression* blk_expr,
+                          std::shared_ptr<evaluation_stack>&& stk) {
     return {
-        std::unique_ptr<block, block_deleter>(new block(blk_expr),
+        std::unique_ptr<block, block_deleter>(new block(blk_expr, std::move(stk)),
                                               block_deleter())
     };
 }
@@ -145,11 +149,56 @@ namespace {
             return 0;
         }
     };
+
+    struct str_coercer final {
+        template<class T>
+        std::string
+        operator()(const T val) const {
+            return std::format("{}", val);
+        }
+
+        std::string
+        operator()(const std::string& s) const {
+            return s;
+        }
+
+        std::string
+        operator()(const c4::symbol& s) const {
+            return std::format("{}/{}", s.name, s.arity);
+        }
+
+        std::string
+        operator()(const std::unique_ptr<c4::block, c4::block_deleter>& b) const {
+            std::ostringstream oss;
+            oss << b;
+            return oss.str();
+        }
+    };
+
+    struct truthy_evaluator final {
+        bool
+        operator()(const auto&) const { return true; }
+
+        bool
+        operator()(const std::unique_ptr<c4::block, c4::block_deleter>& b) const {
+            return !b->is_nil();
+        }
+    };
 }
 
 std::int64_t
 c4::value::coerce_to_int() const {
     return std::visit(int_coercer{}, impl);
+}
+
+std::string
+c4::value::coerce_to_string() const {
+    return std::visit(str_coercer{}, impl);
+}
+
+bool
+c4::value::truthy() const noexcept {
+    return std::visit(truthy_evaluator{}, impl);
 }
 
 std::ostream&

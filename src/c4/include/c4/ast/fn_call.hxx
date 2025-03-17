@@ -63,8 +63,8 @@ namespace c4::ast {
         callable callee;
         std::vector<expression> args;
 
-        c4::value
-        evaluate(c4::evaluation_stack& stk) const;
+        [[nodiscard]] value
+        evaluate(const std::shared_ptr<evaluation_stack>& stk) const;
     };
 }
 

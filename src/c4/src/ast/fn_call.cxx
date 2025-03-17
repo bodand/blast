@@ -57,10 +57,10 @@ namespace {
     };
 
     struct call_evaluator {
-        c4::evaluation_stack& stk;
+        const std::shared_ptr<c4::evaluation_stack>& stk;
         const std::vector<c4::ast::expression>& args;
 
-        call_evaluator(c4::evaluation_stack& stk,
+        call_evaluator(const std::shared_ptr<c4::evaluation_stack>& stk,
                        const std::vector<c4::ast::expression>& args)
             : stk{stk}
             , args{args} { }
@@ -77,18 +77,18 @@ namespace {
 
         c4::value
         operator()(const c4::ast::symbol& symbol) const {
-            auto fn = stk.value_of(c4::symbol::from_ast(symbol));
+            auto fn = stk->value_of(c4::symbol::from_ast(symbol));
             std::vector<const c4::ast::expression*> args;
             std::ranges::transform(this->args,
                                    std::back_inserter(args),
                                    [](auto& arg) { return &arg; });
-           return  (*fn)->evaluate(stk, args);
+            return (*fn)->evaluate(stk, args);
         }
     };
 }
 
 c4::value
-c4::ast::fn_call::evaluate(evaluation_stack& stk) const {
+c4::ast::fn_call::evaluate(const std::shared_ptr<evaluation_stack>& stk) const {
     return boost::apply_visitor(call_evaluator(stk, args),
                                 callee);
 }

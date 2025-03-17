@@ -44,7 +44,7 @@
 
 namespace {
     struct op_expr_evaluator {
-        c4::evaluation_stack& stk;
+        mutable std::shared_ptr<c4::evaluation_stack> stk;
 
         c4::value
         operator()(const c4::ast::expression& expr) const {
@@ -63,7 +63,7 @@ namespace {
 
         c4::value
         operator()(const c4::ast::block_expression& blk_expr) const {
-            return c4::value::from_block_ast(&blk_expr);
+            return c4::value::from_block_ast(&blk_expr, std::move(stk));
         }
 
         c4::value
@@ -74,11 +74,11 @@ namespace {
 }
 
 c4::value
-c4::ast::precedence_op_expr<0>::evaluate(evaluation_stack& stk) const {
+c4::ast::precedence_op_expr<0>::evaluate(const std::shared_ptr<evaluation_stack>& stk) const {
     return boost::apply_visitor(op_expr_evaluator(stk), *this);
 }
 
 c4::value
-c4::ast::op_call::evaluate(evaluation_stack& stk) const {
+c4::ast::op_call::evaluate(const std::shared_ptr<evaluation_stack>& stk) const {
     return expression.evaluate(stk);
 }

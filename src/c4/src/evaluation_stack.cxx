@@ -38,23 +38,12 @@
 #include <c4/value.hxx>
 #include <c4/ast/expression.hxx>
 
-namespace {
-    struct lazy_evaluator final {
-        c4::evaluation_stack& stk;
-        std::variant<const c4::ast::expression*, c4::value>& value;
-
-        std::optional<c4::value*>
-        operator()(c4::value&) const {
-            return &std::get<c4::value>(value);
-        }
-
-        std::optional<c4::value*>
-        operator()(const c4::ast::expression* expr) const {
-            auto calc_value = expr->evaluate(stk);
-            value = std::move(calc_value);
-            return &std::get<c4::value>(value);
-        }
-    };
+void
+c4::evaluation_stack::merge(evaluation_stack& other) {
+    for (auto& [symbol, value]: other._symbol_values) {
+        // ignore failure
+        _symbol_values.try_emplace(symbol, static_cast<referenced_value>(&value));
+    }
 }
 
 void
@@ -70,13 +59,43 @@ c4::evaluation_stack::set(const symbol& sym, value&& val) {
 
 void
 c4::evaluation_stack::set(const symbol& sym, const ast::expression* expr) {
-    if (const auto [it, succ] = _symbol_values.emplace(sym, expr);
+    auto& eval_stack = _parent ? *_parent : *this;
+    if (const auto [it, succ] =
+                _symbol_values.emplace(sym,
+                                       unevaluated_value(eval_stack.shared_from_this(), expr));
         !succ) {
         // _symbol_values[sym] = expr;
     }
 }
 
-std::optional<c4::value*>
-c4::evaluation_stack::eval(const value_map::iterator it) {
+c4::value*
+c4::evaluation_stack::eval(const value_map::iterator& it) {
+    struct lazy_evaluator final {
+        evaluation_stack& stk;
+        lazy_value& value;
+
+        c4::value*
+        operator()(c4::value&) const {
+            return &std::get<c4::value>(value);
+        }
+
+        c4::value*
+        operator()(const referenced_value far_value) const {
+            const auto value_ptr = static_cast<lazy_value*>(far_value);
+            return std::visit(lazy_evaluator(stk, *value_ptr), value);
+        }
+
+        c4::value*
+        operator()(const unevaluated_value& expr) const {
+            value = expr.evaluate_and_get();
+            return &std::get<c4::value>(value);
+        }
+    };
+
     return std::visit(lazy_evaluator(*this, it->second), it->second);
+}
+
+c4::value
+c4::evaluation_stack::unevaluated_value::evaluate_and_get() const {
+    return _expr->evaluate(_context);
 }

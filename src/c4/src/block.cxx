@@ -44,20 +44,20 @@
 #include <c4/ast/expression.hxx>
 
 bool
-c4::block::load_parameters(const std::span<const ast::expression*> args,
-                           evaluation_stack& my_stack) const {
+c4::block::load_parameters(std::span<const ast::expression*> args,
+                           std::shared_ptr<evaluation_stack>& my_stack) const {
     if (!ast_block) return false;
 
     for (const auto [arg, symbol]: std::ranges::zip_view(args,
                                                          ast_block->parameters.symbols)) {
-        my_stack.set(symbol::from_ast(symbol),
-                     arg);
+        my_stack->set(symbol::from_ast(symbol),
+                      arg);
     }
     return true;
 }
 
 c4::value
-c4::block::do_evaluate(evaluation_stack& my_stack) const {
+c4::block::do_evaluate(const std::shared_ptr<evaluation_stack>& my_stack) const {
     return std::accumulate(ast_block->exprs.begin(), ast_block->exprs.end(),
                            value::nil(),
                            [&my_stack]<typename Last>(Last&& acc,
@@ -79,23 +79,24 @@ c4::block::print(std::ostream& os) const {
 
 bool
 c4::native_block::load_parameters(std::span<const ast::expression*> args,
-                                  evaluation_stack& my_stack) const {
+                                  std::shared_ptr<evaluation_stack>& my_stack) const {
     for (size_t i = 0; i < args.size(); ++i) {
-        my_stack.set(symbol::argument(i), args[i]);
+        my_stack->set(symbol::argument(i), args[i]);
     }
     return true;
 }
 
 c4::value
-c4::native_block::do_evaluate(evaluation_stack& my_stack) const {
+c4::native_block::do_evaluate(const std::shared_ptr<evaluation_stack>& my_stack) const {
     return _impl_fn(my_stack);
 }
 
 c4::value
-c4::block::evaluate(evaluation_stack& stack,
+c4::block::evaluate(const std::shared_ptr<evaluation_stack>& stack,
                     const std::span<const ast::expression*> args) const {
-    auto my_stack = stack.push();
+    auto my_stack = stack->push();
     if (!load_parameters(args, my_stack)) return value::nil();
+    if (_closure_stack) my_stack->merge(*_closure_stack);
 
     return do_evaluate(my_stack);
 }

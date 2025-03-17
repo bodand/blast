@@ -61,8 +61,8 @@ namespace c4::ast {
         using base_type::base_type;
         using base_type::operator=;
 
-        value
-        evaluate(evaluation_stack& stk) const;
+        [[nodiscard]] value
+        evaluate(const std::shared_ptr<evaluation_stack>& stk) const;
     };
 }
 

@@ -36,9 +36,13 @@
 #ifndef EVALUATION_STACK_HXX
 #define EVALUATION_STACK_HXX
 
+#include <cassert>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
+#include <utility>
 #include <variant>
+#include <memory>
 
 #include <c4/value.hxx>
 #include <c4/symbol.hxx>
@@ -48,47 +52,66 @@ namespace c4 {
         struct expression;
     }
 
-    struct evaluation_stack final {
+    struct evaluation_stack final : std::enable_shared_from_this<evaluation_stack> {
         evaluation_stack() = default;
+
+        explicit
+        evaluation_stack(const std::shared_ptr<evaluation_stack>& parent)
+            : _parent{parent} { }
 
         evaluation_stack(const evaluation_stack&) = delete;
 
         evaluation_stack&
         operator=(const evaluation_stack&) = delete;
 
-        evaluation_stack
+        std::shared_ptr<evaluation_stack>
         push() {
-            return evaluation_stack(this);
+            return std::make_shared<evaluation_stack>(shared_from_this());
         }
+
+        void
+        merge(evaluation_stack& other);
 
         std::optional<value*>
         value_of(const symbol& sym) {
-            if (const auto it = _symbol_values.find(sym);
-                it != _symbol_values.end()) {
-                return eval(it);
-            }
-            if (!_parent) return std::nullopt;
-            return _parent->value_of(sym);
+            auto searched_stack = this;
+            do {
+                if (const auto it = searched_stack->_symbol_values.find(sym);
+                    it != searched_stack->_symbol_values.end()) {
+                    return eval(it);
+                }
+                searched_stack = searched_stack->_parent.get();
+            } while (searched_stack);
+            return std::nullopt;
         }
 
         void
         set(const symbol& sym, value&& val);
 
         void
-        set(const symbol& sym,const ast::expression* expr);
+        set(const symbol& sym, const ast::expression* expr);
 
     private:
-        using value_map = std::unordered_map<symbol,
-                                             std::variant<const ast::expression*, value>>;
+        struct unevaluated_value {
+            const std::shared_ptr<evaluation_stack> _context;
+            const ast::expression* _expr;
 
-        std::optional<value*>
-        eval(value_map::iterator it);
+            unevaluated_value(std::shared_ptr<evaluation_stack>&& context, const ast::expression* expr)
+                : _context{std::move(context)}
+                , _expr{expr} { }
 
-        explicit
-        evaluation_stack(evaluation_stack* parent)
-            : _parent{parent} { }
+            [[nodiscard]] value
+            evaluate_and_get() const;
+        };
 
-        evaluation_stack* _parent{};
+        using referenced_value = void*;
+        using lazy_value = std::variant<unevaluated_value, value, referenced_value>;
+        using value_map = std::unordered_map<symbol, lazy_value>;
+
+        value*
+        eval(const value_map::iterator& it);
+
+        std::shared_ptr<evaluation_stack> _parent{};
         value_map _symbol_values{};
     };
 }

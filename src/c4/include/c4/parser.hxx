@@ -28,63 +28,22 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-02-26.
+ * Originally created: 2025-03-03.
  *
- * src/c4/ast/symbol --
+ * src/c4/include/c4/parser --
  *   
  */
-#ifndef AST_SYMBOL_HXX
-#define AST_SYMBOL_HXX
+#ifndef PARSER_HXX
+#define PARSER_HXX
 
-#include <ostream>
-#include <string>
-#include <utility>
+#include <c4/parser/config.hxx>
 
-#include <boost/spirit/home/x3/support/ast/position_tagged.hpp>
-
-namespace c4::ast {
-    namespace x3 = boost::spirit::x3;
-
-    struct symbol : x3::position_tagged {
-        std::string name;
-        unsigned arity;
-
-        symbol(std::string name = {}, const unsigned arity = {})
-            : name{std::move(name)}
-            , arity{arity} { }
-
-        symbol(const std::string_view name, const unsigned arity)
-            : name{name}
-            , arity{arity} { }
-
-        symbol(const char* str, const unsigned arity)
-            : name{str}
-            , arity{arity} { }
-
-        friend bool
-        operator==(const symbol& lhs, const symbol& rhs) {
-            return lhs.name == rhs.name && lhs.arity == rhs.arity;
-        }
-
-        friend bool
-        operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
-
-        friend std::ostream&
-        operator<<(std::ostream& os, const symbol& obj) {
-            return os << obj.name << "/" << obj.arity;
-        }
-    };
-}
-
-template<>
-struct std::hash<c4::ast::symbol> {
-    std::size_t
-    operator()(const c4::ast::symbol& obj) const noexcept {
-        std::size_t seed = 0x484DB776;
-        seed ^= (seed << 6) + (seed >> 2) + 0x53385480 + hash<std::string>()(obj.name);
-        seed ^= (seed << 6) + (seed >> 2) + 0x1D082437 + static_cast<std::size_t>(obj.arity);
-        return seed;
-    }
-};
+#include <c4/parser/block_expression.hxx>
+#include <c4/parser/expression.hxx>
+#include <c4/parser/fn_call.hxx>
+#include <c4/parser/fundamental_scalar.hxx>
+#include <c4/parser/let_expression.hxx>
+#include <c4/parser/op_call.hxx>
+#include <c4/parser/symbol.hxx>
 
 #endif

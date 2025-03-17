@@ -5,5 +5,6 @@ set(CMAKE_CXX_STANDARD 23)
 
 find_package(mio CONFIG REQUIRED)
 find_package(Boost REQUIRED spirit)
+find_package(fmt CONFIG REQUIRED)
 
 add_subdirectory(src/c4)

@@ -40,8 +40,8 @@
 #include <variant>
 #include <cstdint>
 #include <memory>
-#include <ostream>
 #include <span>
+#include <ostream>
 
 #include <c4/symbol.hxx>
 
@@ -62,6 +62,10 @@ namespace c4 {
 
     struct value {
         explicit(false)
+        value(int i)
+            : impl(static_cast<std::int64_t>(i)) { }
+
+        explicit(false)
         value(std::int64_t i64)
             : impl(i64) { }
 
@@ -74,6 +78,19 @@ namespace c4 {
             : impl(s) { }
 
         explicit(false)
+        value(std::string_view s)
+            : impl(std::string(s)) { }
+
+        explicit(false)
+        value(const char* s)
+            : impl(std::string(s)) { }
+
+        template<std::size_t N>
+        explicit(false)
+        value(const char s[N])
+            : impl(std::string(s, N)) { }
+
+        explicit(false)
         value(symbol s)
             : impl(s) { }
 
@@ -81,10 +98,10 @@ namespace c4 {
         value(std::unique_ptr<block, block_deleter>&& b);
 
         [[nodiscard]] value
-        evaluate(evaluation_stack& stk, std::span<const ast::expression*> args) const;
+        evaluate(const std::shared_ptr<evaluation_stack>& stk, std::span<const ast::expression*> args) const;
 
         [[nodiscard]] static value
-        from_block_ast(const ast::block_expression* blk_expr);
+        from_block_ast(const ast::block_expression* blk_expr, std::shared_ptr<evaluation_stack>&& stk);
 
         [[nodiscard]] static value
         nil();
@@ -92,12 +109,17 @@ namespace c4 {
         friend std::ostream&
         operator<<(std::ostream& os, const value& obj);
 
-        std::int64_t coerce_to_int() const;
+        [[nodiscard]] bool
+        truthy() const noexcept;
+
+        [[nodiscard]] std::int64_t
+        coerce_to_int() const;
 
         // double coerce_to_double() const;
-        //
-        // std::string coerce_to_string() const;
-        //
+
+        [[nodiscard]] std::string
+        coerce_to_string() const;
+
         // symbol coerce_to_symbol() const;
 
     private:

@@ -45,7 +45,7 @@
 #include <c4/parser/position_annotator.hxx>
 #include <c4/parser/symbol.hxx>
 
-#define C4_PARSER_SYMBOL_HEAD_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+#define C4_PARSER_SYMBOL_HEAD_CHARS "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_öüóőúáűéíÖÜÓŐÚÁŰÉÍ"
 #define C4_PARSER_SYMBOL_CHARS C4_PARSER_SYMBOL_HEAD_CHARS "0123456789'"
 #define C4_PARSER_OP_CHARS "-+*%&|~!?,.:^@#`<>="
 
@@ -86,7 +86,7 @@ namespace c4::parser {
 
     const auto symbol_parser_def = x3::lexeme[
         (op_symbol | symbol_name)
-        >> x3::expect['/']
+        >> '/'
         >> x3::expect[x3::uint_]];
 
     const auto bare_symbol_parser_def = symbol_name >> x3::attr(0U);

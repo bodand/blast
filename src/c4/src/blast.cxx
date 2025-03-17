@@ -37,163 +37,237 @@
 #include <iomanip>
 #include <iostream>
 
-#include <c4/ast.hxx>
+#include <fmt/format.h>
+
 #include <c4/block.hxx>
-#include <c4/evaluation_stack.hxx>
-#include <c4/parser/config.hxx>
-#include <c4/parser/expression.hxx>
-#include <c4/parser/symbol.hxx>
+#include <c4/interpreter.hxx>
 
-struct expr_printer {
-    using result_type = void;
-
-    void
-    operator()(std::monostate) const {
-        std::cout << "\n";
-    }
-
-    void
-    operator()(const c4::ast::let_expression& let) const {
-        std::cout << "(let " << let.symbol << " ";
-        boost::apply_visitor(*this, let.expression);
-        std::cout << ")\n";
-    }
-
-    void
-    operator()(const c4::ast::op_call& op) const {
-        boost::apply_visitor(*this, op.expression);
-    }
-
-    void
-    operator()(const c4::ast::fundamental_scalar& scalar) const {
-        boost::apply_visitor(*this, scalar);
-    }
-
-    void
-    operator()(const std::int64_t i) const { std::cout << i; }
-
-    void
-    operator()(const double d) const { std::cout << d; }
-
-    void
-    operator()(const std::string& s) const { std::cout << std::quoted(s); }
-
-    void
-    operator()(const c4::ast::symbol& s) const { std::cout << s; }
-
-    void
-    operator()(const c4::ast::block_expression& block) const {
-        std::cout << "(lambda ";
-        if (!block.parameters.symbols.empty()) {
-            std::cout << "[";
-            for (const auto& sym: block.parameters.symbols)
-                std::cout << sym << " ";
-            std::cout << "\b] ";
-        }
-
-        for (const auto& expr: block.exprs)
-            boost::apply_visitor(*this, expr);
-        std::cout << ")";
-    }
-
-    void
-    operator()(const c4::ast::fn_call& fn) const {
-        std::cout << "(";
-        boost::apply_visitor(*this, fn.callee);
-        std::cout << " ";
-        for (const auto& expr: fn.args) {
-            boost::apply_visitor(*this, expr);
-            std::cout << " ";
-        }
-        std::cout << "\b)";
-    }
-
-    void
-    operator()(const c4::ast::call_expr& expr) const {
-        boost::apply_visitor(*this, expr.expr);
-    }
-
-    void
-    operator()(const c4::ast::expression& expr) const {
-        boost::apply_visitor(*this, expr);
-    }
-};
-
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 int
 main() {
-    namespace c4p = ::c4::parser;
-    namespace c4a = ::c4::ast;
+#ifdef _WIN32
+    SetConsoleCP(CP_UTF8);
+    SetConsoleOutputCP(CP_UTF8);
+#endif
 
-    std::vector<c4a::expression> expressions;
+    const std::string buf = R"__(
+let else/1 \|x| x
 
-    std::string buf = R"__(
-let a/0 41
-let printinc/1 { |x| { print add 1 x } }
+print "Szöveg:"
+let x/0 readln
 
-&printinc a/0
+if str_empty x {
+    println "Nem adtál meg szöveget"
+}
+else {
+    println cat "A szöveged: " x
+}
+
+let default/1 { |x| { |val| x } }
+let case/3 { |x code next|
+    { |val|
+        if eq x val code
+        else &next/1 val
+    }
+}
+let switch/2 { |val case|
+    &case/1 val
+}
+
+let xsd/0
+    if eq 1 readln
+        let asd/0 "a"
+        let bsd/0 "b"
+
+println &xsd/0
+
+print "Szám:"
+let y/0 readln
+(println
+    (cat "Párja: "
+        (switch y
+            (case 0 10
+            (case 1 11
+            (default (add -1 y)))))))
+
+let printn/1 { |n|
+    let printn_impl/1 { |n|
+        print cat n " "
+        if eq 0 n {}
+            printn_impl add -1 n
+    }
+    printn_impl n
+    println ""
+}
+printn 24
+
+0
 )__";
 
-    auto begin = buf.cbegin();
-    const auto end = buf.cend();
 
-    using boost::spirit::x3::with;
+// print "Szöveg:"
+// let x/0 &readln/0
+//
+// if str_empty x {
+//     println "Nem adtál meg szöveget"
+// }
+// else
+//     println cat "A szöveged: " x
+//
 
-    c4p::position_cache position_cache{begin, end};
-    c4p::error_handler eh{begin, end, std::cerr, "<string>"};
-    c4a::symbol_scope global_scope;
-    const auto parser =
-            with<c4p::position_cache_tag>(std::ref(position_cache))[
-                with<c4p::error_handler_tag>(std::ref(eh))[
-                    with<c4p::symbol_scope_tag>(std::ref(global_scope))[
-                        *c4p::expression()
-                    ]]];
+//
+// let printn/1 { |n|
+//     let printn_impl/1 { |n|
+//         if eq 0 n {} {
+//             printn_impl add -1 n
+//             print cat n " "
+//         }
+//     }
+//     printn_impl n
+//     println ""
+// }
+// printn 35
+//
+// print "Szöveg:"
+// let x/0 &{
+//     let x/0 readln
+//     x
+// }/0
+//
+// if str_empty x {
+//     println "Nem adtál meg szöveget"
+// }
+// else
+//     println cat "A szöveged: " x
 
-    global_scope.define(c4a::symbol("print", 1));
-    global_scope.define(c4a::symbol("add", 2));
 
-    c4::evaluation_stack stack;
-    stack.set(c4::symbol("print", 1),
-              std::unique_ptr<c4::block, c4::block_deleter>(
-                  new c4::native_block([](auto& stack) -> c4::value {
-                      auto val = stack.value_of(c4::symbol("$0", 0));
-                      std::cout << **val << "\n";
-                      return std::move(**val);
-                  })));
-    stack.set(c4::symbol("add", 2),
-              std::unique_ptr<c4::block, c4::block_deleter>(
-                  new c4::native_block([](auto& stack) -> c4::value {
-                      auto val0 = *stack.value_of(c4::symbol("$0", 0));
-                      auto val1 = *stack.value_of(c4::symbol("$1", 0));
-                      return val0->coerce_to_int() + val1->coerce_to_int();
-                  })));
+    // if {} { print "yes" } { print "no" }
+    //
+    // let else/1 \|x| x
+    // let then/1 \|x| x
+    //
+    // if {} then { print "yes" } else { print "no" }
+
+    // let a/0 0
+    // let inc/1 { |x|
+    //     print "asd"
+    //     add 1 41
+    // }
+    //
+    // print &1/0
+    //
+    // print
+    //     if a "true0" "false0"
+    // print
+    //     if a \"true0" \"false0"
+    // print
+    //     if a then "true1" else "false1"
+    // print
+    //     if a "true2" else "false2"
+    // print
+    //     if a { "true3" } { "false3" }
+    // print
+    //     if a { "true4" } else { "false4" }
+    // print
+    //     if a
+    //     then {
+    //         "true5"
+    //     }
+    //     else {
+    //         "false5"
+    //     }
+
+    c4::interpreter interpreter;
+    interpreter.define("print", 1,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val = stack->value_of(c4::symbol("$0", 0));
+                               std::cout << **val;
+                               return std::move(**val);
+                           }))
+    );
+    interpreter.define("println", 1,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val = stack->value_of(c4::symbol("$0", 0));
+                               std::cout << **val << "\n";
+                               return std::move(**val);
+                           }))
+    );
+    interpreter.define("readln", 0,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               std::string w;
+                               std::getline(std::cin, w);
+                               return w;
+                           }))
+    );
+    interpreter.define("str_empty", 1,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val = *stack->value_of(c4::symbol("$0", 0));
+                               if (const auto str = val->coerce_to_string();
+                                   str.empty())
+                                   return 1;
+                               return c4::value::nil();
+                           }))
+    );
+    interpreter.define("add", 2,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
+                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
+                               return val0->coerce_to_int() + val1->coerce_to_int();
+                           }))
+    );
+    interpreter.define("eq", 2,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
+                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
+                               const auto eq = val0->coerce_to_int() == val1->coerce_to_int();
+                               if (eq) return eq;
+                               return c4::value::nil();
+                           }))
+    );
+    interpreter.define("cat", 2,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
+                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
+                               return val0->coerce_to_string() + val1->coerce_to_string();
+                           }))
+    );
+    interpreter.define("if", 3,
+                       std::unique_ptr<c4::block, c4::block_deleter>(
+                           new c4::native_block([](auto& stack) -> c4::value {
+                               if (auto cond = *stack->value_of(c4::symbol("$0", 0));
+                                   cond->truthy()) {
+                                   auto val0 = *stack->value_of(c4::symbol("$1", 0));
+                                   return val0->evaluate(stack, {});
+                               }
+
+                               auto val1 = *stack->value_of(c4::symbol("$2", 0));
+                               return val1->evaluate(stack, {});
+                           }))
+    );
+    // interpreter.define("else", 1,
+    //                    std::unique_ptr<c4::block, c4::block_deleter>(
+    //                        new c4::native_block([](auto& stack) -> c4::value {
+    //                            auto val0 = *stack.value_of(c4::symbol("$0", 0));
+    //                            return std::move(*val0);
+    //                        }))
+    // );
 
     try {
-        bool r = phrase_parse(begin, end,
-                              parser,
-                              boost::spirit::x3::ascii::space,
-                              expressions);
-
-        if (r && begin == end) {
-            std::cout << "-------------------------\n";
-            std::cout << "Parsing succeeded: \n";
-            std::cout << buf << "-> \n";
-            for (const auto& expr: expressions) {
-                boost::apply_visitor(expr_printer{}, expr);
-            }
-            std::cout << "\noutput: \n";
-            for (const auto& expr: expressions) {
-                expr.evaluate(stack);
-            }
-            std::cout << "\n-------------------------\n";
-        }
-        else {
-            std::cout << "-------------------------\n";
-            std::cout << "Parsing failed\n";
-            std::cout << "-------------------------\n";
-        }
+        interpreter.parse(buf);
+        return interpreter.exec();
     }
     catch (std::runtime_error& x) {
-        std::cerr << x.what() << "\n";
+        std::cerr << "fatal: " << x.what() << "\n";
     }
 }

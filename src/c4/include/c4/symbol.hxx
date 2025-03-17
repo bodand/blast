@@ -56,6 +56,14 @@ namespace c4 {
             : name{std::move(name)}
             , arity{arity} { }
 
+        symbol(const std::string_view name, const unsigned arity)
+            : name{name}
+            , arity{arity} { }
+
+        symbol(const char* str, const unsigned arity)
+            : name{str}
+            , arity{arity} { }
+
         [[nodiscard]] static symbol
         from_ast(const ast::symbol& sym);
 
