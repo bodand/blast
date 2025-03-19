@@ -53,8 +53,24 @@ macro(add_ast_elem tgt name)
                    )
 endmacro()
 
+set(C4_LEXER_REGEX_BACKEND "pcre2")
 add_executable(blast
                src/blast.cxx
+
+               include/c4/p2/lex/token_source.hxx
+               src/p2/lex/token_source.cxx
+
+               include/c4/p2/lex/tokens.hxx
+               src/p2/lex/tokens.cxx
+
+               include/c4/p2/lex/lexer.hxx
+               src/p2/lex/lexer.cxx
+
+               include/c4/p2/lex/regex_rule.hxx
+               src/p2/lex/regex_rule.${C4_LEXER_REGEX_BACKEND}.cxx
+
+               include/c4/diagnostic.hxx
+               src/diagnostic.cxx
 
                include/c4/interpreter.hxx
                src/interpreter.cxx
@@ -91,11 +107,25 @@ add_ast_elem(blast op_call)
 add_ast_elem(blast let_expression)
 
 target_link_libraries(blast PRIVATE
+                      uni-algo::uni-algo
                       Boost::spirit
                       mio::mio_min_winapi
-                      fmt::fmt)
-target_compile_definitions(blast PRIVATE SPIRIT_DEBUG)
+                      fmt::fmt
+                      PCRE2::8BIT
+                      libassert::assert)
+target_compile_options(blast PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
+target_compile_definitions(blast PRIVATE
+                           PCRE2_CODE_UNIT_WIDTH=8
+                           C4_LEXER_ASSERT_RULES)
 target_include_directories(blast
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private"
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            )
+if (WIN32)
+    add_custom_command(
+            TARGET blast POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:ZLIB::ZLIB>
+            $<TARGET_FILE_DIR:blast>
+            )
+endif ()

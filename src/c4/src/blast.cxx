@@ -38,6 +38,7 @@
 #include <iostream>
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 
 #include <c4/block.hxx>
 #include <c4/interpreter.hxx>
@@ -47,12 +48,19 @@
 #include <windows.h>
 #endif
 
+#include <c4/p2/lex/lexer.hxx>
+#include <mio/mmap.hpp>
+
 int
 main() {
 #ifdef _WIN32
     SetConsoleCP(CP_UTF8);
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
+    // std::error_code ec;
+    // auto file = mio::make_mmap_source("file.c4", 0, mio::map_entire_file, ec);
+    // std::cout << (void*)file.data() << std::endl;
 
     const std::string buf = R"__(
 let else/1 \|x| x
@@ -75,24 +83,15 @@ let case/3 { |x code next|
     }
 }
 let switch/2 { |val case|
-    &case/1 val
+    &(case)/1 val
 }
-
-let xsd/0
-    if eq 1 readln
-        let asd/0 "a"
-        let bsd/0 "b"
-
-println &xsd/0
-
-print "Szám:"
 let y/0 readln
-(println
-    (cat "Párja: "
-        (switch y
-            (case 0 10
-            (case 1 11
-            (default (add -1 y)))))))
+println
+    cat "Párja: "
+        switch y
+            case 0 10
+            case 1 11
+            default (add -1 y)
 
 let printn/1 { |n|
     let printn_impl/1 { |n|
@@ -105,44 +104,61 @@ let printn/1 { |n|
 }
 printn 24
 
+
+let xsd/0
+    if eq 1 readln
+        let asd/0 "a"
+        let bsd/0 "b"
+
+println &xsd/0
+
+let különben/1 \|x| x
 0
 )__";
+    c4::p2::lexer lexer("<string>", buf.c_str(), buf.c_str() + buf.size());
+    for (auto val = lexer.next();
+         val.has_value();
+         val = lexer.next()) {
+        std::visit([](const c4::p2::tokens::token_base& tok) {
+            fmt::print("{}\n", c4::source_diagnostic::note_for_value(fmt::format("token {:?}", tok.value()),
+                                                                     "<string>", tok.token_position(), tok.value()));
+        }, *val);
+    }
 
+    // print "Szöveg:"
+    // let x/0 &readln/0
+    //
+    // if str_empty x {
+    //     println "Nem adtál meg szöveget"
+    // }
+    // else
+    //     println cat "A szöveged: " x
+    //
 
-// print "Szöveg:"
-// let x/0 &readln/0
-//
-// if str_empty x {
-//     println "Nem adtál meg szöveget"
-// }
-// else
-//     println cat "A szöveged: " x
-//
-
-//
-// let printn/1 { |n|
-//     let printn_impl/1 { |n|
-//         if eq 0 n {} {
-//             printn_impl add -1 n
-//             print cat n " "
-//         }
-//     }
-//     printn_impl n
-//     println ""
-// }
-// printn 35
-//
-// print "Szöveg:"
-// let x/0 &{
-//     let x/0 readln
-//     x
-// }/0
-//
-// if str_empty x {
-//     println "Nem adtál meg szöveget"
-// }
-// else
-//     println cat "A szöveged: " x
+    //
+    // let printn/1 { |n|
+    //     let printn_impl/1 { |n|
+    //         if eq 0 n {} {
+    //             printn_impl add -1 n
+    //             print cat n " "
+    //         }
+    //     }
+    //     printn_impl n
+    //     println ""
+    // }
+    // printn 35
+    //
+    // print "Szöveg:"
+    // let x/0 &{
+    //     let x/0 readln
+    //     x
+    // }/0
+    //
+    // if str_empty x {
+    //     println "Nem adtál meg szöveget"
+    // }
+    // else
+    //     println cat "A szöveged: " x
 
 
     // if {} { print "yes" } { print "no" }
@@ -264,8 +280,8 @@ printn 24
     // );
 
     try {
-        interpreter.parse(buf);
-        return interpreter.exec();
+        // interpreter.parse(buf);
+        // return interpreter.exec();
     }
     catch (std::runtime_error& x) {
         std::cerr << "fatal: " << x.what() << "\n";

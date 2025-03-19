@@ -4,8 +4,12 @@
   "license": "BSD-3-Clause",
   "builtin-baseline": "edc84ff66e6262a9f7565c28eb76577aeab9c5aa",
   "dependencies": [
+    "zstd",
+    "zlib",
+    "uni-algo",
     "mio",
     "boost-spirit",
-    "fmt"
+    "fmt",
+    "pcre2"
   ]
 }
