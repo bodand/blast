@@ -64,10 +64,9 @@ main() {
 
     const auto buf = "# \0mao"s + R"__(
 # asdasd
-let asd1 print 1 << 2 >> 3
-let asd2 (1 << 2) >> 3
-let else/1 \|x| x
-let (+)/2 left prec 2 { |a b| a + b }
+let (++)/2 left 2 3
+let (^) 2
+let else/1 1
 
 let x/0 readln
 

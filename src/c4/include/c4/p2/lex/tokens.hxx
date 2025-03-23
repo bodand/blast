@@ -237,15 +237,42 @@ namespace c4::p2::tokens {
         constexpr static std::string_view token_name = "operator symbol";
         // note: keep in sync with fn_operator::regex
         constexpr static std::string_view regex = R"(\A\(([-+*/%&|~!?,.:^@#`<>=]+)\)/(\d+))";
-        constexpr static std::uint32_t group_count = 1;
+        constexpr static std::uint32_t group_count = 2;
 
-        C4P2_DEFAULT_TOKEN(operator_symbol)
+        [[nodiscard]] std::string_view
+        name() const noexcept {
+            return std::string_view{_name_begin, static_cast<std::string_view::size_type>(_name_end - _name_begin)};
+        }
+
+        [[nodiscard]] unsigned
+        arity() const noexcept { return _arity; }
+
+    private:
+        friend token_source;
+
+        operator_symbol(token_source* source,
+                        const position& position,
+                        std::string_view range,
+                        std::string_view name_range,
+                        std::string_view arity_range);
+
+        const char* _name_begin;
+        const char* _name_end;
+        unsigned _arity;
     };
 
     struct fn_operator : token_base {
         constexpr static std::string_view token_name = "fn-syntax operator";
         // note: keep in sync with operator_::regex
         constexpr static std::string_view regex = R"(\A\([-+*/%&|~!?,.:^@#`<>=]+\))";
+
+        [[nodiscard]] std::string_view
+        name() const noexcept {
+            return std::string_view{
+                _begin + 1,
+                static_cast<std::string_view::size_type>((_end - 1) - (_begin + 1))
+            };
+        }
 
         C4P2_DEFAULT_TOKEN(fn_operator)
     };
@@ -305,9 +332,11 @@ namespace c4::p2::tokens {
         whitespace, //
         comment, // #..\n
 
+        operator_symbol, // (+)/2
+        fn_operator, // (+)
+
         ampersand, // &(
         arity_marker, // )/1
-        fn_operator, // (+)
         lparen, // (
         rparen, // )
         lbrace, // {

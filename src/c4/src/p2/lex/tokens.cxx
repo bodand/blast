@@ -91,6 +91,23 @@ c4::p2::tokens::symbol::symbol(token_source* source,
     DEBUG_ASSERT(_name_begin != _name_end, "name must not be empty");
 }
 
+c4::p2::tokens::operator_symbol::operator_symbol(token_source* source,
+                                                 const position& position,
+                                                 const std::string_view range,
+                                                 const std::string_view name_range,
+                                                 const std::string_view arity_range)
+    : token_base{source, position, range}
+    , _name_begin{name_range.data()}
+    , _name_end{name_range.data() + name_range.size()}
+    , _arity{parse_number<unsigned>(arity_range)} {
+    DEBUG_ASSERT(_name_begin <= _name_end, "token name must start before it ends");
+    DEBUG_ASSERT(_begin <= _name_begin, "name must begin within the token");
+    DEBUG_ASSERT(_name_begin < _end, "name must begin within the token");
+    DEBUG_ASSERT(_name_begin <= _name_end, "name must end within the token");
+    DEBUG_ASSERT(_name_end <= _end, "name must end within the token");
+    DEBUG_ASSERT(_name_begin != _name_end, "name must not be empty");
+}
+
 #define STR_I(x) #x
 #define STR(x) STR_I(x)
 
@@ -113,6 +130,7 @@ C4P2_DEFAULT_SYMBOL_TOKEN(semicolon, ";")
 C4P2_DEFAULT_SYMBOL_TOKEN(backslash, "\\")
 C4P2_DEFAULT_SYMBOL_TOKEN(let, "let")
 
+
 c4::p2::tokens::arity_marker::arity_marker(token_source* source,
                                            const position& pos,
                                            const std::string_view range,
@@ -132,4 +150,3 @@ c4::p2::tokens::float_literal::float_literal(token_source* source,
                                              const std::string_view range)
     : token_base{source, position, range}
     , _float_value{parse_number<double>(range)} { }
-

@@ -160,6 +160,35 @@ c4::p2::parser::parse_symbol() {
     report_failure(symbol, bare_symbol);
 }
 
+c4::ast2::op_symbol
+c4::p2::parser::parse_op_symbol() {
+    const auto op = expect_token<tokens::operator_symbol>();
+    if (op) {
+        next_relevant();
+        return {
+            op->token_position(),
+            op->source_name(),
+            op->value().size(),
+            op->name(),
+            op->arity()
+        };
+    }
+
+    const auto bare_op = expect_token<tokens::fn_operator>();
+    if (bare_op) {
+        next_relevant();
+        return {
+            bare_op->token_position(),
+            bare_op->source_name(),
+            bare_op->value().size(),
+            bare_op->name(),
+            1
+        };
+    }
+
+    report_failure(op, bare_op);
+}
+
 c4::ast2::symbol
 c4::p2::parser::parse_bare_symbol() {
     const auto bare_symbol = expect_token<tokens::bare_symbol>();
@@ -206,6 +235,69 @@ c4::p2::parser::parse_let_expression() {
     // Symbol declaration happens immediately after parsing the symbol: this is
     // required to allow recursion. If symbol was declared at the end of the
     // let expression, the expression parsing after this could not refer to it
+    // this is true for normal symbols as well as operator symbols
+
+    if (expect_token<tokens::operator_symbol>()
+        || expect_token<tokens::fn_operator>()) {
+        if (const auto op = parse_op_symbol();
+            op.arity() == 1) {
+            declare_uniop(op.name());
+
+            auto expr = parse_expression();
+            return {
+                op.position(),
+                op.file_source(),
+                op.length(),
+                ast2::symbol(op.position(), op.file_source(), op.length(), op.name(), op.arity()),
+                std::move(expr)
+            };
+        }
+        else {
+            if (op.arity() == 2) {
+                auto left_assoc = true;
+                if (const auto assoc_direction = parse_bare_symbol();
+                    assoc_direction.name() == "right") {
+                    left_assoc = false;
+                }
+                else if (assoc_direction.name() != "left") {
+                    _valid = false;
+                    fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                    "expected associativity indicator (`left' or `right') found `{}'",
+                                                                    assoc_direction.name()),
+                                                                assoc_direction.file_source(),
+                                                                assoc_direction.position(),
+                                                                assoc_direction.length()));
+                }
+
+                unsigned precedence = 0;
+                if (const auto uint = parse_integer_literal();
+                    uint.value() >= 0 && uint.value() < 10) {
+                    precedence = uint.value();
+                }
+                else {
+                    _valid = false;
+                    fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                    "expected precedence (0..10) found `{}'",
+                                                                    uint.value()),
+                                                                uint.file_source(),
+                                                                uint.position(),
+                                                                uint.length()));
+                }
+                declare_binop(op.name(), precedence, !left_assoc);
+
+                auto expr = parse_expression();
+                return {
+                    op.position(),
+                    op.file_source(),
+                    op.length(),
+                    ast2::symbol(op.position(), op.file_source(), op.length(), op.name(), op.arity()),
+                    std::move(expr)
+                };
+            }
+            UNREACHABLE("operator's arity can only be 1 or 2", op);
+        }
+    }
+
     const auto symbol = parse_symbol();
     declare_symbol(symbol.name(), symbol.arity());
 
