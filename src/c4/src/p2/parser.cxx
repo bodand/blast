@@ -210,19 +210,12 @@ c4::ast2::expression
 c4::p2::parser::parse_expression() {
     const auto let = expect_token<tokens::let>();
     if (let) {
-        next_relevant();
         return ast2::expression(parse_let_expression());
     }
 
-    try {
-        auto lhs = parse_final_expression();
-        const auto op = parse_operator_precedence(std::move(lhs), 0);
-        return op;
-    }
-    catch (...) {
-        // hijack exception, and report our own failures (and throw bad_token)
-        report_failure(let);
-    }
+    auto lhs = parse_final_expression();
+    const auto op = parse_operator_precedence(std::move(lhs), 0);
+    return op;
 }
 
 c4::ast2::let_expression
@@ -318,12 +311,12 @@ c4::p2::parser::parse_final_expression() {
     if (lpar) {
         next_relevant(); // (
         const auto expr = parse_expression();
-        next_relevant(); // ) expected
-
+        // )
         if (const auto rpar = expect_token<tokens::rparen>();
             !rpar)
             report_failure(rpar);
 
+        next_relevant();
         return expr;
     }
 
@@ -357,6 +350,18 @@ c4::p2::parser::parse_final_expression() {
             sym.file_source(),
             sym.length(),
             sym
+        };
+    }
+
+    const auto lbrace = expect_token<tokens::lbrace>();
+    const auto backslash = expect_token<tokens::backslash>();
+    if (lbrace || backslash) {
+        const auto block = parse_block();
+        return {
+            block.position(),
+            block.file_source(),
+            block.length(),
+            block
         };
     }
 
@@ -401,7 +406,6 @@ c4::p2::parser::parse_final_expression() {
         const auto params = known_sym_it->arity;
         for (unsigned i = 0; i < params; ++i) {
             args.push_back(parse_expression());
-            next_relevant();
         }
 
         return ast2::expression(
@@ -414,7 +418,99 @@ c4::p2::parser::parse_final_expression() {
             ));
     }
 
-    report_failure(lpar, str, integer, symbol, prefix_op, fn_symbol);
+    const auto dyn_call_start = expect_token<tokens::ampersand>();
+    if (dyn_call_start) {
+        next_relevant();
+        auto expr = parse_expression();
+
+        const auto dyn_call_end = expect_token<tokens::arity_marker>();
+        if (!dyn_call_end) report_failure(dyn_call_end);
+        next_relevant();
+
+        std::vector<ast2::expression> args;
+        const auto params = dyn_call_end->arity();
+        for (unsigned i = 0; i < params; ++i) {
+            args.push_back(parse_expression());
+        }
+
+        return ast2::expression(
+            ast2::dynamic_call(
+                dyn_call_start->token_position(),
+                dyn_call_start->source_name(),
+                static_cast<std::size_t>(dyn_call_end->begin() - dyn_call_start->begin()),
+                std::move(expr),
+                args
+            )
+        );
+    }
+
+    report_failure(lpar, str, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
+}
+
+c4::ast2::block
+c4::p2::parser::parse_block() {
+    const auto lbrace = expect_token<tokens::lbrace>();
+    if (lbrace) {
+        next_relevant();
+        enter_scope();
+
+        std::optional<ast2::block_args> args{};
+        if (const auto args_pipe = expect_token<tokens::pipe>()) args = parse_block_args();
+
+        std::vector<ast2::expression> expressions;
+        auto next = expect_token<tokens::rbrace>();
+        while (!next) {
+            expressions.push_back(parse_expression());
+            next = expect_token<tokens::rbrace>();
+        }
+        next_relevant();
+
+        leave_scope();
+        if (args)
+            return {
+                lbrace->token_position(),
+                lbrace->source_name(),
+                static_cast<std::size_t>(next->begin() - lbrace->begin()),
+                std::move(*args),
+                expressions
+            };
+        return {
+            lbrace->token_position(),
+            lbrace->source_name(),
+            static_cast<std::size_t>(next->begin() - lbrace->begin()),
+            expressions
+        };
+    }
+
+    const auto bslash = expect_token<tokens::backslash>();
+    if (bslash) {
+        next_relevant();
+        enter_scope();
+
+        std::optional<ast2::block_args> args{};
+        if (const auto args_pipe = expect_token<tokens::pipe>()) args = parse_block_args();
+
+        auto expr = parse_expression();
+        const auto next = std::visit([](const auto& x) { return x.begin(); }, *_current);
+
+        leave_scope();
+        if (args)
+            return {
+                bslash->token_position(),
+                bslash->source_name(),
+                static_cast<std::size_t>(next - bslash->begin()),
+                std::move(*args),
+                std::span(&expr, 1)
+            };
+        return {
+            bslash->token_position(),
+            bslash->source_name(),
+            static_cast<std::size_t>(next - bslash->begin()),
+            std::span(&expr, 1)
+        };
+    }
+
+    report_failure(lbrace, bslash);
 }
 
 c4::ast2::expression
@@ -599,6 +695,42 @@ c4::p2::parser::find_operator(const std::string_view name) {
 c4::p2::parser::prefix_operator_symbol*
 c4::p2::parser::find_prefix_operator(const std::string_view name) {
     return find_any_operator(std::span(_scope_prefix_operators), name);
+}
+
+c4::ast2::block_args
+c4::p2::parser::parse_block_args() {
+    std::vector<ast2::symbol> args{};
+
+    const auto lead = expect_token<tokens::pipe>();
+    if (!lead) report_failure(lead);
+    next_relevant();
+
+    auto sym = expect_token<tokens::bare_symbol>();
+    while (sym) {
+        args.push_back(parse_bare_symbol());
+        declare_symbol(args.back().name(), args.back().arity());
+        sym = expect_token<tokens::bare_symbol>();
+    }
+
+    const auto tail = expect_token<tokens::pipe>();
+    if (!tail) report_failure(tail);
+    next_relevant();
+
+    return {
+        lead->token_position(),
+        lead->source_name(),
+        static_cast<std::size_t>(tail->begin() - lead->begin()),
+        std::span(args)
+    };
+}
+
+std::vector<c4::ast2::expression>
+c4::p2::parser::parse_script() {
+    std::vector<ast2::expression> expressions{};
+    for (;;) {
+        if (!_current) return expressions;
+        expressions.push_back(parse_expression());
+    }
 }
 
 void

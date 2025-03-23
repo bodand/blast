@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,57 +30,42 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/expression --
+ * src/c4/include/c4/ast2/dynamic_call --
  *   
  */
-#ifndef C4_AST2_EXPRESSION_HXX
-#define C4_AST2_EXPRESSION_HXX
+#ifndef C4_AST2_DYNAMIC_CALL_HXX
+#define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <utility>
-#include <variant>
-
-#include <c4/ast2/block.hxx>
-#include <c4/ast2/float_literal.hxx>
-#include <c4/ast2/fn_call.hxx>
-#include <c4/ast2/op_call.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/symbol.hxx>
-#include <c4/ast2/dynamic_call.hxx>
+#include <vector>
+#include <span>
 
 #include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
+#include <c4/ast2/expression_deleter.hxx>
+
 namespace c4::ast2 {
-    struct expression final : tags::clonable
-                              , tags::source_positioned {
-        using value_type = std::variant<
-            float_literal,
-            integer_literal,
-            string_literal,
-            let_expression,
-            symbol,
-            fn_call,
-            dynamic_call,
-            binary_op_call,
-            unary_op_call,
-            block
-        >;
+    struct dynamic_call final : tags::clonable
+                                , tags::source_positioned {
+        dynamic_call(const c4::position& position,
+                     std::string_view file_source,
+                     std::size_t length,
+                     expression&& callee,
+                     std::span<expression> args);
 
-        explicit
-        expression(value_type value);
+        dynamic_call(const dynamic_call& cp);
 
-        expression(const c4::position& position,
-                   std::string_view file_source,
-                   std::size_t length,
-                   value_type value);
+        dynamic_call&
+        operator=(const dynamic_call& cp);
 
-        [[nodiscard]] const value_type&
-        value() const { return _value; }
+        dynamic_call(dynamic_call&& other) noexcept = default;
+
+        dynamic_call&
+        operator=(dynamic_call&& other) noexcept = default;
 
     private:
-        value_type _value;
+        expression_ptr _callee;
+        std::vector<expression> args;
     };
 }
 

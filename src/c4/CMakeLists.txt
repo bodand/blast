@@ -101,6 +101,10 @@ add_library(c4
             src/ast2/expression_deleter.cxx
             include/c4/ast2/op_call.hxx
             src/ast2/op_call.cxx
+            include/c4/ast2/block.hxx
+            src/ast2/block.cxx
+            include/c4/ast2/dynamic_call.hxx
+            src/ast2/dynamic_call.cxx
             )
 
 

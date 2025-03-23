@@ -111,6 +111,15 @@ namespace c4::p2 {
         ast2::expression
         parse_final_expression();
 
+        ast2::block
+        parse_block();
+
+        ast2::block_args
+        parse_block_args();
+
+        std::vector<ast2::expression>
+        parse_script();
+
         void
         declare_symbol(std::string_view symbol, unsigned arity);
 
@@ -173,11 +182,11 @@ namespace c4::p2 {
             std::string_view name;
         };
 
-        c4::p2::parser::prefix_operator_symbol
-        & ensure_valid_prefix_operator(const tokens::operator_& sym);
+        prefix_operator_symbol&
+        ensure_valid_prefix_operator(const tokens::operator_& sym);
 
-        operator_symbol
-        & ensure_valid_operator(const tokens::operator_& sym);
+        operator_symbol&
+        ensure_valid_operator(const tokens::operator_& sym);
 
         operator_symbol*
         find_operator(std::string_view name);

@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,57 +30,53 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/expression --
+ * src/c4/include/c4/ast2/block --
  *   
  */
-#ifndef C4_AST2_EXPRESSION_HXX
-#define C4_AST2_EXPRESSION_HXX
-
-#include <utility>
-#include <variant>
-
-#include <c4/ast2/block.hxx>
-#include <c4/ast2/float_literal.hxx>
-#include <c4/ast2/fn_call.hxx>
-#include <c4/ast2/op_call.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/symbol.hxx>
-#include <c4/ast2/dynamic_call.hxx>
+#ifndef C4_AST2_BLOCK_HXX
+#define C4_AST2_BLOCK_HXX
 
 #include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
+#include <c4/ast2/expression_deleter.hxx>
+#include <c4/ast2/symbol.hxx>
+
+#include <span>
+#include <optional>
+#include <vector>
+
 namespace c4::ast2 {
-    struct expression final : tags::clonable
-                              , tags::source_positioned {
-        using value_type = std::variant<
-            float_literal,
-            integer_literal,
-            string_literal,
-            let_expression,
-            symbol,
-            fn_call,
-            dynamic_call,
-            binary_op_call,
-            unary_op_call,
-            block
-        >;
-
-        explicit
-        expression(value_type value);
-
-        expression(const c4::position& position,
+    struct block_args : tags::clonable
+                        , tags::source_positioned {
+        block_args(const c4::position& position,
                    std::string_view file_source,
                    std::size_t length,
-                   value_type value);
+                   std::span<symbol> args);
 
-        [[nodiscard]] const value_type&
-        value() const { return _value; }
+        [[nodiscard]] std::span<const symbol>
+        args() const { return {_args}; }
 
     private:
-        value_type _value;
+        std::vector<symbol> _args{};
+    };
+
+    struct block final : tags::clonable
+                         , tags::source_positioned {
+        block(const c4::position& position,
+              std::string_view file_source,
+              std::size_t length,
+              block_args&& args,
+              std::span<expression> expressions);
+
+        block(const c4::position& position,
+              std::string_view file_source,
+              std::size_t length,
+              std::span<expression> expressions);
+
+    private:
+        std::optional<block_args> _args{};
+        std::vector<expression> _expressions;
     };
 }
 

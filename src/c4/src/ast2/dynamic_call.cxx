@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,58 +30,33 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/expression --
+ * src/c4/src/ast2/dynamic_call --
  *   
  */
-#ifndef C4_AST2_EXPRESSION_HXX
-#define C4_AST2_EXPRESSION_HXX
 
-#include <utility>
-#include <variant>
-
-#include <c4/ast2/block.hxx>
-#include <c4/ast2/float_literal.hxx>
-#include <c4/ast2/fn_call.hxx>
-#include <c4/ast2/op_call.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/symbol.hxx>
+#include <c4/ast2/expression.hxx>
 #include <c4/ast2/dynamic_call.hxx>
+#include <libassert/assert.hpp>
 
-#include <c4/ast2/tags/clonable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
+c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
+                                     const std::string_view file_source,
+                                     const std::size_t length,
+                                     expression&& callee,
+                                     std::span<expression> args)
+    : source_positioned{position, file_source, length}
+    , _callee{new expression(std::move(callee))}
+    , args{args.begin(), args.end()} { }
 
-namespace c4::ast2 {
-    struct expression final : tags::clonable
-                              , tags::source_positioned {
-        using value_type = std::variant<
-            float_literal,
-            integer_literal,
-            string_literal,
-            let_expression,
-            symbol,
-            fn_call,
-            dynamic_call,
-            binary_op_call,
-            unary_op_call,
-            block
-        >;
+c4::ast2::dynamic_call::dynamic_call(const dynamic_call& cp)
+    : source_positioned(cp)
+    , _callee(cp._callee->clone().release())
+    , args(cp.args) { }
 
-        explicit
-        expression(value_type value);
-
-        expression(const c4::position& position,
-                   std::string_view file_source,
-                   std::size_t length,
-                   value_type value);
-
-        [[nodiscard]] const value_type&
-        value() const { return _value; }
-
-    private:
-        value_type _value;
-    };
+c4::ast2::dynamic_call&
+c4::ast2::dynamic_call::operator=(const dynamic_call& cp) {
+    DEBUG_ASSERT(&cp != this, "self-assignment is undefined");
+    source_positioned::operator=(cp);
+    _callee = expression_ptr(cp._callee->clone().release());
+    args = cp.args;
+    return *this;
 }
-
-#endif

@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,58 +30,33 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/expression --
+ * src/c4/src/ast2/block --
  *   
  */
-#ifndef C4_AST2_EXPRESSION_HXX
-#define C4_AST2_EXPRESSION_HXX
-
-#include <utility>
-#include <variant>
 
 #include <c4/ast2/block.hxx>
-#include <c4/ast2/float_literal.hxx>
-#include <c4/ast2/fn_call.hxx>
-#include <c4/ast2/op_call.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/symbol.hxx>
-#include <c4/ast2/dynamic_call.hxx>
+#include <c4/ast2/expression.hxx>
 
-#include <c4/ast2/tags/clonable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
 
-namespace c4::ast2 {
-    struct expression final : tags::clonable
-                              , tags::source_positioned {
-        using value_type = std::variant<
-            float_literal,
-            integer_literal,
-            string_literal,
-            let_expression,
-            symbol,
-            fn_call,
-            dynamic_call,
-            binary_op_call,
-            unary_op_call,
-            block
-        >;
+c4::ast2::block_args::block_args(const c4::position& position,
+                                 const std::string_view file_source,
+                                 const std::size_t length,
+                                 const std::span<symbol> args)
+    : source_positioned{position, file_source, length}
+    , _args{args.begin(), args.end()} { }
 
-        explicit
-        expression(value_type value);
+c4::ast2::block::block(const c4::position& position,
+                       const std::string_view file_source,
+                       const std::size_t length,
+                       block_args&& args,
+                       const std::span<expression> expressions)
+    : source_positioned{position, file_source, length}
+    , _args(std::move(args))
+    , _expressions{expressions.begin(), expressions.end()} { }
 
-        expression(const c4::position& position,
-                   std::string_view file_source,
-                   std::size_t length,
-                   value_type value);
-
-        [[nodiscard]] const value_type&
-        value() const { return _value; }
-
-    private:
-        value_type _value;
-    };
-}
-
-#endif
+c4::ast2::block::block(const c4::position& position,
+                       const std::string_view file_source,
+                       const std::size_t length,
+                       const std::span<expression> expressions)
+    : source_positioned{position, file_source, length}
+    , _expressions{expressions.begin(), expressions.end()} { }
