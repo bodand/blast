@@ -30,38 +30,29 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4/include/c4/ast2/string_literal --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_STRING_LITERAL_HXX
+#define C4_AST2_STRING_LITERAL_HXX
 
-#include <filesystem>
-#include <utility>
+#include <string_view>
+#include <c4/ast2/tags/source_positioned.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+namespace c4::ast2 {
+    struct string_literal final : tags::source_positioned {
+        string_literal(const c4::position& position,
+                       const std::string_view file_source,
+                       const std::size_t length,
+                       const std::string_view value)
+            : source_positioned{position, file_source, length}
+            , _value{value} { }
 
         [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
-
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        value() const { return _value; }
 
     private:
-        const std::string _file_string{};
+        std::string_view _value;
     };
 }
 

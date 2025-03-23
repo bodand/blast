@@ -23,7 +23,7 @@ expression ::= let-expr
 
 let-expr ::= 'let' let-name expression
 let-name ::= symbol
-           | fn-call
+           | op-symbol ('left' | 'right') 'prec' UINTEGER
 
 fn-call ::= callable expression*
 

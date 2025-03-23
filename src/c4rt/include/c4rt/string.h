@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,68 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
- *   
+ * src/c4rt/include/c4rt/string --
+ *   The C4 runtime's string related functionality.
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4RT_STRING_H
+#define C4RT_STRING_H
 
-#include <filesystem>
-#include <utility>
+#include <c4rt/api.h>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+typedef struct c4rt_string_pool_* c4rt_string_pool;
+typedef const char* c4rt_string;
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+/**
+ * Copies a C-string into a newly allocated RT-string.
+ */
+C4RT_API c4rt_string
+c4rt_str_from_cstring(c4rt_string_pool pool, const char* cstr);
 
-        token_source()
-            : file(std::filesystem::path{}) { }
+/**
+ * Copies an RT-string into a newly allocated RT-string.
+ */
+C4RT_API c4rt_string
+c4rt_str_copy(c4rt_string_pool pool, c4rt_string rtstr);
 
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
+/**
+ * Returns a dynamically allocated C-string from a given RT-string.
+ * Needs to be deallocated using free(3).
+ */
+C4RT_API char*
+c4rt_str_cstr(c4rt_string rtstr);
 
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+/**
+ * Returns the length in bytes of the given string. This is an O(1) operation
+ * not O(n) like strlen(3).
+ * Note that UTF-8 sequences could skew this value from the real "rendered"
+ * character length.
+ */
+C4RT_API size_t
+c4rt_str_length(c4rt_string rtstr);
 
-    private:
-        const std::string _file_string{};
-    };
-}
+/**
+ * Releases a handle on an RT-string.
+ */
+C4RT_API void
+c4rt_str_dealloc(c4rt_string rtstr);
+
+/**
+ * Allocates a string-pool to manage strings with in C4RT.
+ */
+C4RT_API c4rt_string_pool
+c4rt_pool_allocate();
+
+/**
+ * Deallocates a string-pool. All RT-strings within this pool immediately
+ * become dangling.
+ */
+C4RT_API void
+c4rt_pool_deallocate(c4rt_string_pool pool);
+
+/**
+ * Checks if deallocating this pool would produce zombie RT-strings.
+ */
+C4RT_API bool
+c4rt_pool_has_residents(c4rt_string_pool pool);
 
 #endif

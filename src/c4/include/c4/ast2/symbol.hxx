@@ -30,38 +30,57 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
- *   
+ * src/c4/include/c4/ast2/symbol --
+ *   Either a bare-symbol (sym) or an elaborated symbol (sym/1) are stored here.
+ *   The latter can stand by itself in a lot of spaces, but the former is mostly
+ *   present as elements of let-expressions or fn-calls.
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_SYMBOL_HXX
+#define C4_AST2_SYMBOL_HXX
 
-#include <filesystem>
-#include <utility>
+#include <string>
+#include <cmath>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/source_positioned.hxx>
+
+namespace c4::ast2 {
+    struct symbol final : tags::clonable
+                          , tags::source_positioned {
+        symbol(const c4::position& position,
+               std::string_view file_source,
+               std::size_t length,
+               std::string_view name,
+               unsigned arity);
 
         [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+        name() const noexcept { return _name; }
 
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        [[nodiscard]] unsigned
+        arity() const noexcept { return _arity; }
 
     private:
-        const std::string _file_string{};
+        std::string_view _name;
+        unsigned _arity;
+    };
+
+    struct op_symbol final : tags::clonable
+                             , tags::source_positioned {
+        op_symbol(const c4::position& position,
+                  std::string_view file_source,
+                  std::size_t length,
+                  std::string_view name,
+                  unsigned arity);
+
+        [[nodiscard]] std::string_view
+        name() const noexcept { return _name; }
+
+        [[nodiscard]] unsigned
+        arity() const noexcept { return _arity; }
+
+    private:
+        std::string_view _name;
+        unsigned _arity;
     };
 }
 

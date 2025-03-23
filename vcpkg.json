@@ -8,8 +8,8 @@
     "zlib",
     "uni-algo",
     "mio",
-    "boost-spirit",
     "fmt",
-    "pcre2"
+    "pcre2",
+    "catch2"
   ]
 }

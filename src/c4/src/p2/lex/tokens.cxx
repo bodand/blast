@@ -44,18 +44,18 @@
 
 #include <libassert/assert.hpp>
 
-std::string
+std::string_view
 c4::p2::tokens::token_base::source_name() const noexcept {
-    return _source->file.string();
+    return _source->file_string();
 }
 
 c4::p2::tokens::token_base::token_base(token_source* source,
                                        const position& position,
                                        const std::string_view range)
-    : _source(source)
-    , _position(position)
+    : _position(position)
     , _begin(range.data())
-    , _end(range.data() + range.size()) {
+    , _end(range.data() + range.size())
+    , _source(source) {
     DEBUG_ASSERT(source != nullptr, "source cannot be specified as null");
     DEBUG_ASSERT(_begin <= _end, "token must start before it ends");
     DEBUG_ASSERT(_begin != _end, "token must not be empty");
@@ -107,7 +107,7 @@ C4P2_DEFAULT_SYMBOL_TOKEN(lbrace, "{")
 C4P2_DEFAULT_SYMBOL_TOKEN(rbrace, "}")
 C4P2_DEFAULT_SYMBOL_TOKEN(lparen, "(")
 C4P2_DEFAULT_SYMBOL_TOKEN(rparen, ")")
-C4P2_DEFAULT_SYMBOL_TOKEN(arrow, "->")
+C4P2_DEFAULT_SYMBOL_TOKEN(pipe, "|")
 C4P2_DEFAULT_SYMBOL_TOKEN(ampersand, "&(")
 C4P2_DEFAULT_SYMBOL_TOKEN(semicolon, ";")
 C4P2_DEFAULT_SYMBOL_TOKEN(backslash, "\\")

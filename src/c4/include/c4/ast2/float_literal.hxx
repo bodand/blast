@@ -30,38 +30,32 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4/include/c4/ast2/float_literal --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_FLOAT_LITERAL_HXX
+#define C4_AST2_FLOAT_LITERAL_HXX
 
-#include <filesystem>
-#include <utility>
+#include <string_view>
+#include <c4/ast2/tags/clonable.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <c4/ast2/tags/source_positioned.hxx>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+namespace c4::ast2 {
+    struct float_literal final : tags::clonable
+                           , tags::source_positioned {
+        float_literal(const c4::position& position,
+                      const std::string_view file_source,
+                      const std::size_t length,
+                      const double value)
+            : source_positioned{position, file_source, length}
+            , _value{value} { }
 
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        [[nodiscard]] double
+        value() const { return _value; }
 
     private:
-        const std::string _file_string{};
+        double _value;
     };
 }
 

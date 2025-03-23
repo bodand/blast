@@ -30,38 +30,43 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
- *   
+ * src/c4/include/c4/ast2/tags/source_positioned --
+ *   AST elements can be tagged with source_positioned to allow associating
+ *   them with their locations in the code.
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_TAGS_SOURCE_POSITIONED_HXX
+#define C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 
-#include <filesystem>
-#include <utility>
+#include <c4/diagnostic.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+namespace c4::ast2::tags {
+    struct source_positioned {
+
+
+        [[nodiscard]] position
+        position() const { return _position; }
+
+        [[nodiscard]] std::size_t
+        length() const { return _length; }
+
+        void
+        length(const std::size_t length) { _length = length; }
 
         [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+        file_source() const { return _file_source; }
 
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+    protected:
+        source_positioned(const struct position& position,
+                          const std::string_view file_source,
+                          const std::size_t length = 0)
+            : _file_source{file_source}
+            , _position{position}
+            , _length{length} { }
 
     private:
-        const std::string _file_string{};
+        std::string_view _file_source;
+        struct position _position;
+        std::size_t _length;
     };
 }
 

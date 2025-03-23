@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,38 +30,39 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4rt/private/c4rt-impl/string_pool --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4RT_STRING_POOL_HXX
+#define C4RT_STRING_POOL_HXX
 
-#include <filesystem>
-#include <utility>
+#include <bit>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
-
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
-
-        token_source()
-            : file(std::filesystem::path{}) { }
-
+namespace c4rt {
+    struct pooled_string {
         explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        pooled_string(const char* string_ptr)
+            : _ref_count{std::bit_cast<std::uint16_t*>(string_ptr - sizeof()
+                )}
+            , _length{std::bit_cast<std::size_t*>(string_ptr - sizeof(*_length))}
+            , _string{string_ptr} { }
 
     private:
-        const std::string _file_string{};
+        std::uint16_t* _ref_count;
+        std::size_t* _length;
+        const char* _string;
+    };
+
+    struct string_lake {
+        constexpr static auto allocated_block_size = 4096U;
+
+    private:
+        char _buffer[allocated_block_size]{};
+        string_lake* _next{};
+    };
+
+    struct string_pool {
+    private:
     };
 }
 

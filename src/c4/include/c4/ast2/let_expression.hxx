@@ -30,38 +30,56 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4/include/c4/ast2/let_expression --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_LET_EXPRESSION_HXX
+#define C4_AST2_LET_EXPRESSION_HXX
 
-#include <filesystem>
+#include <c4/ast2/symbol.hxx>
+#include <c4/ast2/expression_deleter.hxx>
+#include <c4/ast2/tags/source_positioned.hxx>
+
+#include <memory>
 #include <utility>
+#include <c4/ast2/tags/clonable.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+namespace c4::ast2 {
+    struct expression;
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+    struct let_expression final : tags::clonable
+                                  , tags::source_positioned {
+        let_expression(const c4::position& position,
+                       std::string_view file_source,
+                       std::size_t length,
+                       symbol symbol,
+                       expression&& expr);
 
-        token_source()
-            : file(std::filesystem::path{}) { }
+        let_expression(const let_expression& cp);
 
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
+        let_expression&
+        operator=(const let_expression& cp);
 
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        let_expression(let_expression&&) noexcept = default;
+
+        let_expression&
+        operator=(let_expression&&) noexcept = default;
+
+        [[nodiscard]] symbol
+        symbol() const { return _symbol; }
+
+        [[nodiscard]] const expression&
+        value() const;
 
     private:
-        const std::string _file_string{};
+        let_expression(const c4::position& position,
+                       std::string_view file_source,
+                       std::size_t length,
+                       struct symbol symbol,
+                       expression_ptr&& expr);
+
+        struct symbol _symbol;
+        expression_ptr _value;
     };
 }
 

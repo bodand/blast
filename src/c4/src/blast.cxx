@@ -40,16 +40,16 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
-#include <c4/block.hxx>
-#include <c4/interpreter.hxx>
-
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
 #endif
 
+#include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
 #include <mio/mmap.hpp>
+
+using namespace std::literals;
 
 int
 main() {
@@ -62,10 +62,13 @@ main() {
     // auto file = mio::make_mmap_source("file.c4", 0, mio::map_entire_file, ec);
     // std::cout << (void*)file.data() << std::endl;
 
-    const std::string buf = R"__(
+    const auto buf = "# \0mao"s + R"__(
+# asdasd
+let asd1 print 1 << 2 >> 3
+let asd2 (1 << 2) >> 3
 let else/1 \|x| x
+let (+)/2 left prec 2 { |a b| a + b }
 
-print "Szöveg:"
 let x/0 readln
 
 if str_empty x {
@@ -78,8 +81,8 @@ else {
 let default/1 { |x| { |val| x } }
 let case/3 { |x code next|
     { |val|
-        if eq x val code
-        else &next/1 val
+        if x == val code
+        else &(next)/1 val
     }
 }
 let switch/2 { |val case|
@@ -104,7 +107,6 @@ let printn/1 { |n|
 }
 printn 24
 
-
 let xsd/0
     if eq 1 readln
         let asd/0 "a"
@@ -116,13 +118,26 @@ let különben/1 \|x| x
 0
 )__";
     c4::p2::lexer lexer("<string>", buf.c_str(), buf.c_str() + buf.size());
-    for (auto val = lexer.next();
-         val.has_value();
-         val = lexer.next()) {
-        std::visit([](const c4::p2::tokens::token_base& tok) {
-            fmt::print("{}\n", c4::source_diagnostic::note_for_value(fmt::format("token {:?}", tok.value()),
-                                                                     "<string>", tok.token_position(), tok.value()));
-        }, *val);
+    c4::p2::parser parser(std::move(lexer));
+
+    parser.declare_binop("+", 4, false);
+    parser.declare_binop("-", 4, false);
+    parser.declare_binop("*", 5, false);
+    parser.declare_binop("/", 5, false);
+    parser.declare_binop("^", 5, true);
+
+    parser.declare_binop("<<", 6, false);
+    parser.declare_binop(">>", 5, true);
+
+    parser.declare_uniop("~");
+    parser.declare_symbol("print", 1);
+    try {
+        const auto exp = parser.parse_let_expression();
+
+        if (!parser.valid()) return 1;
+    }
+    catch (c4::p2::bad_token_error const&) {
+        return 1;
     }
 
     // print "Szöveg:"
@@ -196,94 +211,4 @@ let különben/1 \|x| x
     //     else {
     //         "false5"
     //     }
-
-    c4::interpreter interpreter;
-    interpreter.define("print", 1,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val = stack->value_of(c4::symbol("$0", 0));
-                               std::cout << **val;
-                               return std::move(**val);
-                           }))
-    );
-    interpreter.define("println", 1,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val = stack->value_of(c4::symbol("$0", 0));
-                               std::cout << **val << "\n";
-                               return std::move(**val);
-                           }))
-    );
-    interpreter.define("readln", 0,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               std::string w;
-                               std::getline(std::cin, w);
-                               return w;
-                           }))
-    );
-    interpreter.define("str_empty", 1,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val = *stack->value_of(c4::symbol("$0", 0));
-                               if (const auto str = val->coerce_to_string();
-                                   str.empty())
-                                   return 1;
-                               return c4::value::nil();
-                           }))
-    );
-    interpreter.define("add", 2,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
-                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
-                               return val0->coerce_to_int() + val1->coerce_to_int();
-                           }))
-    );
-    interpreter.define("eq", 2,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
-                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
-                               const auto eq = val0->coerce_to_int() == val1->coerce_to_int();
-                               if (eq) return eq;
-                               return c4::value::nil();
-                           }))
-    );
-    interpreter.define("cat", 2,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               auto val0 = *stack->value_of(c4::symbol("$0", 0));
-                               auto val1 = *stack->value_of(c4::symbol("$1", 0));
-                               return val0->coerce_to_string() + val1->coerce_to_string();
-                           }))
-    );
-    interpreter.define("if", 3,
-                       std::unique_ptr<c4::block, c4::block_deleter>(
-                           new c4::native_block([](auto& stack) -> c4::value {
-                               if (auto cond = *stack->value_of(c4::symbol("$0", 0));
-                                   cond->truthy()) {
-                                   auto val0 = *stack->value_of(c4::symbol("$1", 0));
-                                   return val0->evaluate(stack, {});
-                               }
-
-                               auto val1 = *stack->value_of(c4::symbol("$2", 0));
-                               return val1->evaluate(stack, {});
-                           }))
-    );
-    // interpreter.define("else", 1,
-    //                    std::unique_ptr<c4::block, c4::block_deleter>(
-    //                        new c4::native_block([](auto& stack) -> c4::value {
-    //                            auto val0 = *stack.value_of(c4::symbol("$0", 0));
-    //                            return std::move(*val0);
-    //                        }))
-    // );
-
-    try {
-        // interpreter.parse(buf);
-        // return interpreter.exec();
-    }
-    catch (std::runtime_error& x) {
-        std::cerr << "fatal: " << x.what() << "\n";
-    }
 }

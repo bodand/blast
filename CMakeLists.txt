@@ -1,21 +1,153 @@
 cmake_minimum_required(VERSION 3.30)
-project(demo)
+
+if (CMAKE_VERSION VERSION_LESS 4.0)
+    cmake_policy(SET CMP0065 NEW) # disable automatic dynamic exports for exes
+endif ()
+
+cmake_policy(SET CMP0048 NEW) # project() sets PROJECT_VERSION
+cmake_policy(SET CMP0077 NEW) # option() doesn't break local variables
+cmake_policy(SET CMP0092 NEW) # don't special-case MSVC warning flags
+cmake_policy(SET CMP0096 NEW) # don't drop leading zero from versions
+cmake_policy(SET CMP0110 NEW) # add_test support names with whitespace
+cmake_policy(SET CMP0111 NEW) # imported targets require a location
+cmake_policy(SET CMP0115 NEW) # require explicit extensions for source file
+cmake_policy(SET CMP0118 NEW) # GENERATED property is globally readable
+cmake_policy(SET CMP0125 NEW) # find_* read local variables
+cmake_policy(SET CMP0127 NEW) # cmake_dependent_option proper syntax rules
+cmake_policy(SET CMP0135 NEW) # Fix downloaded & extracted files' timestamps
+cmake_policy(SET CMP0147 NEW) # Enable parallel MsBuild of custom targets
+cmake_policy(SET CMP0152 NEW) # resolve symlink before collapsing paths
+cmake_policy(SET CMP0156 NEW) # if linker allows it, be smarter about linking
+cmake_policy(SET CMP0167 NEW) # use new Boost finding cmake code
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+    cmake_policy(SET CMP0175 NEW) # more rigorous add_custom_command arg-parsing
+    cmake_policy(SET CMP0176 NEW) # use UTF-8 in execute process
+    cmake_policy(SET CMP0179 NEW) # when de-duping linked libs, keep first
+endif ()
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 4.0)
+    cmake_policy(SET CMP0184 NEW) # MSVC dynamic analysis flags handling
+endif ()
+
+project(blAST
+        VERSION 0.1.2
+        DESCRIPTION "Scriptable AST scanner"
+        LANGUAGES C CXX)
+
+option(BLAST_BUILD_TESTS "Build the test suite for blAST [Yes]" Yes)
+option(BLAST_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
 
 set(CMAKE_CXX_STANDARD 23)
 
+include(GNUInstallDirs)
+include(CheckCXXSymbolExists)
+include(CMakeDependentOption)
+include(InstallRequiredSystemLibraries)
+include(FetchContent)
+include(TestBigEndian)
+include(CTest)
+include(FetchContent)
+
+include(cmake/add_htmldoc.cmake)
+include(cmake/add_manpage.cmake)
+include(cmake/add_covered_test.cmake)
+include(cmake/generate_warnings.cmake)
+include(cmake/generate_lto.cmake)
+include(cmake/get_arch.cmake)
+
+get_arch(BLAST_ARCH)
+
+# coverage data
+add_library(internal-coverage INTERFACE)
+if (NOT DEFINED ENV{CG_DEPLOYMENT})
+    target_compile_options(internal-coverage INTERFACE
+                           $<$<CXX_COMPILER_ID:Clang>:-fprofile-instr-generate>
+                           $<$<CXX_COMPILER_ID:Clang>:-fcoverage-mapping>)
+    if ("x${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "xMSVC"
+        AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH vs_llvmx64_bindir)
+        cmake_path(GET vs_llvmx64_bindir PARENT_PATH vs_llvmx64_dir)
+        if (CMAKE_CXX_COMPILER_VERSION MATCHES [[^([1-9][0-9]*)\.]])
+            set(clang_profile_lib "${vs_llvmx64_dir}/lib/clang/${CMAKE_MATCH_1}/lib/windows/clang_rt.profile-${BLAST_ARCH}.lib")
+            target_link_libraries(internal-coverage INTERFACE "${clang_profile_lib}")
+        else ()
+            message(WARNING
+                    "Cannot deduce Clang Runtime location: cannot calculate the major version of the compiler is from: ${CMAKE_CXX_COMPILER_VERSION}")
+        endif ()
+    else ()
+        target_link_options(internal-coverage INTERFACE
+                            $<$<CXX_COMPILER_ID:Clang>:-fprofile-instr-generate>
+                            $<$<CXX_COMPILER_ID:Clang>:-fcoverage-mapping>)
+    endif ()
+endif ()
+
+# warnings
+add_library(internal-warnings INTERFACE)
+generate_warnings(internal-warnings)
+
+# LTO
+add_library(internal-lto INTERFACE)
+generate_lto(internal-lto)
+
+# ASan
+option(BLAST_ENABLE_SANITIZERS "Build blAST with sanitizers [No]" No)
+if (BLAST_ENABLE_SANITIZERS)
+    if (CMAKE_CXX_COMPILER_ID MATCHES [[GNU|Clang]])
+        add_compile_options(
+                $<$<PLATFORM_ID:Linux>:-fsanitize=address,undefined>
+                $<$<PLATFORM_ID:Linux>:-fno-omit-frame-pointer>
+                )
+        add_link_options(
+                $<$<PLATFORM_ID:Linux>:-fsanitize=address,undefined>
+                )
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        add_compile_options(
+                /fsanitize=address
+                /fsanitize-address-use-after-return
+                )
+#        add_link_options(
+#                clang_rt.asan_$<$<CONFIG:DEBUG>:dbg_>dynamic-${BLAST_ARCH}.lib
+#                clang_rt.asan_dynamic_runtime_thunk-${BLAST_ARCH}.lib
+#                )
+    endif ()
+endif ()
+
+# MSVC argument injection
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message(STATUS "Using MSVC: ${CMAKE_CXX_COMPILER}")
+    message(STATUS "Injecting /permissive- into cl command-line")
+    add_compile_options(/permissive-)
+    message(STATUS "Injecting /Zc:__cplusplus into cl command-line")
+    add_compile_options(/Zc:__cplusplus)
+    message(STATUS "Injecting /Zc:preprocessor into cl command-line")
+    add_compile_options(/Zc:preprocessor)
+endif ()
+if ("x${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "xMSVC"
+    AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message(STATUS "Using clang-cl: ${CMAKE_CXX_COMPILER}")
+    message(STATUS "Injecting /EHsc into clang-cl command-line")
+    add_compile_options(/EHsc)
+endif ()
+
+# dependencies
 find_package(mio CONFIG REQUIRED)
-find_package(Boost REQUIRED spirit)
-find_package(fmt CONFIG REQUIRED)
+#find_package(fmt CONFIG REQUIRED)
 find_package(pcre2 CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
 
-include(FetchContent)
-FetchContent_Declare(
-        libassert
-        GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
-        GIT_TAG        v2.1.5 # <HASH or TAG>
-        )
-FetchContent_MakeAvailable(libassert)
+# libassert is fetchcontent not vcpkg, to allow us to link with the libraries
+# we want to use more easily (zlib, zstd)
+fetchcontent_declare(fmt
+                     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+                     GIT_TAG "11.1.4"
+                     )
+fetchcontent_declare(libassert
+                     GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
+                     GIT_TAG v2.1.5)
+fetchcontent_makeavailable(fmt libassert)
 
+add_subdirectory(src/c4rt)
 add_subdirectory(src/c4)
+
+add_subdirectory(test)

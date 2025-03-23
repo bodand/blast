@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,14 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4/src/ast2/expression_deleter --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
 
-#include <filesystem>
-#include <utility>
+#include <c4/ast2/expression.hxx>
+#include <c4/ast2/expression_deleter.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
-
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
-
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
-
-    private:
-        const std::string _file_string{};
-    };
+void
+c4::ast2::expression_deleter::operator()(const expression* expr) const noexcept {
+    delete expr;
 }
-
-#endif

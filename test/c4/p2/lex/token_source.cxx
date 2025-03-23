@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,20 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * test/c4/p2/lex/token_source --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
 
-#include <filesystem>
-#include <utility>
+#include <c4/p2/lex/token_source.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <catch2/catch_test_macros.hpp>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
-
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
-
-    private:
-        const std::string _file_string{};
-    };
+TEST_CASE("empty token source has empty file_string") {
+    const c4::p2::token_source src;
+    CHECK(src.file_string().empty());
 }
 
-#endif
+TEST_CASE("token source returns given method filename for file_string") {
+    const c4::p2::token_source src("some/file.name");
+    CHECK(src.file_string() == "some/file.name");
+}

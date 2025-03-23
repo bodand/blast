@@ -61,8 +61,21 @@ namespace c4 {
         enum class diag_type {
             Note,
             Warning,
-            Error
+            Error,
+            Suggestion
         };
+
+        static source_diagnostic
+        suggestion(const std::string& diagnostic,
+                   std::string_view filename,
+                   const position& position,
+                   std::size_t highlight_length = 0);
+
+        static source_diagnostic
+        suggestion_for_value(const std::string& diagnostic,
+                             std::string_view filename,
+                             const position& position,
+                             std::string_view value);
 
         static source_diagnostic
         note(const std::string& diagnostic,
@@ -90,15 +103,15 @@ namespace c4 {
 
         static source_diagnostic
         error(const std::string& diagnostic,
-                std::string_view filename,
-                const position& position,
-                std::size_t highlight_length = 0);
+              std::string_view filename,
+              const position& position,
+              std::size_t highlight_length = 0);
 
         static source_diagnostic
         error_for_value(const std::string& diagnostic,
-                          std::string_view filename,
-                          const position& position,
-                          std::string_view value);
+                        std::string_view filename,
+                        const position& position,
+                        std::string_view value);
 
     private:
         source_diagnostic(const diag_type type,

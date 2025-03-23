@@ -30,38 +30,52 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * src/c4/include/c4/ast2/expression --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef C4_AST2_EXPRESSION_HXX
+#define C4_AST2_EXPRESSION_HXX
 
-#include <filesystem>
 #include <utility>
+#include <variant>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <c4/ast2/float_literal.hxx>
+#include <c4/ast2/fn_call.hxx>
+#include <c4/ast2/op_call.hxx>
+#include <c4/ast2/integer_literal.hxx>
+#include <c4/ast2/let_expression.hxx>
+#include <c4/ast2/string_literal.hxx>
+#include <c4/ast2/symbol.hxx>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+#include <c4/ast2/tags/source_positioned.hxx>
 
-        token_source()
-            : file(std::filesystem::path{}) { }
+namespace c4::ast2 {
+    struct expression final : tags::clonable
+                              , tags::source_positioned {
+        using value_type = std::variant<
+            float_literal,
+            integer_literal,
+            string_literal,
+            let_expression,
+            symbol,
+            fn_call,
+            binary_op_call,
+            unary_op_call
+        >;
 
         explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
+        expression(value_type value);
 
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
+        expression(const c4::position& position,
+                   std::string_view file_source,
+                   std::size_t length,
+                   value_type value);
+
+        [[nodiscard]] const value_type&
+        value() const { return _value; }
 
     private:
-        const std::string _file_string{};
+        value_type _value;
     };
 }
 

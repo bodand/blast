@@ -58,6 +58,8 @@ namespace {
             return fmt::terminal_color::yellow;
         case c4::source_diagnostic::diag_type::Error:
             return fmt::terminal_color::bright_red;
+       case c4::source_diagnostic::diag_type::Suggestion:
+            return fmt::terminal_color::green;
         }
         UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
     }
@@ -68,6 +70,7 @@ namespace {
             "note:"sv,
             "warning:"sv,
             "error:"sv,
+            "suggestion:"sv,
         };
         switch (type) {
         case c4::source_diagnostic::diag_type::Note:
@@ -76,6 +79,8 @@ namespace {
             return styled(prefixes[1], fg(color_from_type(type)));
         case c4::source_diagnostic::diag_type::Error:
             return styled(prefixes[2], fg(color_from_type(type)));
+        case c4::source_diagnostic::diag_type::Suggestion:
+            return styled(prefixes[3], fg(color_from_type(type)));
         }
         UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
     }
@@ -85,6 +90,32 @@ namespace {
         auto str_view = str | una::views::utf8;
         return std::distance(str_view.begin(), str_view.end());
     }
+}
+
+c4::source_diagnostic
+c4::source_diagnostic::suggestion(const std::string& diagnostic,
+                                  const std::string_view filename,
+                                  const position& position,
+                                  const std::size_t highlight_length) {
+    return {
+        diag_type::Suggestion,
+        diagnostic,
+        filename,
+        position,
+        highlight_length
+    };
+}
+
+c4::source_diagnostic
+c4::source_diagnostic::suggestion_for_value(const std::string& diagnostic,
+                                            const std::string_view filename,
+                                            const position& position,
+                                            std::string_view value) {
+    if (const auto newline_at = value.find('\n');
+        newline_at != std::string_view::npos) {
+        value = value.substr(0, newline_at + 1);
+    }
+    return suggestion(diagnostic, filename, position, utf8_strlen(value));
 }
 
 c4::source_diagnostic
@@ -136,7 +167,7 @@ c4::source_diagnostic::warning_for_value(const std::string& diagnostic,
         newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
-    return note(diagnostic, filename, position, utf8_strlen(value));
+    return warning(diagnostic, filename, position, utf8_strlen(value));
 }
 
 c4::source_diagnostic
@@ -162,7 +193,7 @@ c4::source_diagnostic::error_for_value(const std::string& diagnostic,
         newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
-    return note(diagnostic, filename, position, utf8_strlen(value));
+    return error(diagnostic, filename, position, utf8_strlen(value));
 }
 
 std::string

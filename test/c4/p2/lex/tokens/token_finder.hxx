@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,33 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * test/c4/p2/lex/tokens/token_finder --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
+#ifndef TOKEN_FINDER_HXX
+#define TOKEN_FINDER_HXX
 
-#include <filesystem>
-#include <utility>
+#include <catch2/catch_test_macros.hpp>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <variant>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+template<class T>
+struct token_finder {
+    const T*
+    operator()(const T& token) const noexcept { return &token; }
 
-        token_source()
-            : file(std::filesystem::path{}) { }
+    const T*
+    operator()(const auto&) const noexcept {
+        INFO("unexpected type of token returned from lexer");
+        REQUIRE(false);
+        return nullptr;
+    }
 
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
-
-    private:
-        const std::string _file_string{};
-    };
-}
+    template<class... Args>
+    auto
+    operator()(const std::variant<Args...>& var) const {
+        return std::visit(*this, var);
+    }
+};
 
 #endif

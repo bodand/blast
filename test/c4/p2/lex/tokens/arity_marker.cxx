@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,41 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
- *   
+ * test/c4/p2/lex/tokens/arity_marker --
+ *
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
 
-#include <filesystem>
-#include <utility>
+#include <c4/p2/lex/lexer.hxx>
+#include <c4/p2/lex/tokens.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <catch2/catch_test_macros.hpp>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+#include "token_finder.hxx"
 
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
-
-    private:
-        const std::string _file_string{};
-    };
+TEST_CASE("simple closing paren <ws> slash number is taken as arity_marker") {
+    constexpr std::string_view buf{") /1"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(*lexer.next());
+    CHECK(lparen != nullptr);
 }
 
-#endif
+TEST_CASE("simple closing paren slash <ws> number is taken as arity_marker") {
+    constexpr std::string_view buf{")/ 1"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(*lexer.next());
+    CHECK(lparen != nullptr);
+}
+
+TEST_CASE("paren slash number without ws is taken as arity_marker") {
+    constexpr std::string_view buf{")/1"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(*lexer.next());
+    CHECK(marker != nullptr);
+}
+
+TEST_CASE("token arity_marker has same arity as in the lexed string") {
+    constexpr std::string_view buf{")/42"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(*lexer.next());
+    CHECK(marker->arity() == 42);
+}

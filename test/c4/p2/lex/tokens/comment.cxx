@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,39 +30,34 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/p2/lex/token_source --
+ * test/c4/p2/lex/tokens/comment --
  *   
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
 
-#include <filesystem>
-#include <utility>
+#include <c4/p2/lex/lexer.hxx>
+#include <c4/p2/lex/tokens.hxx>
 
-namespace c4::p2 {
-    struct token_source {
-        const std::filesystem::path file{};
+#include <catch2/catch_test_macros.hpp>
 
-        [[nodiscard]] std::string_view
-        file_string() const { return _file_string; }
+#include "token_finder.hxx"
 
-        token_source()
-            : file(std::filesystem::path{}) { }
-
-        explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
-            , _file_string{this->file.string()} { }
-
-        template<class T, class... Args>
-        T
-        build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
-        }
-
-    private:
-        const std::string _file_string{};
-    };
+TEST_CASE("comment is lexed with newline") {
+    constexpr std::string_view buf{"#comment\ncode"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    CHECK(tok->value() == "#comment\n");
 }
 
-#endif
+TEST_CASE("empty comment is lexed with newline") {
+    constexpr std::string_view buf{"#\ncode"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    CHECK(tok->value() == "#\n");
+}
+
+TEST_CASE("comment does not lex continuous newlines") {
+    constexpr std::string_view buf{"#\n\ncode"};
+    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    CHECK(tok->value() == "#\n");
+}

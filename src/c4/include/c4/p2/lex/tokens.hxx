@@ -42,9 +42,6 @@
 #include <string_view>
 #include <variant>
 
-#include <fmt/format.h>
-#include <fmt/color.h>
-
 #include <c4/diagnostic.hxx>
 
 namespace c4::p2 {
@@ -52,26 +49,6 @@ namespace c4::p2 {
 }
 
 namespace c4::p2::tokens {
-    template<auto>
-    using void_val_t = void;
-
-    template<class, class = void>
-    struct can_match_newline : std::false_type { };
-
-    template<class Token>
-    struct can_match_newline<Token,
-                             void_val_t<Token::can_match_newline>>
-            : std::bool_constant<Token::can_match_newline> { };
-
-    template<class, class = void>
-    struct capture_groups
-            : std::integral_constant<std::uint32_t, 0 + 1> { };
-
-    template<class Token>
-    struct capture_groups<Token,
-                          void_val_t<Token::group_count>>
-            : std::integral_constant<std::uint32_t, Token::group_count + 1> { };
-
     struct token_base {
         [[nodiscard]] const char*
         begin() const noexcept { return _begin; }
@@ -87,7 +64,7 @@ namespace c4::p2::tokens {
         [[nodiscard]] position
         token_position() const noexcept { return _position; }
 
-        [[nodiscard]] std::string
+        [[nodiscard]] std::string_view
         source_name() const noexcept;
 
     protected:
@@ -95,14 +72,13 @@ namespace c4::p2::tokens {
                    const position& position,
                    std::string_view range);
 
-    private:
-        friend token_source;
-        token_source* _source;
-
-    protected:
         position _position;
         const char* _begin;
         const char* _end;
+
+    private:
+        friend token_source;
+        token_source* _source;
     };
 
 #define C4P2_DEFAULT_TOKEN(name) \
@@ -121,6 +97,7 @@ namespace c4::p2::tokens {
              const std::string_view range);
 
     struct whitespace : token_base {
+        constexpr static std::string_view token_name = "whitespace";
         constexpr static std::string_view regex = R"(\A\s+)";
         constexpr static bool can_match_newline = true;
 
@@ -128,14 +105,16 @@ namespace c4::p2::tokens {
     };
 
     struct comment : token_base {
-        constexpr static std::string_view regex = R"(\A#.+\n)";
+        constexpr static std::string_view token_name = "comment";
+        constexpr static std::string_view regex = R"(\A#[^\n]*\n)";
         constexpr static bool can_match_newline = true;
 
         C4P2_DEFAULT_TOKEN(comment)
     };
 
     struct bare_symbol : token_base {
-        constexpr static std::string_view regex = R"(\A\w+)";
+        constexpr static std::string_view token_name = "bare symbol";
+        constexpr static std::string_view regex = R"(\A\p{L}\p{Xwd}*)";
 
         [[nodiscard]] std::string_view
         name() const noexcept { return value(); }
@@ -147,6 +126,7 @@ namespace c4::p2::tokens {
     };
 
     struct symbol : token_base {
+        constexpr static std::string_view token_name = "symbol";
         constexpr static std::string_view regex = R"(\A(\p{L}\p{Xwd}*)/(\d+))";
         constexpr static std::uint32_t group_count = 2;
 
@@ -173,51 +153,61 @@ namespace c4::p2::tokens {
     };
 
     struct let : token_base {
+        constexpr static std::string_view token_name = "let";
         constexpr static std::string_view regex = R"(\Alet\b)";
         C4P2_DEFAULT_TOKEN_DECL(let)
     };
 
     struct lbrace : token_base {
+        constexpr static std::string_view token_name = "opening brace '{'";
         constexpr static std::string_view regex = R"(\A\{)";
         C4P2_DEFAULT_TOKEN_DECL(lbrace)
     };
 
     struct rbrace : token_base {
+        constexpr static std::string_view token_name = "closing brace '}'";
         constexpr static std::string_view regex = R"(\A\})";
         C4P2_DEFAULT_TOKEN_DECL(rbrace)
     };
 
     struct lparen : token_base {
+        constexpr static std::string_view token_name = "opening parenthesis '('";
         constexpr static std::string_view regex = R"(\A\()";
         C4P2_DEFAULT_TOKEN_DECL(lparen)
     };
 
     struct rparen : token_base {
+        constexpr static std::string_view token_name = "closing parenthesis ')'";
         constexpr static std::string_view regex = R"(\A\))";
         C4P2_DEFAULT_TOKEN_DECL(rparen)
     };
 
-    struct arrow : token_base {
-        constexpr static std::string_view regex = R"(\A->)";
-        C4P2_DEFAULT_TOKEN_DECL(arrow)
+    struct pipe : token_base {
+        constexpr static std::string_view token_name = "parameter marker '|'";
+        constexpr static std::string_view regex = R"(\A\|)";
+        C4P2_DEFAULT_TOKEN_DECL(pipe)
     };
 
     struct ampersand : token_base {
+        constexpr static std::string_view token_name = "indirect call opening ampersand '&('";
         constexpr static std::string_view regex = R"(\A&\()";
         C4P2_DEFAULT_TOKEN_DECL(ampersand)
     };
 
     struct semicolon : token_base {
+        constexpr static std::string_view token_name = "semicolon ';'";
         constexpr static std::string_view regex = R"(\A;)";
         C4P2_DEFAULT_TOKEN_DECL(semicolon)
     };
 
     struct backslash : token_base {
+        constexpr static std::string_view token_name = "backslash '\\'";
         constexpr static std::string_view regex = R"(\A\\)";
         C4P2_DEFAULT_TOKEN_DECL(backslash)
     };
 
     struct arity_marker : token_base {
+        constexpr static std::string_view token_name = "indirect call closing arity marker";
         constexpr static std::string_view regex = R"(\A\)/(\d+))";
         constexpr static std::uint32_t group_count = 1;
 
@@ -236,20 +226,32 @@ namespace c4::p2::tokens {
     };
 
     struct operator_ : token_base {
+        constexpr static std::string_view token_name = "operator";
         // note: keep in sync with fn_operator::regex
-        constexpr static std::string_view regex = R"(\A[-+*%&|~!?,.:^@#`<>=]+)";
+        constexpr static std::string_view regex = R"(\A[-+*/%&|~!?,.:^@#`<>=]+)";
 
         C4P2_DEFAULT_TOKEN(operator_)
     };
 
+    struct operator_symbol : token_base {
+        constexpr static std::string_view token_name = "operator symbol";
+        // note: keep in sync with fn_operator::regex
+        constexpr static std::string_view regex = R"(\A\(([-+*/%&|~!?,.:^@#`<>=]+)\)/(\d+))";
+        constexpr static std::uint32_t group_count = 1;
+
+        C4P2_DEFAULT_TOKEN(operator_symbol)
+    };
+
     struct fn_operator : token_base {
+        constexpr static std::string_view token_name = "fn-syntax operator";
         // note: keep in sync with operator_::regex
-        constexpr static std::string_view regex = R"(\A\([-+*%&|~!?,.:^@#`<>=]+\))";
+        constexpr static std::string_view regex = R"(\A\([-+*/%&|~!?,.:^@#`<>=]+\))";
 
         C4P2_DEFAULT_TOKEN(fn_operator)
     };
 
     struct string_literal : token_base {
+        constexpr static std::string_view token_name = "string literal";
         constexpr static std::string_view regex = R"(\A"[^"]*?")";
         constexpr static bool can_match_newline = true;
 
@@ -260,6 +262,7 @@ namespace c4::p2::tokens {
     };
 
     struct integer_literal : token_base {
+        constexpr static std::string_view token_name = "integer literal";
         constexpr static std::string_view regex = R"(\A[-+]?[0-9]+)";
 
         [[nodiscard]] std::int64_t
@@ -276,6 +279,7 @@ namespace c4::p2::tokens {
     };
 
     struct float_literal : token_base {
+        constexpr static std::string_view token_name = "float literal";
         constexpr static std::string_view regex = R"(\A[-+]?[0-9]+\.[0-9]+)";
 
         [[nodiscard]] double
@@ -291,6 +295,12 @@ namespace c4::p2::tokens {
         double _float_value;
     };
 
+    struct unknown : token_base {
+        constexpr static std::string_view token_name = "unknown";
+        constexpr static std::string_view regex = R"(\A\S+)";
+        C4P2_DEFAULT_TOKEN(unknown)
+    };
+
     using token_type = std::variant<
         whitespace, //
         comment, // #..\n
@@ -302,16 +312,17 @@ namespace c4::p2::tokens {
         rparen, // )
         lbrace, // {
         rbrace, // }
-        arrow, // ->
+        pipe, // |
         backslash, // \ <- space needed to not escape linebreak
         let, // let
 
-        integer_literal, // 42
         float_literal, // 12.1
+        integer_literal, // 42
         operator_, // >=>
         string_literal, // "asd"
         symbol, // sym/1
-        bare_symbol // sym
+        bare_symbol, // sym
+        unknown
     >;
 }
 

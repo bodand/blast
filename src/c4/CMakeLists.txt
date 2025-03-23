@@ -54,78 +54,94 @@ macro(add_ast_elem tgt name)
 endmacro()
 
 set(C4_LEXER_REGEX_BACKEND "pcre2")
-add_executable(blast
-               src/blast.cxx
+add_library(c4
+            include/c4/ast2/tags/source_positioned.hxx
+            src/ast2/tags/source_positioned.cxx
 
-               include/c4/p2/lex/token_source.hxx
-               src/p2/lex/token_source.cxx
+            include/c4/ast2/symbol.hxx
+            src/ast2/symbol.cxx
+            include/c4/ast2/string_literal.hxx
+            src/ast2/string_literal.cxx
+            include/c4/ast2/integer_literal.hxx
+            src/ast2/integer_literal.cxx
+            include/c4/ast2/float_literal.hxx
+            src/ast2/float_literal.cxx
 
-               include/c4/p2/lex/tokens.hxx
-               src/p2/lex/tokens.cxx
+            include/c4/p2/parser.hxx
+            src/p2/parser.cxx
 
-               include/c4/p2/lex/lexer.hxx
-               src/p2/lex/lexer.cxx
+            include/c4/p2/lex/token_source.hxx
+            src/p2/lex/token_source.cxx
 
-               include/c4/p2/lex/regex_rule.hxx
-               src/p2/lex/regex_rule.${C4_LEXER_REGEX_BACKEND}.cxx
+            include/c4/p2/lex/tokens.hxx
+            src/p2/lex/tokens.cxx
 
-               include/c4/diagnostic.hxx
-               src/diagnostic.cxx
+            include/c4/p2/lex/lexer.hxx
+            src/p2/lex/lexer.cxx
 
-               include/c4/interpreter.hxx
-               src/interpreter.cxx
+            include/c4/p2/lex/regex_rule.hxx
+            src/p2/lex/regex_rule.${C4_LEXER_REGEX_BACKEND}.cxx
 
-               include/c4/ast.hxx
-               include/c4/ast_fwd.hxx
+            include/c4/diagnostic.hxx
+            src/diagnostic.cxx
 
-               include/c4/symbol.hxx
-               src/symbol.cxx
+            src/ast2/let_expression.cxx
+            include/c4/ast2/let_expression.hxx
+            src/ast2/expression.cxx
+            include/c4/ast2/expression.hxx
+            include/c4/ast2/script.hxx
+            include/c4/ast2/fn_call.hxx
+            src/ast2/fn_call.cxx
+            src/ast2/script.cxx
+            include/c4/ast2/tags/clonable.hxx
+            src/ast2/tags/clonable.cxx
+            include/c4/p2/lex/string_rule.hxx
+            src/p2/lex/string_rule.cxx
+            include/c4/ast2/expression_deleter.hxx
+            src/ast2/expression_deleter.cxx
+            include/c4/ast2/op_call.hxx
+            src/ast2/op_call.cxx
+            )
 
-               include/c4/block.hxx
-               src/block.cxx
 
-               include/c4/evaluation_stack.hxx
-               src/evaluation_stack.cxx
-
-               include/c4/value.hxx
-               src/value.cxx
-
-               include/c4/parser/config.hxx
-               private/c4/parser/position_annotator.hxx
-               private/c4/parser/error_handler_callback.hxx
-               private/c4/parser/valid_symbol_parser.hxx
-               include/c4/ast/symbol_scope.hxx
-               src/ast/symbol_scope.cxx
-               )
-
-add_ast_elem(blast symbol)
-add_ast_elem(blast fundamental_scalar)
-add_ast_elem(blast block_expression)
-add_ast_elem(blast expression)
-add_ast_elem(blast fn_call)
-add_ast_elem(blast op_call)
-add_ast_elem(blast let_expression)
-
-target_link_libraries(blast PRIVATE
+target_link_libraries(c4 PRIVATE
                       uni-algo::uni-algo
-                      Boost::spirit
-                      mio::mio_min_winapi
-                      fmt::fmt
+                      fmt::fmt-header-only
                       PCRE2::8BIT
                       libassert::assert)
-target_compile_options(blast PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
-target_compile_definitions(blast PRIVATE
+target_compile_options(c4 PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
+target_compile_definitions(c4 PRIVATE
                            PCRE2_CODE_UNIT_WIDTH=8
                            C4_LEXER_ASSERT_RULES)
-target_include_directories(blast
+target_include_directories(c4
                            PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private"
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            )
+
+add_executable(blast src/blast.cxx)
+target_link_libraries(blast PRIVATE
+                      c4
+                      fmt::fmt-header-only
+                      mio::mio_min_winapi
+                      )
+
 if (WIN32)
     add_custom_command(
             TARGET blast POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:ZLIB::ZLIB>
+            $<TARGET_FILE_DIR:blast>
+            )
+endif ()
+if (MSVC AND BLAST_ENABLE_SANITIZERS)
+    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
+    add_custom_command(
+            TARGET blast POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
+            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
+            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
+            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
             $<TARGET_FILE_DIR:blast>
             )
 endif ()
