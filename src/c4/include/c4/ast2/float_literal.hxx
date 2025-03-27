@@ -37,13 +37,15 @@
 #define C4_AST2_FLOAT_LITERAL_HXX
 
 #include <string_view>
-#include <c4/ast2/tags/clonable.hxx>
 
+#include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
     struct float_literal final : tags::clonable
-                           , tags::source_positioned {
+                                 , tags::visitable
+                                 , tags::source_positioned {
         float_literal(const c4::position& position,
                       const std::string_view file_source,
                       const std::size_t length,

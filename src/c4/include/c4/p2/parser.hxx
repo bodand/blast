@@ -132,30 +132,21 @@ namespace c4::p2 {
         [[nodiscard]] bool
         valid() const noexcept { return _valid; }
 
+        std::vector<ast2::undef_symbol>
+        promised_symbols() const;
+
     private:
+        void
+        parse_n_expressions(unsigned n,
+                            std::vector<ast2::expression>& expressions,
+                            std::vector<ast2::symbol>& closure_symbols);
+
+        void
+        reresolve_childs_closure_symbols(const ast2::expression& expr,
+                                         std::vector<ast2::symbol>& closure_symbols);
+
         ast2::expression
         parse_operator_precedence(ast2::expression&& lhs, unsigned precedence);
-
-        bool
-        next_relevant();
-
-        void
-        enter_scope();
-
-        void
-        leave_scope();
-
-        template<class T>
-        std::expected<T, source_diagnostic>
-        expect_token() {
-            if (!_current) // todo make this make sense
-                return std::unexpected(source_diagnostic::error(
-                    fmt::format(R"(expected "{}" but found end-of-input)", T::token_name),
-                    "<unknown>",
-                    position{}
-                ));
-            return std::visit(aux::token_selector<T>{}, *_current);
-        }
 
         struct parser_symbol {
             std::string_view name;
@@ -181,6 +172,47 @@ namespace c4::p2 {
         struct prefix_operator_symbol {
             std::string_view name;
         };
+
+        struct symbol_resolution {
+            parser_symbol& symbol;
+            std::ptrdiff_t distance;
+            bool from_parent_scope;
+        };
+
+        std::optional<symbol_resolution>
+        find_scoped_symbol(const ast2::symbol& sym) {
+            const auto it = std::find(_scope_symbols.rbegin(), _scope_symbols.rend(), sym);
+            if (it == _scope_symbols.rend()) return std::nullopt;
+
+            const auto current_scope = _scope_symbol_size.back();
+            const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
+            return symbol_resolution{
+                .symbol = *it,
+                .distance = iter_difference,
+                .from_parent_scope = current_scope < iter_difference
+            };
+        }
+
+        bool
+        next_relevant();
+
+        void
+        enter_scope();
+
+        void
+        leave_scope();
+
+        template<class T>
+        std::expected<T, source_diagnostic>
+        expect_token() {
+            if (!_current) // todo make this make sense
+                return std::unexpected(source_diagnostic::error(
+                    fmt::format(R"(expected "{}" but found end-of-input)", T::token_name),
+                    "<unknown>",
+                    position{}
+                ));
+            return std::visit(aux::token_selector<T>{}, *_current);
+        }
 
         prefix_operator_symbol&
         ensure_valid_prefix_operator(const tokens::operator_& sym);

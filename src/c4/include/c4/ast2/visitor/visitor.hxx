@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,8 +30,32 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/script --
+ * src/c4/include/c4/ast2/visitor/visitor --
  *   
  */
+#ifndef C4_AST2_VISITOR_VISITOR_HXX
+#define C4_AST2_VISITOR_VISITOR_HXX
 
-#include <c4/ast2/script.hxx>
+#include <c4/ast2/visitor/visitor_base.hxx>
+
+namespace c4::ast2 {
+    template<class... Ts>
+    struct visitor : typed_visitor_base<Ts>... {
+        ~visitor() override = default;
+    protected:
+        template<class T>
+        bool
+        visit_one(const void* untyped, const visitor_aux::type_id tid) {
+            if (visitor_aux::type_id::of<T>() != tid) return false;
+            static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
+            return true;
+        }
+
+        void
+        visit_impl(const void* raw, visitor_aux::type_id tid) final {
+            (visit_one<Ts>(raw, tid) || ...);
+        }
+    };
+}
+
+#endif

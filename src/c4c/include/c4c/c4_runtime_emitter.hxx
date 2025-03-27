@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,60 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
- *   
+ * src/c4c/include/c4c/c4_runtime_emitter --
+ *   Helper to emit LLVM IR to calls into the C4 runtime.
  */
+#ifndef C4C_C4_RUNTIME_EMITTER_HXX
+#define C4C_C4_RUNTIME_EMITTER_HXX
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <llvm/IR/LLVMContext.h>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+#include <unordered_map>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Value.h>
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+namespace c4c {
+    enum class c4rt_symbol {
+        DatumFromInt32,
+        DatumFromInt64,
+        DatumFromDouble,
+        DatumFromString,
+        DatumFree,
+        DatumGetInt32,
+        DatumGetInt64,
+        DatumGetDouble,
+        DatumGetString,
+        DatumCoerceInt32,
+        DatumCoerceInt64,
+        DatumCoerceDouble,
+        DatumCoerceString,
+    };
+
+    struct c4_runtime_emitter {
+        c4_runtime_emitter(llvm::LLVMContext& context, llvm::Module& module);
+
+        c4_runtime_emitter(const c4_runtime_emitter& other) = delete;
+
+        c4_runtime_emitter(c4_runtime_emitter&& other) noexcept = delete;
+
+        c4_runtime_emitter&
+        operator=(const c4_runtime_emitter& other) = delete;
+
+        c4_runtime_emitter&
+        operator=(c4_runtime_emitter&& other) noexcept = delete;
+
+        llvm::Value*
+        emit_rt_call(c4rt_symbol sym,
+                     llvm::IRBuilder<>& builder,
+                     llvm::ArrayRef<llvm::Value*> args);
+
+        [[nodiscard]] llvm::FunctionType*
+        get_c4_funtype(unsigned arity) const;
+
+    private:
+        llvm::LLVMContext& _context;
+        std::unordered_map<c4rt_symbol, llvm::Function*> _symbol_map;
+    };
+}
+
+#endif

@@ -36,6 +36,8 @@
 #ifndef C4RT_STRING_H
 #define C4RT_STRING_H
 
+#include <stdlib.h>
+
 #include <c4rt/api.h>
 
 typedef struct c4rt_string_pool_* c4rt_string_pool;

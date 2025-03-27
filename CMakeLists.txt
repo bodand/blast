@@ -36,6 +36,9 @@ project(blAST
 
 option(BLAST_BUILD_TESTS "Build the test suite for blAST [Yes]" Yes)
 option(BLAST_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
+option(BLAST_ENABLE_SANITIZERS "Build blAST with sanitizers [No]" No)
+# Currently broken, needs more wizardry
+option(BLAST_USE_MIMALLOC "Use mimalloc memory allocator instead of malloc in libc [No]" No)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -90,7 +93,6 @@ add_library(internal-lto INTERFACE)
 generate_lto(internal-lto)
 
 # ASan
-option(BLAST_ENABLE_SANITIZERS "Build blAST with sanitizers [No]" No)
 if (BLAST_ENABLE_SANITIZERS)
     if (CMAKE_CXX_COMPILER_ID MATCHES [[GNU|Clang]])
         add_compile_options(
@@ -105,10 +107,10 @@ if (BLAST_ENABLE_SANITIZERS)
                 /fsanitize=address
                 /fsanitize-address-use-after-return
                 )
-#        add_link_options(
-#                clang_rt.asan_$<$<CONFIG:DEBUG>:dbg_>dynamic-${BLAST_ARCH}.lib
-#                clang_rt.asan_dynamic_runtime_thunk-${BLAST_ARCH}.lib
-#                )
+        #        add_link_options(
+        #                clang_rt.asan_$<$<CONFIG:DEBUG>:dbg_>dynamic-${BLAST_ARCH}.lib
+        #                clang_rt.asan_dynamic_runtime_thunk-${BLAST_ARCH}.lib
+        #                )
     endif ()
 endif ()
 
@@ -122,8 +124,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message(STATUS "Injecting /Zc:preprocessor into cl command-line")
     add_compile_options(/Zc:preprocessor)
 endif ()
-if ("x${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "xMSVC"
-    AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if ("x${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "xMSVC")
     message(STATUS "Using clang-cl: ${CMAKE_CXX_COMPILER}")
     message(STATUS "Injecting /EHsc into clang-cl command-line")
     add_compile_options(/EHsc)
@@ -131,10 +132,32 @@ endif ()
 
 # dependencies
 find_package(mio CONFIG REQUIRED)
-#find_package(fmt CONFIG REQUIRED)
 find_package(pcre2 CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
+find_package(lyra CONFIG REQUIRED)
+
+if (BLAST_USE_MIMALLOC)
+    find_package(mimalloc CONFIG REQUIRED)
+endif ()
+
+## LLVM ##
+find_package(LLVM CONFIG REQUIRED)
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+include(HandleLLVMOptions)
+
+# Find the libraries that correspond to the LLVM components that we wish to use
+llvm_map_components_to_libnames(llvm_libs Support Core Target Passes IRPrinter CodeGen CodeGenTypes BitWriter
+                                AArch64Info AArch64CodeGen
+                                RISCVInfo RISCVCodeGen
+                                SparcInfo SparcCodeGen
+                                SystemZInfo SystemZCodeGen
+                                X86Info X86CodeGen
+                                )
+add_library(c4_llvm INTERFACE)
+target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS})
+target_include_directories(c4_llvm INTERFACE ${LLVM_INCLUDE_DIRS})
+target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
 
 # libassert is fetchcontent not vcpkg, to allow us to link with the libraries
 # we want to use more easily (zlib, zstd)
@@ -149,5 +172,6 @@ fetchcontent_makeavailable(fmt libassert)
 
 add_subdirectory(src/c4rt)
 add_subdirectory(src/c4)
+add_subdirectory(src/c4c)
 
 add_subdirectory(test)

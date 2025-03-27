@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,28 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4c/include/c4c/source_file --
  *   
  */
+#ifndef C4C_SOURCE_FILE_HXX
+#define C4C_SOURCE_FILE_HXX
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <filesystem>
+#include <mio/mmap.hpp>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+namespace c4c {
+    struct source_file {
+        explicit
+        source_file(std::filesystem::path path);
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+        const char* begin() const;
+
+        const char* end() const;
+
+    private:
+        std::filesystem::path _file;
+        mio::mmap_source _mmap;
+    };
+}
+
+#endif

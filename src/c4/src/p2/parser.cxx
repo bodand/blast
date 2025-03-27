@@ -208,8 +208,7 @@ c4::p2::parser::parse_bare_symbol() {
 
 c4::ast2::expression
 c4::p2::parser::parse_expression() {
-    const auto let = expect_token<tokens::let>();
-    if (let) {
+    if (const auto let = expect_token<tokens::let>()) {
         return ast2::expression(parse_let_expression());
     }
 
@@ -381,17 +380,14 @@ c4::p2::parser::parse_final_expression() {
                 prefix_op->source_name(),
                 prefix_op->value().size() + expr.length(),
                 op_sym,
-                std::move(ast2::expression_ptr(new ast2::expression(expr)))));
+                ast2::expression_ptr(new ast2::expression(expr))));
     }
 
     const auto fn_symbol = expect_token<tokens::bare_symbol>();
     if (fn_symbol) {
-        const auto sym = parse_symbol();
-        const auto known_sym_it = std::ranges::find_if(_scope_symbols.rbegin(), _scope_symbols.rend(),
-                                                       [&sym](const auto scope_sym) {
-                                                           return scope_sym == sym;
-                                                       });
-        if (known_sym_it == _scope_symbols.rend()) {
+        auto sym = parse_symbol();
+        const auto resolved = find_scoped_symbol(sym);
+        if (!resolved) {
             fmt::print("{}\n",
                        source_diagnostic::error(
                            fmt::format("unknown symbol referenced in function call: {}", sym.name()),
@@ -401,12 +397,14 @@ c4::p2::parser::parse_final_expression() {
                        ));
             throw bad_token_error{};
         }
+        sym = sym.with_arity(resolved->symbol.arity);
+
+        std::vector<ast2::symbol> closure_symbols;
+        if (resolved->from_parent_scope) closure_symbols.push_back(sym);
 
         std::vector<ast2::expression> args;
-        const auto params = known_sym_it->arity;
-        for (unsigned i = 0; i < params; ++i) {
-            args.push_back(parse_expression());
-        }
+        const auto params = resolved->symbol.arity;
+        parse_n_expressions(params, args, closure_symbols);
 
         return ast2::expression(
             ast2::fn_call(
@@ -415,13 +413,17 @@ c4::p2::parser::parse_final_expression() {
                 sym.length(),
                 sym,
                 args
-            ));
+            ),
+            closure_symbols);
     }
 
     const auto dyn_call_start = expect_token<tokens::ampersand>();
     if (dyn_call_start) {
         next_relevant();
+
+        std::vector<ast2::symbol> closure_symbols;
         auto expr = parse_expression();
+        reresolve_childs_closure_symbols(expr, closure_symbols);
 
         const auto dyn_call_end = expect_token<tokens::arity_marker>();
         if (!dyn_call_end) report_failure(dyn_call_end);
@@ -429,9 +431,7 @@ c4::p2::parser::parse_final_expression() {
 
         std::vector<ast2::expression> args;
         const auto params = dyn_call_end->arity();
-        for (unsigned i = 0; i < params; ++i) {
-            args.push_back(parse_expression());
-        }
+        parse_n_expressions(params, args, closure_symbols);
 
         return ast2::expression(
             ast2::dynamic_call(
@@ -440,7 +440,8 @@ c4::p2::parser::parse_final_expression() {
                 static_cast<std::size_t>(dyn_call_end->begin() - dyn_call_start->begin()),
                 std::move(expr),
                 args
-            )
+            ),
+            closure_symbols
         );
     }
 
@@ -511,6 +512,38 @@ c4::p2::parser::parse_block() {
     }
 
     report_failure(lbrace, bslash);
+}
+
+
+std::vector<c4::ast2::undef_symbol>
+c4::p2::parser::promised_symbols() const {
+    std::vector<ast2::undef_symbol> undef_symbols;
+    for (const auto& scope_symbol: _scope_symbols) undef_symbols.emplace_back(scope_symbol.name, scope_symbol.arity);
+    for (const auto& scope_symbol: _scope_operators) undef_symbols.emplace_back(scope_symbol.name, 2);
+    for (const auto& [name]: _scope_prefix_operators) undef_symbols.emplace_back(name, 1);
+    return undef_symbols;
+}
+
+void
+c4::p2::parser::parse_n_expressions(const unsigned n,
+                                    std::vector<ast2::expression>& expressions,
+                                    std::vector<ast2::symbol>& closure_symbols) {
+    for (unsigned i = 0; i < n; ++i) {
+        auto expression = parse_expression();
+        reresolve_childs_closure_symbols(expression, closure_symbols);
+        expressions.emplace_back(std::move(expression));
+    }
+}
+
+void
+c4::p2::parser::reresolve_childs_closure_symbols(const ast2::expression& expr,
+                                                 std::vector<ast2::symbol>& closure_symbols) {
+    for (const auto& closure_sym: expr.closure_symbols()) {
+        const auto resolved = find_scoped_symbol(closure_sym);
+        ASSERT(resolved, "re-resolved symbol must always be found");
+
+        if (resolved->from_parent_scope) closure_symbols.push_back(closure_sym);
+    }
 }
 
 c4::ast2::expression

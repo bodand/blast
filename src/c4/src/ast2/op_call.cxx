@@ -75,6 +75,12 @@ c4::ast2::binary_op_call::operator=(const binary_op_call& cp) {
     return *this;
 }
 
+const c4::ast2::expression&
+c4::ast2::binary_op_call::left() const noexcept { return *_left; }
+
+const c4::ast2::expression&
+c4::ast2::binary_op_call::right() const noexcept { return *_right; }
+
 c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
                                        const std::string_view file_source,
                                        const std::size_t length,
@@ -103,3 +109,6 @@ c4::ast2::unary_op_call::operator=(const unary_op_call& cp) {
     _operand = expression_ptr(cp._operand->clone().release());
     return *this;
 }
+
+const c4::ast2::expression&
+c4::ast2::unary_op_call::operand() const noexcept { return *_operand; }

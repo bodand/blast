@@ -37,6 +37,7 @@
 #define C4_AST2_FN_CALL_HXX
 
 #include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/symbol.hxx>
 
@@ -48,6 +49,7 @@ namespace c4::ast2 {
     struct expression;
 
     struct fn_call final : tags::clonable
+                                , tags::visitable
                      , tags::source_positioned {
         fn_call(const c4::position& position,
                 std::string_view file_source,
@@ -55,9 +57,15 @@ namespace c4::ast2 {
                 const symbol& sym,
                 std::span<expression> args);
 
+        [[nodiscard]] symbol
+        sym() const { return _sym; }
+
+        [[nodiscard]] std::span<const expression>
+        args() const;
+
     private:
-        symbol sym;
-        std::vector<expression> args;
+        symbol _sym;
+        std::vector<expression> _args;
     };
 }
 

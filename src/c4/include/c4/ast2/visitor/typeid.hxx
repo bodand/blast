@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,44 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4/include/c4/ast2/visitor/typeid --
  *   
  */
+#ifndef C4_AST2_VISITOR_TYPEID_HXX
+#define C4_AST2_VISITOR_TYPEID_HXX
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <cstdint>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+namespace c4::ast2::visitor_aux {
+    struct type_id final {
+        template<class T>
+        static type_id
+        of() {
+            return type_id(my_type<T>::create(type_cntr));
+        }
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+        bool operator==(const type_id& other) const noexcept = default;
+
+        bool operator!=(const type_id& other) const noexcept = default;
+
+    private:
+        std::uint_fast32_t _value = 0;
+        inline static std::uint_fast32_t type_cntr = 1;
+
+        explicit
+        type_id(const std::uint_fast32_t value)
+            : _value{value} { }
+
+        template<class>
+        struct my_type {
+            static std::uint_fast32_t create(std::uint_fast32_t& cnt) {
+                if (_id == 0) _id = cnt++;
+                return _id;
+            }
+        private:
+            inline static std::uint_fast32_t _id = 0;
+        };
+    };
+}
+
+#endif

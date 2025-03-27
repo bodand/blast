@@ -40,12 +40,14 @@
 #include <span>
 
 #include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 #include <c4/ast2/expression_deleter.hxx>
 
 namespace c4::ast2 {
     struct dynamic_call final : tags::clonable
+                                , tags::visitable
                                 , tags::source_positioned {
         dynamic_call(const c4::position& position,
                      std::string_view file_source,
@@ -63,9 +65,15 @@ namespace c4::ast2 {
         dynamic_call&
         operator=(dynamic_call&& other) noexcept = default;
 
+        [[nodiscard]] const expression&
+        callee() const;
+
+        [[nodiscard]] std::span<const expression>
+        args() const;
+
     private:
         expression_ptr _callee;
-        std::vector<expression> args;
+        std::vector<expression> _args;
     };
 }
 

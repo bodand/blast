@@ -45,9 +45,11 @@
 #include <span>
 #include <optional>
 #include <vector>
+#include <c4/ast2/tags/visitable.hxx>
 
 namespace c4::ast2 {
     struct block_args : tags::clonable
+                        , tags::visitable
                         , tags::source_positioned {
         block_args(const c4::position& position,
                    std::string_view file_source,
@@ -62,6 +64,7 @@ namespace c4::ast2 {
     };
 
     struct block final : tags::clonable
+                         , tags::visitable
                          , tags::source_positioned {
         block(const c4::position& position,
               std::string_view file_source,
@@ -73,6 +76,12 @@ namespace c4::ast2 {
               std::string_view file_source,
               std::size_t length,
               std::span<expression> expressions);
+
+        [[nodiscard]] std::optional<block_args>
+        args() const { return _args; }
+
+        [[nodiscard]] std::span<const expression>
+        expressions() const;
 
     private:
         std::optional<block_args> _args{};

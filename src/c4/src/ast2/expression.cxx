@@ -52,13 +52,17 @@ namespace {
     };
 }
 
-c4::ast2::expression::expression(value_type value)
+c4::ast2::expression::expression(value_type value,
+                                 const std::span<symbol> closure_over)
     : source_positioned{std::visit(value_extractor{}, value)}
-    , _value{std::move(value)} { }
+    , _value{std::move(value)}
+    , _closure_symbols{closure_over.begin(), closure_over.end()} { }
 
 c4::ast2::expression::expression(const c4::position& position,
                                  const std::string_view file_source,
                                  const std::size_t length,
-                                 value_type value)
+                                 value_type value,
+                                 const std::span<symbol> closure_over)
     : source_positioned{position, file_source, length}
-    , _value{std::move(value)} { }
+    , _value{std::move(value)}
+    , _closure_symbols{closure_over.begin(), closure_over.end()} { }

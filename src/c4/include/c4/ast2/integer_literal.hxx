@@ -38,13 +38,15 @@
 
 #include <string_view>
 #include <cstdint>
-#include <c4/ast2/tags/clonable.hxx>
 
+#include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
     struct integer_literal final : tags::clonable
-                             , tags::source_positioned {
+                                   , tags::visitable
+                                   , tags::source_positioned {
         integer_literal(const c4::position& position,
                         const std::string_view file_source,
                         const std::size_t length,

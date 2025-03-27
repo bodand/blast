@@ -54,6 +54,7 @@
 
 namespace c4::ast2 {
     struct expression final : tags::clonable
+                              , tags::visitable
                               , tags::source_positioned {
         using value_type = std::variant<
             float_literal,
@@ -69,18 +70,35 @@ namespace c4::ast2 {
         >;
 
         explicit
-        expression(value_type value);
+        expression(value_type value,
+                   std::span<symbol> closure_over = {});
 
         expression(const c4::position& position,
                    std::string_view file_source,
                    std::size_t length,
-                   value_type value);
+                   value_type value,
+                   std::span<symbol> closure_over = {});
 
         [[nodiscard]] const value_type&
         value() const { return _value; }
 
+        template<class V>
+        void
+        accept_skip_self(V&& visitor) const {
+            std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
+                std::forward<T>(val).accept(v);
+            }, _value);
+        }
+
+        [[nodiscard]] bool
+        closure() const noexcept { return !_closure_symbols.empty(); }
+
+        [[nodiscard]] std::span<const symbol>
+        closure_symbols() const noexcept { return _closure_symbols; }
+
     private:
         value_type _value;
+        std::vector<symbol> _closure_symbols;
     };
 }
 

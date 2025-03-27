@@ -42,10 +42,28 @@
 #include <cmath>
 
 #include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
+    /**
+    * Symbol for undefined but declared symbols. These are not inherently
+    * present in the source.
+    */
+    struct undef_symbol {
+        undef_symbol(const std::string_view& name, const unsigned arity)
+            : name{name}
+            , arity{arity} { }
+
+        [[nodiscard]] std::string
+        mangle() const;
+
+        const std::string_view name;
+        const unsigned arity;
+    };
+
     struct symbol final : tags::clonable
+                          , tags::visitable
                           , tags::source_positioned {
         symbol(const c4::position& position,
                std::string_view file_source,
@@ -59,12 +77,19 @@ namespace c4::ast2 {
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
 
+        symbol
+        with_arity(unsigned arity) const;
+
+        [[nodiscard]] std::string
+        mangle() const;
+
     private:
         std::string_view _name;
         unsigned _arity;
     };
 
     struct op_symbol final : tags::clonable
+                             , tags::visitable
                              , tags::source_positioned {
         op_symbol(const c4::position& position,
                   std::string_view file_source,
@@ -77,6 +102,10 @@ namespace c4::ast2 {
 
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
+
+
+        std::string
+        mangle() const;
 
     private:
         std::string_view _name;

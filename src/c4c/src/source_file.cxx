@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,40 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4c/src/source_file --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <c4c/source_file.hxx>
+#include <utility>
+#include <fmt/base.h>
+#include <fmt/std.h>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+c4c::source_file::source_file(std::filesystem::path path)
+    : _file{std::move(path)}
+    , _mmap{} {
+    if (!exists(_file)) {
+        fmt::print("fatal: could not open input file `{}': not found\n",
+                   _file);
+        throw std::runtime_error("could not find input file");
+    }
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+    std::error_code ec;
+    _mmap.map(_file.c_str(), 0, mio::map_entire_file, ec);
+    if (ec) {
+        fmt::print("fatal: could not open input file `{}': {}\n",
+                   _file,
+                   ec.message());
+        throw std::runtime_error("could not find input file");
+    }
+}
+
+const char*
+c4c::source_file::begin() const {
+    return _mmap.data();
+}
+
+const char*
+c4c::source_file::end() const {
+    return begin() + _mmap.size();
+}

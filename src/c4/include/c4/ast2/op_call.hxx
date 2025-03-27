@@ -37,12 +37,15 @@
 #define C4_AST2_OP_CALL_HXX
 
 #include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
+
 #include <c4/ast2/expression_deleter.hxx>
 #include <c4/ast2/symbol.hxx>
 
 namespace c4::ast2 {
     struct binary_op_call final : tags::clonable
+                                  , tags::visitable
                                   , tags::source_positioned {
         binary_op_call(const c4::position& position,
                        std::string_view file_source,
@@ -61,6 +64,15 @@ namespace c4::ast2 {
         binary_op_call&
         operator=(binary_op_call&& other) noexcept = default;
 
+        [[nodiscard]] op_symbol
+        op() const noexcept { return _op; }
+
+        [[nodiscard]] const expression&
+        left() const noexcept;
+
+        [[nodiscard]] const expression&
+        right() const noexcept;
+
     private:
         op_symbol _op;
         expression_ptr _left;
@@ -68,6 +80,7 @@ namespace c4::ast2 {
     };
 
     struct unary_op_call final : tags::clonable
+                                 , tags::visitable
                                  , tags::source_positioned {
         unary_op_call(const c4::position& position,
                       std::string_view file_source,
@@ -84,6 +97,12 @@ namespace c4::ast2 {
 
         unary_op_call&
         operator=(unary_op_call&&) noexcept = default;
+
+        [[nodiscard]] op_symbol
+        op() const noexcept { return _op; }
+
+        [[nodiscard]] const expression&
+        operand() const noexcept;
 
     private:
         op_symbol _op;

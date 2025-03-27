@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,22 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4/src/ast2/tags/visitable --
  *   
  */
+#ifndef C4_AST2_TAGS_VISITABLE_HXX
+#define C4_AST2_TAGS_VISITABLE_HXX
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <utility>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+namespace c4::ast2::tags {
+    struct visitable {
+        template<class V>
+        auto
+        accept(this auto&& self, V&& visitor) {
+            return std::forward<V>(visitor).visit(std::forward<decltype(self)>(self));
+        }
+    };
+}
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+#endif

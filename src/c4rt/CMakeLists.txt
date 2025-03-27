@@ -36,12 +36,43 @@
 
 project(c4rt C CXX)
 
-add_library(c4rt
-            include/c4rt/api.h
-            include/c4rt/string.h
-            src/string.cxx
-            private/c4rt-impl/string_pool.hxx
-            )
-target_include_directories(c4rt
-                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+set(C4RT_SOURCES
+    include/c4rt/api.h
+    include/c4rt/string.h
+    src/string.cxx
+    private/c4rt-impl/string_pool.hxx
+    include/c4rt/datum.h
+    src/datum.cxx
+    )
 
+configure_file(src/dll-config.h.in dll-config.h @ONLY)
+
+add_library(c4rt-static STATIC ${C4RT_SOURCES})
+add_library(c4rt SHARED ${C4RT_SOURCES}
+            src/DllMain.cxx
+            ${CMAKE_CURRENT_BINARY_DIR}/dll-config.h)
+
+target_compile_options(c4rt-static PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
+target_compile_options(c4rt PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
+
+target_compile_definitions(c4rt-static PUBLIC C4RT_STATIC)
+target_compile_definitions(c4rt PRIVATE $<BUILD_INTERFACE:C4RT_EXPORTS>)
+
+target_include_directories(c4rt-static
+                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(c4rt
+                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                           )
+
+target_link_libraries(c4rt-static PRIVATE libassert::assert)
+target_link_libraries(c4rt PRIVATE libassert::assert)
+if (BLAST_USE_MIMALLOC)
+    target_link_libraries(c4rt PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+    if (WIN32 AND NOT TARGET mimalloc-static)
+        add_custom_command(TARGET c4rt POST_BUILD
+                           COMMAND "${CMAKE_COMMAND}" -E copy
+                           $<TARGET_FILE:mimalloc>
+                           $<TARGET_FILE_DIR:c4rt>)
+    endif ()
+endif ()

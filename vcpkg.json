@@ -7,9 +7,29 @@
     "zstd",
     "zlib",
     "uni-algo",
+    "bfgroup-lyra",
     "mio",
     "fmt",
     "pcre2",
-    "catch2"
+    "catch2",
+    {
+      "name": "mimalloc",
+      "default-features": false,
+      "features": [
+        "asm",
+        "secure"
+      ]
+    },
+    {
+      "name": "llvm",
+      "default-features": false,
+      "features": [
+        "clang",
+        "enable-zlib",
+        "enable-zstd",
+        "tools",
+        "utils"
+      ]
+    }
   ]
 }

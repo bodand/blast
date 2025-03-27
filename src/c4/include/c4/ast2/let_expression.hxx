@@ -38,16 +38,19 @@
 
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/expression_deleter.hxx>
+
 #include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/ast2/tags/clonable.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 
 #include <memory>
 #include <utility>
-#include <c4/ast2/tags/clonable.hxx>
 
 namespace c4::ast2 {
     struct expression;
 
     struct let_expression final : tags::clonable
+                                  , tags::visitable
                                   , tags::source_positioned {
         let_expression(const c4::position& position,
                        std::string_view file_source,
@@ -68,14 +71,19 @@ namespace c4::ast2 {
         [[nodiscard]] symbol
         symbol() const { return _symbol; }
 
+        [[nodiscard]] unsigned
+        symbol_arity() const { return _symbol.arity(); }
+
         [[nodiscard]] const expression&
         value() const;
 
+        std::string
+        mangled_name() const { return _symbol.mangle(); }
     private:
         let_expression(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
-                       struct symbol symbol,
+                       const struct symbol& symbol,
                        expression_ptr&& expr);
 
         struct symbol _symbol;

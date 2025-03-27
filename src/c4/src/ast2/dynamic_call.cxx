@@ -36,6 +36,7 @@
 
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/dynamic_call.hxx>
+
 #include <libassert/assert.hpp>
 
 c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
@@ -45,18 +46,24 @@ c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
                                      std::span<expression> args)
     : source_positioned{position, file_source, length}
     , _callee{new expression(std::move(callee))}
-    , args{args.begin(), args.end()} { }
+    , _args{args.begin(), args.end()} { }
 
 c4::ast2::dynamic_call::dynamic_call(const dynamic_call& cp)
     : source_positioned(cp)
     , _callee(cp._callee->clone().release())
-    , args(cp.args) { }
+    , _args(cp._args) { }
 
 c4::ast2::dynamic_call&
 c4::ast2::dynamic_call::operator=(const dynamic_call& cp) {
     DEBUG_ASSERT(&cp != this, "self-assignment is undefined");
     source_positioned::operator=(cp);
     _callee = expression_ptr(cp._callee->clone().release());
-    args = cp.args;
+    _args = cp._args;
     return *this;
 }
+
+const c4::ast2::expression&
+c4::ast2::dynamic_call::callee() const { return *_callee; }
+
+std::span<const c4::ast2::expression>
+c4::ast2::dynamic_call::args() const { return _args; }

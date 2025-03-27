@@ -40,8 +40,3 @@ struct c4rt_string_pool_ {
 
 };
 
-c4rt_string
-c4rt_str_from_cstring(c4rt_string_pool pool, const char* cstr) {
-
-}
-

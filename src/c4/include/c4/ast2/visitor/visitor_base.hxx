@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,36 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4/include/c4/ast2/visitor/vistor_base --
  *   
  */
+#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
+#define C4_AST2_VISITOR_VISITOR_BASE_HXX
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <c4/ast2/visitor/typeid.hxx>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+namespace c4::ast2 {
+    struct visitor_base {
+        template<class T>
+        void
+        visit(const T& visitee) {
+            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
+        }
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+        virtual ~visitor_base() = default;
+
+    protected:
+        virtual void
+        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
+    };
+
+    template<class T>
+    struct typed_visitor_base : virtual visitor_base {
+        virtual void
+        do_visit(const T& obj) = 0;
+
+        ~typed_visitor_base() override = default;
+    };
+}
+
+#endif

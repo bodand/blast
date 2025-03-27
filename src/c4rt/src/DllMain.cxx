@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,21 +30,28 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/fn_call --
+ * src/c4rt/src/DllMain --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
 
-c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::string_view file_source,
-                           const std::size_t length,
-                           const symbol& sym,
-                           const std::span<expression> args)
-    : source_positioned{position, file_source, length}
-    , _sym{sym}
-    , _args{args.begin(), args.end()} { }
+#include <dll-config.h>
 
-std::span<const c4::ast2::expression>
-c4::ast2::fn_call::args() const { return _args; }
+#ifdef BLAST_USE_MIMALLOC
+#  include <mimalloc.h>
+#  define MI_VERSION mi_version()
+#else
+#  define MI_VERSION
+#endif
+
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL, // handle to DLL module
+    DWORD fdwReason, // reason for calling function
+    LPVOID lpvReserved) // reserved
+{
+    MI_VERSION;
+    return TRUE;
+}

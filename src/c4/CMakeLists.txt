@@ -33,26 +33,6 @@
 # src/c4/CMakeLists.txt --
 #
 
-macro(add_ast_elem tgt name)
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/c4/ast/${name}_fusion.hxx")
-        set(fusion "include/c4/ast/${name}_fusion.hxx")
-    endif ()
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/ast/${name}.cxx")
-        set(src "src/ast/${name}.cxx")
-    endif ()
-    target_sources(${tgt}
-                   # AST node
-                   PUBLIC include/c4/ast/${name}.hxx
-                   PUBLIC "${fusion}"
-                   # Parser API
-                   PUBLIC include/c4/parser/${name}.hxx
-                   # Parser implementation & instantiation
-                   PRIVATE "${src}"
-                   PRIVATE src/parser/${name}.cxx
-                   PRIVATE private/c4/parser/${name}_def.hxx
-                   )
-endmacro()
-
 set(C4_LEXER_REGEX_BACKEND "pcre2")
 add_library(c4
             include/c4/ast2/tags/source_positioned.hxx
@@ -89,10 +69,8 @@ add_library(c4
             include/c4/ast2/let_expression.hxx
             src/ast2/expression.cxx
             include/c4/ast2/expression.hxx
-            include/c4/ast2/script.hxx
             include/c4/ast2/fn_call.hxx
             src/ast2/fn_call.cxx
-            src/ast2/script.cxx
             include/c4/ast2/tags/clonable.hxx
             src/ast2/tags/clonable.cxx
             include/c4/p2/lex/string_rule.hxx
@@ -105,14 +83,27 @@ add_library(c4
             src/ast2/block.cxx
             include/c4/ast2/dynamic_call.hxx
             src/ast2/dynamic_call.cxx
+            include/c4/ast2/tags/visitable.hxx
+            src/ast2/tags/visitable.cxx
+            include/c4/ast2/visitor/typeid.hxx
+            src/ast2/visitor/typeid.cxx
+            include/c4/ast2/visitor/visitor_base.hxx
+            src/ast2/visitor/visitor_base.cxx
+            include/c4/ast2/visitor/visitor.hxx
+            src/ast2/visitor/visitor.cxx
+            include/c4/ast_dumper.hxx
+            src/ast_dumper.cxx
             )
 
-
-target_link_libraries(c4 PRIVATE
+target_link_libraries(c4
+                      PUBLIC
+                      c4rt
+                      PRIVATE
                       uni-algo::uni-algo
                       fmt::fmt-header-only
                       PCRE2::8BIT
-                      libassert::assert)
+                      libassert::assert
+                      c4_llvm)
 target_compile_options(c4 PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 target_compile_definitions(c4 PRIVATE
                            PCRE2_CODE_UNIT_WIDTH=8
@@ -134,6 +125,7 @@ if (WIN32)
             TARGET blast POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:ZLIB::ZLIB>
+            $<TARGET_FILE:c4rt>
             $<TARGET_FILE_DIR:blast>
             )
 endif ()

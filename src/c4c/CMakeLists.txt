@@ -1,4 +1,4 @@
-# demo project
+# blAST project
 #
 # Copyright (c) 2025 András Bodor <bodand@proton.me>
 # All rights reserved.
@@ -28,30 +28,47 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2025-03-22.
+# Originally created: 2025-03-26.
 #
-# test/CMakeLists.txt --
-#   The main test-driver project
+# src/c4c/CMakeLists.txt --
+#   CMake project for the C4 Compiler (c4c)s
 
-project(Blast-Tests)
+add_executable(c4c
+               src/c4c.cxx
+               include/c4c/source_file.hxx
+               src/source_file.cxx
+               include/c4c/c4_runtime_emitter.hxx
+               src/c4_runtime_emitter.cxx)
 
-find_package(Catch2 CONFIG REQUIRED)
-include(Catch)
+target_link_libraries(c4c PRIVATE
+                      c4 c4rt
+                      c4_llvm
+                      bfg::lyra
+                      libassert::assert
+                      fmt::fmt-header-only
+                      mio::mio_min_winapi
+                      )
+target_include_directories(c4c PRIVATE
+                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-add_covered_test(NAME blast-test CATCH
-                 SOURCES
-                 c4/p2/lex/tokens/token_finder.hxx
-                 c4/p2/lex/tokens/whitespace.cxx
-                 c4/p2/lex/tokens/comment.cxx
-                 c4/p2/lex/tokens/bare_symbol.cxx
-                 c4/p2/lex/tokens/symbol.cxx
-                 c4/p2/lex/tokens/arity_marker.cxx
-                 c4/p2/lex/tokens/string_literal.cxx
-                 c4/p2/lex/token_source.cxx
-                 c4/p2/lex/lexer.cxx
-                 LIBRARIES c4)
-
-add_covered_test(NAME test-c4rt CATCH
-                 SOURCES
-                 c4rt/datum.cxx
-                 LIBRARIES c4rt-static)
+if (WIN32)
+    add_custom_command(
+            TARGET c4c POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:ZLIB::ZLIB>
+            $<TARGET_FILE:c4rt>
+            $<TARGET_FILE_DIR:c4c>
+            )
+endif ()
+if (MSVC AND BLAST_ENABLE_SANITIZERS)
+    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
+    add_custom_command(
+            TARGET blast POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
+            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
+            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
+            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
+            $<TARGET_FILE_DIR:c4c>
+            )
+endif ()

@@ -34,9 +34,8 @@
  *   
  */
 
-#include <c4/ast2/block.hxx>
 #include <c4/ast2/expression.hxx>
-
+#include <c4/ast2/block.hxx>
 
 c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::string_view file_source,
@@ -60,3 +59,6 @@ c4::ast2::block::block(const c4::position& position,
                        const std::span<expression> expressions)
     : source_positioned{position, file_source, length}
     , _expressions{expressions.begin(), expressions.end()} { }
+
+std::span<const c4::ast2::expression>
+c4::ast2::block::expressions() const { return _expressions; }

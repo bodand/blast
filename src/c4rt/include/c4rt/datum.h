@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,14 +30,87 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/script --
- *   Top-level
+ * src/c4rt/include/c4rt/datum --
+ *   
  */
-#ifndef C4_AST2_SCRIPT_HXX
-#define C4_AST2_SCRIPT_HXX
+#ifndef C4RT_DATUM_H
+#define C4RT_DATUM_H
 
-namespace c4::ast2 {
-    struct script {};
-}
+#ifdef __cplusplus
+#  include <cstdint>
+#else
+#  include <stdint.h>
+#  include <stdbool.h>
+#endif
+
+#include <c4rt/api.h>
+
+typedef uint64_t c4_datum_t;
+
+typedef enum c4_datum_type_ {
+    C4_Float = 0x0, /* 0000 */
+    C4_Block = 0x1, /* 0001 */
+    C4_Integer = 0x2, /* 0010 */
+    C4_String = 0x4, /* 0100 */
+} c4_datum_type;
+
+C4RT_API const c4_datum_t gC4_Empty_Block;
+
+C4RT_API void
+c4rt_free(void* mem);
+
+C4RT_API bool
+c4rt_datum_remoteness_of(c4_datum_t datum);
+
+C4RT_API c4_datum_type
+c4rt_datum_type_of(c4_datum_t datum);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_int32(int32_t i);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_int64(int64_t i);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_double(double d);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_string(const char* s);
+
+C4RT_API void
+c4rt_datum_free(c4_datum_t d);
+
+C4RT_API int32_t
+c4rt_datum_get_int32(c4_datum_t datum);
+
+C4RT_API int64_t
+c4rt_datum_get_intó4(c4_datum_t datum);
+
+C4RT_API double
+c4rt_datum_get_double(c4_datum_t datum);
+
+C4RT_API const char*
+c4rt_datum_get_string(c4_datum_t datum);
+
+C4RT_API int32_t
+c4rt_datum_coerce_int32(c4_datum_t datum);
+
+C4RT_API int64_t
+c4rt_datum_coerce_int64(c4_datum_t datum);
+
+C4RT_API double
+c4rt_datum_coerce_double(c4_datum_t datum);
+
+/**
+ * \brief Creates a new string from a given datum.
+ *
+ * Coerces the given datum into a newly allocated string value.
+ * This value must be released using c4rt_free.
+ **/
+C4RT_API char*
+c4rt_datum_coerce_string(c4_datum_t datum);
+
+C4RT_API c4_datum_t
+c4rt_datum_dup(c4_datum_t datum);
 
 #endif

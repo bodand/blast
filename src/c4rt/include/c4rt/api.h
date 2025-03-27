@@ -43,19 +43,24 @@
 #  define C4RT_EXTERN
 #endif
 
-#ifdef _WIN32
-#  define C4RT_IMPL
-#  ifdef C4RT_EXPORTS
-#    define C4RT_API C4RT_EXTERN __declspec(dllexport)
-#  else
-#    define C4RT_API C4RT_EXTERN __declspec(dllimport)
-#  endif
-#elif defined(__GNUC__)
-#  define C4RT_IMPL __attribute__((visibility("hidden")))
-#  define C4RT_API C4RT_EXTERN __attribute__((visibility("default")))
+#ifdef C4RT_STATIC
+#    define C4RT_IMPL
+#    define C4RT_API C4RT_EXTERN
 #else
-#  define C4RT_IMPL
-#  define C4RT_API C4RT_EXTERN
+#  ifdef _WIN32
+#    define C4RT_IMPL
+#    ifdef C4RT_EXPORTS
+#      define C4RT_API C4RT_EXTERN __declspec(dllexport)
+#    else
+#      define C4RT_API C4RT_EXTERN __declspec(dllimport)
+#    endif
+#  elif defined(__GNUC__)
+#    define C4RT_IMPL __attribute__((visibility("hidden")))
+#    define C4RT_API C4RT_EXTERN __attribute__((visibility("default")))
+#  else
+#    define C4RT_IMPL
+#    define C4RT_API C4RT_EXTERN
+#  endif
 #endif
 
 #endif
