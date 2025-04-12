@@ -41,8 +41,6 @@
 
 namespace c4::ast2::tags {
     struct source_positioned {
-
-
         [[nodiscard]] position
         position() const { return _position; }
 

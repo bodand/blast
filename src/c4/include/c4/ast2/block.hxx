@@ -50,7 +50,8 @@
 namespace c4::ast2 {
     struct block_args : tags::clonable
                         , tags::visitable
-                        , tags::source_positioned {
+                        , tags::source_positioned
+                        , tags::constant_node {
         block_args(const c4::position& position,
                    std::string_view file_source,
                    std::size_t length,
@@ -65,7 +66,8 @@ namespace c4::ast2 {
 
     struct block final : tags::clonable
                          , tags::visitable
-                         , tags::source_positioned {
+                         , tags::source_positioned
+                         , tags::dynamic_node {
         block(const c4::position& position,
               std::string_view file_source,
               std::size_t length,
@@ -79,6 +81,24 @@ namespace c4::ast2 {
 
         [[nodiscard]] std::optional<block_args>
         args() const { return _args; }
+
+        [[nodiscard]] std::size_t
+        arity() const noexcept {
+            return _args.and_then([](const auto& args) -> std::optional<std::size_t> {
+                return args.args().size();
+            }).value_or(0);
+        }
+
+        [[nodiscard]] bool
+        requires_context() const noexcept;
+
+        /**
+         * Generates a set of symbols that are used by the contained expressions
+         * but are not resolved by the block's arguments or symbols defined
+         * within the symbol.
+         */
+        [[nodiscard]] std::vector<symbol>
+        effective_context_symbols() const;
 
         [[nodiscard]] std::span<const expression>
         expressions() const;

@@ -45,6 +45,8 @@
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
+#include "tags/evaluation_constness.hxx"
+
 namespace c4::ast2 {
     /**
     * Symbol for undefined but declared symbols. These are not inherently
@@ -52,19 +54,32 @@ namespace c4::ast2 {
     */
     struct undef_symbol {
         undef_symbol(const std::string_view& name, const unsigned arity)
-            : name{name}
-            , arity{arity} { }
+            : _name{name}
+              , _arity{arity} {
+        }
 
         [[nodiscard]] std::string
         mangle() const;
 
-        const std::string_view name;
-        const unsigned arity;
+        [[nodiscard]] std::string_view
+        name() const {
+            return _name;
+        }
+
+        [[nodiscard]] unsigned
+        arity() const {
+            return _arity;
+        }
+
+    private:
+        std::string_view _name;
+        unsigned _arity;
     };
 
     struct symbol final : tags::clonable
                           , tags::visitable
-                          , tags::source_positioned {
+                          , tags::source_positioned
+                          , tags::dynamic_node {
         symbol(const c4::position& position,
                std::string_view file_source,
                std::size_t length,
@@ -83,6 +98,32 @@ namespace c4::ast2 {
         [[nodiscard]] std::string
         mangle() const;
 
+        friend bool
+        operator<(const symbol& lhs, const symbol& rhs) {
+            const auto cmp = lhs._name <=> rhs._name;
+            if (std::is_lt(cmp)) return true;
+            if (std::is_gt(cmp)) return false;
+            return lhs._arity < rhs._arity;
+        }
+
+        friend bool
+        operator<=(const symbol& lhs, const symbol& rhs) { return !(rhs < lhs); }
+
+        friend bool
+        operator>(const symbol& lhs, const symbol& rhs) { return rhs < lhs; }
+
+        friend bool
+        operator>=(const symbol& lhs, const symbol& rhs) { return !(lhs < rhs); }
+
+        friend bool
+        operator==(const symbol& lhs, const symbol& rhs) {
+            return lhs._arity == rhs._arity
+                   && lhs._name == rhs._name;
+        }
+
+        friend bool
+        operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
+
     private:
         std::string_view _name;
         unsigned _arity;
@@ -90,7 +131,8 @@ namespace c4::ast2 {
 
     struct op_symbol final : tags::clonable
                              , tags::visitable
-                             , tags::source_positioned {
+                             , tags::source_positioned
+                             , tags::dynamic_node {
         op_symbol(const c4::position& position,
                   std::string_view file_source,
                   std::size_t length,

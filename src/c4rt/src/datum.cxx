@@ -55,7 +55,7 @@ namespace {
     void*
     get_pointer_value(const c4_datum_t datum) {
         // todo: sign extend value
-        return std::bit_cast<void*>(datum & payload_mask);
+        return std::bit_cast<void*>((datum & payload_mask << 48U) >> 48U);
     }
 
     c4_datum_t
@@ -135,6 +135,11 @@ namespace {
 c4_datum_t
 c4rt_datum_from_string(const char* const s) {
     const auto s_sz = std::strlen(s);
+    return datum_from_sized_string(s, s_sz);
+}
+
+c4_datum_t
+c4rt_datum_from_string_sz(const char* s, size_t s_sz) {
     return datum_from_sized_string(s, s_sz);
 }
 

@@ -71,6 +71,10 @@ c4::ast2::let_expression::value() const {
     return *_value;
 }
 
+bool c4::ast2::let_expression::is_constant_evaluable() const noexcept {
+    return _value->const_evaluable();
+}
+
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          const std::string_view file_source,
                                          const std::size_t length,

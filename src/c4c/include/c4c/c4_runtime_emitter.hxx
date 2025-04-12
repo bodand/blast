@@ -48,6 +48,7 @@ namespace c4c {
         DatumFromInt64,
         DatumFromDouble,
         DatumFromString,
+        DatumFromProc,
         DatumFree,
         DatumGetInt32,
         DatumGetInt64,
@@ -78,7 +79,7 @@ namespace c4c {
                      llvm::ArrayRef<llvm::Value*> args);
 
         [[nodiscard]] llvm::FunctionType*
-        get_c4_funtype(unsigned arity) const;
+        get_c4_funtype(unsigned arity, bool context = false) const;
 
     private:
         llvm::LLVMContext& _context;

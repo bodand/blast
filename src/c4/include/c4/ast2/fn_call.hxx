@@ -49,8 +49,9 @@ namespace c4::ast2 {
     struct expression;
 
     struct fn_call final : tags::clonable
-                                , tags::visitable
-                     , tags::source_positioned {
+                           , tags::visitable
+                           , tags::source_positioned
+                           , tags::dynamic_node {
         fn_call(const c4::position& position,
                 std::string_view file_source,
                 std::size_t length,

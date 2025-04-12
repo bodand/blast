@@ -48,7 +48,8 @@
 namespace c4::ast2 {
     struct dynamic_call final : tags::clonable
                                 , tags::visitable
-                                , tags::source_positioned {
+                                , tags::source_positioned
+                                , tags::dynamic_node {
         dynamic_call(const c4::position& position,
                      std::string_view file_source,
                      std::size_t length,

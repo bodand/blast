@@ -67,12 +67,16 @@ c4c::c4_runtime_emitter::c4_runtime_emitter(llvm::LLVMContext& context,
     const auto double_t = Type::getDoubleTy(context);
     const auto string_t = Type::getInt8Ty(context)->getPointerTo();
     const auto void_t = Type::getVoidTy(context);
+    const auto datum_ptr_t = datum_t->getPointerTo();
+    const auto anyptr_t = PointerType::get(context, 0);
 
     // constructors
     DEF_CTOR(c4rt_symbol::DatumFromInt32, int32);
     DEF_CTOR(c4rt_symbol::DatumFromInt64, int64);
     DEF_CTOR(c4rt_symbol::DatumFromDouble, double);
     DEF_CTOR(c4rt_symbol::DatumFromString, string);
+    const auto datum_from_proc_ft = FunctionType::get(datum_t, {anyptr_t}, false);
+    DEF_RTF(c4rt_symbol::DatumFromProc, datum_from_proc);
 
     // destructor
     DEF_TYPED(c4rt_symbol::DatumFree, datum_free, void_t, datum_t);
@@ -99,11 +103,20 @@ c4c::c4_runtime_emitter::emit_rt_call(const c4rt_symbol sym,
 }
 
 llvm::FunctionType*
-c4c::c4_runtime_emitter::get_c4_funtype(const unsigned arity) const {
+c4c::c4_runtime_emitter::get_c4_funtype(const unsigned arity,
+                                        const bool context) const {
     const auto datum_t = llvm::Type::getInt64Ty(_context);
+    const auto ctx_t = datum_t->getPointerTo();
 
-    std::vector<llvm::Type*> args(arity);
-    std::generate_n(args.begin(), arity, [&datum_t] { return datum_t; });
+    const auto effective_arity = arity + (context ? 1 : 0);
+
+    std::vector<llvm::Type*> args(effective_arity);
+    auto args_begin = args.begin();
+    if (context) {
+        *args_begin = ctx_t;
+        ++args_begin;
+    }
+    std::generate_n(args_begin, arity, [&datum_t] { return datum_t; });
 
     return llvm::FunctionType::get(datum_t, args, false);
 }

@@ -31,11 +31,12 @@
  * Originally created: 2025-03-03.
  *
  * src/c4/src/ast2/block --
- *   
+ *
  */
 
-#include <c4/ast2/expression.hxx>
 #include <c4/ast2/block.hxx>
+#include <c4/ast2/expression.hxx>
+#include <c4/ast2/visitor/visitor.hxx>
 
 c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::string_view file_source,
@@ -60,5 +61,64 @@ c4::ast2::block::block(const c4::position& position,
     : source_positioned{position, file_source, length}
     , _expressions{expressions.begin(), expressions.end()} { }
 
+bool
+c4::ast2::block::requires_context() const noexcept {
+    return std::ranges::any_of(_expressions, [](const auto& expr) { return expr.closure(); });
+}
+
+namespace {
+    template<class It>
+    struct defined_symbols_remover : c4::ast2::visitor<c4::ast2::let_expression> {
+        defined_symbols_remover(It begin, It end)
+            : begin(begin)
+            , end(end) { }
+
+        void
+        do_visit(const c4::ast2::let_expression& obj) override {
+            // you'd think we need to recurse here, but this is not the case
+            // since symbols defined in nested blocks are already filtered out
+            // and even if we have symbols with the same name as defined down-er
+            // they are different symbols shadowing the one we are copying into
+            // context
+            end = std::remove(begin, end, obj.symbol());
+        }
+
+        It begin;
+        It end;
+    };
+
+    template<class It>
+    defined_symbols_remover(It begin, It end) -> defined_symbols_remover<It>;
+}
+
+std::vector<c4::ast2::symbol>
+c4::ast2::block::effective_context_symbols() const {
+    std::vector<symbol> result;
+
+    for (const auto& expr : _expressions) {
+        result.append_range(expr.closure_symbols());
+    }
+
+    std::ranges::sort(result);
+    const auto [dup_begin, dup_end] = std::ranges::unique(result);
+    result.erase(dup_begin, dup_end);
+
+    if (_args) {
+        for (const auto& arg : _args->args()) {
+            std::erase(result, arg);
+        }
+    }
+
+    defined_symbols_remover remover(result.begin(), result.end());
+    for (const auto& expr : _expressions) {
+        expr.accept_skip_self(remover);
+    }
+    result.erase(remover.end, result.end());
+
+    return result;
+}
+
 std::span<const c4::ast2::expression>
-c4::ast2::block::expressions() const { return _expressions; }
+c4::ast2::block::expressions() const {
+    return _expressions;
+}

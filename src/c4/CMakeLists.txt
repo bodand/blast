@@ -93,6 +93,7 @@ add_library(c4
             src/ast2/visitor/visitor.cxx
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
+            include/c4/ast2/tags/evaluation_constness.hxx
             )
 
 target_link_libraries(c4

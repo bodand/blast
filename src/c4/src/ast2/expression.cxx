@@ -41,7 +41,11 @@
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/expression.hxx>
 
+#include <algorithm>
+#include <ranges>
 #include <memory>
+
+#include "c4/ast2/visitor/visitor.hxx"
 
 namespace {
     struct value_extractor final {
@@ -50,13 +54,81 @@ namespace {
             return sp;
         }
     };
+
+    void
+    uniqify_symbols(std::vector<c4::ast2::symbol>& symbols) {
+        if (symbols.empty()) return;
+        std::ranges::sort(symbols);
+        const auto [dup_begin, dup_end] = std::ranges::unique(symbols);
+        symbols.erase(dup_begin, dup_end);
+    }
+
+    struct recursive_closure_collector_visitor : c4::ast2::visitor<
+                c4::ast2::expression,
+                c4::ast2::let_expression,
+                c4::ast2::block,
+                c4::ast2::fn_call,
+                c4::ast2::dynamic_call,
+                c4::ast2::binary_op_call,
+                c4::ast2::unary_op_call
+            > {
+        explicit recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
+            : symbols(symbols) {
+        }
+
+        void
+        do_visit(const c4::ast2::expression& obj) override {
+            symbols.append_range(obj.closure_symbols());
+        }
+
+        void
+        do_visit(const c4::ast2::let_expression& obj) override {
+            obj.value().accept(*this);
+        }
+
+        void
+        do_visit(const c4::ast2::block& obj) override {
+            auto block_symols = obj.effective_context_symbols();
+            symbols.append_range(std::move(block_symols));
+        }
+
+        void
+        do_visit(const c4::ast2::fn_call& obj) override {
+            for (const auto& arg: obj.args()) arg.accept(*this);
+        }
+
+        void
+        do_visit(const c4::ast2::dynamic_call& obj) override {
+            obj.callee().accept(*this);
+            for (const auto& arg: obj.args()) arg.accept(*this);
+        }
+
+        void
+        do_visit(const c4::ast2::binary_op_call& obj) override {
+            obj.left().accept(*this);
+            obj.right().accept(*this);
+        }
+
+        void
+        do_visit(const c4::ast2::unary_op_call& obj) override {
+            obj.operand().accept(*this);
+        }
+
+        std::vector<c4::ast2::symbol>& symbols;
+    };
 }
 
 c4::ast2::expression::expression(value_type value,
                                  const std::span<symbol> closure_over)
     : source_positioned{std::visit(value_extractor{}, value)}
-    , _value{std::move(value)}
-    , _closure_symbols{closure_over.begin(), closure_over.end()} { }
+      , _value{std::move(value)}
+      , _closure_symbols{closure_over.begin(), closure_over.end()} {
+    std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
+        recursive_closure_collector_visitor v{sym};
+        std::forward<T>(val).accept(v);
+    }, _value);
+    uniqify_symbols(_closure_symbols);
+}
 
 c4::ast2::expression::expression(const c4::position& position,
                                  const std::string_view file_source,
@@ -64,5 +136,11 @@ c4::ast2::expression::expression(const c4::position& position,
                                  value_type value,
                                  const std::span<symbol> closure_over)
     : source_positioned{position, file_source, length}
-    , _value{std::move(value)}
-    , _closure_symbols{closure_over.begin(), closure_over.end()} { }
+      , _value{std::move(value)}
+      , _closure_symbols{closure_over.begin(), closure_over.end()} {
+    std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
+        recursive_closure_collector_visitor v{sym};
+        std::forward<T>(val).accept(v);
+    }, _value);
+    uniqify_symbols(_closure_symbols);
+}

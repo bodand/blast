@@ -41,17 +41,20 @@
 #include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/ast2/tags/evaluation_constness.hxx>
 
 namespace c4::ast2 {
     struct float_literal final : tags::clonable
                                  , tags::visitable
-                                 , tags::source_positioned {
+                                 , tags::source_positioned
+                                 , tags::constant_node {
         float_literal(const c4::position& position,
                       const std::string_view file_source,
                       const std::size_t length,
                       const double value)
             : source_positioned{position, file_source, length}
-            , _value{value} { }
+              , _value{value} {
+        }
 
         [[nodiscard]] double
         value() const { return _value; }

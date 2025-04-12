@@ -42,19 +42,26 @@
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
+#include "tags/evaluation_constness.hxx"
+
 namespace c4::ast2 {
     struct string_literal final : tags::clonable
                                   , tags::visitable
-                                  , tags::source_positioned {
+                                  , tags::source_positioned
+                                  , tags::evaluation_constness {
         string_literal(const c4::position& position,
                        const std::string_view file_source,
                        const std::size_t length,
                        const std::string_view value)
             : source_positioned{position, file_source, length}
-            , _value{value} { }
+              , _value{value} {
+        }
 
         [[nodiscard]] std::string_view
         value() const { return _value; }
+
+        [[nodiscard]] bool // todo: extract 6 as SSO limit somewhere
+        is_constant_evaluable() const noexcept { return _value.size() < 6; }
 
     private:
         std::string_view _value;

@@ -356,12 +356,14 @@ c4::p2::parser::parse_final_expression() {
     const auto backslash = expect_token<tokens::backslash>();
     if (lbrace || backslash) {
         const auto block = parse_block();
-        return {
-            block.position(),
-            block.file_source(),
-            block.length(),
-            block
-        };
+
+        std::vector<ast2::symbol> closure_symbols;
+        for (const auto& expr : block.expressions()) reresolve_childs_closure_symbols(expr, closure_symbols);
+
+        return ast2::expression(
+            block,
+            closure_symbols
+        );
     }
 
     const auto prefix_op = expect_token<tokens::operator_>();
@@ -538,12 +540,12 @@ c4::p2::parser::parse_n_expressions(const unsigned n,
 void
 c4::p2::parser::reresolve_childs_closure_symbols(const ast2::expression& expr,
                                                  std::vector<ast2::symbol>& closure_symbols) {
-    for (const auto& closure_sym: expr.closure_symbols()) {
-        const auto resolved = find_scoped_symbol(closure_sym);
-        ASSERT(resolved, "re-resolved symbol must always be found");
-
-        if (resolved->from_parent_scope) closure_symbols.push_back(closure_sym);
-    }
+    // for (const auto& closure_sym: expr.closure_symbols()) {
+    //     const auto resolved = find_scoped_symbol(closure_sym);
+    //     ASSERT(resolved, "re-resolved symbol must always be found");
+    //
+    //     if (resolved->from_parent_scope) closure_symbols.push_back(closure_sym);
+    // }
 }
 
 c4::ast2::expression

@@ -77,6 +77,15 @@ c4rt_datum_from_double(double d);
 C4RT_API c4_datum_t
 c4rt_datum_from_string(const char* s);
 
+C4RT_API c4_datum_t
+c4rt_datum_from_string_sz(const char* s, size_t s_sz);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_proc(c4_datum_t (*proc)(),
+                     unsigned arity,
+                     unsigned context_size,
+                     c4_datum_t* context);
+
 C4RT_API void
 c4rt_datum_free(c4_datum_t d);
 

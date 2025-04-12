@@ -39,6 +39,7 @@
 
 #include <fstream>
 #include <ranges>
+#include <unordered_set>
 
 #include <c4/ast_dumper.hxx>
 
@@ -102,7 +103,7 @@ void
 dump_ast(const std::span<const c4::ast2::expression> script,
          std::ostream& out) {
     c4::ast_dumper dumper(out);
-    for (const auto& expression: script) {
+    for (const auto& expression : script) {
         expression.accept(dumper);
         out << "\n";
     }
@@ -111,201 +112,591 @@ dump_ast(const std::span<const c4::ast2::expression> script,
 void
 initialize_targets();
 
-struct fn_body_emitter final : c4::ast2::visitor<c4::ast2::block,
-                                                 c4::ast2::block_args,
-                                                 c4::ast2::fn_call
-                                                 , c4::ast2::binary_op_call
-                                                 , c4::ast2::unary_op_call
-        > {
-    fn_body_emitter(llvm::Function* function,
-                    llvm::LLVMContext& context,
-                    llvm::Module& module,
-                    llvm::IRBuilder<>& builder)
-        : function{function}
-        , context{context}
-        , module{module}
-        , builder{builder} { }
+struct global_constant_emitter final : c4::ast2::visitor<
+            c4::ast2::float_literal,
+            c4::ast2::integer_literal,
+            c4::ast2::string_literal> {
+    global_constant_emitter(llvm::LLVMContext& context,
+                            llvm::Module& module,
+                            llvm::IRBuilder<>& builder)
+        : context(context)
+        , module(module)
+        , builder(builder) { }
 
-    void
-    do_visit(const c4::ast2::fn_call& obj) override {
-        const auto fn_sym = obj.sym();
-        if (const auto arg = _named_arguments.find(fn_sym.name());
-            arg != _named_arguments.end()) {
-            ASSERT(obj.args().empty(), "parameter cannot be called with parameters...");
-            last_val = arg->second;
-            return;
-        }
-
-        std::vector<llvm::Value*> call_args;
-        call_args.reserve(obj.args().size());
-        for (const auto& arg: obj.args()) {
-            arg.accept_skip_self(*this);
-            call_args.push_back(last_val);
-        }
-
-        const auto fn = module.getFunction(fn_sym.mangle());
-        ASSERT(fn);
-
-        last_val = builder.CreateCall(fn, call_args);
+    llvm::Value*
+    get_loaded_global(const llvm::Twine& name) {
+        ASSERT(value, "global_constant_emitter needs to visit the value before it can generate the load to it");
+        value->setName(name.concat(_value_type_suffix));
+        return builder.CreateLoad(llvm::Type::getInt64Ty(context), value);
     }
 
     void
-    do_visit(const c4::ast2::binary_op_call& obj) override {
-        const auto sym = obj.op();
+    do_visit(const c4::ast2::float_literal& obj) override {
+        const auto rt_value = c4rt_datum_from_double(obj.value());
+        _value_type_suffix = "_fl";
+        create_global(rt_value);
+    }
 
-        const auto fn = module.getFunction(sym.mangle());
-        ASSERT(fn);
+    void
+    do_visit(const c4::ast2::integer_literal& obj) override {
+        ASSERT(obj.value() < std::numeric_limits<int32_t>::max());
+        _value_type_suffix = "_il";
+        const auto rt_value = c4rt_datum_from_int32(static_cast<int32_t>(obj.value()));
+        create_global(rt_value);
+    }
 
-        obj.left().accept_skip_self(*this);
-        const auto lhs = last_val;
-        obj.right().accept_skip_self(*this);
-        const auto rhs = last_val;
-        last_val = builder.CreateCall(fn, {lhs, rhs});
+    void
+    do_visit(const c4::ast2::string_literal& obj) override {
+        ASSERT(obj.value().size() < 6); // todo name SSO limit
+        _value_type_suffix = "_ssl";
+        const auto rt_value = c4rt_datum_from_string_sz(obj.value().data(), obj.value().size());
+        create_global(rt_value);
+    }
+
+    llvm::Value* value{};
+    llvm::LLVMContext& context;
+    llvm::Module& module;
+    llvm::IRBuilder<>& builder;
+
+private:
+    std::string_view _value_type_suffix;
+
+    void
+    create_global(const c4_datum_t datum) {
+        const auto val = new llvm::GlobalVariable(llvm::Type::getInt64Ty(context), true,
+                                                  llvm::GlobalValue::PrivateLinkage,
+                                                  llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), datum));
+        value = val;
+        module.insertGlobalVariable(val);
+    }
+};
+
+struct ir_emitter final : c4::ast2::visitor<
+            c4::ast2::expression,
+            c4::ast2::block,
+            c4::ast2::block_args,
+            c4::ast2::let_expression,
+            c4::ast2::float_literal,
+            c4::ast2::integer_literal,
+            c4::ast2::string_literal,
+            c4::ast2::fn_call,
+            c4::ast2::unary_op_call,
+            c4::ast2::binary_op_call
+        > {
+    struct last_value {
+        llvm::Value* value{};
+        bool constant{};
+
+        void
+        set_expr(llvm::Value* value) {
+            this->value = value;
+            constant = false;
+        }
+
+        void
+        set_constant(llvm::Value* value) {
+            this->value = value;
+            constant = true;
+        }
+    };
+
+    ir_emitter(c4c::c4_runtime_emitter& rt_emitter,
+               llvm::LLVMContext& context,
+               llvm::Module& module,
+               llvm::IRBuilder<>& builder,
+               std::vector<c4::ast2::undef_symbol> const& promised_symbols)
+        : rt_emitter{rt_emitter}
+        , context{context}
+        , module{module}
+        , builder{builder}
+        , promised_symbols(promised_symbols.begin(), promised_symbols.end()) {
+        const auto entry_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(context), {}, false);
+        entry = llvm::Function::Create(entry_type, llvm::Function::ExternalLinkage, "_c4__entry", module);
+
+        const auto main_body = llvm::BasicBlock::Create(context, "body", entry);
+        builder.SetInsertPoint(main_body);
+    }
+
+    void
+    do_visit(const c4::ast2::expression& obj) override {
+        // const auto ctx_mem = _ctx_symbols;
+        // _ctx_symbols = obj.closure_symbols();
+        obj.accept_skip_self(*this);
+        // _ctx_symbols = ctx_mem;
+    }
+
+    void
+    do_visit(const c4::ast2::fn_call& obj) override {
+        const auto callee_val = lookup_symbol(obj.sym().mangle());
+        ASSERT(callee_val,
+               "callee symbol must be known at the point of call",
+               obj.sym().name(),
+               obj.sym().mangle(),
+               _known_symbols,
+               promised_symbols);
+
+        if (callee_val->getType()->isIntegerTy()) {
+            last.set_expr(callee_val);
+            return;
+        }
+
+        // has arguments, so callee must be a function type
+        ASSERT(callee_val->getType()->isPointerTy(),
+               "fn called with parameters does not have function (pointer) type",
+               callee_val->getName(),
+               callee_val->getType()->getTypeID());
+        const auto fn = cast<llvm::Function>(callee_val);
+
+        const auto fn_type = fn->getFunctionType();
+        if (fn_type->getNumParams() > 0
+            && fn_type->getParamType(0)->isPointerTy()) {
+            const auto callee_name = fmt::format("{}${}", _block_name, obj.sym().mangle());
+            const auto callee = module.getFunction("_C" + callee_name);
+            ASSERT(callee != nullptr,
+                   "called closure's backing function not found",
+                   callee_name,
+                   obj.sym().name());
+
+            const auto ctx_name = fmt::format("{}${}.ctx",
+                                              _block_name,
+                                              obj.sym().mangle());
+            const auto ctx_val_it = _known_symbols.find(ctx_name);
+            ASSERT(ctx_val_it != _known_symbols.end(),
+                   "called closure but no relevant context was found",
+                   _known_symbols,
+                   ctx_name,
+                   obj.sym().name());
+
+            std::vector<llvm::Value*> args(obj.args().size() + 1);
+            args[0] = ctx_val_it->second;
+            std::ranges::transform(obj.args(), next(args.begin()), [this](const c4::ast2::expression& arg) {
+                arg.accept(*this);
+                return this->last.value;
+            });
+
+            const auto call = builder.CreateCall(fn_type, callee, args);
+            last.set_expr(call);
+
+            return;
+        }
+
+        std::vector<llvm::Value*> args(obj.args().size());
+        std::ranges::transform(obj.args(), args.begin(), [this](const c4::ast2::expression& arg) {
+            arg.accept(*this);
+            return this->last.value;
+        });
+
+        const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
+        last.set_expr(call);
     }
 
     void
     do_visit(const c4::ast2::unary_op_call& obj) override {
-        const auto sym = obj.op();
+        const auto callee_val = lookup_symbol(obj.op().mangle());
+        ASSERT(callee_val,
+               "callee symbol must be known at the point of call",
+               obj.op().name(),
+               obj.op().mangle(),
+               _known_symbols,
+               promised_symbols);
 
-        const auto fn = module.getFunction(sym.mangle());
-        ASSERT(fn);
+        if (callee_val->getType()->isIntegerTy()) {
+            last.set_expr(callee_val);
+            return;
+        }
 
-        obj.operand().accept_skip_self(*this);
-        last_val = builder.CreateCall(fn, {last_val});
+        // has arguments, so callee must be a function type
+        ASSERT(callee_val->getType()->isPointerTy(),
+               "fn called with parameters does not have function (pointer) type",
+               callee_val->getName(),
+               callee_val->getType()->getTypeID());
+        const auto fn = cast<llvm::Function>(callee_val);
+
+        std::vector<llvm::Value*> args(1);
+        std::ranges::transform(std::array{obj.operand()}, args.begin(), [this](const c4::ast2::expression& arg) {
+            arg.accept(*this);
+            return this->last.value;
+        });
+
+        const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
+        last.set_expr(call);
     }
 
     void
-    do_visit(const c4::ast2::block& obj) override {
-        if (obj.args()) obj.args()->accept(*this);
+    do_visit(const c4::ast2::binary_op_call& obj) override {
+        const auto callee_val = lookup_symbol(obj.op().mangle());
+        ASSERT(callee_val,
+               "callee symbol must be known at the point of call",
+               obj.op().name(),
+               obj.op().mangle(),
+               _known_symbols,
+               promised_symbols);
 
-        const auto mem = builder.GetInsertBlock();
-
-        const auto bb = llvm::BasicBlock::Create(context, "", function);
-        builder.SetInsertPoint(bb);
-        for (const auto& expr: obj.expressions()) {
-            expr.accept_skip_self(*this);
-        }
-        if (last_val) {
-            builder.CreateRet(last_val);
-        }
-        else {
-            builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
-                                                     gC4_Empty_Block));
+        if (callee_val->getType()->isIntegerTy()) {
+            last.set_expr(callee_val);
+            return;
         }
 
-        builder.SetInsertPoint(mem);
+        // has arguments, so callee must be a function type
+        ASSERT(callee_val->getType()->isPointerTy(),
+               "fn called with parameters does not have function (pointer) type",
+               callee_val->getName(),
+               callee_val->getType()->getTypeID());
+        const auto fn = cast<llvm::Function>(callee_val);
+
+        std::vector<llvm::Value*> args(2);
+        std::ranges::transform(std::array{obj.left(), obj.right()}, args.begin(),
+                               [this](const c4::ast2::expression& arg) {
+                                   arg.accept(*this);
+                                   return this->last.value;
+                               });
+
+        const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
+        last.set_expr(call);
     }
 
     void
     do_visit(const c4::ast2::block_args& obj) override {
-        DEBUG_ASSERT(function);
+        const auto formal_args_size = _function_is_closure
+                                      ? _active_function->arg_size() - 1
+                                      : _active_function->arg_size();
+        ASSERT(formal_args_size == obj.args().size(),
+               "defining function with invalid argument size block");
 
-        for (const auto& [ast_arg, fn_arg]: std::views::zip(obj.args(), function->args())) {
-            fn_arg.setName(ast_arg.name());
-            _named_arguments[ast_arg.name()] = &fn_arg;
+        const auto args = _active_function->args();
+        auto arg_begin = args.begin();
+        if (_function_is_closure)
+            std::advance(arg_begin, 1);
+
+        for (const auto& [formal_arg, ll_arg] : std::views::zip(obj.args(),
+                                                                std::span{arg_begin, args.end()})) {
+            ASSERT(ll_arg.getType() == llvm::Type::getInt64Ty(context),
+                   "trying to name non datum_t type",
+                   ll_arg.getType()->getTypeID(),
+                   formal_arg.name(),
+                   _active_function->getFunctionType()->params(),
+                   _active_function->getName());
+            ll_arg.setName(formal_arg.mangle());
+            _known_symbols[formal_arg.mangle()] = &ll_arg;
         }
     }
 
-    llvm::Value* last_val{};
-    std::unordered_map<std::string_view, llvm::Argument*> _named_arguments;
-    llvm::Function* function;
-    llvm::LLVMContext& context;
-    llvm::Module& module;
-    llvm::IRBuilder<>& builder;
-};
-
-struct top_level_function_emitter final : c4::ast2::visitor<c4::ast2::let_expression> {
-    top_level_function_emitter(c4c::c4_runtime_emitter& rt_emitter,
-                               llvm::LLVMContext& context,
-                               llvm::Module& module,
-                               llvm::IRBuilder<>& builder)
-        : rt_emitter{rt_emitter}
-        , context{context}
-        , module{module}
-        , builder{builder} { }
+    void
+    do_visit(const c4::ast2::block& obj) override {
+        if (obj.args())
+            obj.args()->accept(*this);
+        if (obj.requires_context()) {
+            // if name is not empty, the ctx contained only globally known things
+            // and is not actually the context parameter
+            if (_active_function->arg_size() > 0
+                && _active_function->arg_begin()->getName().empty())
+                _active_function->arg_begin()->setName("ctx");
+        }
+        emit_fn_body_from_block(obj);
+    }
 
     void
     do_visit(const c4::ast2::let_expression& obj) override {
-        const auto sym_name = obj.mangled_name();
+        const auto obj_name = obj.mangled_name();
         const auto arity = obj.symbol_arity();
+        const auto memory_len = _block_name.size();
+        if (_block_name.empty()) {
+            _block_name = obj_name;
+        }
+        else {
+            _block_name = fmt::format("{}${}", _block_name, obj_name);
+        }
 
-        const auto fn_type = rt_emitter.get_c4_funtype(arity);
-        auto fn = module.getFunction(sym_name);
-        if (!fn)
-            fn = llvm::Function::Create(fn_type, llvm::GlobalValue::ExternalLinkage,
-                                        sym_name,
-                                        module);
+        if (obj.value().const_evaluable()) {
+            global_constant_emitter constant_emitter(context, module, builder);
+            obj.value().accept_skip_self(constant_emitter);
+            last.set_constant(constant_emitter.get_loaded_global(_block_name));
+            _known_symbols[_block_name] = last.value;
+            _block_name = _block_name.substr(0, memory_len);
+            return;
+        }
 
-        fn_body_emitter body_emitter(fn, context, module, builder);
-        obj.value().accept_skip_self(body_emitter);
+        // WARNING: HORRID HACK: USING WHILE AS IF TO ALLOW BREAKING IT IN THE
+        //   MIDDLE, REFACTOR LOGIC INTO FN
+        bool effective_closure = obj.value().closure();
+        while (effective_closure) {
+            const auto datum_t = llvm::Type::getInt64Ty(context);
+            const auto index_t = llvm::Type::getInt64Ty(context);
 
-        // const auto memory = builder.GetInsertBlock();
+            std::vector<c4::ast2::symbol> effective_closure_symbols;
+            effective_closure_symbols.reserve(obj.value().closure_symbols().size());
+            std::ranges::copy_if(obj.value().closure_symbols(),
+                                 std::back_inserter(effective_closure_symbols),
+                                 [this](const auto& sym) {
+                                     return !existing_or_promised_function(sym.mangle());
+                                 });
+            if (effective_closure_symbols.empty()) {
+                effective_closure = false;
+                break;
+            }
 
-        // if (fn->empty()) llvm::BasicBlock::Create(context, "", fn);
-        // auto& fn_main_block = fn->back();
-        // builder.SetInsertPoint(&fn_main_block);
-        // const auto ret = c4rt_datum_from_int32(0);
-        // builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), ret));
+            const auto call_ctx =
+                    builder.CreateAlloca(datum_t,
+                                         llvm::ConstantInt::get(datum_t,
+                                                                effective_closure_symbols.size()),
+                                         {_block_name, ".ctx"});
+            _known_symbols[std::string(call_ctx->getName())] = call_ctx;
 
-        // builder.SetInsertPoint(memory);
+            size_t idx = 0;
+            for (const auto& closure_symbol : effective_closure_symbols) {
+                const auto store_ptr = builder.CreateGEP(
+                    datum_t,
+                    call_ctx,
+                    llvm::ConstantInt::get(index_t, idx++),
+                    llvm::Twine(_block_name, ".ctx.").concat(
+                        {closure_symbol.name(), ".addr"})
+                );
+
+                auto sym = lookup_symbol(closure_symbol.mangle());
+                if (!sym) {
+                    const auto lookup_block_name = std::string_view(_block_name).substr(0, memory_len);
+                    const auto name_sep = lookup_block_name.empty() ? "" : "$";
+                    sym = lookup_symbol(std::format("{}{}{}",
+                                                    lookup_block_name,
+                                                    name_sep,
+                                                    closure_symbol.mangle()));
+                }
+                ASSERT(sym, "symbol captured by closure not found",
+                       _known_symbols,
+                       closure_symbol.mangle());
+                builder.CreateStore(sym, store_ptr);
+            }
+            break;
+        }
+
+        const auto fn_type = rt_emitter.get_c4_funtype(arity, effective_closure);
+        const auto fn = llvm::Function::Create(fn_type, llvm::GlobalValue::ExternalLinkage,
+                                               {"_C", _block_name},
+                                               module);
+        _known_symbols[_block_name] = fn;
+
+        enter_function_emission(fn, effective_closure, obj.value(), [this](const auto& val) {
+            val.accept(*this);
+            build_return();
+        });
+
+        _block_name = _block_name.substr(0, memory_len);
     }
 
-    c4c::c4_runtime_emitter& rt_emitter;
-    llvm::LLVMContext& context;
-    llvm::Module& module;
-    llvm::IRBuilder<>& builder;
-};
-
-struct top_level_main_emitter final : c4::ast2::visitor<c4::ast2::fn_call,
-                                                        c4::ast2::binary_op_call,
-                                                        c4::ast2::unary_op_call,
-                                                        c4::ast2::integer_literal> {
-    top_level_main_emitter(c4c::c4_runtime_emitter& rt_emitter,
-                           llvm::LLVMContext& context,
-                           llvm::Module& module,
-                           llvm::IRBuilder<>& builder)
-        : val{nullptr}
-        , rt_emitter{rt_emitter}
-        , context{context}
-        , module{module}
-        , builder{builder} { }
-
     void
-    do_visit(const c4::ast2::fn_call& obj) override {
-        const auto fn_sym = obj.sym();
-
-        const auto sym_name = fn_sym.mangle();
-        const auto fn = module.getFunction(sym_name);
-        ASSERT(fn);
-
-        for (auto arg: obj.args()) arg.accept_skip_self(*this);
-        val = builder.CreateCall(fn, {val});
+    do_visit(const c4::ast2::float_literal& obj) override {
+        const auto val = c4rt_datum_from_double(obj.value());
+        last.set_constant(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), val));
     }
 
     void
-    do_visit(const c4::ast2::binary_op_call& obj) override { }
-
-    void
-    do_visit(const c4::ast2::unary_op_call& obj) override { }
+    do_visit(const c4::ast2::string_literal& obj) override {
+        if (obj.const_evaluable()) {
+            global_constant_emitter constant_emitter(context, module, builder);
+            obj.accept(constant_emitter);
+            last.set_constant(constant_emitter.get_loaded_global(_block_name));
+            return;
+        }
+        const auto global = builder.CreateGlobalStringPtr(obj.value(), {_block_name, "_sl"}, 0, &module);
+        const auto value = rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFromString, builder, global);
+        last.set_expr(value);
+        _need_cleanup.push_back(value);
+    }
 
     void
     do_visit(const c4::ast2::integer_literal& obj) override {
         if (const auto val = obj.value();
-            val < std::numeric_limits<int32_t>::max()) {
-            const auto ret = c4rt_datum_from_int32(obj.value());
-            this->val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), ret);
+            val < static_cast<std::int64_t>(std::numeric_limits<int32_t>::max())) {
+            const auto ret = c4rt_datum_from_int32(static_cast<int32_t>(obj.value()));
+            last.set_constant(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), ret));
         }
         else {
-            const auto ret = c4rt_datum_from_int64(obj.value());
-            this->val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), ret);
+            const auto value = rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFromInt64, builder,
+                                                       llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), val));
+            last.set_expr(value);
+            _need_cleanup.push_back(value);
         }
     }
 
-    llvm::Value* val;
+    void
+    finalize() {
+        _finalized = true;
+        build_return();
+        generate_cleanup(&entry->back(), _need_cleanup);
+    }
+
+    ~ir_emitter() noexcept override {
+        ASSERT(_finalized, "ir_emitter must be finalized: call finalize on it before it dies");
+    }
+
+    llvm::Function* entry;
+    last_value last{};
     c4c::c4_runtime_emitter& rt_emitter;
     llvm::LLVMContext& context;
     llvm::Module& module;
     llvm::IRBuilder<>& builder;
+
+private:
+    llvm::Value*
+    try_materialize_promise(const std::string_view sym) {
+        const auto promised_sym_it = std::ranges::find_if(promised_symbols, [sym](const auto undef_sym) {
+            return undef_sym.mangle() == sym;
+        });
+        if (promised_sym_it == promised_symbols.end())
+            return nullptr;
+
+        const auto promised_sym = *promised_sym_it;
+        promised_symbols.erase(promised_sym_it);
+
+        const auto promised_fn_type = rt_emitter.get_c4_funtype(promised_sym.arity());
+        const auto promised_fn = llvm::Function::Create(promised_fn_type, llvm::Function::ExternalLinkage,
+                                                        {"_C", promised_sym.mangle()},
+                                                        module);
+
+        _known_symbols[std::string(sym)] = promised_fn;
+        _loaded_promised_symbols[std::string(sym)] = promised_fn;
+
+        return promised_fn;
+    }
+
+    llvm::Value*
+    lookup_symbol(const std::string_view sym) {
+        if (const auto known_it = _known_symbols.find(std::string(sym));
+            known_it != _known_symbols.end()) {
+            return known_it->second;
+        }
+
+        const auto sep = _block_name.empty() ? "" : "$";
+        if (const auto known_it = _known_symbols.find(_block_name + sep + std::string(sym));
+            known_it != _known_symbols.end()) {
+            return known_it->second;
+        }
+
+        if (const auto known_it = _loaded_promised_symbols.find(std::string(sym));
+            known_it != _loaded_promised_symbols.end()) {
+            return known_it->second;
+        }
+
+        return try_materialize_promise(sym);
+    }
+
+    llvm::Value*
+    existing_or_promised_function(const std::string_view sym) {
+        const auto fn_name = "_C" + std::string(sym);
+        if (const auto fn = module.getFunction(fn_name))
+            return fn;
+        return try_materialize_promise(sym);
+    }
+
+    void
+    build_return() {
+        if (const auto it = std::ranges::find(_need_cleanup, last.value);
+            it != _need_cleanup.end()) {
+            // don't clean up stuff we are returning
+            _need_cleanup.erase(it);
+        }
+        builder.CreateRet(last.value);
+    }
+
+    void
+    emit_fn_body_from_block(const c4::ast2::block& obj) {
+        if (obj.requires_context() && _active_function->arg_size() > 0) {
+            const auto body_bb = builder.GetInsertBlock();
+            const auto ip = builder.saveIP();
+
+            const auto block = llvm::BasicBlock::Create(context, "ctx_exp", _active_function, body_bb);
+            builder.SetInsertPoint(block);
+
+            const auto datum_t = llvm::Type::getInt64Ty(context);
+            const auto gep_index_t = llvm::Type::getInt64Ty(context);
+            const auto ctx_obj = _active_function->getArg(0);
+
+            std::unordered_set<std::string_view> expanded{};
+            size_t idx = 0;
+            for (const auto& sym : obj.effective_context_symbols()) {
+                // if (const auto kit = _known_symbols.find(sym.mangle());
+                // kit == _known_symbols.end())
+                // continue; // publicly known symbol
+                // if (const auto [_, newly_inserted] = expanded.insert(sym.name());
+                // !newly_inserted)
+                // continue;
+                if (const auto kit = module.getFunction("_C" + sym.mangle());
+                    kit != nullptr)
+                    continue;
+
+                const auto ctx_param_ptr = builder.CreateGEP(datum_t, ctx_obj,
+                                                             llvm::ConstantInt::get(gep_index_t, idx++),
+                                                             {sym.name(), ".addr"});
+                const auto ctx_param = builder.CreateLoad(datum_t, ctx_param_ptr, sym.name());
+                _known_symbols[sym.mangle()] = ctx_param;
+            }
+
+            builder.CreateBr(body_bb);
+            builder.restoreIP(ip);
+        }
+        for (const auto& expr : obj.expressions()) {
+            expr.accept_skip_self(*this);
+        }
+    }
+
+    void
+    generate_cleanup(llvm::BasicBlock* fn_body,
+                     const std::span<llvm::Value*const> cleanup) const {
+        if (cleanup.empty()) return;
+
+        const auto block_sz = static_cast<long long>(fn_body->size());
+        const auto cleanup_block = fn_body->splitBasicBlock(std::next(fn_body->begin(), block_sz - 1), "cleanup");
+        builder.SetInsertPoint(cleanup_block->begin());
+        for (const auto& to_clean : cleanup) {
+            rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFree, builder, to_clean);
+        }
+    }
+
+    template<class Fn>
+    void
+    enter_function_emission(llvm::Function* fn,
+                            const bool closure,
+                            const c4::ast2::expression& val,
+                            Fn&& emitter) {
+        const auto last_ip = builder.saveIP();
+        const auto fn_mem = _active_function;
+        const auto closure_mem = _function_is_closure;
+        const auto symbol_mem = _known_symbols;
+        const auto cleanup_mem = std::exchange(_need_cleanup, {});
+
+        _active_function = fn;
+        _function_is_closure = closure;
+
+        const auto fn_body = llvm::BasicBlock::Create(context, "body", fn);
+        builder.SetInsertPoint(fn_body);
+        std::invoke(std::forward<Fn>(emitter), val);
+
+        generate_cleanup(fn_body, std::exchange(_need_cleanup, cleanup_mem));
+        _known_symbols = symbol_mem;
+        _function_is_closure = closure_mem;
+        _active_function = fn_mem;
+        builder.restoreIP(last_ip);
+    }
+
+    bool _finalized{false};
+    bool _function_is_closure{false};
+    std::string _block_name{};
+    llvm::Function* _active_function{};
+    std::vector<llvm::Value*> _need_cleanup{};
+
+    // symbol management algorithm --
+    //   At a given point in time _known_symbols holds the set of known symbols.
+    //   When a new block is entered, a copy is saved and restored upon exit. In
+    //   promised_symbols is an only shrinking list of symbols that were
+    //   promised to exist to the parser. When a symbol is not known, it is
+    //   looked up in promised_symbols and moved to the known symbols AND copied
+    //   to loaded promised functions. This contains a set of functions that
+    //   were resolved during code emission and removed from promised symbols.
+    //   Upon a lookup failure in known symbols, a secondary lookup happens in
+    //   loaded_promised_symbols.
+    std::unordered_map<std::string, llvm::Value*> _known_symbols;
+    std::unordered_map<std::string, llvm::Value*> _loaded_promised_symbols;
+    std::vector<c4::ast2::undef_symbol> promised_symbols;
 };
 
 int
@@ -318,7 +709,7 @@ main(int argc, const char** argv) {
 
     const auto cli = lyra::cli()
                      | lyra::help(show_help).description(
-                         "Compile a C4 script into object an object file.")(
+                         "Compile a C4 script into an object file.")(
                          "Do not compile, print help and exit.")
                      | lyra::opt(out_path, "output")["-o"]["--output"](
                          "The name of the output file. When -d is set, STDOUT if `-'.")
@@ -373,7 +764,8 @@ main(int argc, const char** argv) {
 
     try {
         const auto script = parser.parse_script();
-        if (!parser.valid()) return 1;
+        if (!parser.valid())
+            return 1;
 
         if (dump_type == "AST") {
             auto outstrm = open_outstream(out_path);
@@ -401,6 +793,13 @@ main(int argc, const char** argv) {
         module.setDataLayout(machine->createDataLayout());
         module.setTargetTriple(target_triple);
 
+        c4c::c4_runtime_emitter rt_emitter(context, module);
+        auto ir = ir_emitter(rt_emitter, context, module, builder, parser.promised_symbols());
+        for (const auto& expression : script) {
+            expression.accept(ir);
+        }
+        ir.finalize();
+
         auto entry_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false);
         auto crt = llvm::Function::Create(entry_type, llvm::Function::ExternalLinkage,
                                           "mainCRTStartup",
@@ -408,22 +807,10 @@ main(int argc, const char** argv) {
         auto crt_bb = llvm::BasicBlock::Create(context, "", crt);
         builder.SetInsertPoint(crt_bb);
 
-        c4c::c4_runtime_emitter rt_emitter(context, module);
-        for (const auto& sym: parser.promised_symbols()) {
-            const auto fn_type = rt_emitter.get_c4_funtype(sym.arity);
-            llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, sym.mangle(), module);
-        }
-
-        top_level_function_emitter tl_fn_emitter(rt_emitter, context, module, builder);
-        top_level_main_emitter main_emitter(rt_emitter, context, module, builder);
-
-        for (const auto& expression: script) {
-            expression.accept_skip_self(tl_fn_emitter);
-            expression.accept_skip_self(main_emitter);
-        }
-
+        const auto c4_ret = builder.CreateCall(ir.entry);
         const auto main_ret_call = rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumCoerceInt32, builder,
-                                                           {main_emitter.val});
+                                                           {c4_ret});
+        rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFree, builder, {c4_ret});
         builder.CreateRet(main_ret_call);
 
         if (dump_type == "IR") {
@@ -447,7 +834,8 @@ main(int argc, const char** argv) {
         }
 
         auto out_type = llvm::CodeGenFileType::ObjectFile;
-        if (dump_type == "ASM") out_type = llvm::CodeGenFileType::AssemblyFile;
+        if (dump_type == "ASM")
+            out_type = llvm::CodeGenFileType::AssemblyFile;
 
         llvm::legacy::PassManager pass_mgr;
         machine->addPassesToEmitFile(pass_mgr,

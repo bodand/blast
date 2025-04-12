@@ -51,7 +51,8 @@ namespace c4::ast2 {
 
     struct let_expression final : tags::clonable
                                   , tags::visitable
-                                  , tags::source_positioned {
+                                  , tags::source_positioned
+                                  , tags::evaluation_constness {
         let_expression(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
@@ -77,8 +78,15 @@ namespace c4::ast2 {
         [[nodiscard]] const expression&
         value() const;
 
-        std::string
+        [[nodiscard]] std::string
         mangled_name() const { return _symbol.mangle(); }
+
+        [[nodiscard]] bool
+        requires_dynamic_code() const;
+
+        [[nodiscard]] bool
+        is_constant_evaluable() const noexcept;
+
     private:
         let_expression(const c4::position& position,
                        std::string_view file_source,

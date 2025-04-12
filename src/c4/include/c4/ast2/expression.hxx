@@ -36,6 +36,7 @@
 #ifndef C4_AST2_EXPRESSION_HXX
 #define C4_AST2_EXPRESSION_HXX
 
+#include <functional>
 #include <utility>
 #include <variant>
 
@@ -55,7 +56,8 @@
 namespace c4::ast2 {
     struct expression final : tags::clonable
                               , tags::visitable
-                              , tags::source_positioned {
+                              , tags::source_positioned
+                              , tags::evaluation_constness {
         using value_type = std::variant<
             float_literal,
             integer_literal,
@@ -95,6 +97,11 @@ namespace c4::ast2 {
 
         [[nodiscard]] std::span<const symbol>
         closure_symbols() const noexcept { return _closure_symbols; }
+
+        [[nodiscard]] bool
+        is_constant_evaluable() const noexcept {
+            return std::visit([](const auto& x) { return x.const_evaluable(); }, _value);
+        }
 
     private:
         value_type _value;

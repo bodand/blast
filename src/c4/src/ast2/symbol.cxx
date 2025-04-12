@@ -47,28 +47,28 @@ c4::ast2::symbol::symbol(const c4::position& position,
                          const std::string_view name,
                          const unsigned arity)
     : source_positioned{
-        position,
-        file_source,
-        length
-    }
-    , _name{std::move(name)}
-    , _arity{arity} {
+          position,
+          file_source,
+          length
+      }
+      , _name{name}
+      , _arity{arity} {
     DEBUG_ASSERT(!_name.empty(), "symbol name must not be empty");
 }
 
 namespace {
     std::string
     mangle_symbol(std::string_view name, const unsigned arity) {
-        constexpr static auto operator_chars =
-                "-+*/%&|~!?,.:^@#`<>="sv;
-        constexpr static auto operator_char_replacement =
-                "mptsPaoTeqcdChAHblgE"sv;
+        // clang-format off
+        constexpr static auto operator_chars =            "-+*/%&|~!?,.:^@#`<>="sv;
+        constexpr static auto operator_char_replacement = "mptsPaoTeqcdChAHblgE"sv;
+        // clang-format on
         static_assert(operator_chars.size() == operator_char_replacement.size(),
                       "replacement set must equal operator set");
 
         if (const auto idx = name.find_first_of(operator_chars);
             idx == std::string_view::npos)
-            return fmt::format("_c4_{}_{}", arity, name);
+            return fmt::format("{}{}{}", name.size(), name, arity);
 
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(),
@@ -77,7 +77,7 @@ namespace {
                                    if (c_idx == std::string_view::npos) return c;
                                    return operator_char_replacement[c_idx];
                                });
-        return fmt::format("_c4_op_{}_{}", arity, normalized);
+        return fmt::format("op{}{}{}", normalized.size(), normalized, arity);
     }
 }
 
@@ -92,7 +92,7 @@ std::string
 c4::ast2::symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
 std::string
-c4::ast2::undef_symbol::mangle() const { return mangle_symbol(name, arity); }
+c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
 c4::ast2::op_symbol::op_symbol(const c4::position& position,
                                const std::string_view file_source,
@@ -100,8 +100,8 @@ c4::ast2::op_symbol::op_symbol(const c4::position& position,
                                const std::string_view name,
                                const unsigned arity)
     : source_positioned{position, file_source, length}
-    , _name{name}
-    , _arity{arity} {
+      , _name{name}
+      , _arity{arity} {
     DEBUG_ASSERT(!_name.empty(), "operator name must not be empty");
     DEBUG_ASSERT(arity < 3, "operator arity must be less than 3", _name);
     DEBUG_ASSERT(arity > 0, "operator arity must be greater than 0", _name);

@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,46 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/include/c4/ast2/integer_literal --
- *   
- */
-#ifndef C4_AST2_INTEGER_LITERAL_HXX
-#define C4_AST2_INTEGER_LITERAL_HXX
+ * src/c4/include/c4/ast2/tags/evaluation_constness --
+ *   Whether a given AST node is a constant value and does not require dynamic
+ *   code do generate/use.
+ *   This is true for small literals (i32, floats, sso-strings).
+ **/
+#ifndef C4_AST2_EVALUATION_CONSTNESS_HXX
+#define C4_AST2_EVALUATION_CONSTNESS_HXX
 
-#include <string_view>
-#include <cstdint>
-
-#include <c4/ast2/tags/clonable.hxx>
-#include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-#include <string_view>
-#include <cstdint>
-
-#include <c4/ast2/tags/clonable.hxx>
-#include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-#include <c4/ast2/tags/evaluation_constness.hxx>
-
-namespace c4::ast2 {
-    struct integer_literal final : tags::clonable
-                                   , tags::visitable
-                                   , tags::source_positioned
-                                   , tags::constant_node {
-        integer_literal(const c4::position& position,
-                        const std::string_view file_source,
-                        const std::size_t length,
-                        const std::int64_t value)
-            : source_positioned{position, file_source, length}
-              , _value{value} {
+namespace c4::ast2::tags {
+    struct evaluation_constness {
+        [[nodiscard]] bool
+        const_evaluable(this auto&& self) noexcept {
+            return self.is_constant_evaluable();
         }
+    };
 
-        [[nodiscard]] std::int64_t
-        value() const { return _value; }
+    struct dynamic_node : evaluation_constness {
+        [[nodiscard]] static consteval bool
+        is_constant_evaluable() noexcept { return false; }
+    };
 
-    private:
-        std::int64_t _value;
+    struct constant_node : evaluation_constness {
+        [[nodiscard]] static consteval bool
+        is_constant_evaluable() noexcept { return true; }
     };
 }
+
 #endif
