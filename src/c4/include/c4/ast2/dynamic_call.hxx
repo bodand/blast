@@ -39,27 +39,25 @@
 #include <vector>
 #include <span>
 
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 #include <c4/ast2/expression_deleter.hxx>
 
 namespace c4::ast2 {
-    struct dynamic_call final : tags::clonable
-                                , tags::visitable
+    struct dynamic_call final : tags::visitable
                                 , tags::source_positioned
                                 , tags::dynamic_node {
         dynamic_call(const c4::position& position,
                      std::string_view file_source,
                      std::size_t length,
                      expression&& callee,
-                     std::span<expression> args);
+                     std::vector<expression>&& args);
 
-        dynamic_call(const dynamic_call& cp);
+        dynamic_call(const dynamic_call& cp) = delete;
 
         dynamic_call&
-        operator=(const dynamic_call& cp);
+        operator=(const dynamic_call& cp) = delete;
 
         dynamic_call(dynamic_call&& other) noexcept = default;
 

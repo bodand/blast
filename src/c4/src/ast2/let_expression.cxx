@@ -50,21 +50,6 @@ c4::ast2::let_expression::let_expression(const c4::position& position,
     , _symbol{std::move(symbol)}
     , _value{expression_ptr(new expression(std::move(expr)))} { }
 
-c4::ast2::let_expression::let_expression(const let_expression& cp)
-    : source_positioned{cp}
-    , _symbol{cp._symbol}
-    , _value{cp._value->clone().release()} { }
-
-c4::ast2::let_expression&
-c4::ast2::let_expression::operator=(const let_expression& cp) {
-    DEBUG_ASSERT(&cp != this, "self-assignment is undefined");
-
-    source_positioned::operator=(cp);
-    _symbol = cp._symbol;
-    _value = expression_ptr(cp._value->clone().release());
-    return *this;
-}
-
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
     DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);

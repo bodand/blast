@@ -38,23 +38,23 @@
 
 #include <string_view>
 
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/evaluation_constness.hxx>
+#include <c4/ast2/tags/attributable.hxx>
+#include <c4/ast2/tags/referable.hxx>
 
 namespace c4::ast2 {
-    struct float_literal final : tags::clonable
-                                 , tags::visitable
+    struct float_literal final : tags::visitable
                                  , tags::source_positioned
-                                 , tags::constant_node {
+                                 , tags::constant_node
+                                 , tags::attributable {
         float_literal(const c4::position& position,
                       const std::string_view file_source,
                       const std::size_t length,
                       const double value)
             : source_positioned{position, file_source, length}
-              , _value{value} {
-        }
+            , _value{value} { }
 
         [[nodiscard]] double
         value() const { return _value; }

@@ -50,12 +50,10 @@
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/dynamic_call.hxx>
 
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
-    struct expression final : tags::clonable
-                              , tags::visitable
+    struct expression final : tags::visitable
                               , tags::source_positioned
                               , tags::evaluation_constness {
         using value_type = std::variant<
@@ -80,6 +78,16 @@ namespace c4::ast2 {
                    std::size_t length,
                    value_type value,
                    std::span<symbol> closure_over = {});
+
+        expression(const expression&) = delete;
+
+        expression&
+        operator=(const expression&) = delete;
+
+        expression(expression&&) noexcept = default;
+
+        expression&
+        operator=(expression&&) noexcept = default;
 
         [[nodiscard]] const value_type&
         value() const { return _value; }

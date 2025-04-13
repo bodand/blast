@@ -28,28 +28,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/dynamic_call --
+ * src/c4/src/ast2/tags/attributable --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/dynamic_call.hxx>
+#include <ranges>
 
-#include <libassert/assert.hpp>
+#include <c4/ast2/tags/attributable.hxx>
 
-c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
-                                     const std::string_view file_source,
-                                     const std::size_t length,
-                                     expression&& callee,
-                                     std::vector<expression>&& args)
-    : source_positioned{position, file_source, length}
-    , _callee{new expression(std::move(callee))}
-    , _args{std::move(args)} { }
-
-const c4::ast2::expression&
-c4::ast2::dynamic_call::callee() const { return *_callee; }
-
-std::span<const c4::ast2::expression>
-c4::ast2::dynamic_call::args() const { return _args; }
+c4::ast2::tags::attributable::~attributable() {
+    for (const auto& ptr : _attributes | std::views::values) {
+        delete ptr;
+    }
+}

@@ -39,6 +39,7 @@
 #include <stdexcept>
 #include <expected>
 #include <vector>
+#include <deque>
 
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/string_literal.hxx>
@@ -105,7 +106,7 @@ namespace c4::p2 {
         ast2::expression
         parse_expression();
 
-        ast2::let_expression
+        c4::ast2::expression
         parse_let_expression();
 
         ast2::expression
@@ -117,11 +118,11 @@ namespace c4::p2 {
         ast2::block_args
         parse_block_args();
 
-        std::vector<ast2::expression>
+        std::deque<c4::ast2::expression>
         parse_script();
 
         void
-        declare_symbol(std::string_view symbol, unsigned arity);
+        declare_symbol(std::string_view symbol, unsigned arity, ast2::tags::referable* referee);
 
         void
         declare_binop(std::string_view symbol, unsigned precedence, bool right_assoc);
@@ -132,7 +133,7 @@ namespace c4::p2 {
         [[nodiscard]] bool
         valid() const noexcept { return _valid; }
 
-        std::vector<ast2::undef_symbol>
+        [[nodiscard]] std::vector<ast2::undef_symbol>
         promised_symbols() const;
 
     private:
@@ -151,11 +152,14 @@ namespace c4::p2 {
         struct parser_symbol {
             std::string_view name;
             unsigned arity;
+            ast2::tags::referable* referee;
 
             parser_symbol(const std::string_view& name,
-                          const unsigned arity)
+                          const unsigned arity,
+                          ast2::tags::referable* referee)
                 : name{name}
-                , arity{arity} { }
+                , arity{arity}
+                , referee{referee} { }
 
             bool
             operator==(const ast2::symbol& sym) const noexcept {
@@ -201,6 +205,11 @@ namespace c4::p2 {
 
         void
         leave_scope();
+
+        ::c4::p2::parser::parser_symbol&
+        declare_symbol_internal(std::string_view symbol,
+                       unsigned arity,
+                       ast2::tags::referable* referee);
 
         template<class T>
         std::expected<T, source_diagnostic>

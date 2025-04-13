@@ -36,8 +36,11 @@
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
 
-#include <c4/ast2/tags/clonable.hxx>
+#include <functional>
 #include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/ast2/tags/visitable.hxx>
+#include <c4/ast2/tags/attributable.hxx>
+#include <c4/ast2/tags/referable.hxx>
 
 #include <c4/ast2/expression_deleter.hxx>
 #include <c4/ast2/symbol.hxx>
@@ -45,39 +48,76 @@
 #include <span>
 #include <optional>
 #include <vector>
-#include <c4/ast2/tags/visitable.hxx>
+#include <libassert/assert.hpp>
 
 namespace c4::ast2 {
-    struct block_args : tags::clonable
-                        , tags::visitable
-                        , tags::source_positioned
-                        , tags::constant_node {
+    struct block_argument final : tags::referable {
+        explicit
+        block_argument(const symbol& symbol)
+            : _symbol{symbol} { }
+
+        [[nodiscard]] const symbol&
+        symbol() const noexcept { return _symbol; }
+
+        std::string_view
+        name() override { return _symbol.name(); }
+
+    private:
+        struct symbol _symbol;
+    };
+
+    struct block_args final : tags::visitable
+                              , tags::source_positioned
+                              , tags::constant_node {
         block_args(const c4::position& position,
                    std::string_view file_source,
                    std::size_t length,
                    std::span<symbol> args);
 
-        [[nodiscard]] std::span<const symbol>
-        args() const { return {_args}; }
+        [[nodiscard]] std::vector<symbol>
+        args() const {
+            std::vector<symbol> result;
+            result.reserve(_args.size());
+            std::ranges::transform(_args, std::back_inserter(result),
+                                   std::mem_fn(&block_argument::symbol));
+            return result;
+        }
+
+        [[nodiscard]] std::size_t
+        size() const noexcept {
+            return _args.size();
+        }
+
+        [[nodiscard]] block_argument&
+        argument_reference(std::size_t arg_idx) {
+            DEBUG_ASSERT(arg_idx < _args.size());
+            return _args[arg_idx];
+        }
+
+        [[nodiscard]] const block_argument&
+        argument_reference(std::size_t arg_idx) const {
+            DEBUG_ASSERT(arg_idx < _args.size());
+            return _args[arg_idx];
+        }
 
     private:
-        std::vector<symbol> _args{};
+        std::vector<block_argument> _args{};
     };
 
-    struct block final : tags::clonable
-                         , tags::visitable
+    struct block final : tags::visitable
                          , tags::source_positioned
-                         , tags::dynamic_node {
+                         , tags::dynamic_node
+                         , tags::attributable {
         block(const c4::position& position,
               std::string_view file_source,
               std::size_t length,
               block_args&& args,
-              std::span<expression> expressions);
+              std::vector<expression>&& expressions);
 
         block(const c4::position& position,
               std::string_view file_source,
               std::size_t length,
-              std::span<expression> expressions);
+              std::vector<expression>&& expressions);
 
         [[nodiscard]] std::optional<block_args>
         args() const { return _args; }
@@ -85,7 +125,7 @@ namespace c4::ast2 {
         [[nodiscard]] std::size_t
         arity() const noexcept {
             return _args.and_then([](const auto& args) -> std::optional<std::size_t> {
-                return args.args().size();
+                return args.size();
             }).value_or(0);
         }
 

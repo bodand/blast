@@ -49,17 +49,17 @@ c4::ast2::block::block(const c4::position& position,
                        const std::string_view file_source,
                        const std::size_t length,
                        block_args&& args,
-                       const std::span<expression> expressions)
+                       std::vector<expression>&& expressions)
     : source_positioned{position, file_source, length}
     , _args(std::move(args))
-    , _expressions{expressions.begin(), expressions.end()} { }
+    , _expressions{std::move(expressions)} { }
 
 c4::ast2::block::block(const c4::position& position,
                        const std::string_view file_source,
                        const std::size_t length,
-                       const std::span<expression> expressions)
+                       std::vector<expression>&& expressions)
     : source_positioned{position, file_source, length}
-    , _expressions{expressions.begin(), expressions.end()} { }
+    , _expressions{std::move(expressions)} { }
 
 bool
 c4::ast2::block::requires_context() const noexcept {

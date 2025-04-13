@@ -47,12 +47,12 @@ c4::ast2::symbol::symbol(const c4::position& position,
                          const std::string_view name,
                          const unsigned arity)
     : source_positioned{
-          position,
-          file_source,
-          length
-      }
-      , _name{name}
-      , _arity{arity} {
+        position,
+        file_source,
+        length
+    }
+    , _name{name}
+    , _arity{arity} {
     DEBUG_ASSERT(!_name.empty(), "symbol name must not be empty");
 }
 
@@ -94,14 +94,26 @@ c4::ast2::symbol::mangle() const { return mangle_symbol(_name, _arity); }
 std::string
 c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
+void
+c4::ast2::symbol::references(tags::referable* ref) noexcept {
+    if (ref == nullptr) {
+        _references = nullptr;
+        return;
+    }
+
+    DEBUG_ASSERT(ref->name() == _name,
+                 "referenced entity must have the same name");
+    _references = ref;
+}
+
 c4::ast2::op_symbol::op_symbol(const c4::position& position,
                                const std::string_view file_source,
                                const std::size_t length,
                                const std::string_view name,
                                const unsigned arity)
     : source_positioned{position, file_source, length}
-      , _name{name}
-      , _arity{arity} {
+    , _name{name}
+    , _arity{arity} {
     DEBUG_ASSERT(!_name.empty(), "operator name must not be empty");
     DEBUG_ASSERT(arity < 3, "operator arity must be less than 3", _name);
     DEBUG_ASSERT(arity > 0, "operator arity must be greater than 0", _name);

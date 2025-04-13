@@ -59,22 +59,6 @@ c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
                  "binary operator cannot have null subexpression");
 }
 
-c4::ast2::binary_op_call::binary_op_call(const binary_op_call& cp)
-    : source_positioned(cp)
-    , _op(cp._op)
-    , _left(cp._left->clone().release())
-    , _right(cp._right->clone().release()) { }
-
-c4::ast2::binary_op_call&
-c4::ast2::binary_op_call::operator=(const binary_op_call& cp) {
-    DEBUG_ASSERT(&cp != this, "self-assignment is undefined");
-    source_positioned::operator =(cp);
-    _op = cp._op;
-    _left = expression_ptr(cp._left->clone().release());
-    _right = expression_ptr(cp._right->clone().release());
-    return *this;
-}
-
 const c4::ast2::expression&
 c4::ast2::binary_op_call::left() const noexcept { return *_left; }
 
@@ -94,20 +78,6 @@ c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
                  _op);
     DEBUG_ASSERT(_operand != nullptr,
                  "unary operator cannot have null subexpression");
-}
-
-c4::ast2::unary_op_call::unary_op_call(const unary_op_call& cp)
-    : source_positioned{cp}
-    , _op{cp._op}
-    , _operand{cp._operand->clone().release()} { }
-
-c4::ast2::unary_op_call&
-c4::ast2::unary_op_call::operator=(const unary_op_call& cp) {
-    DEBUG_ASSERT(&cp != this, "self-assignment is undefined");
-    source_positioned::operator=(cp);
-    _op = cp._op;
-    _operand = expression_ptr(cp._operand->clone().release());
-    return *this;
 }
 
 const c4::ast2::expression&

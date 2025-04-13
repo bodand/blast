@@ -36,7 +36,6 @@
 #ifndef C4_AST2_FN_CALL_HXX
 #define C4_AST2_FN_CALL_HXX
 
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/symbol.hxx>
@@ -48,15 +47,24 @@
 namespace c4::ast2 {
     struct expression;
 
-    struct fn_call final : tags::clonable
-                           , tags::visitable
+    struct fn_call final : tags::visitable
                            , tags::source_positioned
                            , tags::dynamic_node {
         fn_call(const c4::position& position,
                 std::string_view file_source,
                 std::size_t length,
                 const symbol& sym,
-                std::span<expression> args);
+                std::vector<expression>&& args);
+
+        fn_call(const fn_call& cp) = delete;
+
+        fn_call&
+        operator=(const fn_call& cp) = delete;
+
+        fn_call(fn_call&& mv) noexcept = default;
+
+        fn_call&
+        operator=(fn_call&& mv) noexcept = default;
 
         [[nodiscard]] symbol
         sym() const { return _sym; }

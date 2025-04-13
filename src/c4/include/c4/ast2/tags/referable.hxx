@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,28 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/include/c4/ast2/tags/clonable --
+ * src/c4/include/c4/ast2/tags/referable --
  *   
  */
-#ifndef C4_AST2_TAGS_CLONABLE_HXX
-#define C4_AST2_TAGS_CLONABLE_HXX
+#ifndef C4_AST2_REFERABLE_HXX
+#define C4_AST2_REFERABLE_HXX
 
-#include <memory>
-#include <utility>
-#include <type_traits>
+#include <string_view>
+
+#include <c4/ast2/tags/attributable.hxx>
 
 namespace c4::ast2::tags {
-    struct clonable {
-        auto
-        clone(this auto&& self) {
-            return std::make_unique<std::remove_cvref_t<decltype(self)>>(
-                std::forward<decltype(self)>(self));
-        }
+    struct referable : attributable {
+        virtual std::string_view
+        name() = 0;
 
-    protected:
-        clonable() = default;
+        ~referable() override = default;
     };
 }
 

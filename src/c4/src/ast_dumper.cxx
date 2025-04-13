@@ -46,12 +46,13 @@ c4::ast_dumper::do_visit(const ast2::block_args& obj) {
         return;
     }
 
+    size_t i = 0;
     for (const auto& expr: args | std::views::take(args.size() - 1)) {
         expr.accept(*this);
-        os << " ";
+        os << "@" << &obj.argument_reference(i++) << " ";
     }
     args.back().accept(*this);
-    os << "]";
+    os << "@" << &obj.argument_reference(i++) << "]";
 }
 
 void
@@ -101,10 +102,10 @@ c4::ast_dumper::do_visit(const ast2::expression& obj) {
     auto syms = obj.closure_symbols();
     for (const auto& expr: syms | std::views::take(syms.size() - 1)) {
         expr.accept(*this);
-        os << " ";
+        os << "@" << expr.references() << " ";
     }
     syms.back().accept(*this);
-    os << "] ";
+    os << "@" << syms.back().references() << "] ";
 
     obj.accept_skip_self(*this);
     os << ")";
@@ -114,7 +115,7 @@ void
 c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
     os << "(";
     obj.sym().accept(*this);
-    os << " ";
+    os << "@" << obj.sym().references() << " ";
 
     auto expressions = obj.args();
     if (expressions.empty()) {
@@ -134,7 +135,7 @@ void
 c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
     os << "(let ";
     obj.symbol().accept(*this);
-    os << " ";
+    os << "@" << &obj << " ";
     obj.value().accept(*this);
     os << ")";
 }

@@ -40,8 +40,8 @@
 #include <c4/ast2/expression_deleter.hxx>
 
 #include <c4/ast2/tags/source_positioned.hxx>
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
+#include <c4/ast2/tags/referable.hxx>
 
 #include <memory>
 #include <utility>
@@ -49,20 +49,20 @@
 namespace c4::ast2 {
     struct expression;
 
-    struct let_expression final : tags::clonable
-                                  , tags::visitable
+    struct let_expression final : tags::visitable
                                   , tags::source_positioned
-                                  , tags::evaluation_constness {
+                                  , tags::evaluation_constness
+                                  , tags::referable {
         let_expression(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
                        symbol symbol,
                        expression&& expr);
 
-        let_expression(const let_expression& cp);
+        let_expression(const let_expression& cp) = delete;
 
         let_expression&
-        operator=(const let_expression& cp);
+        operator=(const let_expression& cp) = delete;
 
         let_expression(let_expression&&) noexcept = default;
 
@@ -82,10 +82,10 @@ namespace c4::ast2 {
         mangled_name() const { return _symbol.mangle(); }
 
         [[nodiscard]] bool
-        requires_dynamic_code() const;
-
-        [[nodiscard]] bool
         is_constant_evaluable() const noexcept;
+
+        std::string_view
+        name() override { return _symbol.name(); }
 
     private:
         let_expression(const c4::position& position,

@@ -71,8 +71,6 @@ add_library(c4
             include/c4/ast2/expression.hxx
             include/c4/ast2/fn_call.hxx
             src/ast2/fn_call.cxx
-            include/c4/ast2/tags/clonable.hxx
-            src/ast2/tags/clonable.cxx
             include/c4/p2/lex/string_rule.hxx
             src/p2/lex/string_rule.cxx
             include/c4/ast2/expression_deleter.hxx
@@ -94,6 +92,10 @@ add_library(c4
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
             include/c4/ast2/tags/evaluation_constness.hxx
+            include/c4/ast2/tags/attributable.hxx
+            src/ast2/tags/attributable.cxx
+            include/c4/ast2/tags/referable.hxx
+            src/ast2/tags/referable.cxx
             )
 
 target_link_libraries(c4

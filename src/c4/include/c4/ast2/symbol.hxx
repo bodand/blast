@@ -41,11 +41,10 @@
 #include <string>
 #include <cmath>
 
-#include <c4/ast2/tags/clonable.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
-
-#include "tags/evaluation_constness.hxx"
+#include <c4/ast2/tags/evaluation_constness.hxx>
+#include <c4/ast2/tags/referable.hxx>
 
 namespace c4::ast2 {
     /**
@@ -55,8 +54,7 @@ namespace c4::ast2 {
     struct undef_symbol {
         undef_symbol(const std::string_view& name, const unsigned arity)
             : _name{name}
-              , _arity{arity} {
-        }
+            , _arity{arity} { }
 
         [[nodiscard]] std::string
         mangle() const;
@@ -76,8 +74,7 @@ namespace c4::ast2 {
         unsigned _arity;
     };
 
-    struct symbol final : tags::clonable
-                          , tags::visitable
+    struct symbol final : tags::visitable
                           , tags::source_positioned
                           , tags::dynamic_node {
         symbol(const c4::position& position,
@@ -92,7 +89,7 @@ namespace c4::ast2 {
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
 
-        symbol
+        [[nodiscard]] symbol
         with_arity(unsigned arity) const;
 
         [[nodiscard]] std::string
@@ -124,13 +121,19 @@ namespace c4::ast2 {
         friend bool
         operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
 
+        [[nodiscard]] tags::referable*
+        references() const noexcept { return _references; }
+
+        void
+        references(tags::referable* ref) noexcept;
+
     private:
+        tags::referable* _references{};
         std::string_view _name;
         unsigned _arity;
     };
 
-    struct op_symbol final : tags::clonable
-                             , tags::visitable
+    struct op_symbol final : tags::visitable
                              , tags::source_positioned
                              , tags::dynamic_node {
         op_symbol(const c4::position& position,

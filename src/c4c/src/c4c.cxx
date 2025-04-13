@@ -99,18 +99,24 @@ open_outstream(const std::filesystem::path& path) {
     return ptr;
 }
 
+template<class It, class S = It>
 void
-dump_ast(const std::span<const c4::ast2::expression> script,
-         std::ostream& out) {
+dump_ast(It begin, S end, std::ostream& out) {
     c4::ast_dumper dumper(out);
-    for (const auto& expression : script) {
-        expression.accept(dumper);
+    std::for_each(begin, end, [&dumper, &out](const auto& expr) {
+        expr.accept(dumper);
         out << "\n";
-    }
+    });
 }
 
 void
 initialize_targets();
+
+struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
+    explicit
+    llvm_value_attribute(llvm::Value* const& value)
+        : typed_attribute{value} { }
+};
 
 struct global_constant_emitter final : c4::ast2::visitor<
             c4::ast2::float_literal,
@@ -143,6 +149,7 @@ struct global_constant_emitter final : c4::ast2::visitor<
         _value_type_suffix = "_il";
         const auto rt_value = c4rt_datum_from_int32(static_cast<int32_t>(obj.value()));
         create_global(rt_value);
+        obj.emplace_attribute<llvm_value_attribute>("value", value);
     }
 
     void
@@ -313,8 +320,8 @@ struct ir_emitter final : c4::ast2::visitor<
         const auto fn = cast<llvm::Function>(callee_val);
 
         std::vector<llvm::Value*> args(1);
-        std::ranges::transform(std::array{obj.operand()}, args.begin(), [this](const c4::ast2::expression& arg) {
-            arg.accept(*this);
+        std::ranges::transform(std::array{&obj.operand()}, args.begin(), [this](const c4::ast2::expression* arg) {
+            arg->accept(*this);
             return this->last.value;
         });
 
@@ -345,9 +352,9 @@ struct ir_emitter final : c4::ast2::visitor<
         const auto fn = cast<llvm::Function>(callee_val);
 
         std::vector<llvm::Value*> args(2);
-        std::ranges::transform(std::array{obj.left(), obj.right()}, args.begin(),
-                               [this](const c4::ast2::expression& arg) {
-                                   arg.accept(*this);
+        std::ranges::transform(std::array{&obj.left(), &obj.right()}, args.begin(),
+                               [this](const c4::ast2::expression* arg) {
+                                   arg->accept(*this);
                                    return this->last.value;
                                });
 
@@ -360,7 +367,7 @@ struct ir_emitter final : c4::ast2::visitor<
         const auto formal_args_size = _function_is_closure
                                       ? _active_function->arg_size() - 1
                                       : _active_function->arg_size();
-        ASSERT(formal_args_size == obj.args().size(),
+        ASSERT(formal_args_size == obj.size(),
                "defining function with invalid argument size block");
 
         const auto args = _active_function->args();
@@ -754,13 +761,13 @@ main(int argc, const char** argv) {
 
     parser.declare_uniop("~");
 
-    parser.declare_symbol("print", 1);
-    parser.declare_symbol("println", 1);
-    parser.declare_symbol("add", 2);
-    parser.declare_symbol("if", 3);
-    parser.declare_symbol("str_empty", 1);
-    parser.declare_symbol("cat", 2);
-    parser.declare_symbol("readln", 0);
+    parser.declare_symbol("print", 1, nullptr);
+    parser.declare_symbol("println", 1, nullptr);
+    parser.declare_symbol("add", 2, nullptr);
+    parser.declare_symbol("if", 3, nullptr);
+    parser.declare_symbol("str_empty", 1, nullptr);
+    parser.declare_symbol("cat", 2, nullptr);
+    parser.declare_symbol("readln", 0, nullptr);
 
     try {
         const auto script = parser.parse_script();
@@ -769,7 +776,7 @@ main(int argc, const char** argv) {
 
         if (dump_type == "AST") {
             auto outstrm = open_outstream(out_path);
-            dump_ast(script, *outstrm);
+            dump_ast(script.begin(), script.end(), *outstrm);
             return 0;
         }
 

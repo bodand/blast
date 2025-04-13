@@ -229,13 +229,13 @@ let különben/1 \|x| x
 
     parser.declare_uniop("~");
 
-    parser.declare_symbol("print", 1);
-    parser.declare_symbol("println", 1);
-    parser.declare_symbol("add", 2);
-    parser.declare_symbol("if", 3);
-    parser.declare_symbol("str_empty", 1);
-    parser.declare_symbol("cat", 2);
-    parser.declare_symbol("readln", 0);
+    parser.declare_symbol("print", 1, TODO);
+    parser.declare_symbol("println", 1, TODO);
+    parser.declare_symbol("add", 2, TODO);
+    parser.declare_symbol("if", 3, TODO);
+    parser.declare_symbol("str_empty", 1, TODO);
+    parser.declare_symbol("cat", 2, TODO);
+    parser.declare_symbol("readln", 0, TODO);
 
     llvm::LLVMContext context;
     llvm::Module module("c4-jit", context);
