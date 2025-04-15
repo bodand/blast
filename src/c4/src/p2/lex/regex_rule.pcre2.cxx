@@ -137,38 +137,76 @@ namespace {
         auto str_view = str | una::views::utf8;
         return std::distance(str_view.begin(), str_view.end());
     }
+
+    struct line_data {
+        std::string_view remaining_buffer;
+        std::size_t line_increment;
+    };
+
+    auto
+    process_line_change(std::string_view match,
+                        const char* buffer_end,
+                        const std::string_view current_line) {
+        auto line_start = current_line.data();
+        std::size_t line_increment = 0;
+
+        for (auto newline_at = match.find('\n');
+             newline_at != std::string_view::npos;
+             newline_at = match.find('\n')) {
+            match = match.substr(newline_at + 1);
+            line_start = match.data();
+            ++line_increment;
+        }
+
+        return line_data{{line_start, buffer_end}, line_increment};
+    }
+
+    constexpr auto line_end_marks = std::string_view("\n\0", 2U);
+
+    void
+    update_position_for_multiline_match(c4::position& pos,
+                                        const char* buffer_begin,
+                                        std::string_view remaining_buffer,
+                                        const std::size_t line_increment) {
+        const auto it = std::ranges::find_first_of(remaining_buffer, line_end_marks);
+
+        pos.line = remaining_buffer.substr(0, distance(begin(remaining_buffer), it));
+        pos.col_number = buffer_begin - pos.line.data() + 1;
+        pos.row_number += line_increment;
+    }
+
+    void
+    update_position_for_single_line_match(c4::position& pos,
+                                          const std::string_view match) {
+        pos.col_number += utf8_strlen(match);
+    }
+
+    void
+    update_position_for_match(c4::position& pos,
+                              const char* begin, const char* end,
+                              const std::string_view match) {
+        if (const auto [buffer, line_increment] = process_line_change(match, end, pos.line);
+            line_increment > 0) {
+            update_position_for_multiline_match(pos, begin, buffer, line_increment);
+        }
+        else {
+            update_position_for_single_line_match(pos, match);
+        }
+    }
 }
 
 void
 c4::p2::regex_rule::offset_positions_newline(std::string_view match,
                                              const char*& begin, const char* end,
                                              position& pos) {
+    DEBUG_ASSERT(!match.empty(), "empty string matched", pos.line);
+
     begin += match.size();
-    auto line_start = pos.line.data();
-
-    size_t line_increment = 0;
-    for (auto newline_at = match.find('\n');
-         newline_at != std::string_view::npos;
-         newline_at = match.find('\n')) {
-        match = match.substr(newline_at + 1);
-        line_start = match.data();
-        ++line_increment;
-    }
-
-    if (line_increment > 0) {
-        constexpr static auto end_of_relevance = std::string_view("\n\0", 2U);
-        const auto it = std::find_first_of(line_start, end,
-                                           end_of_relevance.begin(), end_of_relevance.end());
-        pos.line = std::string_view(line_start, it - line_start);
-        pos.col_number = begin - pos.line.data() + 1;
-        pos.row_number += line_increment;
-    }
-    else {
-        pos.col_number += utf8_strlen(match);
-    }
+    update_position_for_match(pos, begin, end, match);
 
     DEBUG_ASSERT(begin <= end,
                  "begin must not advance after end",
+                 pos.line,
                  match);
 }
 
@@ -209,7 +247,7 @@ c4::p2::regex_rule::match_into(const char*& begin, const char* end,
 
     const auto ovector = pcre2_get_ovector_pointer(match_data);
     unsigned capture_idx = 0;
-    for (int i = 0; i < res; ++i) {
+    for (auto i = 0; i < res; ++i) {
         matches[capture_idx++] = std::string_view(
             begin + ovector[2 * i],
             ovector[2 * i + 1] - ovector[2 * i]);
