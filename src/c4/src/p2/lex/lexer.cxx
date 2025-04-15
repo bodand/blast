@@ -59,20 +59,19 @@ namespace {
             };
         }
     };
+
+    constexpr auto linebreak_markers = std::string_view("\n\0", 2U);
 }
 
 c4::p2::lexer::lexer(const std::string_view source,
                      const char* begin, const char* end)
     : _token_source{source}
-    , _begin{begin}
     , _end{end}
-    , _data(begin)
+    , _data{begin}
     , _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
-    constexpr static auto end_of_relevance = std::string_view("\n\0", 2U);
-    const auto it = std::find_first_of(begin, end,
-                                       end_of_relevance.begin(), end_of_relevance.end());
-
-    _current_position.line = std::string_view(begin, it - begin + 1);
+    const auto buffer = std::string_view(begin, end);
+    const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
+    _current_position.line = buffer.substr(0, distance(std::next(std::begin(buffer)), it));
 }
 
 namespace {

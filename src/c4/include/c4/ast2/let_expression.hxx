@@ -54,9 +54,8 @@ namespace c4::ast2 {
                                   , tags::source_positioned
                                   , tags::evaluation_constness {
         let_expression(const c4::position& position,
-                       std::string_view file_source,
                        std::size_t length,
-                       symbol  symbol,
+                       symbol symbol,
                        expression* expr);
 
         let_expression(const let_expression& cp) = delete;

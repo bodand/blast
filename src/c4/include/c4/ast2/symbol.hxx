@@ -79,7 +79,6 @@ namespace c4::ast2 {
                           , tags::source_positioned
                           , tags::dynamic_node {
         symbol(const c4::position& position,
-               std::string_view file_source,
                std::size_t length,
                std::string_view name,
                unsigned arity);

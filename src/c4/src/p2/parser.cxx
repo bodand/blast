@@ -63,12 +63,10 @@ namespace {
             const auto debug_line = fmt::format("{:?}", pos.line);
             pos.line = debug_line;
             fmt::print("{}\n", c4::source_diagnostic::error(fmt::format("unknown characters found: {:?}", unk.value()),
-                                                            unk.source_name(),
                                                             pos,
                                                             unk.value().length()));
             fmt::print("{}\n", c4::source_diagnostic::note(
                            "line is escaped because of possibly unprintable characters",
-                           unk.source_name(),
                            pos,
                            unk.value().length()));
             return true;
@@ -95,7 +93,6 @@ c4::p2::parser::parse_integer_literal() {
         next_relevant();
         return {
             literal->token_position(),
-            literal->source_name(),
             literal->value().size(),
             literal->int_value()
         };
@@ -111,7 +108,6 @@ c4::p2::parser::parse_float_literal() {
         next_relevant();
         return {
             literal->token_position(),
-            literal->source_name(),
             literal->value().size(),
             literal->float_value()
         };
@@ -127,7 +123,6 @@ c4::p2::parser::parse_string_literal() {
         next_relevant();
         return {
             literal->token_position(),
-            literal->source_name(),
             literal->value().size(),
             literal->string_value()
         };
@@ -143,7 +138,6 @@ c4::p2::parser::parse_symbol() {
         next_relevant();
         return {
             symbol->token_position(),
-            symbol->source_name(),
             symbol->value().size(),
             symbol->name(),
             symbol->arity()
@@ -155,7 +149,6 @@ c4::p2::parser::parse_symbol() {
         next_relevant();
         return {
             bare_symbol->token_position(),
-            bare_symbol->source_name(),
             bare_symbol->value().size(),
             bare_symbol->name(),
             bare_symbol->arity()
@@ -172,7 +165,6 @@ c4::p2::parser::parse_op_symbol() {
         next_relevant();
         return {
             op->token_position(),
-            op->source_name(),
             op->value().size(),
             op->name(),
             op->arity()
@@ -184,7 +176,6 @@ c4::p2::parser::parse_op_symbol() {
         next_relevant();
         return {
             bare_op->token_position(),
-            bare_op->source_name(),
             bare_op->value().size(),
             bare_op->name(),
             1
@@ -201,7 +192,6 @@ c4::p2::parser::parse_bare_symbol() {
         next_relevant();
         return {
             bare_symbol->token_position(),
-            bare_symbol->source_name(),
             bare_symbol->value().size(),
             bare_symbol->name(),
             bare_symbol->arity()
@@ -217,28 +207,8 @@ c4::p2::parser::parse_expression() {
         return parse_let_expression();
     }
 
-    auto lhs = parse_final_expression();
+    const auto lhs = parse_final_expression();
     return parse_operator_precedence(lhs, 0);
-}
-
-namespace {
-    struct referable_visitor final : c4::ast2::visitor<c4::ast2::expression, c4::ast2::let_expression> {
-        c4::ast2::tags::referable*& out;
-
-        explicit
-        referable_visitor(c4::ast2::tags::referable*& out)
-            : out{out} { }
-
-        void
-        do_visit(const c4::ast2::expression& obj) override {
-            obj.accept_skip_self(*this);
-        }
-
-        void
-        do_visit(const c4::ast2::let_expression& obj) override {
-            out = const_cast<c4::ast2::let_expression*>(&obj);
-        }
-    };
 }
 
 c4::ast2::expression*
@@ -255,65 +225,62 @@ c4::p2::parser::parse_let_expression() {
 
     if (expect_token<tokens::operator_symbol>()
         || expect_token<tokens::fn_operator>()) {
-        if (const auto op = parse_op_symbol();
-            op.arity() == 1) {
+        const auto op = parse_op_symbol();
+        ast2::symbol op_sym(op.position(), op.length(), op.name(), op.arity());
+
+        if (op.arity() == 1) {
             declare_uniop(op.name());
 
             auto expr = parse_expression();
             const auto let = _context.build_let_expression(
                 op.position(),
-                op.file_source(),
                 op.length(),
-                ast2::symbol(op.position(), op.file_source(), op.length(), op.name(), op.arity()),
+                op_sym,
                 expr
             );
             return _context.build_expression(let);
         }
-        else {
-            if (op.arity() == 2) {
-                auto left_assoc = true;
-                if (const auto assoc_direction = parse_bare_symbol();
-                    assoc_direction.name() == "right") {
-                    left_assoc = false;
-                }
-                else if (assoc_direction.name() != "left") {
-                    _valid = false;
-                    fmt::print("{}\n", source_diagnostic::error(fmt::format(
-                                                                    "expected associativity indicator (`left' or `right') found `{}'",
-                                                                    assoc_direction.name()),
-                                                                assoc_direction.file_source(),
-                                                                assoc_direction.position(),
-                                                                assoc_direction.length()));
-                }
-
-                unsigned precedence = 0;
-                if (const auto uint = parse_integer_literal();
-                    uint.value() >= 0 && uint.value() < 10) {
-                    precedence = uint.value();
-                }
-                else {
-                    _valid = false;
-                    fmt::print("{}\n", source_diagnostic::error(fmt::format(
-                                                                    "expected precedence (0..10) found `{}'",
-                                                                    uint.value()),
-                                                                uint.file_source(),
-                                                                uint.position(),
-                                                                uint.length()));
-                }
-                declare_binop(op.name(), precedence, !left_assoc);
-
-                auto expr = parse_expression();
-                const auto let = _context.build_let_expression(
-                    op.position(),
-                    op.file_source(),
-                    op.length(),
-                    ast2::symbol(op.position(), op.file_source(), op.length(), op.name(), op.arity()),
-                    expr
-                );
-                return _context.build_expression(let);
+        if (op.arity() == 2) {
+            auto left_assoc = true;
+            if (const auto assoc_direction = parse_bare_symbol();
+                assoc_direction.name() == "right") {
+                left_assoc = false;
             }
-            UNREACHABLE("operator's arity can only be 1 or 2", op);
+            else if (assoc_direction.name() != "left") {
+                _valid = false;
+                fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                "expected associativity indicator (`left' or `right') found `{}'",
+                                                                assoc_direction.name()),
+                                                            assoc_direction.position(),
+                                                            assoc_direction.length()));
+            }
+
+            unsigned precedence = 0;
+            if (const auto uint = parse_integer_literal();
+                uint.value() >= 0 && uint.value() < 10) {
+                precedence = uint.value();
+            }
+            else {
+                _valid = false;
+                fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                "expected precedence (0..10) found `{}'",
+                                                                uint.value()),
+                                                            uint.position(),
+                                                            uint.length()));
+            }
+            declare_binop(op.name(), precedence, !left_assoc);
+
+            auto expr = parse_expression();
+            const auto let = _context.build_let_expression(
+                op.position(),
+                op.length(),
+                op_sym,
+                expr
+            );
+            return _context.build_expression(let);
         }
+
+        UNREACHABLE("operator's arity can only be 1 or 2", op);
     }
 
     const auto symbol = parse_symbol();
@@ -322,7 +289,6 @@ c4::p2::parser::parse_let_expression() {
     auto expr = parse_expression();
     const auto let = _context.build_let_expression(
         symbol.position(),
-        symbol.file_source(),
         symbol.length(),
         symbol,
         expr
@@ -377,13 +343,11 @@ c4::p2::parser::parse_final_expression() {
         next_relevant();
         ensure_valid_prefix_operator(*prefix_op);
         const auto op_sym = ast2::symbol(prefix_op->token_position(),
-                                         prefix_op->source_name(),
                                          prefix_op->value().size(),
                                          prefix_op->value(),
                                          1);
         const auto expr = parse_final_expression();
         const auto op = _context.build_unary_op_call(prefix_op->token_position(),
-                                                     prefix_op->source_name(),
                                                      prefix_op->value().size() + expr->length(),
                                                      op_sym,
                                                      expr);
@@ -398,7 +362,6 @@ c4::p2::parser::parse_final_expression() {
             fmt::print("{}\n",
                        source_diagnostic::error(
                            fmt::format("unknown symbol referenced in function call: {}", sym.name()),
-                           sym.file_source(),
                            sym.position(),
                            sym.length()
                        ));
@@ -418,7 +381,6 @@ c4::p2::parser::parse_final_expression() {
         parse_n_expressions(params, args);
 
         const auto fn = _context.build_fn_call(sym.position(),
-                                               sym.file_source(),
                                                sym.length(),
                                                sym,
                                                std::move(args));
@@ -440,7 +402,6 @@ c4::p2::parser::parse_final_expression() {
         parse_n_expressions(params, args);
 
         const auto dyn_call = _context.build_dynamic_call(dyn_call_start->token_position(),
-                                                          dyn_call_start->source_name(),
                                                           static_cast<std::size_t>(
                                                               dyn_call_end->begin() - dyn_call_start->begin()),
                                                           expr,
@@ -472,7 +433,6 @@ c4::p2::parser::parse_block() {
         leave_scope();
         return _context.build_block(
             lbrace->token_position(),
-            lbrace->source_name(),
             static_cast<std::size_t>(next->begin() - lbrace->begin()),
             std::move(expressions),
             args
@@ -496,7 +456,6 @@ c4::p2::parser::parse_block() {
         leave_scope();
         return _context.build_block(
             lbrace->token_position(),
-            lbrace->source_name(),
             static_cast<std::size_t>(next - lbrace->begin()),
             std::move(expr),
             args
@@ -547,12 +506,10 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                 }
             }
             ast2::symbol op_sym(op_token.token_position(),
-                                op_token.source_name(),
                                 op_token.value().size(),
                                 op_token.value(),
                                 2);
             const auto bin_op = _context.build_binary_op_call(op_token.token_position(),
-                                                              op_token.source_name(),
                                                               op_token.value().size(),
                                                               op_sym,
                                                               ret,
@@ -615,7 +572,6 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
     fmt::print("{}\n",
                source_diagnostic::error(
                    fmt::format("unknown prefix operator referenced: {}/1", sym.value()),
-                   sym.source_name(),
                    sym.token_position(),
                    sym.value().size()
                ));
@@ -628,7 +584,6 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
         pos.line = line;
         fmt::print("{}\n", source_diagnostic::suggestion(
                        "if you meant to apply multiple prefix operators in sequence, separate them with whitespace or parentheses",
-                       sym.source_name(),
                        pos,
                        1
                    ));
@@ -638,7 +593,6 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
                    source_diagnostic::note(
                        fmt::format("there exists an infix operator with name {}/2, did you mean to call that?",
                                    sym.value()),
-                       sym.source_name(),
                        sym.token_position(),
                        sym.value().size()
                    ));
@@ -652,7 +606,6 @@ c4::p2::parser::ensure_valid_operator(const tokens::operator_& sym) {
     fmt::print("{}\n",
                source_diagnostic::error(
                    fmt::format("unknown infix operator referenced: {}/2", sym.value()),
-                   sym.source_name(),
                    sym.token_position(),
                    sym.value().size()
                ));
@@ -665,7 +618,6 @@ c4::p2::parser::ensure_valid_operator(const tokens::operator_& sym) {
         pos.line = line;
         fmt::print("{}\n", source_diagnostic::suggestion(
                        "if you meant to apply a prefix operator after an infix, separate them with whitespace or parentheses",
-                       sym.source_name(),
                        pos,
                        1
                    ));
@@ -676,7 +628,6 @@ c4::p2::parser::ensure_valid_operator(const tokens::operator_& sym) {
                    source_diagnostic::note(
                        fmt::format("there exists a prefix operator with name {}/1, did you mean to call that?",
                                    sym.value()),
-                       sym.source_name(),
                        sym.token_position(),
                        sym.value().size()
                    ));
@@ -725,7 +676,6 @@ c4::p2::parser::parse_block_args() {
     next_relevant();
 
     const auto block_args = _context.build_block_args(lead->token_position(),
-                                                      lead->source_name(),
                                                       static_cast<std::size_t>(tail->begin() - lead->begin()),
                                                       std::span(args));
     for (std::size_t i = 0; i < block_args->size(); ++i) {

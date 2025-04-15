@@ -70,7 +70,6 @@ namespace c4::p2 {
                 return std::unexpected(source_diagnostic::error_for_value(
                     fmt::format(R"(expected "{}" but found "{}")",
                                 T::token_name, Found::token_name),
-                    tok.source_name(),
                     tok.token_position(),
                     tok.value()
                 ));
@@ -100,7 +99,7 @@ namespace c4::p2 {
         ast2::symbol
         parse_symbol();
 
-        c4::ast2::symbol
+        ast2::symbol
         parse_op_symbol();
 
         ast2::symbol
@@ -215,8 +214,7 @@ namespace c4::p2 {
             if (!_current) // todo make this make sense
                 return std::unexpected(source_diagnostic::error(
                     fmt::format(R"(expected "{}" but found end-of-input)", T::token_name),
-                    "<unknown>",
-                    position{}
+                    position(new token_source("??")) // todo: this leaks
                 ));
             return std::visit(aux::token_selector<T>{}, *_current);
         }

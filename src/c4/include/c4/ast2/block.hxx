@@ -86,7 +86,6 @@ namespace c4::ast2 {
                               , tags::source_positioned
                               , tags::constant_node {
         block_args(const c4::position& position,
-                   std::string_view file_source,
                    std::size_t length,
                    std::span<symbol> args);
 
@@ -128,7 +127,6 @@ namespace c4::ast2 {
                          , tags::dynamic_node
                          , tags::attributable {
         block(const c4::position& position,
-              std::string_view file_source,
               std::size_t length,
               std::vector<expression*>&& expressions,
               block_args* args = nullptr);

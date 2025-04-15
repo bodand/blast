@@ -41,12 +41,20 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
+#include <tuple>
 #include <utility>
 
 #include <fmt/base.h>
 
+namespace c4::p2 {
+    struct token_source;
+}
+
 namespace c4 {
     struct position {
+        explicit
+        position(p2::token_source* source);
+
         std::string_view line;
         std::size_t row_number{1};
         std::size_t col_number{1};
@@ -55,6 +63,20 @@ namespace c4 {
         snapshot() const noexcept(std::is_nothrow_copy_constructible_v<position>) {
             return *this;
         }
+
+        [[nodiscard]] std::string_view
+        filename() const;
+
+        [[nodiscard]] p2::token_source*
+        source() const { return _source; }
+
+        [[nodiscard]] auto
+        explode() const {
+            return std::make_tuple(line, row_number, col_number);
+        }
+
+    private:
+        p2::token_source* _source{};
     };
 
     struct source_diagnostic {
@@ -67,61 +89,52 @@ namespace c4 {
 
         static source_diagnostic
         suggestion(const std::string& diagnostic,
-                   std::string_view filename,
                    const position& position,
                    std::size_t highlight_length = 0);
 
         static source_diagnostic
         suggestion_for_value(const std::string& diagnostic,
-                             std::string_view filename,
                              const position& position,
                              std::string_view value);
 
         static source_diagnostic
         note(const std::string& diagnostic,
-             std::string_view filename,
              const position& position,
              std::size_t highlight_length = 0);
 
         static source_diagnostic
         note_for_value(const std::string& diagnostic,
-                       std::string_view filename,
                        const position& position,
                        std::string_view value);
 
         static source_diagnostic
         warning(const std::string& diagnostic,
-                std::string_view filename,
                 const position& position,
                 std::size_t highlight_length = 0);
 
         static source_diagnostic
         warning_for_value(const std::string& diagnostic,
-                          std::string_view filename,
                           const position& position,
                           std::string_view value);
 
         static source_diagnostic
         error(const std::string& diagnostic,
-              std::string_view filename,
               const position& position,
               std::size_t highlight_length = 0);
 
         static source_diagnostic
         error_for_value(const std::string& diagnostic,
-                        std::string_view filename,
                         const position& position,
                         std::string_view value);
 
     private:
         source_diagnostic(const diag_type type,
                           std::string diagnostic,
-                          const std::string_view& filename,
                           const position& position,
                           const std::size_t highlight_length = 0)
             : _diagnostic_type{type}
             , _diagnostic{std::move(diagnostic)}
-            , _filename{filename}
+            , _filename{position.filename()}
             , _position{position}
             , _highlight_length{highlight_length} { }
 

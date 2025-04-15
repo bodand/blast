@@ -57,7 +57,7 @@ namespace c4::p2 {
         template<class T, class... Args>
         T
         build(Args&&... args) {
-            return {this, std::forward<Args>(args)...};
+            return {std::forward<Args>(args)...};
         }
 
     private:

@@ -52,7 +52,7 @@ namespace c4::ast2 {
         }
 
         void
-        visit_impl(const void* raw, visitor_aux::type_id tid) final {
+        visit_impl(const void* raw, const visitor_aux::type_id tid) final {
             (visit_one<Ts>(raw, tid) || ...);
         }
     };

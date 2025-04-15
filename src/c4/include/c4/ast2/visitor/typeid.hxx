@@ -43,7 +43,7 @@ namespace c4::ast2::visitor_aux {
         template<class T>
         static type_id
         of() {
-            return type_id(my_type<T>::create(type_cntr));
+            return type_id(my_type<T>::create(_type_counter));
         }
 
         bool operator==(const type_id& other) const noexcept = default;
@@ -52,7 +52,7 @@ namespace c4::ast2::visitor_aux {
 
     private:
         std::uint_fast32_t _value = 0;
-        inline static std::uint_fast32_t type_cntr = 1;
+        inline static std::uint_fast32_t _type_counter = 1;
 
         explicit
         type_id(const std::uint_fast32_t value)

@@ -75,8 +75,7 @@ namespace c4::p2 {
         using token_types = rebind_to_lexer_rule_tuple<tokens::token_type>::token_types;
 
         token_source _token_source;
-        c4::position _current_position{};
-        const char* const _begin;
+        position _current_position{&_token_source};
         const char* const _end;
         const char* _data;
         regex_context _regex_context{};

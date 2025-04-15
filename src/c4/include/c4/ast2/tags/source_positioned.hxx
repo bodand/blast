@@ -41,7 +41,7 @@
 
 namespace c4::ast2::tags {
     struct source_positioned {
-        [[nodiscard]] position
+        [[nodiscard]] const position&
         position() const { return _position; }
 
         [[nodiscard]] std::size_t
@@ -51,18 +51,16 @@ namespace c4::ast2::tags {
         length(const std::size_t length) { _length = length; }
 
         [[nodiscard]] std::string_view
-        file_source() const { return _file_source; }
+        file_source() const { return _position.filename(); }
 
     protected:
+        explicit
         source_positioned(const struct position& position,
-                          const std::string_view file_source,
                           const std::size_t length = 0)
-            : _file_source{file_source}
-            , _position{position}
+            : _position{position}
             , _length{length} { }
 
     private:
-        std::string_view _file_source;
         struct position _position;
         std::size_t _length;
     };

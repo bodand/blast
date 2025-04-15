@@ -31,7 +31,7 @@
  * Originally created: 2025-03-03.
  *
  * src/c4/include/c4/p2/lex/string_rule --
- *   
+ *   todo
  */
 #ifndef C4_P2_STRING_RULE_HXX
 #define C4_P2_STRING_RULE_HXX

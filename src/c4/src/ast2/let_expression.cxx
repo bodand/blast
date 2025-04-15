@@ -41,11 +41,10 @@
 #include <utility>
 
 c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
                                          const std::size_t length,
                                          ast2::symbol symbol,
                                          expression* expr)
-    : source_positioned{position, file_source, length}
+    : source_positioned{position, length}
     , _symbol{std::move(symbol)}
     , _value{expr} { }
 
