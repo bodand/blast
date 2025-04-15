@@ -42,7 +42,7 @@
 c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
                                          const std::string_view file_source,
                                          const std::size_t length,
-                                         const op_symbol& op,
+                                         const symbol& op,
                                          expression* left,
                                          expression* right)
     : source_positioned{position, file_source, length}
@@ -67,7 +67,7 @@ c4::ast2::binary_op_call::right() const noexcept { return *_right; }
 c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
                                        const std::string_view file_source,
                                        const std::size_t length,
-                                       const op_symbol& op,
+                                       const symbol& op,
                                        expression* operand)
     : source_positioned{position, file_source, length}
     , _op{op}

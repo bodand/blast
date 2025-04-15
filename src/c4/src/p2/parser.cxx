@@ -165,7 +165,7 @@ c4::p2::parser::parse_symbol() {
     report_failure(symbol, bare_symbol);
 }
 
-c4::ast2::op_symbol
+c4::ast2::symbol
 c4::p2::parser::parse_op_symbol() {
     const auto op = expect_token<tokens::operator_symbol>();
     if (op) {
@@ -376,11 +376,11 @@ c4::p2::parser::parse_final_expression() {
     if (prefix_op) {
         next_relevant();
         ensure_valid_prefix_operator(*prefix_op);
-        const auto op_sym = ast2::op_symbol(prefix_op->token_position(),
-                                            prefix_op->source_name(),
-                                            prefix_op->value().size(),
-                                            prefix_op->value(),
-                                            1);
+        const auto op_sym = ast2::symbol(prefix_op->token_position(),
+                                         prefix_op->source_name(),
+                                         prefix_op->value().size(),
+                                         prefix_op->value(),
+                                         1);
         const auto expr = parse_final_expression();
         const auto op = _context.build_unary_op_call(prefix_op->token_position(),
                                                      prefix_op->source_name(),
@@ -477,7 +477,7 @@ c4::p2::parser::parse_block() {
             std::move(expressions),
             args
 
-            );
+        );
     }
 
     const auto bslash = expect_token<tokens::backslash>();
@@ -546,14 +546,15 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                     if (lookahead) op_ahead = ensure_valid_operator(*lookahead);
                 }
             }
+            ast2::symbol op_sym(op_token.token_position(),
+                                op_token.source_name(),
+                                op_token.value().size(),
+                                op_token.value(),
+                                2);
             const auto bin_op = _context.build_binary_op_call(op_token.token_position(),
                                                               op_token.source_name(),
                                                               op_token.value().size(),
-                                                              ast2::op_symbol(op_token.token_position(),
-                                                                              op_token.source_name(),
-                                                                              op_token.value().size(),
-                                                                              op_token.value(),
-                                                                              2),
+                                                              op_sym,
                                                               ret,
                                                               rhs);
             ret = _context.build_expression(bin_op);

@@ -52,7 +52,7 @@ namespace c4::ast2 {
         binary_op_call(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
-                       const op_symbol& op,
+                       const symbol& op,
                        expression* left,
                        expression* right);
 
@@ -66,7 +66,7 @@ namespace c4::ast2 {
         binary_op_call&
         operator=(binary_op_call&& other) noexcept = delete;
 
-        [[nodiscard]] op_symbol
+        [[nodiscard]] symbol
         op() const noexcept { return _op; }
 
         [[nodiscard]] const expression&
@@ -76,7 +76,7 @@ namespace c4::ast2 {
         right() const noexcept;
 
     private:
-        op_symbol _op;
+        symbol _op;
         expression* _left;
         expression* _right;
     };
@@ -88,7 +88,7 @@ namespace c4::ast2 {
         unary_op_call(const c4::position& position,
                       std::string_view file_source,
                       std::size_t length,
-                      const op_symbol& op,
+                      const symbol& op,
                       expression* operand);
 
         unary_op_call(const unary_op_call& cp) = delete;
@@ -101,14 +101,14 @@ namespace c4::ast2 {
         unary_op_call&
         operator=(unary_op_call&&) noexcept = delete;
 
-        [[nodiscard]] op_symbol
+        [[nodiscard]] symbol
         op() const noexcept { return _op; }
 
         [[nodiscard]] const expression&
         operand() const noexcept;
 
     private:
-        op_symbol _op;
+        symbol _op;
         expression* _operand;
     };
 }

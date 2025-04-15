@@ -154,7 +154,7 @@ c4::ast2::let_expression*
 c4::ast2::ast_context::build_let_expression(const position& position,
                                             std::string_view file_source,
                                             std::size_t length,
-                                            symbol sym,
+                                            const symbol& sym,
                                             expression* expression) {
     return build_insert<let_expression>(_nodes, position, file_source, length, sym, expression);
 }
@@ -163,7 +163,7 @@ c4::ast2::unary_op_call*
 c4::ast2::ast_context::build_unary_op_call(const position& position,
                                            std::string_view file_source,
                                            std::size_t length,
-                                           op_symbol sym,
+                                           const symbol& sym,
                                            expression* operand) {
     return build_insert<unary_op_call>(_nodes, position, file_source, length, sym, operand);
 }
@@ -172,7 +172,7 @@ c4::ast2::binary_op_call*
 c4::ast2::ast_context::build_binary_op_call(const position& position,
                                             std::string_view file_source,
                                             std::size_t length,
-                                            op_symbol sym,
+                                            const symbol& sym,
                                             expression* left,
                                             expression* right) {
     return build_insert<binary_op_call>(_nodes, position, file_source, length, sym, left, right);

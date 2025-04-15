@@ -136,29 +136,6 @@ namespace c4::ast2 {
         std::string_view _name;
         unsigned _arity;
     };
-
-    struct op_symbol final : tags::visitable
-                             , tags::source_positioned
-                             , tags::dynamic_node {
-        op_symbol(const c4::position& position,
-                  std::string_view file_source,
-                  std::size_t length,
-                  std::string_view name,
-                  unsigned arity);
-
-        [[nodiscard]] std::string_view
-        name() const noexcept { return _name; }
-
-        [[nodiscard]] unsigned
-        arity() const noexcept { return _arity; }
-
-        [[nodiscard]] std::string
-        mangle() const;
-
-    private:
-        std::string_view _name;
-        unsigned _arity;
-    };
 }
 
 #endif

@@ -65,8 +65,7 @@ namespace c4 {
                 ast2::binary_op_call,
                 ast2::unary_op_call,
                 ast2::string_literal,
-                ast2::symbol,
-                ast2::op_symbol
+                ast2::symbol
             > {
         void do_visit(const ast2::block_args& obj) override;
 
@@ -86,11 +85,6 @@ namespace c4 {
 
         void
         do_visit(const ast2::symbol& obj) override {
-            os << obj.name() << "/" << obj.arity();
-        }
-
-        void
-        do_visit(const ast2::op_symbol& obj) override {
             os << obj.name() << "/" << obj.arity();
         }
 

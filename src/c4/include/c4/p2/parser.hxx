@@ -100,7 +100,7 @@ namespace c4::p2 {
         ast2::symbol
         parse_symbol();
 
-        ast2::op_symbol
+        c4::ast2::symbol
         parse_op_symbol();
 
         ast2::symbol
