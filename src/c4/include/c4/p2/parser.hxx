@@ -38,7 +38,7 @@
 
 #include <stdexcept>
 #include <expected>
-#include <vector>
+#include <deque>
 #include <deque>
 
 #include <c4/ast2/symbol.hxx>
@@ -48,6 +48,7 @@
 
 #include <c4/p2/lex/lexer.hxx>
 #include <utility>
+#include <c4/ast2/ast_context.hxx>
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/let_expression.hxx>
 
@@ -79,8 +80,10 @@ namespace c4::p2 {
 
     struct parser {
         explicit
-        parser(lexer&& lexer)
-            : _lexer{std::move(lexer)} {
+        parser(ast2::ast_context& context,
+               lexer&& lexer)
+            : _lexer{std::move(lexer)}
+            , _context{context} {
             next_relevant();
             enter_scope();
         }
@@ -103,22 +106,22 @@ namespace c4::p2 {
         ast2::symbol
         parse_bare_symbol();
 
-        ast2::expression
+        ast2::expression*
         parse_expression();
 
-        c4::ast2::expression
+        ast2::expression*
         parse_let_expression();
 
-        ast2::expression
+        ast2::expression*
         parse_final_expression();
 
-        ast2::block
+        ast2::block*
         parse_block();
 
-        ast2::block_args
+        ast2::block_args*
         parse_block_args();
 
-        std::deque<c4::ast2::expression>
+        std::vector<ast2::expression*>
         parse_script();
 
         void
@@ -139,15 +142,10 @@ namespace c4::p2 {
     private:
         void
         parse_n_expressions(unsigned n,
-                            std::vector<ast2::expression>& expressions,
-                            std::vector<ast2::symbol>& closure_symbols);
+                            std::vector<ast2::expression*>& expressions);
 
-        void
-        reresolve_childs_closure_symbols(const ast2::expression& expr,
-                                         std::vector<ast2::symbol>& closure_symbols);
-
-        ast2::expression
-        parse_operator_precedence(ast2::expression&& lhs, unsigned precedence);
+        ast2::expression*
+        parse_operator_precedence(ast2::expression* lhs, unsigned precedence);
 
         struct parser_symbol {
             std::string_view name;
@@ -206,10 +204,10 @@ namespace c4::p2 {
         void
         leave_scope();
 
-        ::c4::p2::parser::parser_symbol&
+        parser_symbol&
         declare_symbol_internal(std::string_view symbol,
-                       unsigned arity,
-                       ast2::tags::referable* referee);
+                                unsigned arity,
+                                ast2::tags::referable* referee);
 
         template<class T>
         std::expected<T, source_diagnostic>
@@ -236,15 +234,16 @@ namespace c4::p2 {
         find_prefix_operator(std::string_view name);
 
         std::vector<unsigned> _scope_symbol_size;
-        std::vector<parser_symbol> _scope_symbols;
+        std::deque<parser_symbol> _scope_symbols;
         std::vector<unsigned> _scope_operator_size;
-        std::vector<operator_symbol> _scope_operators;
+        std::deque<operator_symbol> _scope_operators;
         std::vector<unsigned> _scope_prefix_operator_size;
-        std::vector<prefix_operator_symbol> _scope_prefix_operators;
+        std::deque<prefix_operator_symbol> _scope_prefix_operators;
 
         bool _valid{true};
         std::optional<tokens::token_type> _current{};
         lexer _lexer;
+        ast2::ast_context& _context;
     };
 }
 

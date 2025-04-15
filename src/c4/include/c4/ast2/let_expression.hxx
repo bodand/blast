@@ -46,18 +46,21 @@
 #include <memory>
 #include <utility>
 
+#include <c4/ast2/ast_node.hxx>
+
 namespace c4::ast2 {
     struct expression;
 
-    struct let_expression final : tags::visitable
+    struct let_expression final : tags::referable
+                                  , ast_node
+                                  , tags::visitable
                                   , tags::source_positioned
-                                  , tags::evaluation_constness
-                                  , tags::referable {
+                                  , tags::evaluation_constness {
         let_expression(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
-                       symbol symbol,
-                       expression&& expr);
+                       const symbol& symbol,
+                       expression* expr);
 
         let_expression(const let_expression& cp) = delete;
 
@@ -88,14 +91,8 @@ namespace c4::ast2 {
         name() override { return _symbol.name(); }
 
     private:
-        let_expression(const c4::position& position,
-                       std::string_view file_source,
-                       std::size_t length,
-                       const struct symbol& symbol,
-                       expression_ptr&& expr);
-
         struct symbol _symbol;
-        expression_ptr _value;
+        expression* _value;
     };
 }
 

@@ -74,7 +74,8 @@ namespace c4::ast2 {
         unsigned _arity;
     };
 
-    struct symbol final : tags::visitable
+    struct symbol final : tags::referable
+                          , tags::visitable
                           , tags::source_positioned
                           , tags::dynamic_node {
         symbol(const c4::position& position,
@@ -85,6 +86,9 @@ namespace c4::ast2 {
 
         [[nodiscard]] std::string_view
         name() const noexcept { return _name; }
+
+        [[nodiscard]] std::string_view
+        name() override { return _name; }
 
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
@@ -147,7 +151,6 @@ namespace c4::ast2 {
 
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
-
 
         std::string
         mangle() const;

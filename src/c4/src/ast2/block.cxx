@@ -34,6 +34,7 @@
  *
  */
 
+#include <iostream>
 #include <c4/ast2/block.hxx>
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/visitor/visitor.hxx>
@@ -48,22 +49,15 @@ c4::ast2::block_args::block_args(const c4::position& position,
 c4::ast2::block::block(const c4::position& position,
                        const std::string_view file_source,
                        const std::size_t length,
-                       block_args&& args,
-                       std::vector<expression>&& expressions)
+                       std::vector<expression*>&& expressions,
+                       block_args* args)
     : source_positioned{position, file_source, length}
-    , _args(std::move(args))
-    , _expressions{std::move(expressions)} { }
-
-c4::ast2::block::block(const c4::position& position,
-                       const std::string_view file_source,
-                       const std::size_t length,
-                       std::vector<expression>&& expressions)
-    : source_positioned{position, file_source, length}
+    , _args(args)
     , _expressions{std::move(expressions)} { }
 
 bool
 c4::ast2::block::requires_context() const noexcept {
-    return std::ranges::any_of(_expressions, [](const auto& expr) { return expr.closure(); });
+    return std::ranges::any_of(_expressions, [](const auto& expr) { return expr->closure(); });
 }
 
 namespace {
@@ -96,7 +90,7 @@ c4::ast2::block::effective_context_symbols() const {
     std::vector<symbol> result;
 
     for (const auto& expr : _expressions) {
-        result.append_range(expr.closure_symbols());
+        result.append_range(expr->closure_symbols());
     }
 
     std::ranges::sort(result);
@@ -105,20 +99,20 @@ c4::ast2::block::effective_context_symbols() const {
 
     if (_args) {
         for (const auto& arg : _args->args()) {
-            std::erase(result, arg);
+            std::erase(result, *arg);
         }
     }
 
     defined_symbols_remover remover(result.begin(), result.end());
     for (const auto& expr : _expressions) {
-        expr.accept_skip_self(remover);
+        expr->accept_skip_self(remover);
     }
     result.erase(remover.end, result.end());
 
     return result;
 }
 
-std::span<const c4::ast2::expression>
+std::span<const c4::ast2::expression* const>
 c4::ast2::block::expressions() const {
-    return _expressions;
+    return std::span(_expressions);
 }

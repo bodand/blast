@@ -96,6 +96,9 @@ add_library(c4
             src/ast2/tags/attributable.cxx
             include/c4/ast2/tags/referable.hxx
             src/ast2/tags/referable.cxx
+            include/c4/ast2/ast_context.hxx
+            src/ast2/ast_context.cxx
+            include/c4/ast2/ast_node.hxx
             )
 
 target_link_libraries(c4

@@ -56,6 +56,21 @@ typedef enum c4_datum_type_ {
 
 C4RT_API const c4_datum_t gC4_Empty_Block;
 
+C4RT_API c4_datum_t
+_C5print1(c4_datum_t d);
+
+C4RT_API c4_datum_t
+_C7println1(c4_datum_t d);
+
+C4RT_API c4_datum_t
+_C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no);
+
+C4RT_API c4_datum_t
+_C6readln0();
+
+C4RT_API c4_datum_t
+_C9str_empty1(c4_datum_t str);
+
 C4RT_API void
 c4rt_free(void* mem);
 

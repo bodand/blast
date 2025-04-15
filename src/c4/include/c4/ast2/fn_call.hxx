@@ -40,21 +40,22 @@
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/symbol.hxx>
 
-#include <vector>
+#include <deque>
 #include <span>
 #include <utility>
 
 namespace c4::ast2 {
     struct expression;
 
-    struct fn_call final : tags::visitable
+    struct fn_call final : ast_node
+                           , tags::visitable
                            , tags::source_positioned
                            , tags::dynamic_node {
         fn_call(const c4::position& position,
                 std::string_view file_source,
                 std::size_t length,
                 const symbol& sym,
-                std::vector<expression>&& args);
+                std::vector<expression*>&& args);
 
         fn_call(const fn_call& cp) = delete;
 
@@ -69,12 +70,12 @@ namespace c4::ast2 {
         [[nodiscard]] symbol
         sym() const { return _sym; }
 
-        [[nodiscard]] std::span<const expression>
+        [[nodiscard]] std::span<const expression* const>
         args() const;
 
     private:
         symbol _sym;
-        std::vector<expression> _args;
+        std::vector<expression*> _args;
     };
 }
 

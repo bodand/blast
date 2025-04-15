@@ -53,31 +53,31 @@
 #include <c4/ast2/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
-    struct expression final : tags::visitable
+    struct expression final : ast_node
+                              , tags::visitable
                               , tags::source_positioned
                               , tags::evaluation_constness {
         using value_type = std::variant<
             float_literal,
             integer_literal,
             string_literal,
-            let_expression,
+            let_expression*,
             symbol,
-            fn_call,
-            dynamic_call,
-            binary_op_call,
-            unary_op_call,
-            block
-        >;
+            fn_call*,
+            dynamic_call*,
+            binary_op_call*,
+            unary_op_call*,
+            block*>;
 
         explicit
         expression(value_type value,
-                   std::span<symbol> closure_over = {});
+                   std::vector<symbol>&& closure_over = {});
 
-        expression(const c4::position& position,
-                   std::string_view file_source,
-                   std::size_t length,
-                   value_type value,
-                   std::span<symbol> closure_over = {});
+        // expression(const c4::position& position,
+        //            std::string_view file_source,
+        //            std::size_t length,
+        //            value_type value,
+        //            std::span<symbol> closure_over = {});
 
         expression(const expression&) = delete;
 
@@ -96,7 +96,13 @@ namespace c4::ast2 {
         void
         accept_skip_self(V&& visitor) const {
             std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
-                std::forward<T>(val).accept(v);
+                if constexpr (std::is_pointer_v<std::remove_cvref_t<T>>) {
+                    std::forward<T>(val)->accept(v);
+                }
+                else if constexpr (!std::is_pointer_v<std::remove_cvref_t<T>>) {
+                    std::forward<T>(val).accept(v);
+                }
+
             }, _value);
         }
 
@@ -108,7 +114,14 @@ namespace c4::ast2 {
 
         [[nodiscard]] bool
         is_constant_evaluable() const noexcept {
-            return std::visit([](const auto& x) { return x.const_evaluable(); }, _value);
+            return std::visit([]<typename T>(const T& x) {
+                if constexpr (std::is_pointer_v<T>) {
+                    return x->const_evaluable();
+                }
+                else {
+                    return x.const_evaluable();
+                }
+            }, _value);
         }
 
     private:

@@ -42,16 +42,19 @@
 #include <c4/ast2/expression_deleter.hxx>
 #include <c4/ast2/symbol.hxx>
 
+#include "ast_node.hxx"
+
 namespace c4::ast2 {
-    struct binary_op_call final :  tags::visitable
+    struct binary_op_call final : ast_node
+                                  , tags::visitable
                                   , tags::source_positioned
                                   , tags::dynamic_node {
         binary_op_call(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
                        const op_symbol& op,
-                       expression_ptr&& left,
-                       expression_ptr&& right);
+                       expression* left,
+                       expression* right);
 
         binary_op_call(const binary_op_call& cp) = delete;
 
@@ -74,18 +77,19 @@ namespace c4::ast2 {
 
     private:
         op_symbol _op;
-        expression_ptr _left;
-        expression_ptr _right;
+        expression* _left;
+        expression* _right;
     };
 
-    struct unary_op_call final :  tags::visitable
+    struct unary_op_call final : ast_node
+                                 , tags::visitable
                                  , tags::source_positioned
                                  , tags::dynamic_node {
         unary_op_call(const c4::position& position,
                       std::string_view file_source,
                       std::size_t length,
                       const op_symbol& op,
-                      expression_ptr&& operand);
+                      expression* operand);
 
         unary_op_call(const unary_op_call& cp) = delete;
 
@@ -105,7 +109,7 @@ namespace c4::ast2 {
 
     private:
         op_symbol _op;
-        expression_ptr _operand;
+        expression* _operand;
     };
 }
 

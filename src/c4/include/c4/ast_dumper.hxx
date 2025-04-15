@@ -115,6 +115,7 @@ namespace c4 {
 
     private:
         std::ostream& os;
+        int depth = 0;
     };
 }
 

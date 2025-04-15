@@ -41,10 +41,10 @@ c4::ast2::fn_call::fn_call(const c4::position& position,
                            const std::string_view file_source,
                            const std::size_t length,
                            const symbol& sym,
-                           std::vector<expression>&& args)
+                           std::vector<expression*>&& args)
     : source_positioned{position, file_source, length}
     , _sym{sym}
     , _args{std::move(args)} { }
 
-std::span<const c4::ast2::expression>
+std::span<const c4::ast2::expression* const>
 c4::ast2::fn_call::args() const { return _args; }

@@ -36,7 +36,7 @@
 #ifndef C4_AST2_DYNAMIC_CALL_HXX
 #define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <vector>
+#include <deque>
 #include <span>
 
 #include <c4/ast2/tags/visitable.hxx>
@@ -45,14 +45,15 @@
 #include <c4/ast2/expression_deleter.hxx>
 
 namespace c4::ast2 {
-    struct dynamic_call final : tags::visitable
+    struct dynamic_call final : ast_node
+                                , tags::visitable
                                 , tags::source_positioned
                                 , tags::dynamic_node {
         dynamic_call(const c4::position& position,
                      std::string_view file_source,
                      std::size_t length,
-                     expression&& callee,
-                     std::vector<expression>&& args);
+                     expression* callee,
+                     std::vector<expression*>&& args);
 
         dynamic_call(const dynamic_call& cp) = delete;
 
@@ -64,15 +65,15 @@ namespace c4::ast2 {
         dynamic_call&
         operator=(dynamic_call&& other) noexcept = default;
 
-        [[nodiscard]] const expression&
+        [[nodiscard]] const expression*
         callee() const;
 
-        [[nodiscard]] std::span<const expression>
+        [[nodiscard]] std::span<const expression* const>
         args() const;
 
     private:
-        expression_ptr _callee;
-        std::vector<expression> _args;
+        expression* _callee;
+        std::vector<expression*> _args;
     };
 }
 

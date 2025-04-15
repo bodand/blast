@@ -52,17 +52,21 @@ namespace c4::ast2::tags {
 
     struct attribute {
         template<class T>
-        std::expected<T*, expected_error>
+        std::expected<T, expected_error>
         value() {
-            return value_untyped(visitor_aux::type_id::of<T>());
+            return value_untyped(visitor_aux::type_id::of<T>()).and_then([](void* x)
+            -> std::expected<T, expected_error> {
+                    return *static_cast<T*>(x);
+                });
         }
 
         template<class T>
-        std::expected<const T*, expected_error>
+        std::expected<T, expected_error>
         value() const {
-            return value_untyped(visitor_aux::type_id::of<T>()).and_then([](const void* x) {
-                return static_cast<const T*>(x);
-            });
+            return value_untyped(visitor_aux::type_id::of<T>()).and_then([](const void* x)
+            -> std::expected<T, expected_error> {
+                    return *static_cast<const T*>(x);
+                });
         }
 
         virtual ~attribute() = default;
@@ -124,6 +128,14 @@ namespace c4::ast2::tags {
                 it != _attributes.end())
                 return it->second;
             return nullptr;
+        }
+
+        template<class T>
+        std::expected<T, expected_error>
+        attribute_value(const std::string_view key) {
+            const auto attr = get_attribute(key);
+            if (!attr) return std::unexpected{expected_error::NO_VALUE};
+            return attr->value<T>();
         }
 
         const attribute*

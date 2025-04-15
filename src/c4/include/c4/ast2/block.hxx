@@ -36,25 +36,39 @@
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
 
-#include <functional>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/attributable.hxx>
 #include <c4/ast2/tags/referable.hxx>
 
+#include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/expression_deleter.hxx>
 #include <c4/ast2/symbol.hxx>
 
 #include <span>
 #include <optional>
-#include <vector>
+#include <iostream>
+#include <deque>
+#include <functional>
 #include <libassert/assert.hpp>
 
+
 namespace c4::ast2 {
-    struct block_argument final : tags::referable {
+    struct block_argument final : tags::referable
+                                  , ast_node {
         explicit
         block_argument(const symbol& symbol)
             : _symbol{symbol} { }
+
+        block_argument(block_argument&) = delete;
+
+        block_argument&
+        operator=(block_argument&) = delete;
+
+        block_argument&
+        operator=(block_argument&&) noexcept = default;
+
+        block_argument(block_argument&&) noexcept = default;
 
         [[nodiscard]] const symbol&
         symbol() const noexcept { return _symbol; }
@@ -66,7 +80,8 @@ namespace c4::ast2 {
         struct symbol _symbol;
     };
 
-    struct block_args final : tags::visitable
+    struct block_args final : ast_node
+                              , tags::visitable
                               , tags::source_positioned
                               , tags::constant_node {
         block_args(const c4::position& position,
@@ -74,12 +89,22 @@ namespace c4::ast2 {
                    std::size_t length,
                    std::span<symbol> args);
 
-        [[nodiscard]] std::vector<symbol>
+        block_args(block_args&) = delete;
+
+        block_args&
+        operator=(block_args&) = delete;
+
+        block_args(block_args&&) noexcept = default;
+
+        block_args&
+        operator=(block_args&&) noexcept = default;
+
+        [[nodiscard]] std::vector<const symbol*>
         args() const {
-            std::vector<symbol> result;
+            std::vector<const symbol*> result;
             result.reserve(_args.size());
             std::ranges::transform(_args, std::back_inserter(result),
-                                   std::mem_fn(&block_argument::symbol));
+                                   [](const auto& arg) { return &arg.symbol(); });
             return result;
         }
 
@@ -104,29 +129,32 @@ namespace c4::ast2 {
         std::vector<block_argument> _args{};
     };
 
-    struct block final : tags::visitable
+    struct block final : ast_node
+                         , tags::visitable
                          , tags::source_positioned
                          , tags::dynamic_node
                          , tags::attributable {
         block(const c4::position& position,
               std::string_view file_source,
               std::size_t length,
-              block_args&& args,
-              std::vector<expression>&& expressions);
+              std::vector<expression*>&& expressions,
+              block_args* args = nullptr);
 
-        block(const c4::position& position,
-              std::string_view file_source,
-              std::size_t length,
-              std::vector<expression>&& expressions);
+        block(block& cp) = delete;
 
-        [[nodiscard]] std::optional<block_args>
+        block& operator=(const block&) = delete;
+
+        block(block&&) = default;
+
+        block& operator=(block&&) = default;
+
+        [[nodiscard]] const block_args*
         args() const { return _args; }
 
         [[nodiscard]] std::size_t
         arity() const noexcept {
-            return _args.and_then([](const auto& args) -> std::optional<std::size_t> {
-                return args.size();
-            }).value_or(0);
+            if (!_args) return 0;
+            return _args->size();
         }
 
         [[nodiscard]] bool
@@ -135,17 +163,17 @@ namespace c4::ast2 {
         /**
          * Generates a set of symbols that are used by the contained expressions
          * but are not resolved by the block's arguments or symbols defined
-         * within the symbol.
+         * within the block.
          */
         [[nodiscard]] std::vector<symbol>
         effective_context_symbols() const;
 
-        [[nodiscard]] std::span<const expression>
+        [[nodiscard]] std::span<const expression* const>
         expressions() const;
 
     private:
-        std::optional<block_args> _args{};
-        std::vector<expression> _expressions;
+        block_args* _args{};
+        std::vector<expression*> _expressions;
     };
 }
 

@@ -42,14 +42,14 @@
 c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
                                      const std::string_view file_source,
                                      const std::size_t length,
-                                     expression&& callee,
-                                     std::vector<expression>&& args)
+                                     expression* callee,
+                                     std::vector<expression*>&& args)
     : source_positioned{position, file_source, length}
-    , _callee{new expression(std::move(callee))}
+    , _callee{callee}
     , _args{std::move(args)} { }
 
-const c4::ast2::expression&
-c4::ast2::dynamic_call::callee() const { return *_callee; }
+const c4::ast2::expression*
+c4::ast2::dynamic_call::callee() const { return _callee; }
 
-std::span<const c4::ast2::expression>
+std::span<const c4::ast2::expression* const>
 c4::ast2::dynamic_call::args() const { return _args; }

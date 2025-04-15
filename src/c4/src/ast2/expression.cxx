@@ -53,6 +53,11 @@ namespace {
         operator()(const c4::ast2::tags::source_positioned& sp) const noexcept {
             return sp;
         }
+
+        const c4::ast2::tags::source_positioned&
+        operator()(c4::ast2::tags::source_positioned* const& sp) const noexcept {
+            return *sp;
+        }
     };
 
     void
@@ -63,7 +68,7 @@ namespace {
         symbols.erase(dup_begin, dup_end);
     }
 
-    struct recursive_closure_collector_visitor : c4::ast2::visitor<
+    struct recursive_closure_collector_visitor final : c4::ast2::visitor<
                 c4::ast2::expression,
                 c4::ast2::let_expression,
                 c4::ast2::block,
@@ -72,9 +77,9 @@ namespace {
                 c4::ast2::binary_op_call,
                 c4::ast2::unary_op_call
             > {
-        explicit recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
-            : symbols(symbols) {
-        }
+        explicit
+        recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
+            : symbols(symbols) { }
 
         void
         do_visit(const c4::ast2::expression& obj) override {
@@ -94,13 +99,13 @@ namespace {
 
         void
         do_visit(const c4::ast2::fn_call& obj) override {
-            for (const auto& arg: obj.args()) arg.accept(*this);
+            for (const auto& arg : obj.args()) arg->accept(*this);
         }
 
         void
         do_visit(const c4::ast2::dynamic_call& obj) override {
-            obj.callee().accept(*this);
-            for (const auto& arg: obj.args()) arg.accept(*this);
+            obj.callee()->accept(*this);
+            for (const auto& arg : obj.args()) arg->accept(*this);
         }
 
         void
@@ -119,28 +124,34 @@ namespace {
 }
 
 c4::ast2::expression::expression(value_type value,
-                                 const std::span<symbol> closure_over)
+                                 std::vector<symbol>&& closure_over)
     : source_positioned{std::visit(value_extractor{}, value)}
-      , _value{std::move(value)}
-      , _closure_symbols{closure_over.begin(), closure_over.end()} {
+    , _value{std::move(value)}
+    , _closure_symbols{std::move(closure_over)} {
     std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
         recursive_closure_collector_visitor v{sym};
-        std::forward<T>(val).accept(v);
+        if constexpr (std::is_pointer_v<std::remove_cvref_t<T>>) {
+            std::forward<T>(val)->accept(v);
+        }
+        else {
+            std::forward<T>(val).accept(v);
+        }
     }, _value);
     uniqify_symbols(_closure_symbols);
 }
 
-c4::ast2::expression::expression(const c4::position& position,
-                                 const std::string_view file_source,
-                                 const std::size_t length,
-                                 value_type value,
-                                 const std::span<symbol> closure_over)
-    : source_positioned{position, file_source, length}
-      , _value{std::move(value)}
-      , _closure_symbols{closure_over.begin(), closure_over.end()} {
-    std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
-        recursive_closure_collector_visitor v{sym};
-        std::forward<T>(val).accept(v);
-    }, _value);
-    uniqify_symbols(_closure_symbols);
-}
+// TODO remove
+// c4::ast2::expression::expression(const c4::position& position,
+//                                  const std::string_view file_source,
+//                                  const std::size_t length,
+//                                  value_type value,
+//                                  const std::span<symbol> closure_over)
+//     : source_positioned{position, file_source, length}
+//       , _value{std::move(value)}
+//       , _closure_symbols{closure_over.begin(), closure_over.end()} {
+//     std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
+//         recursive_closure_collector_visitor v{sym};
+//         std::forward<T>(val).accept(v);
+//     }, _value);
+//     uniqify_symbols(_closure_symbols);
+// }

@@ -34,6 +34,7 @@
  *   
  */
 
+#include <iostream>
 #include <c4/ast2/symbol.hxx>
 
 #include <fmt/base.h>
@@ -103,6 +104,8 @@ c4::ast2::symbol::references(tags::referable* ref) noexcept {
 
     DEBUG_ASSERT(ref->name() == _name,
                  "referenced entity must have the same name");
+    DEBUG_ASSERT((!_references || _references == ref),
+                 "referenced value should not be overwritten");
     _references = ref;
 }
 

@@ -43,6 +43,7 @@
 #include <libassert/assert.hpp>
 
 #include <dll-config.h>
+#include <iostream>
 
 const c4_datum_t gC4_Empty_Block = 0b0'11111111111'0001'000000000000000000000000000000000000000000000000;
 
@@ -54,8 +55,8 @@ namespace {
 
     void*
     get_pointer_value(const c4_datum_t datum) {
-        // todo: sign extend value
-        return std::bit_cast<void*>((datum & payload_mask << 48U) >> 48U);
+        const auto payload = datum & payload_mask;
+        return std::bit_cast<void*>(static_cast<std::int64_t>(payload << 16U) >> 16U);
     }
 
     c4_datum_t
@@ -70,6 +71,43 @@ namespace {
     shifted_type(const c4_datum_type type) {
         return static_cast<c4_datum_t>(type) << 48U;
     }
+}
+
+c4_datum_t
+_C5print1(const c4_datum_t d) {
+    const auto str = c4rt_datum_coerce_string(d);
+    std::printf("%s", str);
+    c4rt_free(str);
+    return d;
+}
+
+c4_datum_t
+_C7println1(c4_datum_t d) {
+    _C5print1(d);
+    std::printf("\n");
+    return d;
+}
+
+c4_datum_t
+_C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no) {
+    if (cond == gC4_Empty_Block) return yes;
+    return no;
+}
+
+c4_datum_t
+_C6readln0() {
+    std::string buf;
+    std::getline(std::cin, buf);
+    return c4rt_datum_from_string_sz(buf.c_str(), buf.size());
+}
+
+c4_datum_t
+_C9str_empty1(c4_datum_t str_d) {
+    const auto str = c4rt_datum_coerce_string(str_d);
+    c4_datum_t ret = gC4_Empty_Block;
+    if (str[0] == 0) ret = c4rt_datum_from_int32(1);
+    c4rt_free(str);
+    return ret;
 }
 
 void
@@ -111,8 +149,8 @@ namespace {
         ASSERT(s_sz < 6, "larger than 5 characters cannot be sso optimized");
         constexpr auto ret = nan_mask | shifted_type(C4_String);
         alignas(c4_datum_t) char buf[8]{};
-        std::memcpy(buf + 2, s, s_sz);
-        return ret | ((*reinterpret_cast<c4_datum_t*>(buf)) & payload_mask);
+        std::memcpy(buf, s, s_sz);
+        return ret | *reinterpret_cast<c4_datum_t*>(buf);
     }
 
     c4_datum_t
@@ -165,7 +203,7 @@ c4rt_datum_free(const c4_datum_t d) {
 namespace {
     char*
     datum_get_cstr_unck(c4_datum_t& d) {
-        return reinterpret_cast<char*>(&d) + 2;
+        return reinterpret_cast<char*>(&d);
     }
 
     char*

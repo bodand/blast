@@ -44,19 +44,19 @@ c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
                                          const std::string_view file_source,
                                          const std::size_t length,
                                          const op_symbol& op,
-                                         expression_ptr&& left,
-                                         expression_ptr&& right)
+                                         expression* left,
+                                         expression* right)
     : source_positioned{position, file_source, length}
     , _op{op}
-    , _left{std::move(left)}
-    , _right{std::move(right)} {
+    , _left{left}
+    , _right{right} {
     DEBUG_ASSERT(_op.arity() == 2,
                  "non-binary operator passed to binary expression",
                  _op);
     DEBUG_ASSERT(_left != nullptr,
-                 "binary operator cannot have null subexpression");
+                 "binary operator cannot have null subexpression (left operand)");
     DEBUG_ASSERT(_right != nullptr,
-                 "binary operator cannot have null subexpression");
+                 "binary operator cannot have null subexpression (right operand)");
 }
 
 const c4::ast2::expression&
@@ -69,15 +69,15 @@ c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
                                        const std::string_view file_source,
                                        const std::size_t length,
                                        const op_symbol& op,
-                                       expression_ptr&& operand)
+                                       expression* operand)
     : source_positioned{position, file_source, length}
     , _op{op}
-    , _operand{std::move(operand)} {
+    , _operand{operand} {
     DEBUG_ASSERT(_op.arity() == 1,
-                 "binary operator passed to unary expression",
+                 "unary operator passed to unary expression",
                  _op);
     DEBUG_ASSERT(_operand != nullptr,
-                 "unary operator cannot have null subexpression");
+                 "unary operator cannot have null subexpression (operand)");
 }
 
 const c4::ast2::expression&
