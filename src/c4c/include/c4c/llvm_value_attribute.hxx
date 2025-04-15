@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,34 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/let_expression --
+ * src/c4c/include/c4c/llvm_value_attribute --
  *   
  */
+#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/expression.hxx>
+#include <c4/ast2/tags/attributable.hxx>
 
-#include <libassert/assert.hpp>
-#include <utility>
-
-c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
-                                         const std::size_t length,
-                                         ast2::symbol symbol,
-                                         expression* expr)
-    : source_positioned{position, file_source, length}
-    , _symbol{std::move(symbol)}
-    , _value{expr} { }
-
-const c4::ast2::expression&
-c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
+namespace llvm {
+    class Value;
 }
 
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
+namespace c4c {
+    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
+        explicit
+        llvm_value_attribute(llvm::Value* const& value)
+            : typed_attribute{value} { }
+    };
 }
+
+#endif

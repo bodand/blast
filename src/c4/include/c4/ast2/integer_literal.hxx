@@ -43,7 +43,6 @@
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/evaluation_constness.hxx>
 #include <c4/ast2/tags/attributable.hxx>
-#include <c4/ast2/tags/referable.hxx>
 
 namespace c4::ast2 {
     struct integer_literal final :  tags::visitable

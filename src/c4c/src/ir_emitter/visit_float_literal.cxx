@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,34 +28,29 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/let_expression --
+ * src/c4c/src/ir_emitter/visit_float_literal --
  *   
  */
 
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/expression.hxx>
+#include <c4c/ir_emitter.hxx>
+#include <c4c/llvm_value_attribute.hxx>
+
+#include <c4rt/datum.h>
+
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 
 #include <libassert/assert.hpp>
-#include <utility>
 
-c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
-                                         const std::size_t length,
-                                         ast2::symbol symbol,
-                                         expression* expr)
-    : source_positioned{position, file_source, length}
-    , _symbol{std::move(symbol)}
-    , _value{expr} { }
-
-const c4::ast2::expression&
-c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
-}
-
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
+void
+c4c::ir_emitter::do_visit(const c4::ast2::float_literal& obj) {
+    const auto val = c4rt_datum_from_double(obj.value());
+    last.set_constant(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), val));
+    obj.emplace_attribute<llvm_value_attribute>("value", last.value);
 }

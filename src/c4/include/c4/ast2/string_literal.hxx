@@ -42,13 +42,14 @@
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/attributable.hxx>
 #include <c4/ast2/tags/evaluation_constness.hxx>
-#include <c4/ast2/tags/referable.hxx>
 
 namespace c4::ast2 {
-    struct string_literal final :  tags::visitable
+    struct string_literal final : tags::visitable
                                   , tags::source_positioned
                                   , tags::evaluation_constness
                                   , tags::attributable {
+        constexpr static auto short_string_limit = 6;
+
         string_literal(const c4::position& position,
                        const std::string_view file_source,
                        const std::size_t length,
@@ -59,8 +60,8 @@ namespace c4::ast2 {
         [[nodiscard]] std::string_view
         value() const { return _value; }
 
-        [[nodiscard]] bool // todo: extract 6 as SSO limit somewhere
-        is_constant_evaluable() const noexcept { return _value.size() < 6; }
+        [[nodiscard]] bool
+        is_constant_evaluable() const noexcept { return _value.size() < short_string_limit; }
 
     private:
         std::string_view _value;

@@ -36,15 +36,15 @@
 #ifndef C4_AST2_OP_CALL_HXX
 #define C4_AST2_OP_CALL_HXX
 
-#include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-
-#include <c4/ast2/expression_deleter.hxx>
+#include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
 
-#include "ast_node.hxx"
+#include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/ast2/tags/visitable.hxx>
 
 namespace c4::ast2 {
+    struct expression;
+
     struct binary_op_call final : ast_node
                                   , tags::visitable
                                   , tags::source_positioned
@@ -61,10 +61,10 @@ namespace c4::ast2 {
         binary_op_call&
         operator=(const binary_op_call& cp) = delete;
 
-        binary_op_call(binary_op_call&& other) noexcept = default;
+        binary_op_call(binary_op_call&& other) noexcept = delete;
 
         binary_op_call&
-        operator=(binary_op_call&& other) noexcept = default;
+        operator=(binary_op_call&& other) noexcept = delete;
 
         [[nodiscard]] op_symbol
         op() const noexcept { return _op; }
@@ -96,10 +96,10 @@ namespace c4::ast2 {
         unary_op_call&
         operator=(const unary_op_call& cp) = delete;
 
-        unary_op_call(unary_op_call&&) noexcept = default;
+        unary_op_call(unary_op_call&&) noexcept = delete;
 
         unary_op_call&
-        operator=(unary_op_call&&) noexcept = default;
+        operator=(unary_op_call&&) noexcept = delete;
 
         [[nodiscard]] op_symbol
         op() const noexcept { return _op; }

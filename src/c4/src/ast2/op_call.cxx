@@ -34,7 +34,6 @@
  *   
  */
 
-
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/expression.hxx>
 

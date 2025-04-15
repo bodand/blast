@@ -36,7 +36,7 @@
 #ifndef C4_AST2_EXPRESSION_HXX
 #define C4_AST2_EXPRESSION_HXX
 
-#include <functional>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -73,21 +73,15 @@ namespace c4::ast2 {
         expression(value_type value,
                    std::vector<symbol>&& closure_over = {});
 
-        // expression(const c4::position& position,
-        //            std::string_view file_source,
-        //            std::size_t length,
-        //            value_type value,
-        //            std::span<symbol> closure_over = {});
-
         expression(const expression&) = delete;
 
         expression&
         operator=(const expression&) = delete;
 
-        expression(expression&&) noexcept = default;
+        expression(expression&&) noexcept = delete;
 
         expression&
-        operator=(expression&&) noexcept = default;
+        operator=(expression&&) noexcept = delete;
 
         [[nodiscard]] const value_type&
         value() const { return _value; }
@@ -102,7 +96,6 @@ namespace c4::ast2 {
                 else if constexpr (!std::is_pointer_v<std::remove_cvref_t<T>>) {
                     std::forward<T>(val).accept(v);
                 }
-
             }, _value);
         }
 

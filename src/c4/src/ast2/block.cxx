@@ -35,9 +35,12 @@
  */
 
 #include <iostream>
+
 #include <c4/ast2/block.hxx>
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/visitor/visitor.hxx>
+
+#include <libassert/assert.hpp>
 
 c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::string_view file_source,
@@ -45,6 +48,18 @@ c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::span<symbol> args)
     : source_positioned{position, file_source, length}
     , _args{args.begin(), args.end()} { }
+
+c4::ast2::block_argument&
+c4::ast2::block_args::argument_reference(std::size_t arg_idx) {
+    DEBUG_ASSERT(arg_idx < _args.size());
+    return _args[arg_idx];
+}
+
+const c4::ast2::block_argument&
+c4::ast2::block_args::argument_reference(std::size_t arg_idx) const {
+    DEBUG_ASSERT(arg_idx < _args.size());
+    return _args[arg_idx];
+}
 
 c4::ast2::block::block(const c4::position& position,
                        const std::string_view file_source,

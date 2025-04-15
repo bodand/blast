@@ -39,7 +39,7 @@
 #define C4_AST2_SYMBOL_HXX
 
 #include <string>
-#include <cmath>
+#include <string_view>
 
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
@@ -125,14 +125,14 @@ namespace c4::ast2 {
         friend bool
         operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
 
-        [[nodiscard]] tags::referable*
+        [[nodiscard]] referable*
         references() const noexcept { return _references; }
 
         void
-        references(tags::referable* ref) noexcept;
+        references(referable* ref) noexcept;
 
     private:
-        tags::referable* _references{};
+        referable* _references{};
         std::string_view _name;
         unsigned _arity;
     };
@@ -152,7 +152,7 @@ namespace c4::ast2 {
         [[nodiscard]] unsigned
         arity() const noexcept { return _arity; }
 
-        std::string
+        [[nodiscard]] std::string
         mangle() const;
 
     private:

@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,34 +28,52 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/let_expression --
- *   
+ * src/c4c/src/ir_emitter/visit_block_args --
+ *   Implements the do_visit(block_args&) member function of ir_emitter.
  */
 
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/expression.hxx>
+#include <ranges>
+
+#include <c4c/ir_emitter.hxx>
+#include <c4c/llvm_value_attribute.hxx>
+
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 
 #include <libassert/assert.hpp>
-#include <utility>
 
-c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
-                                         const std::size_t length,
-                                         ast2::symbol symbol,
-                                         expression* expr)
-    : source_positioned{position, file_source, length}
-    , _symbol{std::move(symbol)}
-    , _value{expr} { }
+void
+c4c::ir_emitter::do_visit(const c4::ast2::block_args& obj) {
+    const auto formal_args_size = _function_is_closure
+                                  ? _active_function->arg_size() - 1
+                                  : _active_function->arg_size();
+    ASSERT(formal_args_size == obj.size(),
+           "defining function with invalid argument size block");
 
-const c4::ast2::expression&
-c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
+    const auto args = _active_function->args();
+    auto arg_begin = args.begin();
+    std::size_t i = 0;
+    if (_function_is_closure) {
+        ++i;
+        std::advance(arg_begin, 1);
+    }
+
+    for (const auto& [formal_arg, ll_arg] : std::views::zip(obj.args(),
+                                                            std::span{arg_begin, args.end()})) {
+        ASSERT(ll_arg.getType() == llvm::Type::getInt64Ty(context),
+               "trying to name non datum_t type",
+               ll_arg.getType()->getTypeID(),
+               formal_arg->name(),
+               _active_function->getFunctionType()->params(),
+               _active_function->getName());
+        ll_arg.setName(formal_arg->mangle());
+        obj.argument_reference(i++).emplace_attribute<llvm_value_attribute>("value", &ll_arg);
+    }
 }
 
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
-}

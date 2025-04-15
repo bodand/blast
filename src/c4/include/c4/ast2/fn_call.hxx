@@ -40,9 +40,8 @@
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/symbol.hxx>
 
-#include <deque>
+#include <string_view>
 #include <span>
-#include <utility>
 
 namespace c4::ast2 {
     struct expression;
@@ -62,10 +61,10 @@ namespace c4::ast2 {
         fn_call&
         operator=(const fn_call& cp) = delete;
 
-        fn_call(fn_call&& mv) noexcept = default;
+        fn_call(fn_call&& mv) noexcept = delete;
 
         fn_call&
-        operator=(fn_call&& mv) noexcept = default;
+        operator=(fn_call&& mv) noexcept = delete;
 
         [[nodiscard]] symbol
         sym() const { return _sym; }

@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,34 +28,41 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/let_expression --
+ * src/c4c/src/ir_emitter/visit_string_literal --
  *   
  */
 
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/expression.hxx>
+#include <c4c/c4_runtime_emitter.hxx>
+#include <c4c/global_constant_emitter.hxx>
+#include <c4c/ir_emitter.hxx>
+#include <c4c/llvm_value_attribute.hxx>
+
+#include <c4rt/datum.h>
+
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 
 #include <libassert/assert.hpp>
-#include <utility>
 
-c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
-                                         const std::size_t length,
-                                         ast2::symbol symbol,
-                                         expression* expr)
-    : source_positioned{position, file_source, length}
-    , _symbol{std::move(symbol)}
-    , _value{expr} { }
-
-const c4::ast2::expression&
-c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
+void
+c4c::ir_emitter::do_visit(const c4::ast2::string_literal& obj) {
+    if (obj.const_evaluable()) {
+        global_constant_emitter constant_emitter(context, module, builder);
+        obj.accept(constant_emitter);
+        last.set_constant(constant_emitter.get_loaded_global(_block_name));
+        obj.emplace_attribute<llvm_value_attribute>("value", last.value);
+        return;
+    }
+    const auto global = builder.CreateGlobalStringPtr(obj.value(), {_block_name, "_sl"}, 0, &module);
+    const auto value = rt_emitter.emit_rt_call(c4rt_symbol::DatumFromString, builder, global);
+    last.set_expr(value);
+    obj.emplace_attribute<llvm_value_attribute>("value", last.value);
+    _need_cleanup.push_back(value);
 }
 
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
-}

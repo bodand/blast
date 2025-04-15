@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,34 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/let_expression --
+ * src/c4c/src/ir_emitter_memento --
  *   
  */
 
-#include <c4/ast2/let_expression.hxx>
-#include <c4/ast2/expression.hxx>
+#include <c4c/ir_emitter.hxx>
+#include <c4c/ir_emitter_memento.hxx>
 
 #include <libassert/assert.hpp>
-#include <utility>
 
-c4::ast2::let_expression::let_expression(const c4::position& position,
-                                         const std::string_view file_source,
-                                         const std::size_t length,
-                                         ast2::symbol symbol,
-                                         expression* expr)
-    : source_positioned{position, file_source, length}
-    , _symbol{std::move(symbol)}
-    , _value{expr} { }
-
-const c4::ast2::expression&
-c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
+void
+c4c::ir_emitter_memento::restore(ir_emitter& emitter) const {
+    emitter.builder.restoreIP(_insert_point);
+    emitter._active_function = _active_function;
+    emitter._function_is_closure = _function_is_closure;
+    emitter._need_cleanup = _need_cleanup;
 }
 
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
+c4c::scoped_memento::scoped_memento(std::unique_ptr<ir_emitter_memento>&& memento,
+                                    ir_emitter& emitter)
+    : _memento{std::move(memento)}
+    , _emitter{emitter} {
+    DEBUG_ASSERT(_memento,
+                 "scoped memento must be given a valid pointer");
+}
+
+c4c::scoped_memento::~scoped_memento() noexcept {
+    _memento->restore(_emitter);
 }

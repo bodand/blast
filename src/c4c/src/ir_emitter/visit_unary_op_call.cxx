@@ -28,25 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/include/c4/ast2/expression_deleter --
- *   
+ * src/c4c/src/ir_emitter/visit_unary_op_call --
+ *   Implements the do_visit(unary_op_call&) member function of ir_emitter.
  */
-#ifndef C4_AST2_EXPRESSION_DELETER_HXX
-#define C4_AST2_EXPRESSION_DELETER_HXX
 
-#include <memory>
+#include <c4c/ir_emitter.hxx>
 
-namespace c4::ast2 {
-    struct expression;
+#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 
-    struct expression_deleter final {
-        void
-        operator()(const expression* expr) const noexcept;
-    };
+#include <libassert/assert.hpp>
 
-    using expression_ptr = std::unique_ptr<expression, expression_deleter>;
+void
+c4c::ir_emitter::do_visit(const c4::ast2::unary_op_call& obj) {
+    const auto callee_val = lookup_symbol(obj.op().mangle());
+    ASSERT(callee_val,
+           "callee symbol must be known at the point of call",
+           obj.op().name(),
+           obj.op().mangle(),
+           promised_symbols);
+
+    if (callee_val->getType()->isIntegerTy()) {
+        last.set_expr(callee_val);
+        return;
+    }
+
+    // has arguments, so callee must be a function type
+    ASSERT(callee_val->getType()->isPointerTy(),
+           "fn called with parameters does not have function (pointer) type",
+           callee_val->getName(),
+           callee_val->getType()->getTypeID());
+    const auto fn = cast<llvm::Function>(callee_val);
+
+    std::vector<llvm::Value*> args(1);
+    std::ranges::transform(std::array{&obj.operand()}, args.begin(), [this](const c4::ast2::expression* arg) {
+        arg->accept_skip_self(*this);
+        return this->last.value;
+    });
+
+    const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
+    last.set_expr(call);
 }
 
-#endif

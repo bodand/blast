@@ -36,15 +36,15 @@
 #ifndef C4_AST2_DYNAMIC_CALL_HXX
 #define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <deque>
 #include <span>
 
 #include <c4/ast2/tags/visitable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
-
-#include <c4/ast2/expression_deleter.hxx>
+#include <c4/ast2/tags/evaluation_constness.hxx>
 
 namespace c4::ast2 {
+    struct expression;
+
     struct dynamic_call final : ast_node
                                 , tags::visitable
                                 , tags::source_positioned
@@ -60,10 +60,10 @@ namespace c4::ast2 {
         dynamic_call&
         operator=(const dynamic_call& cp) = delete;
 
-        dynamic_call(dynamic_call&& other) noexcept = default;
+        dynamic_call(dynamic_call&& other) noexcept = delete;
 
         dynamic_call&
-        operator=(dynamic_call&& other) noexcept = default;
+        operator=(dynamic_call&& other) noexcept = delete;
 
         [[nodiscard]] const expression*
         callee() const;

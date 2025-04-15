@@ -28,23 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4c/include/c4c/c4_runtime_emitter --
- *   Helper to emit LLVM IR to calls into the C4 runtime.
+ * src/c4c/include/c4c/global_constant_emitter --
+ *   
  */
-#ifndef C4C_C4_RUNTIME_EMITTER_HXX
-#define C4C_C4_RUNTIME_EMITTER_HXX
+#ifndef C4C_GLOBAL_CONSTANT_EMITTER_HXX
+#define C4C_GLOBAL_CONSTANT_EMITTER_HXX
 
-#include <unordered_map>
+#include <string_view>
+
+#include <c4/ast2/visitor/visitor.hxx>
+
+#include <c4rt/datum.h>
 
 namespace llvm {
-    template<class T>
-    class ArrayRef;
-    class FunctionType;
-    class Function;
-    class LLVMContext;
+    class Twine;
     class Module;
+    class LLVMContext;
     class Value;
     class ConstantFolder;
     class IRBuilderDefaultInserter;
@@ -52,48 +53,44 @@ namespace llvm {
     class IRBuilder;
 }
 
+namespace c4::ast2 {
+    struct string_literal;
+    struct integer_literal;
+    struct float_literal;
+}
+
 namespace c4c {
-    enum class c4rt_symbol {
-        DatumFromInt32,
-        DatumFromInt64,
-        DatumFromDouble,
-        DatumFromString,
-        DatumFromProc,
-        DatumFree,
-        DatumGetInt32,
-        DatumGetInt64,
-        DatumGetDouble,
-        DatumGetString,
-        DatumCoerceInt32,
-        DatumCoerceInt64,
-        DatumCoerceDouble,
-        DatumCoerceString,
-    };
-
-    struct c4_runtime_emitter {
-        c4_runtime_emitter(llvm::LLVMContext& context, llvm::Module& module);
-
-        c4_runtime_emitter(const c4_runtime_emitter& other) = delete;
-
-        c4_runtime_emitter(c4_runtime_emitter&& other) noexcept = delete;
-
-        c4_runtime_emitter&
-        operator=(const c4_runtime_emitter& other) = delete;
-
-        c4_runtime_emitter&
-        operator=(c4_runtime_emitter&& other) noexcept = delete;
+    struct global_constant_emitter final : c4::ast2::visitor<
+                c4::ast2::float_literal,
+                c4::ast2::integer_literal,
+                c4::ast2::string_literal
+            > {
+        global_constant_emitter(llvm::LLVMContext& context,
+                                llvm::Module& module,
+                                llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder);
 
         llvm::Value*
-        emit_rt_call(c4rt_symbol sym,
-                     llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
-                     llvm::ArrayRef<llvm::Value*> args);
+        get_loaded_global(const llvm::Twine& name);
 
-        [[nodiscard]] llvm::FunctionType*
-        get_c4_funtype(unsigned arity, bool context = false) const;
+        void
+        do_visit(const c4::ast2::float_literal& obj) override;
+
+        void
+        do_visit(const c4::ast2::integer_literal& obj) override;
+
+        void
+        do_visit(const c4::ast2::string_literal& obj) override;
+
+        llvm::Value* value{};
+        llvm::LLVMContext& context;
+        llvm::Module& module;
+        llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder;
 
     private:
-        llvm::LLVMContext& _context;
-        std::unordered_map<c4rt_symbol, llvm::Function*> _symbol_map;
+        std::string_view _value_type_suffix;
+
+        void
+        create_global(c4_datum_t datum);
     };
 }
 

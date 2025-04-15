@@ -38,7 +38,25 @@ add_executable(c4c
                include/c4c/source_file.hxx
                src/source_file.cxx
                include/c4c/c4_runtime_emitter.hxx
-               src/c4_runtime_emitter.cxx)
+               src/c4_runtime_emitter.cxx
+               include/c4c/ir_emitter.hxx
+               src/ir_emitter.cxx
+               include/c4c/global_constant_emitter.hxx
+               src/global_constant_emitter.cxx
+               include/c4c/llvm_value_attribute.hxx
+               src/llvm_value_attribute.cxx
+               src/ir_emitter/visit_fn_call.cxx
+               src/ir_emitter/visit_unary_op_call.cxx
+               src/ir_emitter/visit_binary_op_call.cxx
+               src/ir_emitter/visit_block_args.cxx
+               src/ir_emitter/visit_block.cxx
+               src/ir_emitter/visit_let_expression.cxx
+               src/ir_emitter/visit_float_literal.cxx
+               src/ir_emitter/visit_integer_literal.cxx
+               src/ir_emitter/visit_string_literal.cxx
+               include/c4c/ir_emitter_memento.hxx
+               src/ir_emitter_memento.cxx
+               )
 
 target_link_libraries(c4c PRIVATE
                       c4 c4rt

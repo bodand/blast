@@ -36,17 +36,14 @@
 #ifndef C4_AST2_LET_EXPRESSION_HXX
 #define C4_AST2_LET_EXPRESSION_HXX
 
+#include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
-#include <c4/ast2/expression_deleter.hxx>
 
+#include <c4/ast2/tags/referable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/referable.hxx>
 
-#include <memory>
-#include <utility>
-
-#include <c4/ast2/ast_node.hxx>
+#include <string_view>
 
 namespace c4::ast2 {
     struct expression;
@@ -59,7 +56,7 @@ namespace c4::ast2 {
         let_expression(const c4::position& position,
                        std::string_view file_source,
                        std::size_t length,
-                       const symbol& symbol,
+                       symbol  symbol,
                        expression* expr);
 
         let_expression(const let_expression& cp) = delete;
@@ -67,10 +64,10 @@ namespace c4::ast2 {
         let_expression&
         operator=(const let_expression& cp) = delete;
 
-        let_expression(let_expression&&) noexcept = default;
+        let_expression(let_expression&&) noexcept = delete;
 
         let_expression&
-        operator=(let_expression&&) noexcept = default;
+        operator=(let_expression&&) noexcept = delete;
 
         [[nodiscard]] symbol
         symbol() const { return _symbol; }

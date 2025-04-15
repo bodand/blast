@@ -73,8 +73,6 @@ add_library(c4
             src/ast2/fn_call.cxx
             include/c4/p2/lex/string_rule.hxx
             src/p2/lex/string_rule.cxx
-            include/c4/ast2/expression_deleter.hxx
-            src/ast2/expression_deleter.cxx
             include/c4/ast2/op_call.hxx
             src/ast2/op_call.cxx
             include/c4/ast2/block.hxx

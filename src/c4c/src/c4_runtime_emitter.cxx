@@ -39,9 +39,11 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/LLVMContext.h>
 
 #include <libassert/assert.hpp>
-#include <llvm/IR/IRBuilder.h>
 
 #define CAT(x, y) CAT_I(x, y)
 #define CAT_I(x, y) x##y
@@ -67,7 +69,6 @@ c4c::c4_runtime_emitter::c4_runtime_emitter(llvm::LLVMContext& context,
     const auto double_t = Type::getDoubleTy(context);
     const auto string_t = Type::getInt8Ty(context)->getPointerTo();
     const auto void_t = Type::getVoidTy(context);
-    const auto datum_ptr_t = datum_t->getPointerTo();
     const auto anyptr_t = PointerType::get(context, 0);
 
     // constructors

@@ -36,29 +36,30 @@
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
 
+#include <c4/ast2/tags/attributable.hxx>
+#include <c4/ast2/tags/evaluation_constness.hxx>
+#include <c4/ast2/tags/referable.hxx>
 #include <c4/ast2/tags/source_positioned.hxx>
 #include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/attributable.hxx>
-#include <c4/ast2/tags/referable.hxx>
 
 #include <c4/ast2/ast_node.hxx>
-#include <c4/ast2/expression_deleter.hxx>
 #include <c4/ast2/symbol.hxx>
 
+#include <algorithm>
+#include <string_view>
+#include <iterator>
 #include <span>
-#include <optional>
-#include <iostream>
-#include <deque>
-#include <functional>
-#include <libassert/assert.hpp>
-
+#include <utility>
+#include <vector>
 
 namespace c4::ast2 {
+    struct expression;
+
     struct block_argument final : tags::referable
                                   , ast_node {
         explicit
-        block_argument(const symbol& symbol)
-            : _symbol{symbol} { }
+        block_argument(symbol symbol)
+            : _symbol{std::move(symbol)} { }
 
         block_argument(block_argument&) = delete;
 
@@ -66,9 +67,9 @@ namespace c4::ast2 {
         operator=(block_argument&) = delete;
 
         block_argument&
-        operator=(block_argument&&) noexcept = default;
+        operator=(block_argument&&) noexcept = delete;
 
-        block_argument(block_argument&&) noexcept = default;
+        block_argument(block_argument&&) noexcept = delete;
 
         [[nodiscard]] const symbol&
         symbol() const noexcept { return _symbol; }
@@ -94,10 +95,10 @@ namespace c4::ast2 {
         block_args&
         operator=(block_args&) = delete;
 
-        block_args(block_args&&) noexcept = default;
+        block_args(block_args&&) noexcept = delete;
 
         block_args&
-        operator=(block_args&&) noexcept = default;
+        operator=(block_args&&) noexcept = delete;
 
         [[nodiscard]] std::vector<const symbol*>
         args() const {
@@ -109,21 +110,13 @@ namespace c4::ast2 {
         }
 
         [[nodiscard]] std::size_t
-        size() const noexcept {
-            return _args.size();
-        }
+        size() const noexcept { return _args.size(); }
 
         [[nodiscard]] block_argument&
-        argument_reference(std::size_t arg_idx) {
-            DEBUG_ASSERT(arg_idx < _args.size());
-            return _args[arg_idx];
-        }
+        argument_reference(std::size_t arg_idx);
 
         [[nodiscard]] const block_argument&
-        argument_reference(std::size_t arg_idx) const {
-            DEBUG_ASSERT(arg_idx < _args.size());
-            return _args[arg_idx];
-        }
+        argument_reference(std::size_t arg_idx) const;
 
     private:
         std::vector<block_argument> _args{};
@@ -144,9 +137,9 @@ namespace c4::ast2 {
 
         block& operator=(const block&) = delete;
 
-        block(block&&) = default;
+        block(block&&) noexcept = delete;
 
-        block& operator=(block&&) = default;
+        block& operator=(block&&) noexcept = delete;
 
         [[nodiscard]] const block_args*
         args() const { return _args; }

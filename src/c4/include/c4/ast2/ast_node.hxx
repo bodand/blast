@@ -35,7 +35,11 @@
  */
 #ifndef C4_AST2_AST_NODE_HXX
 #define C4_AST2_AST_NODE_HXX
-#include "tags/referable.hxx"
+
+#include <string>
+#include <string_view>
+
+#include <c4/ast2/tags/referable.hxx>
 
 namespace c4::ast2 {
     struct ast_node {
