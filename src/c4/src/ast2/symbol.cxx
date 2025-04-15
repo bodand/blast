@@ -58,27 +58,45 @@ c4::ast2::symbol::symbol(const c4::position& position,
 }
 
 namespace {
+    // clang-format off
+    constexpr auto operator_chars =            "-+*/%&|~!?,.:^@#`<>="sv;
+    constexpr auto operator_char_replacement = "mptsPaoTeqcdChAHblgE"sv;
+    // clang-format on
+    static_assert(operator_chars.size() == operator_char_replacement.size(),
+                  "replacement set must equal operator set");
+
+    constexpr bool
+    is_operator_symbol(const std::string_view name) {
+        const auto idx = name.find_first_of(operator_chars);
+        return idx != std::string_view::npos;
+    }
+
     std::string
-    mangle_symbol(std::string_view name, const unsigned arity) {
-        // clang-format off
-        constexpr static auto operator_chars =            "-+*/%&|~!?,.:^@#`<>="sv;
-        constexpr static auto operator_char_replacement = "mptsPaoTeqcdChAHblgE"sv;
-        // clang-format on
-        static_assert(operator_chars.size() == operator_char_replacement.size(),
-                      "replacement set must equal operator set");
+    mangle_standard_function(const std::string_view name,
+                             const unsigned arity) {
+        return fmt::format("{}{}{}", name.size(), name, arity);
+    }
 
-        if (const auto idx = name.find_first_of(operator_chars);
-            idx == std::string_view::npos)
-            return fmt::format("{}{}{}", name.size(), name, arity);
+    constexpr char
+    translate_operator_char(const char c) {
+        const auto c_idx = operator_chars.find(c);
+        if (c_idx == std::string_view::npos) return c;
+        return operator_char_replacement[c_idx];
+    }
 
+    std::string
+    mangle_operator(const std::string_view name,
+                    const unsigned arity) {
         auto normalized = std::string(name);
-        std::ranges::transform(normalized, normalized.begin(),
-                               [](const char c) {
-                                   const auto c_idx = operator_chars.find(c);
-                                   if (c_idx == std::string_view::npos) return c;
-                                   return operator_char_replacement[c_idx];
-                               });
-        return fmt::format("op{}{}{}", normalized.size(), normalized, arity);
+        std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
+        return fmt::format("o{}{}{}", normalized.size(), normalized, arity);
+    }
+
+    std::string
+    mangle_symbol(const std::string_view name,
+                  const unsigned arity) {
+        if (is_operator_symbol(name)) return mangle_operator(name, arity);
+        return mangle_standard_function(name, arity);
     }
 }
 

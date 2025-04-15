@@ -33,3 +33,5 @@
  * src/c4/src/ast2/tags/referable --
  *   
  */
+
+#include <c4/ast2/tags/referable.hxx>

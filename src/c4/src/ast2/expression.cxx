@@ -121,6 +121,33 @@ namespace {
 
         std::vector<c4::ast2::symbol>& symbols;
     };
+
+    struct closure_collector final {
+        explicit
+        closure_collector(std::vector<c4::ast2::symbol>& sym)
+            : _visitor{sym} { }
+
+        template<class T>
+        void
+        operator()(T* ptr) {
+            ptr->accept(_visitor);
+        }
+
+        template<class T>
+        void
+        operator()(T&& val) {
+            std::forward<T>(val).accept(_visitor);
+        }
+
+    private:
+        recursive_closure_collector_visitor _visitor;
+    };
+
+    template<class Value>
+    void
+    collect_closure(Value& value, std::vector<c4::ast2::symbol>& symbols) {
+        std::visit(closure_collector{symbols}, value);
+    }
 }
 
 c4::ast2::expression::expression(value_type value,
@@ -128,30 +155,6 @@ c4::ast2::expression::expression(value_type value,
     : source_positioned{std::visit(value_extractor{}, value)}
     , _value{std::move(value)}
     , _closure_symbols{std::move(closure_over)} {
-    std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
-        recursive_closure_collector_visitor v{sym};
-        if constexpr (std::is_pointer_v<std::remove_cvref_t<T>>) {
-            std::forward<T>(val)->accept(v);
-        }
-        else {
-            std::forward<T>(val).accept(v);
-        }
-    }, _value);
+    collect_closure(_value, _closure_symbols);
     uniqify_symbols(_closure_symbols);
 }
-
-// TODO remove
-// c4::ast2::expression::expression(const c4::position& position,
-//                                  const std::string_view file_source,
-//                                  const std::size_t length,
-//                                  value_type value,
-//                                  const std::span<symbol> closure_over)
-//     : source_positioned{position, file_source, length}
-//       , _value{std::move(value)}
-//       , _closure_symbols{closure_over.begin(), closure_over.end()} {
-//     std::visit([&sym = _closure_symbols]<class T>(T&& val) mutable {
-//         recursive_closure_collector_visitor v{sym};
-//         std::forward<T>(val).accept(v);
-//     }, _value);
-//     uniqify_symbols(_closure_symbols);
-// }
