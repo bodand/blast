@@ -45,7 +45,7 @@
 #include <c4/ast2/tags/attributable.hxx>
 
 namespace c4::ast2 {
-    struct integer_literal final :  tags::visitable
+    struct integer_literal final : tags::visitable
                                    , tags::source_positioned
                                    , tags::constant_node
                                    , tags::attributable {
@@ -57,6 +57,9 @@ namespace c4::ast2 {
 
         [[nodiscard]] std::int64_t
         value() const { return _value; }
+
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
 
     private:
         std::int64_t _value;

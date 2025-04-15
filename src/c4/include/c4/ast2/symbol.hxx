@@ -130,6 +130,8 @@ namespace c4::ast2 {
         void
         references(referable* ref) noexcept;
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
     private:
         referable* _references{};
         std::string_view _name;

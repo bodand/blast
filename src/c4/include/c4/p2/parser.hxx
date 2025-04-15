@@ -139,6 +139,12 @@ namespace c4::p2 {
         promised_symbols() const;
 
     private:
+        bool
+        parse_associativity_indicator(std::string_view op);
+
+        unsigned
+        parse_precedence(std::string_view op);
+
         void
         parse_n_expressions(unsigned n,
                             std::vector<ast2::expression*>& expressions);

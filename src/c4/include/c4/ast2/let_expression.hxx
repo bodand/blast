@@ -86,6 +86,9 @@ namespace c4::ast2 {
         std::string_view
         name() override { return _symbol.name(); }
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         struct symbol _symbol;
         expression* _value;

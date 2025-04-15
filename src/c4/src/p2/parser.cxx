@@ -232,6 +232,23 @@ c4::p2::parser::parse_let_expression() {
             declare_uniop(op.name());
 
             auto expr = parse_expression();
+            if (unsigned unbound = expr->unbound_parameters();
+                unbound != op.arity()) {
+                _valid = false;
+                fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
+                                                                op.name(),
+                                                                unbound),
+                                                            op.position(),
+                                                            op.length()));
+                fmt::print("{}\n", source_diagnostic::note(fmt::format("definition is here"),
+                                                           expr->position()));
+                fmt::print("{}\n", source_diagnostic::note(
+                               fmt::format("continuing parsing as if `{}' had one parameter (prefix)", op.name()),
+                               op.position(),
+                               op.length()));
+            }
+
             const auto let = _context.build_let_expression(
                 op.position(),
                 op.length(),
@@ -241,36 +258,31 @@ c4::p2::parser::parse_let_expression() {
             return _context.build_expression(let);
         }
         if (op.arity() == 2) {
-            auto left_assoc = true;
-            if (const auto assoc_direction = parse_bare_symbol();
-                assoc_direction.name() == "right") {
-                left_assoc = false;
-            }
-            else if (assoc_direction.name() != "left") {
-                _valid = false;
-                fmt::print("{}\n", source_diagnostic::error(fmt::format(
-                                                                "expected associativity indicator (`left' or `right') found `{}'",
-                                                                assoc_direction.name()),
-                                                            assoc_direction.position(),
-                                                            assoc_direction.length()));
-            }
+            auto left_assoc = parse_associativity_indicator(op.name());
+            next_relevant();
+            unsigned precedence = parse_precedence(op.name());
+            next_relevant();
 
-            unsigned precedence = 0;
-            if (const auto uint = parse_integer_literal();
-                uint.value() >= 0 && uint.value() < 10) {
-                precedence = uint.value();
-            }
-            else {
-                _valid = false;
-                fmt::print("{}\n", source_diagnostic::error(fmt::format(
-                                                                "expected precedence (0..10) found `{}'",
-                                                                uint.value()),
-                                                            uint.position(),
-                                                            uint.length()));
-            }
             declare_binop(op.name(), precedence, !left_assoc);
 
             auto expr = parse_expression();
+            if (unsigned unbound = expr->unbound_parameters();
+                unbound != op.arity()) {
+                _valid = false;
+                fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                                "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
+                                                                op.name(),
+                                                                unbound),
+                                                            op.position(),
+                                                            op.length()));
+                fmt::print("{}\n", source_diagnostic::note(fmt::format("definition is here"),
+                                                           expr->position()));
+                fmt::print("{}\n", source_diagnostic::note(
+                               fmt::format("continuing parsing as if `{}' had two parameters (infix)", op.name()),
+                               op.position(),
+                               op.length()));
+            }
+
             const auto let = _context.build_let_expression(
                 op.position(),
                 op.length(),
@@ -287,6 +299,27 @@ c4::p2::parser::parse_let_expression() {
     auto& sym = declare_symbol_internal(symbol.name(), symbol.arity(), nullptr);
 
     auto expr = parse_expression();
+
+    if (unsigned unbound = expr->unbound_parameters();
+        unbound != symbol.arity()) {
+        _valid = false;
+        fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                        "operator `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
+                                                        symbol.name(),
+                                                        symbol.arity(),
+                                                        unbound),
+                                                    symbol.position(),
+                                                    symbol.length()));
+        fmt::print("{}\n", source_diagnostic::note(fmt::format("definition is here"),
+                                                   expr->position()));
+        fmt::print("{}\n", source_diagnostic::note(
+                       fmt::format("continuing parsing as if `{}' had `{}' parameter(s)",
+                                   symbol.name(),
+                                   symbol.arity()),
+                       symbol.position(),
+                       symbol.length()));
+    }
+
     const auto let = _context.build_let_expression(
         symbol.position(),
         symbol.length(),
@@ -475,12 +508,119 @@ c4::p2::parser::promised_symbols() const {
     return undef_symbols;
 }
 
+namespace {
+    std::string_view
+    name_of(const c4::p2::tokens::token_type& token) {
+        return std::visit([](const auto& tok) {
+            return tok.token_name;
+        }, token);
+    }
+
+    c4::position
+    position_of(const c4::p2::tokens::token_type& token) {
+        return std::visit([](const auto& tok) {
+            return tok.token_position();
+        }, token);
+    }
+
+    std::size_t
+    length_of(const c4::p2::tokens::token_type& token) {
+        return std::visit([](const auto& tok) {
+            return tok.value().length();
+        }, token);
+    }
+}
+
+bool
+c4::p2::parser::parse_associativity_indicator(std::string_view op) {
+    const auto bare_symbol = expect_token<tokens::bare_symbol>();
+    if (!bare_symbol) {
+        if (!_current) report_failure(bare_symbol);
+
+        _valid = false;
+        fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                        "expected associativity indicator (`left' or `right') found `{}'",
+                                                        name_of(*_current)),
+                                                    position_of(*_current),
+                                                    length_of(*_current)));
+        fmt::print("{}\n", source_diagnostic::note(fmt::format(
+                                                       "continuing to parse as if `{}' was left associative",
+                                                       op),
+                                                   position_of(*_current),
+                                                   length_of(*_current)));
+        return true; // left-assoc
+    }
+
+    const auto assoc_direction_raw = *bare_symbol;
+    const auto assoc_direction = ast2::symbol{
+        assoc_direction_raw.token_position(),
+        assoc_direction_raw.value().size(),
+        assoc_direction_raw.name(),
+        assoc_direction_raw.arity()
+    };
+
+    if (assoc_direction.name() == "right") return false;
+    if (assoc_direction.name() == "left") return true;
+
+    _valid = false;
+    fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                    "expected associativity indicator (`left' or `right') found `{}'",
+                                                    assoc_direction.name()),
+                                                assoc_direction.position(),
+                                                assoc_direction.length()));
+    fmt::print("{}\n", source_diagnostic::note(fmt::format(
+                                                   "continuing to parse as if `{}' was left associative",
+                                                   op),
+                                               assoc_direction.position(),
+                                               assoc_direction.length()));
+    return true;
+}
+
+unsigned
+c4::p2::parser::parse_precedence(std::string_view op) {
+    const auto int_lit = expect_token<tokens::integer_literal>();
+    if (!int_lit) {
+        if (!_current) report_failure(int_lit);
+        _valid = false;
+
+        fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                        "expected precedence value (0..10) found `{}'",
+                                                        name_of(*_current)),
+                                                    position_of(*_current),
+                                                    length_of(*_current)));
+        fmt::print("{}\n", source_diagnostic::note(fmt::format(
+                                                       "continuing to parse as if `{}' had precedence of 0",
+                                                       op),
+                                                   position_of(*_current),
+                                                   length_of(*_current)));
+        return 0;
+    }
+
+    const auto uint = ast2::integer_literal{
+        int_lit->token_position(),
+        int_lit->value().size(),
+        int_lit->int_value()
+    };
+    if (uint.value() >= 0 && uint.value() < 10) return uint.value();
+
+    _valid = false;
+    fmt::print("{}\n", source_diagnostic::error(fmt::format(
+                                                    "expected precedence value (0..10) found `{}'",
+                                                    uint.value()),
+                                                uint.position(),
+                                                uint.length()));
+    fmt::print("{}\n", source_diagnostic::note(fmt::format(
+                                                   "continuing to parse as if `{}' had precedence of 0",
+                                                   op),
+                                               uint.position(),
+                                               uint.length()));
+    return 0;
+}
+
 void
 c4::p2::parser::parse_n_expressions(const unsigned n,
                                     std::vector<ast2::expression*>& expressions) {
-    for (unsigned i = 0; i < n; ++i) {
-        expressions.emplace_back(parse_expression());
-    }
+    for (unsigned i = 0; i < n; ++i) expressions.emplace_back(parse_expression());
 }
 
 c4::ast2::expression*
@@ -499,7 +639,7 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
 
                 while (lookahead && (op_ahead.precedence > op.precedence
                                      || (op_ahead.right_assoc && op_ahead.precedence == op.precedence))) {
-                    rhs = parse_operator_precedence(std::move(rhs),
+                    rhs = parse_operator_precedence(rhs,
                                                     op.precedence + (op_ahead.precedence > op.precedence));
                     lookahead = expect_token<tokens::operator_>();
                     if (lookahead) op_ahead = ensure_valid_operator(*lookahead);
@@ -516,13 +656,9 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                                                               rhs);
             ret = _context.build_expression(bin_op);
 
-            if (lookahead) {
-                op_token = *lookahead;
-                op = ensure_valid_operator(*lookahead);
-            }
-            else {
-                break;
-            }
+            if (!lookahead) break;
+            op_token = *lookahead;
+            op = ensure_valid_operator(*lookahead);
         }
     }
 
@@ -545,25 +681,22 @@ c4::p2::parser::enter_scope() {
     _scope_prefix_operator_size.emplace_back();
 }
 
+namespace {
+    template<class T>
+    void
+    parallel_stack_pop(std::vector<unsigned>& size_vector,
+                       std::deque<T>& data_vector) {
+        const auto stack_size = size_vector.back();
+        size_vector.pop_back();
+        for (auto i = 0U; i < stack_size; ++i) data_vector.pop_back();
+    }
+}
+
 void
 c4::p2::parser::leave_scope() {
-    const auto symbols = _scope_symbol_size.back();
-    _scope_symbol_size.pop_back();
-    for (unsigned i = 0U; i < symbols; ++i) {
-        _scope_symbols.pop_back();
-    }
-
-    const auto operators = _scope_operator_size.back();
-    _scope_operator_size.pop_back();
-    for (unsigned i = 0U; i < operators; ++i) {
-        _scope_operators.pop_back();
-    }
-
-    const auto pfx_operators = _scope_prefix_operator_size.back();
-    _scope_prefix_operator_size.pop_back();
-    for (unsigned i = 0U; i < pfx_operators; ++i) {
-        _scope_prefix_operators.pop_back();
-    }
+    parallel_stack_pop(_scope_symbol_size, _scope_symbols);
+    parallel_stack_pop(_scope_operator_size, _scope_operators);
+    parallel_stack_pop(_scope_prefix_operator_size, _scope_prefix_operators);
 }
 
 c4::p2::parser::prefix_operator_symbol&

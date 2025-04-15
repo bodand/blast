@@ -117,6 +117,18 @@ namespace c4::ast2 {
             }, _value);
         }
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept {
+            return std::visit([]<typename T>(const T& x) {
+                if constexpr (std::is_pointer_v<T>) {
+                    return x->unbound_parameters();
+                }
+                else {
+                    return x.unbound_parameters();
+                }
+            }, _value);
+        }
+
     private:
         value_type _value;
         std::vector<symbol> _closure_symbols;

@@ -162,6 +162,12 @@ namespace c4::ast2 {
         [[nodiscard]] std::span<const expression* const>
         expressions() const;
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept {
+            if (!_args) return 0;
+            return _args->size();
+        }
+
     private:
         block_args* _args{};
         std::vector<expression*> _expressions;

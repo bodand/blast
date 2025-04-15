@@ -54,6 +54,13 @@ namespace c4::ast2::tags {
     struct constant_node : evaluation_constness {
         [[nodiscard]] static consteval bool
         is_constant_evaluable() noexcept { return true; }
+
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept {
+            // constant nodes do not depend on anything either marked (parameter)
+            // or unmarked (closure context), so this is guaranteed 0
+            return 0;
+        }
     };
 }
 

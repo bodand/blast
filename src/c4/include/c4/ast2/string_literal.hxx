@@ -62,6 +62,9 @@ namespace c4::ast2 {
         [[nodiscard]] bool
         is_constant_evaluable() const noexcept { return _value.size() < short_string_limit; }
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         std::string_view _value;
     };

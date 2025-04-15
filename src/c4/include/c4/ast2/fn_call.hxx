@@ -71,6 +71,9 @@ namespace c4::ast2 {
         [[nodiscard]] std::span<const expression* const>
         args() const;
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         symbol _sym;
         std::vector<expression*> _args;

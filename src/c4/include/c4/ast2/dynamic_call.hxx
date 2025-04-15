@@ -70,6 +70,9 @@ namespace c4::ast2 {
         [[nodiscard]] std::span<const expression* const>
         args() const;
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         expression* _callee;
         std::vector<expression*> _args;

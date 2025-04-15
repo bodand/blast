@@ -57,6 +57,9 @@ namespace c4::ast2 {
         [[nodiscard]] double
         value() const { return _value; }
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         double _value;
     };

@@ -74,6 +74,9 @@ namespace c4::ast2 {
         [[nodiscard]] const expression&
         right() const noexcept;
 
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
+
     private:
         symbol _op;
         expression* _left;
@@ -104,6 +107,9 @@ namespace c4::ast2 {
 
         [[nodiscard]] const expression&
         operand() const noexcept;
+
+        [[nodiscard]] unsigned
+        unbound_parameters() const noexcept { return 0; }
 
     private:
         symbol _op;
