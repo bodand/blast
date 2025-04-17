@@ -1,0 +1,87 @@
+= The C4 language (c4lang)
+:hash: #
+
+The C4 language is a functional, dynamically typed language that was primarily produced to be the underlying scripting tool for the scriptable static analysis tool blAST.
+This document describes the entirety of the C4 language, first defining the overarching semantics and then the concrete syntax.
+
+== Naming
+
+The C4 name comes from two aspects: 1) the language supports the blAST project, that provides scriptable static analysis.
+As you may know, C4 explodes creating a blast; and 2) this is my fourth attempt at designing a tool like blAST, originally yclept calligraphy (cg) and its descendants cg2 and cg3. C4 easily arises from dropping the "`g`".
+
+== General overview
+
+C4 is a rather primitive language.
+It contains only a few native features baked into the language that are believed to be general enough to allow implementing the language on top of it possible.
+The high-level description of these features are in the following.
+These description try to be formal definitions, but they are possibly not rigorous enough to stand as mathematical definitions.
+Nonetheless, they are sophisticated enough for use here.
+
+Value::
+A value is set of bits in memory that have a meaning attached.
+
+Expression::
+An expression is a set of evaluations that result in a value.
+
+Binding::
+An expression can be bound to a name to be reused in later expressions as a subexpression.
+This is called binding.
+
+Blocks::
+A block is special expression that contains a set of multiple expressions in itself and can be parametrized.
+
+Parameter::
+A parameter is a placeholder name in a block that can hold an expression that is unknown at the use-site but can be later filled in.
+
+Argument::
+An argument is an expression that is bound to a given parameter.
+
+Evaluation::
+Evaluation is an action that transforms an expression into a value.
+If a given subexpression has parameters, they are bound to the other specified subexpressions.
+
+Dynamic evaluation::
+Dynamic evaluation is an action that first evaluates an expression and then using the resulting value as an expression itself evaluates it again, optionally passing it arguments.
+
+All other language features can be implemented using these definitions and actions.
+
+== Laziness
+
+All things in C4 are lazy.
+That is an expression is not evaluated until the value it would produce is needed.
+This applies to all subexpressions within an expression as well.
+
+As an example, this behavior can be perceived in Haskell as well where function application with a set of arguments only occurs when the called function reads the given argument.
+
+== Typing
+
+C4 is dynamically and weakly typed, i.e. types are "`checked`" at runtime.
+
+Contrary to languages like JavaScript that derive an operation's semantics from the dynamic types of values and the operator, C4 solely determines this from the operator.
+This allows C4 to stay easily understandable at a static glance without having to figure out what kind of type is stored in the operands (at runtime!). The following listings demonstrate how this reduces the mental burden of reading a C4 script.
+Those versed in the Perl language may feel this is familiar as Perl does this too with its operators.
+There are even some operators that can be mapped one-to-one with those found in Perl, e.g. Perl's `x` is semantically equivalent to C4's `(*{hash})/2`, or `.` that is `(+{hash})/2`. (Notation described below.)
+For a complete set of built-in operators see xref:./c4ops.adoc[].
+
+.The problem of JavaScript's weak typing
+[source,js]
+----
+"1" + 1 === "11"
+"a" + 1 === "a1"
+10 - "1" === 9
+isNaN("a" * 2)
+----
+
+.The solution provided by C4
+[source]
+----
+"1" + 1 == 2
+"a" + 1 == 1
+"1" + "1" == 2
+1 +# 1 == "11"
+10 - "1" == 9
+"a" * 2 == 0
+"a" *# 2 == "aa"
+----
+
+

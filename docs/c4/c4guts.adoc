@@ -1,6 +1,14 @@
-= C4 interpreter
+= C4 internals (c4guts)
 
-The C4 interpreter runs on top of LLVM's JIT infrastructure.
+The C4 interpreter (`c4`) runs on top of LLVM's JIT infrastructure.
+The C4 compiler (`c4c`) uses the same code production rules to AOT compile C4 scripts using LLVM.
+This document describes the inner workings of these programs that map C4 to LLVM IR.
+
+[WARNING]
+====
+This document is at best useless or at worst actively harmful for the end users of C4.
+C4's internal behavior is not designed to be stable and performing "`optimizations`" in production C4 scripts based on information contained within this document could lead to breakages.
+====
 
 == Memory representation
 
@@ -8,13 +16,15 @@ The C4 interpreter runs on top of LLVM's JIT infrastructure.
 === General technique
 
 Values are represented using NaN-boxing.
-This means that values by themselves masquerade themselves as 64 bit IEEE754 floating point values, while in reality they could wrap more interesting datastructures.
+This means that values by themselves masquerade themselves as 64 bit IEEE754 floating point values, while in reality they could wrap more interesting data structures.
 
 The type used to wrap all this is called a datum (`datum_t`).
-A datum is the memory area that stores a value which arises from the abstract notion of interpreting the bits stored in the datum.
+A datum is the memory area that stores a set of bits that by themselves do not have meaning.
+A value then arises from the abstract notion of interpreting the bits stored in a given datum.
 The followings mostly talk about values since most things also care about the actual interpretation of a chunk of memory rather than just the naked bits.
+Nevertheless, the memory representation relies heavily on the datum underlying a given value.
 
-This requires two things:
+This technique requires two things:
 
 1. 64 bit IEEE754 floating point values, which provide the space to use.
 2. 48 bit (or less) virtual addressing on the hardware running the interpreter.
@@ -45,6 +55,7 @@ legend:
 | 48-bit ptr   |RNNNNNNNNNNNTTTTPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP|
 | SSO string   |RNNNNNNNNNNNTTTTCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC00000000|
 | empty block  |RNNNNNNNNNNNTTTT000000000000000000000000000000000000000000000000|
+| unintialized |RNNNNNNNNNNNTTTT111111111111111111111111111111111111111111111111|
 -----
 
 When a double value is not a NaN value, it is a normal double, without any strings attached (pun intended).
@@ -62,12 +73,12 @@ Together with the Remoteness bit, they specify how to interpret the remaining bi
 The types and their bit-patterns are in the table <<types>>.
 
 Value::
-The remaining 48 bits are the bits used to store the given values.
+The remaining 48 bits are the bits used to store the given values' datum.
 
 .NaN encoded types
-[#types, table,cols="1,2,2,2"]
+[#types,table,cols="1,1,3,3"]
 |====
-| Remote | Type bits | Type | Value bits
+| Remote | Type bits | Type | Datum bits
 
 | Untouched
 | `0000`
@@ -78,6 +89,11 @@ The remaining 48 bits are the bits used to store the given values.
 | `0001`
 | The empty block
 | Full zero
+
+| `0`
+| `0001`
+| Uninitialized (internal only)
+| Full one
 
 | `1`
 | `0001`
@@ -95,29 +111,9 @@ The remaining 48 bits are the bits used to store the given values.
 | 48 bits as pointer to 64 bit integer value
 
 | `0`
-| `0011`
-| --
-| --
-
-| `1`
-| `0011`
-| Big Integer
-| 48 bits as pointer to arbitrary size integer type
-
-| `0`
-| `0101`
-| --
-| --
-
-| `1`
-| `0101`
-| Big Float
-| 48 bits as pointer to arbitrary precision float type
-
-| `0`
 | `0100`
 | SSO string
-| Last 8 bits are unset, previous 32 bits each encode a "character" value, up-to 5 ASCII chars
+| Last 8 bits are unset, previous 32 bits each encode a "character" value, up-to 5 ASCII chars (or UTF-8 code points)
 
 | `1`
 | `0100`
@@ -141,13 +137,6 @@ If a literal does not fit in 32 bits it is encoded as a 64 bit value, as are cal
 This auto-mapping is performed by the C interface which only provides 64-bit interfaces.
 These interfaces hide the fact that the given value is either a 32-bit value that got embedded into a 64-bit (double) value or a true 64-bit value allocated on a heap somewhere.
 (They could also perform coercion but that is irrelevant now.)
-
-=== Big Numbers
-
-Arbitrary number values can be represented using native code: either BigInteger or BigFloats.
-They are encoded into a pointer value pointing to the proper data structure.
-
-TODO: These are not yet implemented.
 
 === Strings
 
@@ -184,7 +173,7 @@ The special case happens when the reference count would overflow: the string is 
 
 ==== Short String Optimization
 
-Other than this C4 performs SSO: strings shorter than 5 characters are encoded in place of the pointer.
+Other than this, C4 performs SSO: strings shorter than 5 characters are encoded in place of the pointer.
 In this case the 6th byte's value is always zero to ensure that there is always a terminating NUL.
 These SSO strings are not immutable because they are copied wherever they go, so modifications can happen in-place.
 If a string is inlined this way, the `Remotness` bit is zero.
