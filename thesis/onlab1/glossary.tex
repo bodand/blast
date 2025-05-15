@@ -1,0 +1,67 @@
+\makeglossaries
+
+\newacronym{JIT}{JIT}{Just--In--Time compiler}
+\newacronym{DSL}{DSL}{Domain--Specific Language}
+\newacronym{AST}{AST}{Abstract Syntax Tree}
+\newacronym{IR}{IR}{Interal Representation}
+\newacronym{GCC}{GCC}{GNU Compiler Colletion}
+
+\newglossaryentry{dsl-gl}{
+    name=domain--specific language,
+    plural=domain--specific languages,
+    description={Szakterület--specifikus nyelv. Olyan programozási nyelv, amelyik egy konkrét probléma megoldására van specializálva, akár annyira, hogy nem is képes általános programozási problémákat megoldani.}
+}
+\newglossaryentry{sexpr}{
+    name=S--expr,
+    first=symbolic expression ({\it S--expression}),
+    description={Symbolic expression. Olyan egymásba ágyazott listákat leíró szintaktia, amelyet többek között a LISP nyelvcsalád használ, mind kód, mind adat tárolására}
+}
+\newglossaryentry{prefix}{
+    name=prefix kifejezés,
+    description={Olyan kifejezés, amelyikben az elvégzendő művelet a kifejezés legelején található. \pl egy LISP \gls{sexpr}, {\tt (+ 1 2)}},
+    see={infix,sexpr}
+}
+\newglossaryentry{infix}{
+    name=infix kifejezés,
+    description={Olyan kifejezés, amelyikben az elvégzendő művelet a kifejezés közepén található. \pl a legtöbb szokásos matematikai művelet jelölés, $1 + 2$},
+    see={prefix}
+}
+\newglossaryentry{pure}{
+    name=tiszta,
+    first=tiszta ({\it pure}),
+    description={Olyan függvény, amelyik megfelel a matematikai függvény definíciójának: adott bemenetekre mindig ugyan azt az eredményt adja és nincs semmiféle mellékhatása. Tehát olyan megfigyelhető változást nem eredményez, amelyik nem a kimeneti értéke}
+}
+\newglossaryentry{precedence}{
+    name=precedencia,
+    first=precedencia ({\it precedence}),
+    description={Két operátor egy kifejezésben használatakor, azok kiértékelési sorrendjét megadó sorrendezése minden operátornak}
+}
+\newglossaryentry{associativity}{
+    name=asszociativitás,
+    first=asszociativitás ({\it associativity}),
+    description={Két azonos operátor egymásutánjakor a zárójelezés irányát meghatározó tulajdonsága egy operátornak. Lehet jobb vagy bal}
+}
+\newglossaryentry{token}{
+    name=token,
+    plural=tokenek,
+    description={Elemi egységei egy--egy nyelvtannak, amelyek a szöveg egy folyamatos részéhez rendelnek szemantikus értelmet. Tartalmazhat valamilyen formában értelmezett részeket is, \pl egy szám értéke már nem csak szöveg, hanem szám formában is.}
+}
+\newglossaryentry{memory-mapping}{
+    name=memóriába--lapozás,
+    first=memóriába--lapozás (memory mapping),
+    description={Egy folyamat, amelyen keresztül az operációs rendszert felhasználva egy fájlt tartalmát memóriában elérhetővé alakítjuk.}
+}
+\newglossaryentry{eager}{
+    name=szorgos,
+    first=szorgos ({\it eager}),
+    description={Olyan kiértékelés, amelyikben az összes kifejezés azonnal kiértékelésre kerül, attól függetlenül, hogy használja-e annak a végeredményét másik kifejezés}
+}
+\newglossaryentry{lazy}{
+    name=lusta,
+    first=lusta ({\it lazy}),
+    description={Olyan kiértékelés, amelyikben egy kifejezés csak akkor értékelődik ki ténylegesen, ha van olyan másik kifejezés, amelyik kiértékelődik, és használja az első kifejezés eredményét.}
+}
+\newglossaryentry{closure}{
+    name=closure,
+    description={Olyan blokk, amelyik saját számításaihoz egy rajta kívül definiált, de nem globláis függvényt használ.}
+}
