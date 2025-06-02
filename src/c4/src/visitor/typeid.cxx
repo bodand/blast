@@ -30,8 +30,8 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/visitor --
+ * src/c4/src/visitor --
  *   
  */
 
-#include <c4/ast2/visitor/typeid.hxx>
+#include <c4/visitor/typeid.hxx>

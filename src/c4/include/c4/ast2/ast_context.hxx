@@ -135,7 +135,7 @@ namespace c4::ast2 {
                              expression* right);
 
     private:
-        std::list<std::unique_ptr<ast_node>> _nodes;
+        std::list<std::unique_ptr<ast_node>> _nodes{};
     };
 }
 

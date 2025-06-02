@@ -39,10 +39,10 @@
 #include <string_view>
 #include <cstdint>
 
-#include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-#include <c4/ast2/tags/evaluation_constness.hxx>
-#include <c4/ast2/tags/attributable.hxx>
+#include <c4/tags/visitable.hxx>
+#include <c4/tags/source_positioned.hxx>
+#include <c4/tags/evaluation_constness.hxx>
+#include <c4/tags/attributable.hxx>
 
 namespace c4::ast2 {
     struct integer_literal final : tags::visitable

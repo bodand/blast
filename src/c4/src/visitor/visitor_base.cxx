@@ -30,36 +30,8 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/visitor/vistor_base --
+ * src/c4/src/visitor/visitor_base --
  *   
  */
-#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
-#define C4_AST2_VISITOR_VISITOR_BASE_HXX
 
-#include <c4/ast2/visitor/typeid.hxx>
-
-namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
-
-        virtual ~visitor_base() = default;
-
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
-
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
-
-        ~typed_visitor_base() override = default;
-    };
-}
-
-#endif
+#include <c4/visitor/visitor_base.hxx>

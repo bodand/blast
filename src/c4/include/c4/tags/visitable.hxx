@@ -28,10 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/tags/referable --
+ * src/c4/src/tags/visitable --
  *   
  */
+#ifndef C4_AST2_TAGS_VISITABLE_HXX
+#define C4_AST2_TAGS_VISITABLE_HXX
 
-#include <c4/ast2/tags/referable.hxx>
+#include <utility>
+
+namespace c4::ast2::tags {
+    struct visitable {
+        template<class V>
+        auto
+        accept(this auto&& self, V&& visitor) {
+            return std::forward<V>(visitor).visit(std::forward<decltype(self)>(self));
+        }
+    };
+}
+
+#endif

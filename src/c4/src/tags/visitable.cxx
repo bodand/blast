@@ -30,22 +30,8 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/tags/visitable --
+ * src/c4/src/tags/visitable --
  *   
  */
-#ifndef C4_AST2_TAGS_VISITABLE_HXX
-#define C4_AST2_TAGS_VISITABLE_HXX
 
-#include <utility>
-
-namespace c4::ast2::tags {
-    struct visitable {
-        template<class V>
-        auto
-        accept(this auto&& self, V&& visitor) {
-            return std::forward<V>(visitor).visit(std::forward<decltype(self)>(self));
-        }
-    };
-}
-
-#endif
+#include <c4/tags/visitable.hxx>

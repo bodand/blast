@@ -36,11 +36,11 @@
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
 
-#include <c4/ast2/tags/attributable.hxx>
-#include <c4/ast2/tags/evaluation_constness.hxx>
-#include <c4/ast2/tags/referable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-#include <c4/ast2/tags/visitable.hxx>
+#include <c4/tags/attributable.hxx>
+#include <c4/tags/evaluation_constness.hxx>
+#include <c4/tags/referable.hxx>
+#include <c4/tags/source_positioned.hxx>
+#include <c4/tags/visitable.hxx>
 
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>

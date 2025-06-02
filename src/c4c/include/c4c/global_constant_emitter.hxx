@@ -38,7 +38,7 @@
 
 #include <string_view>
 
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/visitor/visitor.hxx>
 
 #include <c4rt/datum.h>
 

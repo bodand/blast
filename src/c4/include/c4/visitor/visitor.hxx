@@ -30,43 +30,31 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/include/c4/ast2/visitor/typeid --
+ * src/c4/include/c4/visitor/visitor --
  *   
  */
-#ifndef C4_AST2_VISITOR_TYPEID_HXX
-#define C4_AST2_VISITOR_TYPEID_HXX
+#ifndef C4_AST2_VISITOR_VISITOR_HXX
+#define C4_AST2_VISITOR_VISITOR_HXX
 
-#include <cstdint>
+#include <c4/visitor/visitor_base.hxx>
 
-namespace c4::ast2::visitor_aux {
-    struct type_id final {
+namespace c4::ast2 {
+    template<class... Ts>
+    struct visitor : typed_visitor_base<Ts>... {
+        ~visitor() override = default;
+    protected:
         template<class T>
-        static type_id
-        of() {
-            return type_id(my_type<T>::create(_type_counter));
+        bool
+        visit_one(const void* untyped, const visitor_aux::type_id tid) {
+            if (visitor_aux::type_id::of<T>() != tid) return false;
+            static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
+            return true;
         }
 
-        bool operator==(const type_id& other) const noexcept = default;
-
-        bool operator!=(const type_id& other) const noexcept = default;
-
-    private:
-        std::uint_fast32_t _value = 0;
-        inline static std::uint_fast32_t _type_counter = 1;
-
-        explicit
-        type_id(const std::uint_fast32_t value)
-            : _value{value} { }
-
-        template<class>
-        struct my_type {
-            static std::uint_fast32_t create(std::uint_fast32_t& cnt) {
-                if (_id == 0) _id = cnt++;
-                return _id;
-            }
-        private:
-            inline static std::uint_fast32_t _id = 0;
-        };
+        void
+        visit_impl(const void* raw, const visitor_aux::type_id tid) final {
+            (visit_one<Ts>(raw, tid) || ...);
+        }
     };
 }
 

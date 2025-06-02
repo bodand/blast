@@ -36,7 +36,7 @@
 #ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
 #define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/ast2/tags/attributable.hxx>
+#include <c4/tags/attributable.hxx>
 
 namespace llvm {
     class Value;

@@ -28,18 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/tags/attributable --
+ * src/c4/include/c4/visitor/vistor_base --
  *   
  */
+#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
+#define C4_AST2_VISITOR_VISITOR_BASE_HXX
 
-#include <ranges>
+#include <c4/visitor/typeid.hxx>
 
-#include <c4/ast2/tags/attributable.hxx>
+namespace c4::ast2 {
+    struct visitor_base {
+        template<class T>
+        void
+        visit(const T& visitee) {
+            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
+        }
 
-c4::ast2::tags::attributable::~attributable() {
-    for (const auto& ptr : _attributes | std::views::values) {
-        delete ptr;
-    }
+        virtual ~visitor_base() = default;
+
+    protected:
+        virtual void
+        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
+    };
+
+    template<class T>
+    struct typed_visitor_base : virtual visitor_base {
+        virtual void
+        do_visit(const T& obj) = 0;
+
+        ~typed_visitor_base() override = default;
+    };
 }
+
+#endif

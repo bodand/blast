@@ -30,7 +30,7 @@
  *
  * Originally created: 2025-04-04.
  *
- * src/c4/include/c4/ast2/tags/referable --
+ * src/c4/include/c4/tags/referable --
  *   
  */
 #ifndef C4_AST2_REFERABLE_HXX
@@ -38,7 +38,7 @@
 
 #include <string_view>
 
-#include <c4/ast2/tags/attributable.hxx>
+#include <c4/tags/attributable.hxx>
 
 namespace c4::ast2::tags {
     struct referable : attributable {

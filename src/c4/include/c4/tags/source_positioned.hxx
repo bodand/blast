@@ -1,4 +1,4 @@
-/* blAST project
+/* demo project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,8 +30,40 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/visitor/visitor --
- *   
+ * src/c4/include/c4/tags/source_positioned --
+ *   AST elements can be tagged with source_positioned to allow associating
+ *   them with their locations in the code.
  */
+#ifndef C4_AST2_TAGS_SOURCE_POSITIONED_HXX
+#define C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/diagnostic.hxx>
+
+namespace c4::ast2::tags {
+    struct source_positioned {
+        [[nodiscard]] const position&
+        position() const { return _position; }
+
+        [[nodiscard]] std::size_t
+        length() const { return _length; }
+
+        void
+        length(const std::size_t length) { _length = length; }
+
+        [[nodiscard]] std::string_view
+        file_source() const { return _position.filename(); }
+
+    protected:
+        explicit
+        source_positioned(const struct position& position,
+                          const std::size_t length = 0)
+            : _position{position}
+            , _length{length} { }
+
+    private:
+        struct position _position;
+        std::size_t _length;
+    };
+}
+
+#endif

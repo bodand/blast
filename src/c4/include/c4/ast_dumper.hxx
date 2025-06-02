@@ -50,7 +50,7 @@
 #include <ostream>
 #include <iomanip>
 
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/visitor/visitor.hxx>
 
 namespace c4 {
     struct ast_dumper final : ast2::visitor<

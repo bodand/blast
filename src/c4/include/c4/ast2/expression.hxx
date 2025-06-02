@@ -50,7 +50,7 @@
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/dynamic_call.hxx>
 
-#include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
     struct expression final : ast_node

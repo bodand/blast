@@ -38,7 +38,7 @@
 #include <iostream>
 #include <ranges>
 
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/visitor/visitor.hxx>
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/tokens.hxx>
 

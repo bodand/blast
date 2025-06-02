@@ -1,4 +1,4 @@
-/* blAST project
+/* demo project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -30,8 +30,8 @@
  *
  * Originally created: 2025-03-03.
  *
- * src/c4/src/ast2/tags/visitable --
+ * src/c4/src/token_source --
  *   
  */
 
-#include <c4/ast2/tags/visitable.hxx>
+#include <c4/tags/source_positioned.hxx>

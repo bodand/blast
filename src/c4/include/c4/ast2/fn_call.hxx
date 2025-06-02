@@ -36,8 +36,8 @@
 #ifndef C4_AST2_FN_CALL_HXX
 #define C4_AST2_FN_CALL_HXX
 
-#include <c4/ast2/tags/visitable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
+#include <c4/tags/visitable.hxx>
+#include <c4/tags/source_positioned.hxx>
 #include <c4/ast2/symbol.hxx>
 
 #include <string_view>

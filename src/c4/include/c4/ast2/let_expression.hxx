@@ -39,9 +39,9 @@
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
 
-#include <c4/ast2/tags/referable.hxx>
-#include <c4/ast2/tags/source_positioned.hxx>
-#include <c4/ast2/tags/visitable.hxx>
+#include <c4/tags/referable.hxx>
+#include <c4/tags/source_positioned.hxx>
+#include <c4/tags/visitable.hxx>
 
 #include <string_view>
 

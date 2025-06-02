@@ -30,7 +30,7 @@
  *
  * Originally created: 2025-04-04.
  *
- * src/c4/include/c4/ast2/tags/attributable --
+ * src/c4/include/c4/tags/attributable --
  *   
  */
 #ifndef C4_AST2_TAGS_ATTRIBUTABLE_HXX
@@ -42,7 +42,7 @@
 #include <expected>
 #include <optional>
 
-#include <c4/ast2/visitor/typeid.hxx>
+#include <c4/visitor/typeid.hxx>
 
 namespace c4::ast2::tags {
     enum class expected_error {

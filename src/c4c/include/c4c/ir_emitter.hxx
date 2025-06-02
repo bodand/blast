@@ -39,7 +39,7 @@
 #include <vector>
 
 #include <c4/ast2/expression.hxx>
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/visitor/visitor.hxx>
 
 #include <c4c/ir_emitter_memento.hxx>
 

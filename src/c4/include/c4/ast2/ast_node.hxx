@@ -39,7 +39,7 @@
 #include <string>
 #include <string_view>
 
-#include <c4/ast2/tags/referable.hxx>
+#include <c4/tags/referable.hxx>
 
 namespace c4::ast2 {
     struct ast_node {

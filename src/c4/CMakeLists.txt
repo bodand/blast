@@ -35,18 +35,7 @@
 
 set(C4_LEXER_REGEX_BACKEND "pcre2")
 add_library(c4
-            include/c4/ast2/tags/source_positioned.hxx
-            src/ast2/tags/source_positioned.cxx
-
-            include/c4/ast2/symbol.hxx
-            src/ast2/symbol.cxx
-            include/c4/ast2/string_literal.hxx
-            src/ast2/string_literal.cxx
-            include/c4/ast2/integer_literal.hxx
-            src/ast2/integer_literal.cxx
-            include/c4/ast2/float_literal.hxx
-            src/ast2/float_literal.cxx
-
+            # Parser
             include/c4/p2/parser.hxx
             src/p2/parser.cxx
 
@@ -62,41 +51,79 @@ add_library(c4
             include/c4/p2/lex/regex_rule.hxx
             src/p2/lex/regex_rule.${C4_LEXER_REGEX_BACKEND}.cxx
 
+            include/c4/p2/lex/string_rule.hxx
+            src/p2/lex/string_rule.cxx
+
+            # AST
+            include/c4/ast2/symbol.hxx
+            src/ast2/symbol.cxx
+
+            include/c4/ast2/string_literal.hxx
+            src/ast2/string_literal.cxx
+
+            include/c4/ast2/integer_literal.hxx
+            src/ast2/integer_literal.cxx
+
+            include/c4/ast2/float_literal.hxx
+            src/ast2/float_literal.cxx
+
+            include/c4/ast2/let_expression.hxx
+            src/ast2/let_expression.cxx
+
+            include/c4/ast2/expression.hxx
+            src/ast2/expression.cxx
+
+            include/c4/ast2/fn_call.hxx
+            src/ast2/fn_call.cxx
+
+            include/c4/ast2/op_call.hxx
+            src/ast2/op_call.cxx
+
+            include/c4/ast2/block.hxx
+            src/ast2/block.cxx
+
+            include/c4/ast2/dynamic_call.hxx
+            src/ast2/dynamic_call.cxx
+
+            include/c4/ast2/ast_node.hxx
+            # no source
+
+            include/c4/ast2/ast_context.hxx
+            src/ast2/ast_context.cxx
+
+            # FFM
+
+            # Tags
+            include/c4/tags/source_positioned.hxx
+            src/tags/source_positioned.cxx
+
+            include/c4/tags/visitable.hxx
+            src/tags/visitable.cxx
+
+            include/c4/tags/evaluation_constness.hxx
+
+            include/c4/tags/attributable.hxx
+            src/tags/attributable.cxx
+
+            include/c4/tags/referable.hxx
+            src/tags/referable.cxx
+
+            # Visitor
+            include/c4/visitor/typeid.hxx
+            src/visitor/typeid.cxx
+
+            include/c4/visitor/visitor_base.hxx
+            src/visitor/visitor_base.cxx
+
+            include/c4/visitor/visitor.hxx
+            src/visitor/visitor.cxx
+
+            # Misc
             include/c4/diagnostic.hxx
             src/diagnostic.cxx
 
-            src/ast2/let_expression.cxx
-            include/c4/ast2/let_expression.hxx
-            src/ast2/expression.cxx
-            include/c4/ast2/expression.hxx
-            include/c4/ast2/fn_call.hxx
-            src/ast2/fn_call.cxx
-            include/c4/p2/lex/string_rule.hxx
-            src/p2/lex/string_rule.cxx
-            include/c4/ast2/op_call.hxx
-            src/ast2/op_call.cxx
-            include/c4/ast2/block.hxx
-            src/ast2/block.cxx
-            include/c4/ast2/dynamic_call.hxx
-            src/ast2/dynamic_call.cxx
-            include/c4/ast2/tags/visitable.hxx
-            src/ast2/tags/visitable.cxx
-            include/c4/ast2/visitor/typeid.hxx
-            src/ast2/visitor/typeid.cxx
-            include/c4/ast2/visitor/visitor_base.hxx
-            src/ast2/visitor/visitor_base.cxx
-            include/c4/ast2/visitor/visitor.hxx
-            src/ast2/visitor/visitor.cxx
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
-            include/c4/ast2/tags/evaluation_constness.hxx
-            include/c4/ast2/tags/attributable.hxx
-            src/ast2/tags/attributable.cxx
-            include/c4/ast2/tags/referable.hxx
-            src/ast2/tags/referable.cxx
-            include/c4/ast2/ast_context.hxx
-            src/ast2/ast_context.cxx
-            include/c4/ast2/ast_node.hxx
             )
 
 target_link_libraries(c4

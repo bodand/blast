@@ -38,7 +38,7 @@
 
 #include <c4/ast2/block.hxx>
 #include <c4/ast2/expression.hxx>
-#include <c4/ast2/visitor/visitor.hxx>
+#include <c4/visitor/visitor.hxx>
 
 #include <libassert/assert.hpp>
 #include <utility>

@@ -28,10 +28,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-04-04.
  *
- * src/c4/src/ast2/visitor/visitor_base --
+ * src/c4/src/tags/attributable --
  *   
  */
 
-#include <c4/ast2/visitor/visitor_base.hxx>
+#include <ranges>
+
+#include <c4/tags/attributable.hxx>
+
+c4::ast2::tags::attributable::~attributable() {
+    for (const auto& ptr : _attributes | std::views::values) {
+        delete ptr;
+    }
+}
