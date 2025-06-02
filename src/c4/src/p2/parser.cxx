@@ -404,7 +404,8 @@ c4::p2::parser::parse_final_expression() {
         sym.references(resolved->symbol.referee);
 
         std::vector<ast2::symbol> closure_symbols;
-        if (resolved->from_parent_scope) {
+        if (resolved->from_parent_scope
+            || _scope_operator_size.size() == 1) { // in root scope
             closure_symbols.push_back(sym);
             closure_symbols.back().references(resolved->symbol.referee);
         }

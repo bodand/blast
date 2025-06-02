@@ -48,6 +48,7 @@
 #include <llvm/IR/LLVMContext.h>
 
 #include <libassert/assert.hpp>
+#include <llvm/IR/Verifier.h>
 
 c4c::ir_emitter::ir_emitter(c4_runtime_emitter& rt_emitter,
                             c4::ast2::ast_context& ast_context,
@@ -60,12 +61,13 @@ c4c::ir_emitter::ir_emitter(c4_runtime_emitter& rt_emitter,
     , context{context}
     , module{module}
     , builder{builder}
-    , promised_symbols(promised_symbols.begin(), promised_symbols.end()) {
-    const auto entry_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(context), {}, false);
-    entry = llvm::Function::Create(entry_type, llvm::Function::ExternalLinkage, "_c4__entry", module);
-
-    const auto main_body = llvm::BasicBlock::Create(context, "body", entry);
-    builder.SetInsertPoint(main_body);
+    , _arg_type{llvm::PointerType::get(context, 0)}
+    , _promised_symbols(promised_symbols.begin(), promised_symbols.end()) {
+    const auto datum_t = llvm::Type::getInt64Ty(context);
+    const auto entry_type = llvm::FunctionType::get(datum_t, {}, false);
+    entry = _active_function =
+            llvm::Function::Create(entry_type, llvm::Function::ExternalLinkage, "_c4__entry", module);
+    std::ignore = build_bblock("body");
 }
 
 void
@@ -77,10 +79,13 @@ c4c::ir_emitter::finalize() {
 
 c4c::ir_emitter::~ir_emitter() noexcept {
     ASSERT(_finalized, "ir_emitter must be finalized: call finalize on it before it dies");
+    for (const auto& orphan_block : _orphan_blocks) {
+        orphan_block->deleteValue();
+    }
 }
 
 bool
-c4c::ir_emitter::skip_in_context(const c4::ast2::symbol& sym) {
+c4c::ir_emitter::is_skipped_in_context(const c4::ast2::symbol& sym) {
     const auto fn = lookup(sym);
     if (fn == nullptr) return true;
     return isa<llvm::Function>(fn);
@@ -88,14 +93,16 @@ c4c::ir_emitter::skip_in_context(const c4::ast2::symbol& sym) {
 
 llvm::Value*
 c4c::ir_emitter::try_materialize_promise(const std::string_view sym) {
-    const auto promised_sym_it = std::ranges::find_if(promised_symbols, [sym](const auto undef_sym) {
+    if (const auto fn = module.getFunction("_C" + std::string(sym))) return fn;
+
+    const auto promised_sym_it = std::ranges::find_if(_promised_symbols, [sym](const auto undef_sym) {
         return undef_sym.mangle() == sym;
     });
-    if (promised_sym_it == promised_symbols.end())
+    if (promised_sym_it == _promised_symbols.end())
         return nullptr;
 
     const auto promised_sym = *promised_sym_it;
-    promised_symbols.erase(promised_sym_it);
+    _promised_symbols.erase(promised_sym_it);
 
     const auto promised_fn_type = rt_emitter.get_c4_funtype(promised_sym.arity());
     const auto promised_fn = llvm::Function::Create(promised_fn_type, llvm::Function::ExternalLinkage,
@@ -153,7 +160,9 @@ c4c::ir_emitter::generate_cleanup(llvm::BasicBlock* fn_body, const std::span<llv
     const auto cleanup_block = fn_body->splitBasicBlock(std::next(fn_body->begin(), block_sz - 1), "cleanup");
     builder.SetInsertPoint(cleanup_block->begin());
     for (const auto& to_clean : cleanup) {
-        rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFree, builder, to_clean);
+        std::ignore = to_clean;
+        // TODO not leak
+        // rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFree, builder, to_clean);
     }
 }
 
@@ -170,8 +179,8 @@ c4c::ir_emitter::save_state() {
 }
 
 llvm::BasicBlock*
-c4c::ir_emitter::build_bblock(const std::string_view name) const {
+c4c::ir_emitter::build_bblock(const std::string_view name, bool set_insert) const {
     const auto bb = llvm::BasicBlock::Create(context, name, _active_function);
-    builder.SetInsertPoint(bb);
+    if (set_insert) builder.SetInsertPoint(bb);
     return bb;
 }

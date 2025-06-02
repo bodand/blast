@@ -5,7 +5,7 @@ They are categorized semantically.
 
 == Untyped operators
 
-These operators do not require any specific type to defined their behavior correctly.
+These operators do not require any specific type to define their behavior correctly.
 
 `(=)/2 Any Any -> Bool`::
 Returns whether the given two operands have the same type and same value.

@@ -64,16 +64,22 @@ c4c::ir_emitter::do_visit(const c4::ast2::block_args& obj) {
         std::advance(arg_begin, 1);
     }
 
+    const auto datum_t = llvm::Type::getInt64Ty(context);
+    const auto arg_loader_type = llvm::FunctionType::get(datum_t, {llvm::PointerType::get(context, 0)}, false);
+    const auto arg_loader = module.getFunction("_c4__arg_loader");
+    ASSERT(arg_loader, "arg loader function not found");
+
     for (const auto& [formal_arg, ll_arg] : std::views::zip(obj.args(),
                                                             std::span{arg_begin, args.end()})) {
-        ASSERT(ll_arg.getType() == llvm::Type::getInt64Ty(context),
-               "trying to name non datum_t type",
-               ll_arg.getType()->getTypeID(),
-               formal_arg->name(),
-               _active_function->getFunctionType()->params(),
-               _active_function->getName());
-        ll_arg.setName(formal_arg->mangle());
-        obj.argument_reference(i++).emplace_attribute<llvm_value_attribute>("value", &ll_arg);
+        ll_arg.setName({formal_arg->mangle(), ".lazy"});
+        const auto state = save_state();
+        const auto eval_block = llvm::BasicBlock::Create(context, {formal_arg->mangle(), ".eval"});
+        _orphan_blocks.push_back(eval_block);
+        builder.SetInsertPoint(eval_block);
+
+        builder.CreateCall(arg_loader_type, arg_loader, {&ll_arg}, formal_arg->mangle());
+        obj.argument_reference(i).emplace_attribute<llvm_value_attribute>("value", eval_block);
+        obj.argument_reference(i).emplace_attribute<llvm_value_attribute>("ctx_value", &ll_arg);
+        ++i;
     }
 }
-

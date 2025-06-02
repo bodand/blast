@@ -149,8 +149,24 @@ namespace c4c {
         llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder;
 
     private:
+        void
+        initialize_closure_context_storage(llvm::Value* context_storage,
+                                           std::span<const c4::ast2::symbol* const> symbols) const;
+
+        llvm::Value*
+        create_closure_context(std::span<const c4::ast2::symbol* const> effective_closure_symbols);
+
+        std::vector<const c4::ast2::symbol*>
+        filter_closure_symbols(const c4::ast2::expression& obj);
+
+        llvm::Value*
+        create_effective_closure(const c4::ast2::expression& obj);
+
         bool
-        skip_in_context(const c4::ast2::symbol& sym);
+        emit_closure_context(const c4::ast2::let_expression& obj);
+
+        bool
+        is_skipped_in_context(const c4::ast2::symbol& sym);
 
         llvm::Value*
         try_materialize_promise(std::string_view sym);
@@ -213,15 +229,17 @@ namespace c4c {
         }
 
         [[nodiscard]] llvm::BasicBlock*
-        build_bblock(std::string_view name) const;
+        build_bblock(std::string_view name, bool set_insert = true) const;
 
+        llvm::Type* _arg_type;
         bool _finalized{false};
         bool _function_is_closure{false};
         std::string _block_name{};
         llvm::Function* _active_function{};
         std::vector<llvm::Value*> _need_cleanup{};
         std::unordered_map<std::string, llvm::Value*> _loaded_promised_symbols;
-        std::vector<c4::ast2::undef_symbol> promised_symbols;
+        std::vector<c4::ast2::undef_symbol> _promised_symbols;
+        std::vector<llvm::BasicBlock*> _orphan_blocks{};
     };
 }
 

@@ -128,12 +128,12 @@ namespace c4::ast2 {
         references() const noexcept { return _references; }
 
         void
-        references(referable* ref) noexcept;
+        references(referable* ref) const noexcept;
 
         [[nodiscard]] unsigned
         unbound_parameters() const noexcept { return 0; }
     private:
-        referable* _references{};
+        mutable referable* _references{};
         std::string_view _name;
         unsigned _arity;
     };

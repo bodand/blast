@@ -117,31 +117,3 @@ target_include_directories(c4
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            )
 
-add_executable(blast src/blast.cxx)
-target_link_libraries(blast PRIVATE
-                      c4
-                      fmt::fmt-header-only
-                      mio::mio_min_winapi
-                      )
-
-if (WIN32)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE:c4rt>
-            $<TARGET_FILE_DIR:blast>
-            )
-endif ()
-if (MSVC AND BLAST_ENABLE_SANITIZERS)
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:blast>
-            )
-endif ()

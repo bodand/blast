@@ -46,6 +46,9 @@
 
 #include <libassert/assert.hpp>
 
+#include <algorithm>
+#include <ranges>
+
 void
 c4c::ir_emitter::do_visit(const c4::ast2::block& obj) {
     if (obj.args())
@@ -80,7 +83,7 @@ c4c::ir_emitter::emit_context_expansion(scope_override_fixer& fixer, const c4::a
     const auto block = llvm::BasicBlock::Create(context, "ctx_exp", _active_function, body_bb);
     builder.SetInsertPoint(block);
 
-    const auto datum_t = llvm::Type::getInt64Ty(context);
+    const auto ptr_t = llvm::PointerType::get(context, 0);
     const auto gep_index_t = llvm::Type::getInt64Ty(context);
     const auto ctx_obj = _active_function->getArg(0);
     if (!ctx_obj->getType()->isPointerTy()) {
@@ -89,15 +92,28 @@ c4c::ir_emitter::emit_context_expansion(scope_override_fixer& fixer, const c4::a
         return;
     }
 
+    const auto datum_t = llvm::Type::getInt64Ty(context);
+    const auto arg_loader_type = llvm::FunctionType::get(datum_t, {llvm::PointerType::get(context, 0)}, false);
+    const auto arg_loader = module.getFunction("_c4__arg_loader");
+    ASSERT(arg_loader, "arg loader function not found");
+
     for (size_t idx = 0;
          auto& sym : obj.effective_context_symbols()) {
-        if (skip_in_context(sym)) continue;
+        if (is_skipped_in_context(sym)) continue;
 
-        const auto ctx_param_ptr = builder.CreateGEP(datum_t, ctx_obj,
+        const auto ctx_param_ptr = builder.CreateGEP(ptr_t, ctx_obj,
                                                      llvm::ConstantInt::get(gep_index_t, idx++),
                                                      {sym.name(), ".addr"});
-        const auto ctx_param = builder.CreateLoad(datum_t, ctx_param_ptr, sym.name());
-        if (const auto ref = sym.references()) fixer.add_symbol(ref, ctx_param);
+        const auto ctx_param = builder.CreateLoad(ptr_t, ctx_param_ptr, sym.name());
+
+        const auto state = save_state();
+        const auto eval_block = llvm::BasicBlock::Create(context, {sym.mangle(), ".eval"});
+        _orphan_blocks.push_back(eval_block);
+        builder.SetInsertPoint(eval_block);
+
+        builder.CreateCall(arg_loader_type, arg_loader, {ctx_param}, sym.mangle());
+
+        if (const auto ref = sym.references()) fixer.add_symbol(ref, eval_block);
     }
 
     builder.CreateBr(body_bb);
@@ -113,7 +129,7 @@ c4c::ir_emitter::scope_override_fixer::add_symbol(c4::ast2::tags::referable* sym
 
 void
 c4c::ir_emitter::scope_override_fixer::operator()() {
-    std::for_each(_overridden.rbegin(), _overridden.rend(), [](const scope_override& fixee) {
-        fixee.symbol->emplace_attribute<llvm_value_attribute>("value", *fixee.old.get()->value<llvm::Value*>());
+    std::ranges::for_each(std::ranges::reverse_view(_overridden), [](const scope_override& fixee) {
+        fixee.symbol->emplace_attribute<llvm_value_attribute>("value", *fixee.old->value<llvm::Value*>());
     });
 }

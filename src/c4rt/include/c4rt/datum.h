@@ -55,21 +55,27 @@ typedef enum c4_datum_type_ {
 } c4_datum_type;
 
 C4RT_API const c4_datum_t gC4_Empty_Block;
+/// WARNING: This is only used for internally representing values that have
+/// not yet been computed (i.e. they have not yet been read from and thus
+/// because of laziness they are uninitialized).
+/// If a computation somehow results in this value, the program's behavior is
+/// undefined.
+C4RT_API const c4_datum_t gC4_Uninitialized;
 
 C4RT_API c4_datum_t
-_C5print1(c4_datum_t d);
+_Cr5print1(c4_datum_t d);
 
 C4RT_API c4_datum_t
-_C7println1(c4_datum_t d);
+_Cr7println1(c4_datum_t d);
 
-C4RT_API c4_datum_t
-_C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no);
+// C4RT_API c4_datum_t
+// _C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no);
 
 C4RT_API c4_datum_t
 _C6readln0();
 
-C4RT_API c4_datum_t
-_C9str_empty1(c4_datum_t str);
+// C4RT_API c4_datum_t
+// _C9str_empty1(c4_datum_t str);
 
 C4RT_API void
 c4rt_free(void* mem);
@@ -85,6 +91,9 @@ c4rt_datum_from_int32(int32_t i);
 
 C4RT_API c4_datum_t
 c4rt_datum_from_int64(int64_t i);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_int(int64_t i);
 
 C4RT_API c4_datum_t
 c4rt_datum_from_double(double d);

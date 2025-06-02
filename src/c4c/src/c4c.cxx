@@ -61,10 +61,12 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IRReader/IRReader.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
@@ -194,7 +196,9 @@ main(int argc, const char** argv) {
         initialize_targets();
 
         llvm::LLVMContext context;
-        llvm::Module module(src_path.string(), context);
+        llvm::SMDiagnostic diag;
+        const auto module_ptr = llvm::parseIRFile("rt.ll", diag, context);
+        auto& module = *module_ptr;
         llvm::IRBuilder<> builder(context);
 
         const auto target_triple = target_arch.empty()

@@ -46,6 +46,7 @@
 #include <iostream>
 
 const c4_datum_t gC4_Empty_Block = 0b0'11111111111'0001'000000000000000000000000000000000000000000000000;
+const c4_datum_t gC4_Uninitialized = 0b0'11111111111'0001'111111111111111111111111111111111111111111111111;
 
 namespace {
     constexpr auto remoteness_mask = 0b1'00000000000'0000'000000000000000000000000000000000000000000000000;
@@ -74,7 +75,7 @@ namespace {
 }
 
 c4_datum_t
-_C5print1(const c4_datum_t d) {
+_Cr5print1(const c4_datum_t d) {
     const auto str = c4rt_datum_coerce_string(d);
     std::printf("%s", str);
     c4rt_free(str);
@@ -82,17 +83,17 @@ _C5print1(const c4_datum_t d) {
 }
 
 c4_datum_t
-_C7println1(c4_datum_t d) {
-    _C5print1(d);
+_Cr7println1(c4_datum_t d) {
+    _Cr5print1(d);
     std::printf("\n");
     return d;
 }
 
-c4_datum_t
-_C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no) {
-    if (cond == gC4_Empty_Block) return yes;
-    return no;
-}
+// c4_datum_t
+// _C2if3(c4_datum_t cond, c4_datum_t yes, c4_datum_t no) {
+//     if (cond == gC4_Empty_Block) return yes;
+//     return no;
+// }
 
 c4_datum_t
 _C6readln0() {
@@ -101,14 +102,14 @@ _C6readln0() {
     return c4rt_datum_from_string_sz(buf.c_str(), buf.size());
 }
 
-c4_datum_t
-_C9str_empty1(c4_datum_t str_d) {
-    const auto str = c4rt_datum_coerce_string(str_d);
-    c4_datum_t ret = gC4_Empty_Block;
-    if (str[0] == 0) ret = c4rt_datum_from_int32(1);
-    c4rt_free(str);
-    return ret;
-}
+// c4_datum_t
+// _C9str_empty1(c4_datum_t str_d) {
+//     const auto str = c4rt_datum_coerce_string(str_d);
+//     c4_datum_t ret = gC4_Empty_Block;
+//     if (str[0] == 0) ret = c4rt_datum_from_int32(1);
+//     c4rt_free(str);
+//     return ret;
+// }
 
 void
 c4rt_free(void* mem) {
@@ -136,6 +137,14 @@ c4rt_datum_from_int64(const int64_t i) {
     const auto buf = C4_MALLOC(sizeof(i));
     std::construct_at(static_cast<int64_t*>(buf), i);
     return remoteness_mask | nan_mask | shifted_type(C4_Integer) | put_pointer_value(buf);
+}
+
+c4_datum_t
+c4rt_datum_from_int(const int64_t i) {
+    if (i >= static_cast<int64_t>(std::numeric_limits<int32_t>::min())
+        && i <= static_cast<int64_t>(std::numeric_limits<int32_t>::max()))
+        return c4rt_datum_from_int32(static_cast<int32_t>(i));
+    return c4rt_datum_from_int64(i);
 }
 
 c4_datum_t

@@ -52,7 +52,7 @@ c4c::ir_emitter::do_visit(const c4::ast2::unary_op_call& obj) {
            "callee symbol must be known at the point of call",
            obj.op().name(),
            obj.op().mangle(),
-           promised_symbols);
+           _promised_symbols);
 
     if (callee_val->getType()->isIntegerTy()) {
         last.set_expr(callee_val);

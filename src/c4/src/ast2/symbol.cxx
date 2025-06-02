@@ -109,7 +109,7 @@ std::string
 c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
 void
-c4::ast2::symbol::references(referable* ref) noexcept {
+c4::ast2::symbol::references(referable* ref) const noexcept {
     if (ref == nullptr) {
         _references = nullptr;
         return;

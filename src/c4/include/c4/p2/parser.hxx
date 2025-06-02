@@ -196,7 +196,7 @@ namespace c4::p2 {
             return symbol_resolution{
                 .symbol = *it,
                 .distance = iter_difference,
-                .from_parent_scope = current_scope <= iter_difference
+                .from_parent_scope = true
             };
         }
 

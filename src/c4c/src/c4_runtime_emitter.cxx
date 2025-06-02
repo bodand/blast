@@ -52,7 +52,13 @@
 #define STR_I(x) #x
 
 #define DEF_RTF_TYPE(sym, ret, ...) const auto CAT(sym, _ft) = FunctionType::get(ret, {__VA_ARGS__}, false)
-#define DEF_RTF(idx, sym) _symbol_map[idx] = Function::Create(CAT(sym, _ft), GlobalValue::ExternalLinkage, STR(CAT(c4rt_, sym)), module)
+#define DEF_RTF(idx, sym) do { \
+        if (const auto fn = module.getFunction(STR(CAT(c4rt_, sym)))) { \
+            _symbol_map[idx] = fn; \
+        } else { \
+            _symbol_map[idx] = Function::Create(CAT(sym, _ft), GlobalValue::ExternalLinkage, STR(CAT(c4rt_, sym)), module); \
+        } \
+    } while (false)
 
 #define DEF_TYPED(idx, sym, ret, ...) DEF_RTF_TYPE(sym, ret, __VA_ARGS__); DEF_RTF(idx, sym)
 
@@ -107,7 +113,8 @@ llvm::FunctionType*
 c4c::c4_runtime_emitter::get_c4_funtype(const unsigned arity,
                                         const bool context) const {
     const auto datum_t = llvm::Type::getInt64Ty(_context);
-    const auto ctx_t = datum_t->getPointerTo();
+    const auto ptr_t = llvm::PointerType::get(llvm::Type::getInt64Ty(_context), 0);
+    const auto ctx_t = ptr_t;
 
     const auto effective_arity = arity + (context ? 1 : 0);
 
@@ -117,7 +124,7 @@ c4c::c4_runtime_emitter::get_c4_funtype(const unsigned arity,
         *args_begin = ctx_t;
         ++args_begin;
     }
-    std::generate_n(args_begin, arity, [&datum_t] { return datum_t; });
+    std::generate_n(args_begin, arity, [&ptr_t] { return ptr_t; });
 
     return llvm::FunctionType::get(datum_t, args, false);
 }
