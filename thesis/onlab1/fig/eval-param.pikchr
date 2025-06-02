@@ -1,0 +1,24 @@
+P1: box 
+P2: box
+
+T: text "Kiértékelt" "Függvény paraméter" with .s at P2.nw+(0, .11)
+spline thin color gray from P1.nw go up .02 \
+  then .1 heading 45 \
+  then left until even with T.s-(.069,0) \
+  then .1 heading 45 
+spline thin color gray from P2.ne go up .02 \
+  then .1 heading -45 \
+  then right until even with T.s+(.069,0) \
+  then .1 heading -45
+
+P1c: circle thick fill black rad .03 at P1.c-(0,.07)
+
+text "Függvény" with .s at P1c.n
+text "Érték" "0x123987" mono at P2.c
+
+# fn ptr
+L: line down from P1c 
+text "null" mono with .n at last.s
+
+line from L.s-(.05,.027) to L.s+(.05,.027)
+line from L.s-(.05,.027+.027) to L.s+(.05,.027-.027)

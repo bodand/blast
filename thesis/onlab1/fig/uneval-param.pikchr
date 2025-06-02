@@ -1,0 +1,79 @@
+P1: box 
+P2: box
+
+T: text "Kiértékeletlen" "Függvény paraméter" with .s at P2.nw+(0, .11)
+spline thin color gray from P1.nw go up .02 \
+  then .1 heading 45 \
+  then left until even with T.s-(.069,0) \
+  then .1 heading 45 
+spline thin color gray from P2.ne go up .02 \
+  then .1 heading -45 \
+  then right until even with T.s+(.069,0) \
+  then .1 heading -45
+
+P1c: circle thick fill black rad .03 at P1.c-(0,.07)
+P2c: circle same at P2.c-(0,.07)
+
+text "Függvény" with .s at P1c.n
+text "Kontextus" with .s at P2c.n
+
+# fn ptr
+arrow down from P1c 
+text "<0x123456789>" mono with .n at last.s
+
+# context
+spline from P2c go down .3 \
+  then .13 heading 135 \
+  then .3 heading 90 \
+  then .15 heading 90 ->
+
+C11: box wid .6 ht .444
+C12: box same
+C21: box same
+C22: box same
+dot with .w at last.e+(.1,0)
+dot with .w at last.e+(.1,0)
+dot with .w at last.e+(.1,0)
+
+Ct1: text "Kontextus paraméter" with .s at C12.nw+(0, .11)
+spline thin color gray from C11.nw go up .02 \
+  then .1 heading 45 \
+  then left until even with Ct1.s-(.069,0) \
+  then .1 heading 45 
+spline thin color gray from C12.ne go up .02 \
+  then .1 heading -45 \
+  then right until even with Ct1.s+(.069,0) \
+  then .1 heading -45
+
+Ct2: text "Kontextus paraméter" with .s at C22.nw+(0, .11)
+spline thin color gray from C21.nw go up .02 \
+  then .1 heading 45 \
+  then left until even with Ct2.s-(.069,0) \
+  then .1 heading 45 
+spline thin color gray from C22.ne go up .02 \
+  then .1 heading -45 \
+  then right until even with Ct2.s+(.069,0) \
+  then .1 heading -45
+
+C11c: circle thick fill black rad .03 at C11.c-(0,.07)
+C12c: circle same at C12.c-(0,.07)
+
+text "Függvény" small with .s at C11c.n
+text "Kontextus" small with .s at C12c.n
+
+
+C21c: circle thick fill black rad .03 at C21.c-(0,.07)
+C22c: circle same at C22.c-(0,.07)
+
+text "Függvény" small with .s at C21c.n
+text "Kontextus" small with .s at C22c.n
+
+define dottedarrow {
+  line down .2489 from $1
+  dot; move .07; dot; move .07; dot
+}
+
+dottedarrow(C11c)
+dottedarrow(C12c)
+dottedarrow(C21c)
+dottedarrow(C22c)

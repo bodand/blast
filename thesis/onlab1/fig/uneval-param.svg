@@ -1,0 +1,55 @@
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="pikchr" viewBox="0 0 648.479 241.319">
+<path d="M15.3216,140.4L123.322,140.4L123.322,68.4L15.3216,68.4Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M123.322,140.4L231.322,140.4L231.322,68.4L123.322,68.4Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="123.322" y="17.28" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Kiértékeletlen</text>
+<text x="123.322" y="37.44" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Függvény paraméter</text>
+<path d="M15.3216,68.4 L 15.3216,66.96 Q 15.3216,65.52 20.4128,60.4288 Q 25.5039,55.3377 69.4448,55.3377 Q 113.386,55.3377 118.477,50.2465 L 123.568,45.1553"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<path d="M231.322,68.4 L 231.322,66.96 Q 231.322,65.52 226.23,60.4288 Q 221.139,55.3377 177.198,55.3377 Q 133.258,55.3377 128.166,50.2465 L 123.075,45.1553"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<circle cx="69.3216" cy="114.48" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<circle cx="177.322" cy="114.48" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<text x="69.3216" y="95.04" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Függvény</text>
+<text x="177.322" y="95.04" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Kontextus</text>
+<polygon points="69.3216,186.48 65.0016,174.96 73.6416,174.96" style="fill:rgb(0,0,0)"/>
+<path d="M69.3216,114.48L69.3216,180.72"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="69.3216" y="201.6" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" dominant-baseline="central">&lt;0x123456789&gt;</text>
+<polygon points="255.359,170.917 243.839,175.237 243.839,166.597" style="fill:rgb(0,0,0)"/>
+<path d="M177.322,114.48 L 177.322,136.08 Q 177.322,157.68 183.94,164.299 Q 190.559,170.917 212.159,170.917 Q 233.759,170.917 241.679,170.917 L 249.599,170.917"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M255.359,202.885L341.759,202.885L341.759,138.949L255.359,138.949Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M341.759,202.885L428.159,202.885L428.159,138.949L341.759,138.949Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M428.159,202.885L514.559,202.885L514.559,138.949L428.159,138.949Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M514.559,202.885L600.959,202.885L600.959,138.949L514.559,138.949Z"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="615.359" cy="170.917" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="629.759" cy="170.917" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="644.159" cy="170.917" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="341.759" y="107.989" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Kontextus paraméter</text>
+<path d="M255.359,138.949 L 255.359,137.509 Q 255.359,136.069 260.45,130.978 Q 265.541,125.887 298.682,125.887 Q 331.823,125.887 336.914,120.796 L 342.005,115.704"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<path d="M428.159,138.949 L 428.159,137.509 Q 428.159,136.069 423.067,130.978 Q 417.976,125.887 384.835,125.887 Q 351.695,125.887 346.603,120.796 L 341.512,115.704"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<text x="514.559" y="107.989" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">Kontextus paraméter</text>
+<path d="M428.159,138.949 L 428.159,137.509 Q 428.159,136.069 433.25,130.978 Q 438.341,125.887 471.482,125.887 Q 504.623,125.887 509.714,120.796 L 514.805,115.704"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<path d="M600.959,138.949 L 600.959,137.509 Q 600.959,136.069 595.867,130.978 Q 590.776,125.887 557.635,125.887 Q 524.495,125.887 519.403,120.796 L 514.312,115.704"  style="fill:none;stroke-width:1.4472;stroke:rgb(128,128,128);" />
+<circle cx="298.559" cy="180.997" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<circle cx="384.959" cy="180.997" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<text x="298.559" y="163.573" text-anchor="middle" fill="rgb(0,0,0)" font-size="80%" dominant-baseline="central">Függvény</text>
+<text x="384.959" y="163.573" text-anchor="middle" fill="rgb(0,0,0)" font-size="80%" dominant-baseline="central">Kontextus</text>
+<circle cx="471.359" cy="180.997" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<circle cx="557.759" cy="180.997" r="4.32"  style="fill:rgb(0,0,0);stroke-width:3.24;stroke:rgb(0,0,0);" />
+<text x="471.359" y="163.573" text-anchor="middle" fill="rgb(0,0,0)" font-size="80%" dominant-baseline="central">Függvény</text>
+<text x="557.759" y="163.573" text-anchor="middle" fill="rgb(0,0,0)" font-size="80%" dominant-baseline="central">Kontextus</text>
+<path d="M298.559,180.997L298.559,216.839"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="298.559" cy="216.839" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="298.559" cy="226.919" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="298.559" cy="236.999" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M384.959,180.997L384.959,216.839"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="384.959" cy="216.839" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="384.959" cy="226.919" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="384.959" cy="236.999" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M471.359,180.997L471.359,216.839"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="471.359" cy="216.839" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="471.359" cy="226.919" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="471.359" cy="236.999" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<path d="M557.759,180.997L557.759,216.839"  style="fill:none;stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="557.759" cy="216.839" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="557.759" cy="226.919" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<circle cx="557.759" cy="236.999" r="2.16" style="fill:rgb(0,0,0);stroke-width:2.16;stroke:rgb(0,0,0);" />
+</svg>
+
