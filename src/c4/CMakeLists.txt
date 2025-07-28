@@ -92,6 +92,26 @@ add_library(c4
             src/ast2/ast_context.cxx
 
             # FFM
+            include/c4/ffm/ffm_context.hxx
+            src/ffm/ffm_context.cxx
+
+            include/c4/ffm/ffm_node.hxx
+            src/ffm/ffm_node.cxx
+
+            include/c4/ffm/function.hxx
+            src/ffm/function.cxx
+
+            include/c4/ffm/function_call.hxx
+            src/ffm/function_call.cxx
+
+            include/c4/ffm/function_declaration.hxx
+            src/ffm/function_declaration.cxx
+
+            include/c4/ffm/function_definition.hxx
+            src/ffm/function_definition.cxx
+
+            include/c4/ffm/symbol.hxx
+            src/ffm/symbol.cxx
 
             # Tags
             include/c4/tags/source_positioned.hxx

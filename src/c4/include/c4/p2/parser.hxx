@@ -154,30 +154,29 @@ namespace c4::p2 {
 
         struct parser_symbol {
             std::string_view name;
-            unsigned arity;
             ast2::tags::referable* referee;
+            unsigned arity;
+            unsigned precedence; // Set only on operators
+            bool right_assoc;    // Set only on operators
 
             parser_symbol(const std::string_view& name,
                           const unsigned arity,
-                          ast2::tags::referable* referee)
+                          ast2::tags::referable* referee,
+                          const unsigned precedence = 0,
+                          const bool right_assoc = false) noexcept(std::is_nothrow_copy_constructible_v<std::string_view>)
                 : name{name}
+                , referee{referee}
                 , arity{arity}
-                , referee{referee} { }
+                , precedence{precedence}
+                , right_assoc{right_assoc} { }
 
-            bool
+            [[nodiscard]] bool
+            is_operator() const noexcept { return precedence != 0; }
+
+            [[nodiscard]] bool
             operator==(const ast2::symbol& sym) const noexcept {
                 return sym.name() == name;
             }
-        };
-
-        struct operator_symbol {
-            std::string_view name;
-            unsigned precedence;
-            bool right_assoc;
-        };
-
-        struct prefix_operator_symbol {
-            std::string_view name;
         };
 
         struct symbol_resolution {
@@ -196,7 +195,7 @@ namespace c4::p2 {
             return symbol_resolution{
                 .symbol = *it,
                 .distance = iter_difference,
-                .from_parent_scope = true
+                .from_parent_scope = std::cmp_greater(iter_difference , current_scope)
             };
         }
 
@@ -209,10 +208,12 @@ namespace c4::p2 {
         void
         leave_scope();
 
-        parser_symbol&
+        c4::p2::parser::parser_symbol&
         declare_symbol_internal(std::string_view symbol,
                                 unsigned arity,
-                                ast2::tags::referable* referee);
+                                ast2::tags::referable* referee = nullptr,
+                                unsigned precedence = 0,
+                                bool right_assoc = false);
 
         template<class T>
         std::expected<T, source_diagnostic>
@@ -225,24 +226,20 @@ namespace c4::p2 {
             return std::visit(aux::token_selector<T>{}, *_current);
         }
 
-        prefix_operator_symbol&
+        parser_symbol&
         ensure_valid_prefix_operator(const tokens::operator_& sym);
 
-        operator_symbol&
-        ensure_valid_operator(const tokens::operator_& sym);
+        parser_symbol&
+        ensure_valid_infix_operator(const tokens::operator_& sym);
 
-        operator_symbol*
-        find_operator(std::string_view name);
+        parser_symbol*
+        find_infix_operator(std::string_view name);
 
-        prefix_operator_symbol*
+        parser_symbol*
         find_prefix_operator(std::string_view name);
 
         std::vector<unsigned> _scope_symbol_size;
         std::deque<parser_symbol> _scope_symbols;
-        std::vector<unsigned> _scope_operator_size;
-        std::deque<operator_symbol> _scope_operators;
-        std::vector<unsigned> _scope_prefix_operator_size;
-        std::deque<prefix_operator_symbol> _scope_prefix_operators;
 
         bool _valid{true};
         std::optional<tokens::token_type> _current{};

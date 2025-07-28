@@ -28,26 +28,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-06-06.
+ * Originally created: 2025-07-07.
  *
- * src/c4/include/c4/ffm/function_definition --
+ * src/c4/src/ffm/function_definition --
  *   
  */
-#ifndef FFM_FUNCTION_DEFINITION_HXX
-#define FFM_FUNCTION_DEFINITION_HXX
 
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/attributable.hxx>
-
-#include <c4/ffm/function.hxx>
-
-namespace c4::ffm {
-    struct function_definition final
-            : ffm::function
-              , ast2::tags::visitable {
-    private:
-        bool _variable;
-    };
-}
-
-#endif
+#include <c4/ffm/function_definition.hxx>

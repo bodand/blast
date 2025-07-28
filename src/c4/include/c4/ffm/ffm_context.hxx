@@ -28,26 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-06-06.
+ * Originally created: 2025-07-07.
  *
- * src/c4/include/c4/ffm/function_definition --
+ * src/c4/include/c4/ffm/ffm_context --
  *   
  */
-#ifndef FFM_FUNCTION_DEFINITION_HXX
-#define FFM_FUNCTION_DEFINITION_HXX
+#ifndef C4_FFM_CONTEXT_HXX
+#define C4_FFM_CONTEXT_HXX
 
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/attributable.hxx>
+#include <list>
+#include <memory>
 
-#include <c4/ffm/function.hxx>
+#include <c4/ffm/ffm_node.hxx>
 
 namespace c4::ffm {
-    struct function_definition final
-            : ffm::function
-              , ast2::tags::visitable {
-    private:
-        bool _variable;
-    };
+  struct function;
+  struct function_call;
+  struct function_declaration;
+  struct function_definition;
+
+  struct ffm_context {
+      function_call*
+      build_function_call();
+
+      function_declaration*
+      build_function_declaration();
+
+      function_definition*
+      build_function_definition();
+  private:
+      // TODO arena allocator
+      std::list<std::unique_ptr<ffm_node>> _nodes{};
+  };
 }
 
 #endif

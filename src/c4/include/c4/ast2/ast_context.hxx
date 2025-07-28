@@ -135,6 +135,7 @@ namespace c4::ast2 {
                              expression* right);
 
     private:
+        // TODO arena allocator
         std::list<std::unique_ptr<ast_node>> _nodes{};
     };
 }

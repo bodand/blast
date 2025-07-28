@@ -39,28 +39,33 @@
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
+#include <c4/ast2/symbol.hxx>
+
 namespace c4::ffm {
-    struct symbol
-            : ast2::tags::visitable
-              , ast2::tags::source_positioned {
-        symbol(const c4::position& position,
-               const std::size_t length,
-               const std::string_view& name,
-               const unsigned arity)
-            : source_positioned{position, length}
-            , _name{name}
-            , _arity{arity} { }
+  struct symbol : ast2::tags::visitable
+                , ast2::tags::source_positioned {
+      static symbol
+      from_ast(const ast2::symbol& ast_sym) {
+          return {ast_sym.position(), ast_sym.length(),
+                  ast_sym.name(), ast_sym.arity()};
+      }
 
-        [[nodiscard]] std::string_view
-        name() const { return _name; }
+      symbol(const c4::position& position,
+             const std::size_t length,
+             const std::string_view& name,
+             const unsigned arity)
+              : source_positioned{position, length}, _name{name}, _arity{arity} { }
 
-        [[nodiscard]] unsigned
-        arity() const { return _arity; }
+      [[nodiscard]] std::string_view
+      name() const { return _name; }
 
-    private:
-        std::string_view _name;
-        unsigned _arity;
-    };
+      [[nodiscard]] unsigned
+      arity() const { return _arity; }
+
+  private:
+      std::string_view _name;
+      unsigned _arity;
+  };
 }
 
 #endif

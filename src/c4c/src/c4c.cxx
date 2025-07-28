@@ -173,6 +173,7 @@ main(int argc, const char** argv) {
     parser.declare_binop(">>", 5, true);
 
     parser.declare_uniop("~");
+    parser.declare_uniop("+");
 
     parser.declare_symbol("print", 1, nullptr);
     parser.declare_symbol("println", 1, nullptr);

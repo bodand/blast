@@ -43,8 +43,7 @@
 namespace c4::ffm {
     struct function_declaration final
             : ffm::function
-              , ast2::tags::visitable
-              , ast2::tags::attributable { };
+              , ast2::tags::visitable { };
 }
 
 #endif

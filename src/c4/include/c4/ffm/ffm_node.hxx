@@ -28,26 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-06-06.
+ * Originally created: 2025-07-07.
  *
- * src/c4/include/c4/ffm/function_definition --
- *   
+ * src/c4/include/c4/ffm/ffm_node --
+ *   c4::ffm_node is the abstract interface used to manage the lifetime of
+ *   ffm objects in the ffm_context. All classes inherit from this to allow
+ *   being stored in the ffm_context.
  */
-#ifndef FFM_FUNCTION_DEFINITION_HXX
-#define FFM_FUNCTION_DEFINITION_HXX
-
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/attributable.hxx>
-
-#include <c4/ffm/function.hxx>
+#ifndef C4_FFM_NODE_HXX
+#define C4_FFM_NODE_HXX
 
 namespace c4::ffm {
-    struct function_definition final
-            : ffm::function
-              , ast2::tags::visitable {
-    private:
-        bool _variable;
-    };
+  struct ffm_node {
+      ffm_node(ffm_node& cp) = delete;
+
+      ffm_node&
+      operator=(ffm_node& cp) = delete;
+
+      ffm_node(const ffm_node& mv) = delete;
+
+      ffm_node&
+      operator=(const ffm_node& mv) = delete;
+
+      virtual ~ffm_node() = default;
+
+  protected:
+      ffm_node() = default;
+  };
 }
 
 #endif
