@@ -43,12 +43,16 @@
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/evaluation_constness.hxx>
 #include <c4/tags/attributable.hxx>
+#include <c4/tags/literal_from_token.hxx>
 
 namespace c4::ast2 {
     struct integer_literal final : tags::visitable
                                    , tags::source_positioned
                                    , tags::constant_node
-                                   , tags::attributable {
+                                   , tags::attributable
+                                   , tags::literal_from_token<integer_literal> {
+        using value_type = std::int64_t;
+
         integer_literal(const c4::position& position,
                         const std::size_t length,
                         const std::int64_t value)
@@ -57,9 +61,6 @@ namespace c4::ast2 {
 
         [[nodiscard]] std::int64_t
         value() const { return _value; }
-
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
 
     private:
         std::int64_t _value;

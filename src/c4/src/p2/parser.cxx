@@ -49,7 +49,7 @@
 #pragma ide diagnostic ignored "readability-static-accessed-through-instance"
 
 namespace {
-  struct token_ignorer {
+  struct token_ignorer final {
       bool& valid;
 
       bool
@@ -68,11 +68,11 @@ namespace {
           pos.line = debug_line;
           fmt::print("{}\n", c4::source_diagnostic::error(fmt::format("unknown characters found: {:?}", unk.value()),
                                                           pos,
-                                                          unk.value().length()));
+                                                          unk.size()));
           fmt::print("{}\n", c4::source_diagnostic::note(
                   "line is escaped because of possibly unprintable characters",
                   pos,
-                  unk.value().length()));
+                  unk.size()));
           return true;
       }
 
@@ -95,11 +95,7 @@ c4::p2::parser::parse_integer_literal() {
     const auto literal = expect_token<tokens::integer_literal>();
     if (literal) {
         next_relevant();
-        return {
-                literal->token_position(),
-                literal->value().size(),
-                literal->int_value()
-        };
+        return ast2::integer_literal::from_token(*literal);
     }
 
     report_failure(literal);
@@ -110,11 +106,7 @@ c4::p2::parser::parse_float_literal() {
     const auto literal = expect_token<tokens::float_literal>();
     if (literal) {
         next_relevant();
-        return {
-                literal->token_position(),
-                literal->value().size(),
-                literal->float_value()
-        };
+        return ast2::float_literal::from_token(*literal);
     }
 
     report_failure(literal);
@@ -125,11 +117,7 @@ c4::p2::parser::parse_string_literal() {
     const auto literal = expect_token<tokens::string_literal>();
     if (literal) {
         next_relevant();
-        return {
-                literal->token_position(),
-                literal->value().size(),
-                literal->string_value()
-        };
+        return ast2::string_literal::from_token(*literal);
     }
 
     report_failure(literal);
@@ -140,23 +128,13 @@ c4::p2::parser::parse_symbol() {
     const auto symbol = expect_token<tokens::symbol>();
     if (symbol) {
         next_relevant();
-        return {
-                symbol->token_position(),
-                symbol->value().size(),
-                symbol->name(),
-                symbol->arity()
-        };
+        return ast2::symbol::from_token(*symbol);
     }
 
     const auto bare_symbol = expect_token<tokens::bare_symbol>();
     if (bare_symbol) {
         next_relevant();
-        return {
-                bare_symbol->token_position(),
-                bare_symbol->value().size(),
-                bare_symbol->name(),
-                bare_symbol->arity()
-        };
+        return ast2::symbol::from_token(*symbol);
     }
 
     report_failure(symbol, bare_symbol);
@@ -167,23 +145,13 @@ c4::p2::parser::parse_op_symbol() {
     const auto op = expect_token<tokens::operator_symbol>();
     if (op) {
         next_relevant();
-        return {
-                op->token_position(),
-                op->value().size(),
-                op->name(),
-                op->arity()
-        };
+        return ast2::symbol::from_token(*op);
     }
 
     const auto bare_op = expect_token<tokens::fn_operator>();
     if (bare_op) {
         next_relevant();
-        return {
-                bare_op->token_position(),
-                bare_op->value().size(),
-                bare_op->name(),
-                1
-        };
+        return ast2::symbol::from_token(*bare_op);
     }
 
     report_failure(op, bare_op);
@@ -194,12 +162,7 @@ c4::p2::parser::parse_bare_symbol() {
     const auto bare_symbol = expect_token<tokens::bare_symbol>();
     if (bare_symbol) {
         next_relevant();
-        return {
-                bare_symbol->token_position(),
-                bare_symbol->value().size(),
-                bare_symbol->name(),
-                bare_symbol->arity()
-        };
+        return ast2::symbol::from_token(*bare_symbol);
     }
 
     report_failure(bare_symbol);
@@ -207,9 +170,8 @@ c4::p2::parser::parse_bare_symbol() {
 
 c4::ast2::expression*
 c4::p2::parser::parse_expression() {
-    if (const auto let = expect_token<tokens::let>()) {
+    if (const auto let = expect_token<tokens::let>())
         return parse_let_expression();
-    }
 
     const auto lhs = parse_final_expression();
     return parse_operator_precedence(lhs, 0);
@@ -230,7 +192,6 @@ c4::p2::parser::parse_let_expression() {
     if (expect_token<tokens::operator_symbol>()
         || expect_token<tokens::fn_operator>()) {
         const auto op = parse_op_symbol();
-        ast2::symbol op_sym(op.position(), op.length(), op.name(), op.arity());
 
         if (op.arity() == 1) {
             declare_uniop(op.name());
@@ -256,7 +217,7 @@ c4::p2::parser::parse_let_expression() {
             const auto let = _context.build_let_expression(
                     op.position(),
                     op.length(),
-                    op_sym,
+                    op,
                     expr
             );
             return _context.build_expression(let);
@@ -290,7 +251,7 @@ c4::p2::parser::parse_let_expression() {
             const auto let = _context.build_let_expression(
                     op.position(),
                     op.length(),
-                    op_sym,
+                    op,
                     expr
             );
             return _context.build_expression(let);
@@ -380,12 +341,12 @@ c4::p2::parser::parse_final_expression() {
         next_relevant();
         ensure_valid_prefix_operator(*prefix_op);
         const auto op_sym = ast2::symbol(prefix_op->token_position(),
-                                         prefix_op->value().size(),
+                                         prefix_op->size(),
                                          prefix_op->value(),
                                          1);
         const auto expr = parse_final_expression();
         const auto op = _context.build_unary_op_call(prefix_op->token_position(),
-                                                     prefix_op->value().size() + expr->length(),
+                                                     prefix_op->size() + expr->length(),
                                                      op_sym,
                                                      expr);
         return _context.build_expression(op);
@@ -530,7 +491,7 @@ namespace {
   std::size_t
   length_of(const c4::p2::tokens::token_type& token) {
       return std::visit([](const auto& tok) {
-          return tok.value().length();
+          return tok.size();
       }, token);
   }
 }
@@ -558,7 +519,7 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     const auto assoc_direction_raw = *bare_symbol;
     const auto assoc_direction = ast2::symbol{
             assoc_direction_raw.token_position(),
-            assoc_direction_raw.value().size(),
+            assoc_direction_raw.size(),
             assoc_direction_raw.name(),
             assoc_direction_raw.arity()
     };
@@ -580,9 +541,6 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     return true;
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "ConstantFunctionResult"
-#pragma ide diagnostic ignored "ConstantConditionsOC"
 unsigned
 c4::p2::parser::parse_precedence(std::string_view op) {
     const auto int_lit = expect_token<tokens::integer_literal>();
@@ -603,12 +561,7 @@ c4::p2::parser::parse_precedence(std::string_view op) {
         return 0;
     }
 
-    const auto uint = ast2::integer_literal{
-            int_lit->token_position(),
-            int_lit->value().size(),
-            int_lit->int_value()
-    };
-    // always false, lmao
+    const auto uint = ast2::integer_literal::from_token(*int_lit);
     if (uint.value() <= 10) return uint.value();
 
     _valid = false;
@@ -624,7 +577,6 @@ c4::p2::parser::parse_precedence(std::string_view op) {
                                                uint.length()));
     return 0;
 }
-#pragma clang diagnostic pop
 
 void
 c4::p2::parser::parse_n_expressions(const unsigned n,
@@ -655,11 +607,11 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                 }
             }
             ast2::symbol op_sym(op_token.token_position(),
-                                op_token.value().size(),
+                                op_token.size(),
                                 op_token.value(),
                                 2);
             const auto bin_op = _context.build_binary_op_call(op_token.token_position(),
-                                                              op_token.value().size(),
+                                                              op_token.size(),
                                                               op_sym,
                                                               ret,
                                                               rhs);
@@ -702,10 +654,10 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
                source_diagnostic::error(
                        fmt::format("unknown prefix operator referenced: {}/1", sym.value()),
                        sym.token_position(),
-                       sym.value().size()
+                       sym.size()
                ));
 
-    if (sym.value().size() > 1) {
+    if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
         auto line = std::string(pos.line);
         line.insert(pos.col_number, 1, ' ');
@@ -723,7 +675,7 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
                            fmt::format("there exists an infix operator with name {}/2, did you mean to call that?",
                                        sym.value()),
                            sym.token_position(),
-                           sym.value().size()
+                           sym.size()
                    ));
 
     throw bad_token_error{};
@@ -736,10 +688,10 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
                source_diagnostic::error(
                        fmt::format("unknown infix operator referenced: {}/2", sym.value()),
                        sym.token_position(),
-                       sym.value().size()
+                       sym.size()
                ));
 
-    if (sym.value().size() > 1) {
+    if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
         auto line = std::string(pos.line);
         line.insert(pos.col_number, 1, ' ');
@@ -758,7 +710,7 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
                            fmt::format("there exists a prefix operator with name {}/1, did you mean to call that?",
                                        sym.value()),
                            sym.token_position(),
-                           sym.value().size()
+                           sym.size()
                    ));
 
     throw bad_token_error{};

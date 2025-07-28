@@ -46,36 +46,36 @@
 
 c4::p2::tokens::token_base::token_base(const position& position,
                                        const std::string_view range)
-    : _position(position)
-    , _begin(range.data())
-    , _end(range.data() + range.size())
-    , _source(position.source()) {
+        : _position(position)
+          , _begin(range.data())
+          , _end(range.data() + range.size())
+          , _source(position.source()) {
     DEBUG_ASSERT(_source != nullptr, "source cannot be specified as null");
     DEBUG_ASSERT(_begin <= _end, "token must start before it ends");
     DEBUG_ASSERT(_begin != _end, "token must not be empty");
 }
 
 namespace {
-    template<class T>
-    T
-    parse_number(const std::string_view str) {
-        T ret{};
-        auto [pos, errc] = std::from_chars(str.data(), str.data() + str.size(), ret);
-        ASSERT(errc == std::errc{},
-               "parse_uint must be called on guaranteed input: the result of the lexer: this was not the case",
-               str);
-        return ret;
-    }
+  template<class T>
+  T
+  parse_number(const std::string_view str) {
+      T ret{};
+      auto [pos, errc] = std::from_chars(str.data(), str.data() + str.size(), ret);
+      ASSERT(errc == std::errc{},
+             "parse_number must be called on guaranteed input: the result of the lexer: this was not the case",
+             str);
+      return ret;
+  }
 }
 
 c4::p2::tokens::symbol::symbol(const position& position,
                                const std::string_view range,
                                const std::string_view name_range,
                                const std::string_view arity_range)
-    : token_base{position, range}
-    , _name_begin{name_range.data()}
-    , _name_end{name_range.data() + name_range.size()}
-    , _arity{parse_number<unsigned>(arity_range)} {
+        : token_base{position, range}
+          , _name_begin{name_range.data()}
+          , _name_end{name_range.data() + name_range.size()}
+          , _arity{parse_number<unsigned>(arity_range)} {
     DEBUG_ASSERT(_name_begin <= _name_end, "token name must start before it ends");
     DEBUG_ASSERT(_begin <= _name_begin, "name must begin within the token");
     DEBUG_ASSERT(_name_begin < _end, "name must begin within the token");
@@ -88,10 +88,10 @@ c4::p2::tokens::operator_symbol::operator_symbol(const position& position,
                                                  const std::string_view range,
                                                  const std::string_view name_range,
                                                  const std::string_view arity_range)
-    : token_base{position, range}
-    , _name_begin{name_range.data()}
-    , _name_end{name_range.data() + name_range.size()}
-    , _arity{parse_number<unsigned>(arity_range)} {
+        : token_base{position, range}
+          , _name_begin{name_range.data()}
+          , _name_end{name_range.data() + name_range.size()}
+          , _arity{parse_number<unsigned>(arity_range)} {
     DEBUG_ASSERT(_name_begin <= _name_end, "token name must start before it ends");
     DEBUG_ASSERT(_begin <= _name_begin, "name must begin within the token");
     DEBUG_ASSERT(_name_begin < _end, "name must begin within the token");
@@ -112,29 +112,35 @@ c4::p2::tokens::name::name(const position& position, \
 }
 
 C4P2_DEFAULT_SYMBOL_TOKEN(lbrace, "{")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(rbrace, "}")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(lparen, "(")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(rparen, ")")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(pipe, "|")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(ampersand, "&(")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(semicolon, ";")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(backslash, "\\")
+
 C4P2_DEFAULT_SYMBOL_TOKEN(let, "let")
 
 
 c4::p2::tokens::arity_marker::arity_marker(const position& pos,
                                            const std::string_view range,
                                            const std::string_view arity_range)
-    : token_base{pos, range}
-    , _arity{parse_number<unsigned>(arity_range)} { }
+        : token_base{pos, range}
+          , _arity{parse_number<unsigned>(arity_range)} { }
 
 c4::p2::tokens::integer_literal::integer_literal(const position& position,
                                                  const std::string_view range)
-    : token_base{position, range}
-    , _int_value{parse_number<std::int64_t>(range)} { }
+        : literal_token<std::int64_t>{parse_number<std::int64_t>(range), position, range} { }
 
 
 c4::p2::tokens::float_literal::float_literal(const position& position,
                                              const std::string_view range)
-    : token_base{position, range}
-    , _float_value{parse_number<double>(range)} { }
+        : literal_token<double>{parse_number<double>(range), position, range} { }

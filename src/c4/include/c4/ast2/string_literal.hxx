@@ -42,12 +42,15 @@
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/evaluation_constness.hxx>
+#include <c4/tags/literal_from_token.hxx>
 
 namespace c4::ast2 {
     struct string_literal final : tags::visitable
                                   , tags::source_positioned
                                   , tags::evaluation_constness
-                                  , tags::attributable {
+                                  , tags::attributable
+                                  , tags::literal_from_token<string_literal> {
+        using value_type = std::string_view;
         constexpr static auto short_string_limit = 6;
 
         string_literal(const c4::position& position,

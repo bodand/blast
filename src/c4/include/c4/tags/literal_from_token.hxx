@@ -1,4 +1,4 @@
-/* demo project
+/* blAST project
  *
  * Copyright (c) 2025 András Bodor <bodand@pm.me>
  * All rights reserved.
@@ -28,42 +28,23 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-07-07.
  *
- * src/c4/include/c4/ast2/float_literal --
+ * src/c4/include/c4/tags/literal_from_token --
  *   
  */
-#ifndef C4_AST2_FLOAT_LITERAL_HXX
-#define C4_AST2_FLOAT_LITERAL_HXX
+#ifndef C4_LITERAL_FROM_TOKEN_HXX
+#define C4_LITERAL_FROM_TOKEN_HXX
 
-#include <string_view>
-
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
-#include <c4/tags/attributable.hxx>
-#include <c4/tags/literal_from_token.hxx>
-
-namespace c4::ast2 {
-    struct float_literal final : tags::visitable
-                                 , tags::source_positioned
-                                 , tags::constant_node
-                                 , tags::attributable
-                                 , tags::literal_from_token<float_literal> {
-        using value_type = double;
-
-        float_literal(const c4::position& position,
-                      const std::size_t length,
-                      const double value)
-            : source_positioned{position, length}
-            , _value{value} { }
-
-        [[nodiscard]] double
-        value() const { return _value; }
-
-    private:
-        double _value;
-    };
+namespace c4::ast2::tags {
+  template<class Self>
+  struct literal_from_token {
+      template<class Token>
+      [[nodiscard]] static Self
+      from_token(const Token& tok) {
+          return Self(tok.token_position(), tok.size(), tok.as_value<typename Self::value_type>());
+      }
+  };
 }
 
 #endif

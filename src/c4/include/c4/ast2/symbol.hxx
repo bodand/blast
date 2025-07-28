@@ -47,96 +47,108 @@
 #include <c4/tags/referable.hxx>
 
 namespace c4::ast2 {
-    /**
-    * Symbol for undefined but declared symbols. These are not inherently
-    * present in the source.
-    */
-    struct undef_symbol {
-        undef_symbol(const std::string_view& name, const unsigned arity)
-            : _name{name}
-            , _arity{arity} { }
+  /**
+  * Symbol for undefined but declared symbols. These are not inherently
+  * present in the source.
+  */
+  struct undef_symbol {
+      undef_symbol(const std::string_view& name, const unsigned arity)
+              : _name{name}
+              , _arity{arity} { }
 
-        [[nodiscard]] std::string
-        mangle() const;
+      [[nodiscard]] std::string
+      mangle() const;
 
-        [[nodiscard]] std::string_view
-        name() const {
-            return _name;
-        }
+      [[nodiscard]] std::string_view
+      name() const {
+          return _name;
+      }
 
-        [[nodiscard]] unsigned
-        arity() const {
-            return _arity;
-        }
+      [[nodiscard]] unsigned
+      arity() const {
+          return _arity;
+      }
 
-    private:
-        std::string_view _name;
-        unsigned _arity;
-    };
+  private:
+      std::string_view _name;
+      unsigned _arity;
+  };
 
-    struct symbol final : tags::referable
-                          , tags::visitable
-                          , tags::source_positioned
-                          , tags::dynamic_node {
-        symbol(const c4::position& position,
-               std::size_t length,
-               std::string_view name,
-               unsigned arity);
+  struct symbol final : tags::referable
+                      , tags::visitable
+                      , tags::source_positioned
+                      , tags::dynamic_node {
+      template<class Token>
+      [[nodiscard]]  static symbol
+      from_token(const Token& tok) {
+          return {
+              tok.token_position(),
+              tok.size(),
+              tok.name(),
+              tok.arity()
+          };
+      }
 
-        [[nodiscard]] std::string_view
-        name() const noexcept { return _name; }
+      symbol(const c4::position& position,
+             std::size_t length,
+             std::string_view name,
+             unsigned arity);
 
-        [[nodiscard]] std::string_view
-        name() override { return _name; }
+      [[nodiscard]] std::string_view
+      name() const noexcept { return _name; }
 
-        [[nodiscard]] unsigned
-        arity() const noexcept { return _arity; }
+      [[nodiscard]] std::string_view
+      name() override { return _name; }
 
-        [[nodiscard]] symbol
-        with_arity(unsigned arity) const;
+      [[nodiscard]] unsigned
+      arity() const noexcept { return _arity; }
 
-        [[nodiscard]] std::string
-        mangle() const;
+      [[nodiscard]] symbol
+      with_arity(unsigned arity) const;
 
-        friend bool
-        operator<(const symbol& lhs, const symbol& rhs) {
-            const auto cmp = lhs._name <=> rhs._name;
-            if (std::is_lt(cmp)) return true;
-            if (std::is_gt(cmp)) return false;
-            return lhs._arity < rhs._arity;
-        }
+      [[nodiscard]] std::string
+      mangle() const;
 
-        friend bool
-        operator<=(const symbol& lhs, const symbol& rhs) { return !(rhs < lhs); }
+      friend bool
+      operator<(const symbol& lhs, const symbol& rhs) {
+          const auto cmp = lhs._name <=> rhs._name;
+          if (std::is_lt(cmp)) return true;
+          if (std::is_gt(cmp)) return false;
+          return lhs._arity < rhs._arity;
+      }
 
-        friend bool
-        operator>(const symbol& lhs, const symbol& rhs) { return rhs < lhs; }
+      friend bool
+      operator<=(const symbol& lhs, const symbol& rhs) { return !(rhs < lhs); }
 
-        friend bool
-        operator>=(const symbol& lhs, const symbol& rhs) { return !(lhs < rhs); }
+      friend bool
+      operator>(const symbol& lhs, const symbol& rhs) { return rhs < lhs; }
 
-        friend bool
-        operator==(const symbol& lhs, const symbol& rhs) {
-            return lhs._arity == rhs._arity
-                   && lhs._name == rhs._name;
-        }
+      friend bool
+      operator>=(const symbol& lhs, const symbol& rhs) { return !(lhs < rhs); }
 
-        friend bool
-        operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
+      friend bool
+      operator==(const symbol& lhs, const symbol& rhs) {
+          return lhs._arity == rhs._arity
+                 && lhs._name == rhs._name;
+      }
 
-        [[nodiscard]] referable*
-        references() const noexcept { return _references; }
+      friend bool
+      operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
 
-        void
-        references(referable* ref) const noexcept;
+      [[nodiscard]] referable*
+      references() const noexcept { return _references; }
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
-    private:
-        mutable referable* _references{};
-        std::string_view _name;
-        unsigned _arity;
-    };
+      void
+      references(referable* ref) const noexcept;
+
+      [[nodiscard]] unsigned
+      unbound_parameters() const noexcept { return 0; }
+
+  private:
+      mutable referable* _references{};
+      std::string_view _name;
+      unsigned _arity;
+  };
 }
 
 #endif

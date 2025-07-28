@@ -45,37 +45,42 @@
 #include <c4/diagnostic.hxx>
 
 namespace c4::p2 {
-    struct token_source;
+  struct token_source;
 }
 
 namespace c4::p2::tokens {
-    struct token_base {
-        [[nodiscard]] const char*
-        begin() const noexcept { return _begin; }
+  struct token_base {
+      [[nodiscard]] const char*
+      begin() const noexcept { return _begin; }
 
-        [[nodiscard]] const char*
-        end() const noexcept { return _end; }
+      [[nodiscard]] const char*
+      end() const noexcept { return _end; }
 
-        [[nodiscard]] std::string_view
-        value() const noexcept {
-            return {_begin, static_cast<std::string_view::size_type>(_end - _begin)};
-        }
+      [[nodiscard]] std::string_view
+      value() const noexcept {
+          return {_begin, static_cast<std::string_view::size_type>(_end - _begin)};
+      }
 
-        [[nodiscard]] const position&
-        token_position() const noexcept { return _position; }
+      [[nodiscard]] auto
+      size() const noexcept {
+          return static_cast<std::string_view::size_type>(_end - _begin);
+      }
 
-    protected:
-        token_base(const position& position,
-                   std::string_view range);
+      [[nodiscard]] const position&
+      token_position() const noexcept { return _position; }
 
-        position _position;
-        const char* _begin;
-        const char* _end;
+  protected:
+      token_base(const position& position,
+                 std::string_view range);
 
-    private:
-        friend token_source;
-        token_source* _source;
-    };
+      position _position;
+      const char* _begin;
+      const char* _end;
+
+  private:
+      friend token_source;
+      token_source* _source;
+  };
 
 #define C4P2_DEFAULT_TOKEN(name) \
     private: \
@@ -90,261 +95,275 @@ namespace c4::p2::tokens {
         name(const position& position, \
              const std::string_view range);
 
-    struct whitespace final : token_base {
-        constexpr static std::string_view token_name = "whitespace";
-        constexpr static std::string_view regex = R"(\A\s+)";
-        constexpr static auto can_match_newline = true;
+  template<class T>
+  struct literal_token : token_base {
+      template<class X>
+      [[nodiscard]] X
+      as_value() const noexcept = delete;
 
-        C4P2_DEFAULT_TOKEN(whitespace)
-    };
+      template<>
+      [[nodiscard]] T
+      as_value<T>() const noexcept { return _value; }
 
-    struct comment final : token_base {
-        constexpr static std::string_view token_name = "comment";
-        constexpr static std::string_view regex = R"(\A#[^\n]*\n)";
-        constexpr static bool can_match_newline = true;
+  protected:
+      T _value;
 
-        C4P2_DEFAULT_TOKEN(comment)
-    };
+      literal_token(T&& value,
+                    const position& position,
+                    const std::string_view range)
+              : token_base{position, range}
+                , _value(std::move(value)) { }
+  };
 
-    struct bare_symbol final : token_base {
-        constexpr static std::string_view token_name = "bare symbol";
-        constexpr static std::string_view regex = R"(\A\p{L}\p{Xwd}*)";
+  struct whitespace final : token_base {
+      constexpr static std::string_view token_name = "whitespace";
+      constexpr static std::string_view regex = R"(\A\s+)";
+      constexpr static auto can_match_newline = true;
 
-        [[nodiscard]] std::string_view
-        name() const noexcept { return value(); }
+  C4P2_DEFAULT_TOKEN(whitespace)
+  };
 
-        [[nodiscard]] static unsigned
-        arity() noexcept { return 0; }
+  struct comment final : token_base {
+      constexpr static std::string_view token_name = "comment";
+      constexpr static std::string_view regex = R"(\A#[^\n]*\n)";
+      constexpr static bool can_match_newline = true;
 
-        C4P2_DEFAULT_TOKEN(bare_symbol)
-    };
+  C4P2_DEFAULT_TOKEN(comment)
+  };
 
-    struct symbol final : token_base {
-        constexpr static std::string_view token_name = "symbol";
-        constexpr static std::string_view regex = R"(\A(\p{L}\p{Xwd}*)/(\d+))";
-        constexpr static std::uint32_t group_count = 2;
+  struct bare_symbol final : token_base {
+      constexpr static std::string_view token_name = "bare symbol";
+      constexpr static std::string_view regex = R"(\A\p{L}\p{Xwd}*)";
 
-        [[nodiscard]] std::string_view
-        name() const noexcept {
-            return std::string_view{_name_begin, static_cast<std::string_view::size_type>(_name_end - _name_begin)};
-        }
+      [[nodiscard]] std::string_view
+      name() const noexcept { return value(); }
 
-        [[nodiscard]] unsigned
-        arity() const noexcept { return _arity; }
+      [[nodiscard]] static unsigned
+      arity() noexcept { return 0; }
 
-    private:
-        friend token_source;
+  C4P2_DEFAULT_TOKEN(bare_symbol)
+  };
 
-        symbol(const position& position,
-               std::string_view range,
-               std::string_view name_range,
-               std::string_view arity_range);
+  struct symbol final : token_base {
+      constexpr static std::string_view token_name = "symbol";
+      constexpr static std::string_view regex = R"(\A(\p{L}\p{Xwd}*)/(\d+))";
+      constexpr static std::uint32_t group_count = 2;
 
-        const char* _name_begin;
-        const char* _name_end;
-        unsigned _arity;
-    };
+      [[nodiscard]] std::string_view
+      name() const noexcept {
+          return std::string_view{_name_begin, static_cast<std::string_view::size_type>(_name_end - _name_begin)};
+      }
 
-    struct let final : token_base {
-        constexpr static std::string_view token_name = "let";
-        constexpr static std::string_view regex = R"(\Alet\b)";
-        C4P2_DEFAULT_TOKEN_DECL(let)
-    };
+      [[nodiscard]] unsigned
+      arity() const noexcept { return _arity; }
 
-    struct lbrace final : token_base {
-        constexpr static std::string_view token_name = "opening brace '{'";
-        constexpr static std::string_view regex = R"(\A\{)";
-        C4P2_DEFAULT_TOKEN_DECL(lbrace)
-    };
+  private:
+      friend token_source;
 
-    struct rbrace final : token_base {
-        constexpr static std::string_view token_name = "closing brace '}'";
-        constexpr static std::string_view regex = R"(\A\})";
-        C4P2_DEFAULT_TOKEN_DECL(rbrace)
-    };
+      symbol(const position& position,
+             std::string_view range,
+             std::string_view name_range,
+             std::string_view arity_range);
 
-    struct lparen final : token_base {
-        constexpr static std::string_view token_name = "opening parenthesis '('";
-        constexpr static std::string_view regex = R"(\A\()";
-        C4P2_DEFAULT_TOKEN_DECL(lparen)
-    };
+      const char* _name_begin;
+      const char* _name_end;
+      unsigned _arity;
+  };
 
-    struct rparen final : token_base {
-        constexpr static std::string_view token_name = "closing parenthesis ')'";
-        constexpr static std::string_view regex = R"(\A\))";
-        C4P2_DEFAULT_TOKEN_DECL(rparen)
-    };
+  struct let final : token_base {
+      constexpr static std::string_view token_name = "let";
+      constexpr static std::string_view regex = R"(\Alet\b)";
+  C4P2_DEFAULT_TOKEN_DECL(let)
+  };
 
-    struct pipe final : token_base {
-        constexpr static std::string_view token_name = "parameter marker '|'";
-        constexpr static std::string_view regex = R"(\A\|)";
-        C4P2_DEFAULT_TOKEN_DECL(pipe)
-    };
+  struct lbrace final : token_base {
+      constexpr static std::string_view token_name = "opening brace '{'";
+      constexpr static std::string_view regex = R"(\A\{)";
+  C4P2_DEFAULT_TOKEN_DECL(lbrace)
+  };
 
-    struct ampersand final : token_base {
-        constexpr static std::string_view token_name = "indirect call opening ampersand '&('";
-        constexpr static std::string_view regex = R"(\A&\()";
-        C4P2_DEFAULT_TOKEN_DECL(ampersand)
-    };
+  struct rbrace final : token_base {
+      constexpr static std::string_view token_name = "closing brace '}'";
+      constexpr static std::string_view regex = R"(\A\})";
+  C4P2_DEFAULT_TOKEN_DECL(rbrace)
+  };
 
-    struct semicolon final : token_base {
-        constexpr static std::string_view token_name = "semicolon ';'";
-        constexpr static std::string_view regex = R"(\A;)";
-        C4P2_DEFAULT_TOKEN_DECL(semicolon)
-    };
+  struct lparen final : token_base {
+      constexpr static std::string_view token_name = "opening parenthesis '('";
+      constexpr static std::string_view regex = R"(\A\()";
+  C4P2_DEFAULT_TOKEN_DECL(lparen)
+  };
 
-    struct backslash final : token_base {
-        constexpr static std::string_view token_name = "backslash '\\'";
-        constexpr static std::string_view regex = R"(\A\\)";
-        C4P2_DEFAULT_TOKEN_DECL(backslash)
-    };
+  struct rparen final : token_base {
+      constexpr static std::string_view token_name = "closing parenthesis ')'";
+      constexpr static std::string_view regex = R"(\A\))";
+  C4P2_DEFAULT_TOKEN_DECL(rparen)
+  };
 
-    struct arity_marker final : token_base {
-        constexpr static std::string_view token_name = "indirect call closing arity marker";
-        constexpr static std::string_view regex = R"(\A\)/(\d+))";
-        constexpr static std::uint32_t group_count = 1;
+  struct pipe final : token_base {
+      constexpr static std::string_view token_name = "parameter marker '|'";
+      constexpr static std::string_view regex = R"(\A\|)";
+  C4P2_DEFAULT_TOKEN_DECL(pipe)
+  };
 
-        [[nodiscard]] unsigned
-        arity() const noexcept { return _arity; }
+  struct ampersand final : token_base {
+      constexpr static std::string_view token_name = "indirect call opening ampersand '&('";
+      constexpr static std::string_view regex = R"(\A&\()";
+  C4P2_DEFAULT_TOKEN_DECL(ampersand)
+  };
 
-    private:
-        friend token_source;
+  struct semicolon final : token_base {
+      constexpr static std::string_view token_name = "semicolon ';'";
+      constexpr static std::string_view regex = R"(\A;)";
+  C4P2_DEFAULT_TOKEN_DECL(semicolon)
+  };
 
-        arity_marker(const position& pos,
-                     std::string_view range,
-                     std::string_view arity_range);
+  struct backslash final : token_base {
+      constexpr static std::string_view token_name = "backslash '\\'";
+      constexpr static std::string_view regex = R"(\A\\)";
+  C4P2_DEFAULT_TOKEN_DECL(backslash)
+  };
 
-        unsigned _arity;
-    };
+  struct arity_marker final : token_base {
+      constexpr static std::string_view token_name = "indirect call closing arity marker";
+      constexpr static std::string_view regex = R"(\A\)/(\d+))";
+      constexpr static std::uint32_t group_count = 1;
 
-    struct operator_ final : token_base {
-        constexpr static std::string_view token_name = "operator";
-        // note: keep in sync with fn_operator::regex
-        constexpr static std::string_view regex = R"(\A[-+*/%&|~!?,.:^@#`<>=]+)";
+      [[nodiscard]] unsigned
+      arity() const noexcept { return _arity; }
 
-        C4P2_DEFAULT_TOKEN(operator_)
-    };
+  private:
+      friend token_source;
 
-    struct operator_symbol final : token_base {
-        constexpr static std::string_view token_name = "operator symbol";
-        // note: keep in sync with fn_operator::regex
-        constexpr static std::string_view regex = R"(\A\(([-+*/%&|~!?,.:^@#`<>=]+)\)/(\d+))";
-        constexpr static std::uint32_t group_count = 2;
+      arity_marker(const position& pos,
+                   std::string_view range,
+                   std::string_view arity_range);
 
-        [[nodiscard]] std::string_view
-        name() const noexcept {
-            return std::string_view{_name_begin, static_cast<std::string_view::size_type>(_name_end - _name_begin)};
-        }
+      unsigned _arity;
+  };
 
-        [[nodiscard]] unsigned
-        arity() const noexcept { return _arity; }
+  struct operator_ final : token_base {
+      constexpr static std::string_view token_name = "operator";
+      // note: keep in sync with fn_operator::regex
+      constexpr static std::string_view regex = R"(\A[-+*/%&|~!?,.:^@#`<>=]+)";
 
-    private:
-        friend token_source;
+  C4P2_DEFAULT_TOKEN(operator_)
+  };
 
-        operator_symbol(const position& position,
-                        std::string_view range,
-                        std::string_view name_range,
-                        std::string_view arity_range);
+  struct operator_symbol final : token_base {
+      constexpr static std::string_view token_name = "operator symbol";
+      // note: keep in sync with fn_operator::regex
+      constexpr static std::string_view regex = R"(\A\(([-+*/%&|~!?,.:^@#`<>=]+)\)/(\d+))";
+      constexpr static std::uint32_t group_count = 2;
 
-        const char* _name_begin;
-        const char* _name_end;
-        unsigned _arity;
-    };
+      [[nodiscard]] std::string_view
+      name() const noexcept {
+          return std::string_view{_name_begin, static_cast<std::string_view::size_type>(_name_end - _name_begin)};
+      }
 
-    struct fn_operator final : token_base {
-        constexpr static std::string_view token_name = "fn-syntax operator";
-        // note: keep in sync with operator_::regex
-        constexpr static std::string_view regex = R"(\A\([-+*/%&|~!?,.:^@#`<>=]+\))";
+      [[nodiscard]] unsigned
+      arity() const noexcept { return _arity; }
 
-        [[nodiscard]] std::string_view
-        name() const noexcept {
-            return std::string_view{
-                _begin + 1,
-                static_cast<std::string_view::size_type>((_end - 1) - (_begin + 1))
-            };
-        }
+  private:
+      friend token_source;
 
-        [[nodiscard]] unsigned
-        arity() const noexcept { return 1; }
+      operator_symbol(const position& position,
+                      std::string_view range,
+                      std::string_view name_range,
+                      std::string_view arity_range);
 
-        C4P2_DEFAULT_TOKEN(fn_operator)
-    };
+      const char* _name_begin;
+      const char* _name_end;
+      unsigned _arity;
+  };
 
-    struct string_literal final : token_base {
-        constexpr static std::string_view token_name = "string literal";
-        constexpr static std::string_view regex = R"(\A"[^"]*?")";
-        constexpr static auto can_match_newline = true;
+  struct fn_operator final : token_base {
+      constexpr static std::string_view token_name = "fn-syntax operator";
+      // note: keep in sync with operator_::regex
+      constexpr static std::string_view regex = R"(\A\([-+*/%&|~!?,.:^@#`<>=]+\))";
 
-        [[nodiscard]] std::string_view
-        string_value() const noexcept { return value().substr(1, value().size() - 2); }
+      [[nodiscard]] std::string_view
+      name() const noexcept {
+          return std::string_view{
+                  _begin + 1,
+                  static_cast<std::string_view::size_type>((_end - 1) - (_begin + 1))
+          };
+      }
 
-        C4P2_DEFAULT_TOKEN(string_literal)
-    };
+      [[nodiscard]] unsigned
+      arity() const noexcept { return 1; }
 
-    struct integer_literal final : token_base {
-        constexpr static std::string_view token_name = "integer literal";
-        constexpr static std::string_view regex = R"(\A[-+]?[0-9]+)";
+  C4P2_DEFAULT_TOKEN(fn_operator)
+  };
 
-        [[nodiscard]] std::int64_t
-        int_value() const { return _int_value; }
+  struct string_literal final : literal_token<std::string_view> {
+      constexpr static std::string_view token_name = "string literal";
+      constexpr static std::string_view regex = R"(\A"[^"]*?")";
+      constexpr static auto can_match_newline = true;
 
-    private:
-        friend token_source;
+  private:
+      friend token_source;
 
-        integer_literal(const position& position,
-                        std::string_view range);
+      string_literal(const position& position,
+                     std::string_view range)
+              : literal_token<std::string_view>(range.substr(1, range.size() - 2),
+                                                position,
+                                                range) { }
+  };
 
-        std::int64_t _int_value;
-    };
+  struct integer_literal final : literal_token<std::int64_t> {
+      constexpr static std::string_view token_name = "integer literal";
+      constexpr static std::string_view regex = R"(\A[-+]?[0-9]+)";
 
-    struct float_literal final : token_base {
-        constexpr static std::string_view token_name = "float literal";
-        constexpr static std::string_view regex = R"(\A[-+]?[0-9]+\.[0-9]+)";
+  private:
+      friend token_source;
 
-        [[nodiscard]] double
-        float_value() const { return _float_value; }
-
-    private:
-        friend token_source;
-
-        float_literal(const position& position,
+      integer_literal(const position& position,
                       std::string_view range);
+  };
 
-        double _float_value;
-    };
+  struct float_literal final : literal_token<double> {
+      constexpr static std::string_view token_name = "float literal";
+      constexpr static std::string_view regex = R"(\A[-+]?[0-9]+\.[0-9]+)";
 
-    struct unknown final : token_base {
-        constexpr static std::string_view token_name = "unknown";
-        constexpr static std::string_view regex = R"(\A\S+)";
-        C4P2_DEFAULT_TOKEN(unknown)
-    };
+  private:
+      friend token_source;
 
-    using token_type = std::variant<
-        whitespace, //
-        comment, // #..\n
+      float_literal(const position& position,
+                    std::string_view range);
+  };
 
-        operator_symbol, // (+)/2
-        fn_operator, // (+)
+  struct unknown final : token_base {
+      constexpr static std::string_view token_name = "unknown";
+      constexpr static std::string_view regex = R"(\A\S+)";
+  C4P2_DEFAULT_TOKEN(unknown)
+  };
 
-        ampersand, // &(
-        arity_marker, // )/1
-        lparen, // (
-        rparen, // )
-        lbrace, // {
-        rbrace, // }
-        pipe, // |
-        backslash, // \ <- space needed to not escape linebreak
-        let, // let
+  using token_type = std::variant<
+          whitespace, //
+          comment, // #..\n
 
-        float_literal, // 12.1
-        integer_literal, // 42
-        operator_, // >=>
-        string_literal, // "asd"
-        symbol, // sym/1
-        bare_symbol, // sym
-        unknown
-    >;
+          operator_symbol, // (+)/2
+          fn_operator, // (+)
+
+          ampersand, // &(
+          arity_marker, // )/1
+          lparen, // (
+          rparen, // )
+          lbrace, // {
+          rbrace, // }
+          pipe, // |
+          backslash, // \ <- space needed to not escape linebreak
+          let, // let
+
+          float_literal, // 12.1
+          integer_literal, // 42
+          operator_, // >=>
+          string_literal, // "asd"
+          symbol, // sym/1
+          bare_symbol, // sym
+          unknown
+  >;
 }
 
 #endif
