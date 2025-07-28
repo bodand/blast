@@ -102,6 +102,8 @@ c4::position::filename() const {
 
 std::string_view
 c4::position::range() const {
+    // XXX allocating on what is basically a subrange calculation, truly
+    //  the pinnacle of software engineering
     auto leading_utf_str = expanded_range
                            | una::views::utf8
                            | una::views::take(col_number - 1)
@@ -121,101 +123,9 @@ c4::position::range() const {
     return expanded_range.substr(range_begin, last_line_range_end - range_begin);
 }
 
-c4::source_diagnostic
-c4::source_diagnostic::suggestion(const std::string& diagnostic,
-                                  const position& position,
-                                  const std::size_t highlight_length) {
-    return {
-            diag_type::Suggestion,
-            diagnostic,
-            position,
-            highlight_length
-    };
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::suggestion_for_value(const std::string& diagnostic,
-                                            const position& position,
-                                            std::string_view value) {
-    if (const auto newline_at = value.find('\n');
-            newline_at != std::string_view::npos) {
-        value = value.substr(0, newline_at + 1);
-    }
-    return suggestion(diagnostic, position, utf8_strlen(value));
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::note(const std::string& diagnostic,
-                            const position& position,
-                            const std::size_t highlight_length) {
-    return {
-            diag_type::Note,
-            diagnostic,
-            position,
-            highlight_length
-    };
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::note_for_value(const std::string& diagnostic,
-                                      const position& position,
-                                      std::string_view value) {
-    if (const auto newline_at = value.find('\n');
-            newline_at != std::string_view::npos) {
-        value = value.substr(0, newline_at + 1);
-    }
-    return note(diagnostic, position, utf8_strlen(value));
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::warning(const std::string& diagnostic,
-                               const position& position,
-                               const std::size_t highlight_length) {
-    return {
-            diag_type::Warning,
-            diagnostic,
-            position,
-            highlight_length
-    };
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::warning_for_value(const std::string& diagnostic,
-                                         const position& position,
-                                         std::string_view value) {
-    if (const auto newline_at = value.find('\n');
-            newline_at != std::string_view::npos) {
-        value = value.substr(0, newline_at + 1);
-    }
-    return warning(diagnostic, position, utf8_strlen(value));
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::error(const std::string& diagnostic,
-                             const position& position,
-                             const std::size_t highlight_length) {
-    return {
-            diag_type::Error,
-            diagnostic,
-            position,
-            highlight_length
-    };
-}
-
-c4::source_diagnostic
-c4::source_diagnostic::error_for_value(const std::string& diagnostic,
-                                       const position& position,
-                                       std::string_view value) {
-    if (const auto newline_at = value.find('\n');
-            newline_at != std::string_view::npos) {
-        value = value.substr(0, newline_at + 1);
-    }
-    return error(diagnostic, position, utf8_strlen(value));
-}
-
 fmt::context::iterator
-fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag, fmt::format_context& ctx) const {
-    // XXX UTF-8 support is as hacky as could be... no noone's surprise, really
+fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag, format_context& ctx) const {
+    // XXX UTF-8 support is as hacky as could be... to noone's surprise, really
     const auto& pos = diag._position;
     const auto range = pos.range();
 
