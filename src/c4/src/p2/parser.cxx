@@ -296,29 +296,19 @@ c4::p2::parser::parse_final_expression() {
     }
 
     const auto str = expect_token<tokens::string_literal>();
-    if (str) {
-        const auto str_lit = parse_string_literal();
-        return _context.build_expression(str_lit);
-    }
+    if (str) return _context.build_expression(parse_string_literal());
 
     const auto integer = expect_token<tokens::integer_literal>();
-    if (integer) {
-        const auto int_lit = parse_integer_literal();
-        return _context.build_expression(int_lit);
-    }
+    if (integer) return _context.build_expression(parse_integer_literal());
 
     const auto symbol = expect_token<tokens::symbol>();
-    if (symbol) {
-        const auto sym = parse_symbol();
-        return _context.build_expression(sym);
-    }
+    if (symbol) return _context.build_expression(parse_symbol());
 
     const auto lbrace = expect_token<tokens::lbrace>();
+    if (lbrace) return _context.build_expression(parse_block());
+
     const auto backslash = expect_token<tokens::backslash>();
-    if (lbrace || backslash) {
-        const auto block = parse_block();
-        return _context.build_expression(block);
-    }
+    if (backslash) return _context.build_expression(parse_block());
 
     const auto prefix_op = expect_token<tokens::operator_>();
     if (prefix_op) {
