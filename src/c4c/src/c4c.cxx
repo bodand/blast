@@ -166,7 +166,8 @@ main(int argc, const char** argv) {
     src_path = absolute(src_path);
     c4::ast2::ast_context ast_context;
     c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
-    c4::p2::parser parser(ast_context, std::move(lexer));
+    c4::diagnostics_engine diagnostics_engine{stderr, !no_color_output};
+    c4::p2::parser parser(ast_context, std::move(diagnostics_engine), std::move(lexer));
 
     parser.declare_binop("+", 4, false);
     parser.declare_binop("-", 4, false);

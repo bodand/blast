@@ -98,36 +98,6 @@ namespace c4 {
 
         template<class... Args>
         [[nodiscard]] static source_diagnostic
-        suggestion(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            return {
-                diag_type::Suggestion,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-        }
-
-        template<class... Args>
-        [[nodiscard]] static source_diagnostic
-        note(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            return {
-                diag_type::Note,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-        }
-
-        template<class... Args>
-        [[nodiscard]] static source_diagnostic
-        warning(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            return {
-                diag_type::Warning,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-        }
-
-        template<class... Args>
-        [[nodiscard]] static source_diagnostic
         error(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
             return {
                 diag_type::Error,
@@ -147,13 +117,74 @@ namespace c4 {
             , _position{position}
             , _highlight_length{highlight_length} { }
 
-        friend struct fmt::formatter<c4::source_diagnostic>;
+        friend struct diagnostics_engine;
+        friend struct fmt::formatter<source_diagnostic>;
 
         diag_type _diagnostic_type;
         std::string _diagnostic;
         std::string_view _filename;
         position _position;
         std::size_t _highlight_length{};
+    };
+
+    struct diagnostics_engine {
+        explicit
+        diagnostics_engine(std::FILE* const output = stderr,
+                           const bool color = true) noexcept
+            : _output{output}
+            , _color{color} { } // todo use color
+
+        ~diagnostics_engine() noexcept {
+            if (_output == stderr || _output == stdout) return;
+            std::fclose(_output);
+        }
+
+        template<class... Args>
+        void
+        suggestion(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
+            source_diagnostic diag{
+                source_diagnostic::diag_type::Suggestion,
+                fmt::format(diagnostic, std::forward<Args>(args)...),
+                position
+            };
+            fmt::print(_output, "{}", diag);
+        }
+
+        template<class... Args>
+        void
+        note(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
+            source_diagnostic diag{
+                source_diagnostic::diag_type::Note,
+                fmt::format(diagnostic, std::forward<Args>(args)...),
+                position
+            };
+            fmt::print(_output, "{}", diag);
+        }
+
+        template<class... Args>
+        void
+        warning(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
+            source_diagnostic diag{
+                source_diagnostic::diag_type::Warning,
+                fmt::format(diagnostic, std::forward<Args>(args)...),
+                position
+            };
+            fmt::print(_output, "{}", diag);
+        }
+
+        template<class... Args>
+        void
+        error(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
+            source_diagnostic diag{
+                source_diagnostic::diag_type::Error,
+                fmt::format(diagnostic, std::forward<Args>(args)...),
+                position
+            };
+        }
+
+    private:
+        std::FILE* _output;
+        bool _color;
     };
 }
 

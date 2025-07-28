@@ -80,8 +80,10 @@ namespace c4::p2 {
     struct parser {
         explicit
         parser(ast2::ast_context& context,
+               diagnostics_engine&& diagnostics_engine,
                lexer&& lexer)
             : _lexer{std::move(lexer)}
+            , _diag{diagnostics_engine}
             , _context{context} {
             next_relevant();
             enter_scope();
@@ -246,6 +248,7 @@ namespace c4::p2 {
         bool _valid{true};
         std::optional<tokens::token_type> _current{};
         lexer _lexer;
+        diagnostics_engine _diag;
         ast2::ast_context& _context;
     };
 }

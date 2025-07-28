@@ -52,6 +52,7 @@
 namespace {
     struct token_ignorer final {
         bool& valid;
+        c4::diagnostics_engine& diag;
 
         bool
         operator()(const c4::p2::tokens::whitespace&) const { return true; }
@@ -65,14 +66,10 @@ namespace {
             // format position before passing it to source_diagnostic to escape
             // the likely unprintable characters:
             auto pos = unk.token_position();
-            const auto debug_line = fmt::format("{:?}", pos.line);
-            pos.line = debug_line;
-            fmt::print("{}\n", c4::source_diagnostic::error(pos,
-                                                            "unknown characters found: {:?}",
-                                                            unk.value()));
-            fmt::print("{}\n", c4::source_diagnostic::note(
-                           pos,
-                           "line is escaped because of possibly unprintable characters"));
+            const auto debug_line = fmt::format("{:?}", pos.expanded_range);
+            pos.expanded_range = debug_line;
+            diag.error(pos, "unknown characters found: {:?}", unk.value());
+            diag.note(pos, "line is escaped because of possibly unprintable characters");
             return true;
         }
 
@@ -200,14 +197,14 @@ c4::p2::parser::parse_let_expression() {
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.arity()) {
                 _valid = false;
-                fmt::print("{}\n", source_diagnostic::error(op.position(),
-                                                            "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
-                                                            op.name(),
-                                                            unbound));
-                fmt::print("{}\n", source_diagnostic::note(expr->position(), "definition is here"));
-                fmt::print("{}\n", source_diagnostic::note(op.position(),
-                                                           "continuing parsing as if `{}' had one parameter (prefix)",
-                                                           op.name()));
+                _diag.error(op.position(),
+                            "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
+                            op.name(),
+                            unbound);
+                _diag.note(expr->position(), "definition is here");
+                _diag.note(op.position(),
+                           "continuing parsing as if `{}' had one parameter (prefix)",
+                           op.name());
             }
 
             const auto let = _context.build_let_expression(
@@ -230,14 +227,14 @@ c4::p2::parser::parse_let_expression() {
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.arity()) {
                 _valid = false;
-                fmt::print("{}\n", source_diagnostic::error(op.position(),
-                                                            "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
-                                                            op.name(),
-                                                            unbound));
-                fmt::print("{}\n", source_diagnostic::note(expr->position(), "definition is here"));
-                fmt::print("{}\n", source_diagnostic::note(op.position(),
-                                                           "continuing parsing as if `{}' had two parameters (infix)",
-                                                           op.name()));
+                _diag.error(op.position(),
+                            "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
+                            op.name(),
+                            unbound);
+                _diag.note(expr->position(), "definition is here");
+                _diag.note(op.position(),
+                           "continuing parsing as if `{}' had two parameters (infix)",
+                           op.name());
             }
 
             const auto let = _context.build_let_expression(
@@ -260,17 +257,16 @@ c4::p2::parser::parse_let_expression() {
     if (unsigned unbound = expr->unbound_parameters();
         unbound != symbol.arity()) {
         _valid = false;
-        fmt::print("{}\n", source_diagnostic::error(symbol.position(),
-                                                    "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
-                                                    symbol.name(),
-                                                    symbol.arity(),
-                                                    unbound));
-        fmt::print("{}\n", source_diagnostic::note(expr->position(), "definition is here"));
-        fmt::print("{}\n", source_diagnostic::note(
-                       symbol.position(),
-                       "continuing parsing as if `{}' had `{}' parameter(s)",
-                       symbol.name(),
-                       symbol.arity()));
+        _diag.error(symbol.position(),
+                    "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
+                    symbol.name(),
+                    symbol.arity(),
+                    unbound);
+        _diag.note(expr->position(), "definition is here");
+        _diag.note(symbol.position(),
+                   "continuing parsing as if `{}' had `{}' parameter(s)",
+                   symbol.name(),
+                   symbol.arity());
     }
 
     const auto let = _context.build_let_expression(
@@ -345,10 +341,9 @@ c4::p2::parser::parse_final_expression() {
         auto sym = parse_symbol();
         const auto resolved = find_scoped_symbol(sym);
         if (!resolved) {
-            fmt::print("{}\n",
-                       source_diagnostic::error(
-                           sym.position(),
-                           "unknown symbol referenced in function call: {}", sym.name()));
+            _diag.error(sym.position(),
+                        "unknown symbol referenced in function call: {}",
+                        sym.name());
             throw bad_token_error{};
         }
         sym = sym.with_arity(resolved->symbol.arity);
@@ -421,7 +416,6 @@ c4::p2::parser::parse_block() {
             static_cast<std::size_t>(next->begin() - lbrace->begin()),
             std::move(expressions),
             args
-
         );
     }
 
@@ -482,12 +476,13 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
         if (!_current) report_failure(bare_symbol);
 
         _valid = false;
-        fmt::print("{}\n", source_diagnostic::error(position_of(*_current),
-                                                    "expected associativity indicator (`left' or `right') found `{}'",
-                                                    name_of(*_current)));
-        fmt::print("{}\n", source_diagnostic::note(position_of(*_current),
-                                                   "continuing to parse as if `{}' was left associative",
-                                                   op));
+        auto position = position_of(*_current);
+        _diag.error(position,
+                    "expected associativity indicator (`left' or `right') found `{}'",
+                    name_of(*_current));
+        _diag.note(position,
+                   "continuing to parse as if `{}' was left associative",
+                   op);
         return true; // left-assoc
     }
 
@@ -496,12 +491,12 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     if (assoc_direction.name() == "left") return true;
 
     _valid = false;
-    fmt::print("{}\n", source_diagnostic::error(assoc_direction.position(),
-                                                "expected associativity indicator (`left' or `right') found `{}'",
-                                                assoc_direction.name()));
-    fmt::print("{}\n", source_diagnostic::note(assoc_direction.position(),
-                                               "continuing to parse as if `{}' was left associative",
-                                               op));
+    _diag.error(assoc_direction.position(),
+                "expected associativity indicator (`left' or `right') found `{}'",
+                assoc_direction.name());
+    _diag.note(assoc_direction.position(),
+               "continuing to parse as if `{}' was left associative",
+               op);
     return true;
 }
 
@@ -512,12 +507,13 @@ c4::p2::parser::parse_precedence(std::string_view op) {
         if (!_current) report_failure(int_lit);
         _valid = false;
 
-        fmt::print("{}\n", source_diagnostic::error(position_of(*_current),
-                                                    "expected precedence value (0..10) found `{}'",
-                                                    name_of(*_current)));
-        fmt::print("{}\n", source_diagnostic::note(position_of(*_current),
-                                                   "continuing to parse as if `{}' had precedence of 0",
-                                                   op));
+        auto position = position_of(*_current);
+        _diag.error(position,
+                    "expected precedence value (0..10) found `{}'",
+                    name_of(*_current));
+        _diag.note(position,
+                   "continuing to parse as if `{}' had precedence of 0",
+                   op);
         return 0;
     }
 
@@ -525,12 +521,12 @@ c4::p2::parser::parse_precedence(std::string_view op) {
     if (uint.value() <= 10) return uint.value();
 
     _valid = false;
-    fmt::print("{}\n", source_diagnostic::error(uint.position(),
-                                                "expected precedence value (0..10) found `{}'",
-                                                uint.value()));
-    fmt::print("{}\n", source_diagnostic::note(uint.position(),
-                                               "continuing to parse as if `{}' had precedence of 0",
-                                               op));
+    _diag.error(uint.position(),
+                "expected precedence value (0..10) found `{}'",
+                uint.value());
+    _diag.note(uint.position(),
+               "continuing to parse as if `{}' had precedence of 0",
+               op);
     return 0;
 }
 
@@ -587,7 +583,7 @@ c4::p2::parser::next_relevant() {
     do {
         _current = _lexer.next();
         if (!_current) return false;
-    } while (std::visit(token_ignorer{_valid}, *_current));
+    } while (std::visit(token_ignorer{_valid, _diag}, *_current));
     return true;
 }
 
@@ -606,10 +602,8 @@ c4::p2::parser::leave_scope() {
 c4::p2::parser::parser_symbol&
 c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
     if (const auto op = find_prefix_operator(sym.value())) return *op;
-    fmt::print("{}\n",
-               source_diagnostic::error(
-                   sym.token_position(),
-                   "unknown prefix operator referenced: {}/1", sym.value()));
+    _diag.error(sym.token_position(),
+                "unknown prefix operator referenced: {}/1", sym.value());
 
     if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
@@ -617,15 +611,14 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
         line.insert(pos.col_number, 1, ' ');
         ++pos.col_number;
         pos.expanded_range = line;
-        fmt::print("{}\n", source_diagnostic::suggestion(
-                       pos,
-                       "if you meant to apply multiple prefix operators in sequence, separate them with whitespace or parentheses"));
+        _diag.suggestion(pos,
+                         "if you meant to apply multiple prefix operators in sequence,"
+                         " separate them with whitespace or parentheses");
     }
     if (find_infix_operator(sym.value()))
-        fmt::print("{}\n",
-                   source_diagnostic::note(sym.token_position(),
-                                           "there exists an infix operator with name {}/2, did you mean to call that?",
-                                           sym.value()));
+        _diag.note(sym.token_position(),
+                   "there exists an infix operator with name {}/2, did you mean to call that?",
+                   sym.value());
 
     throw bad_token_error{};
 }
@@ -633,10 +626,9 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
 c4::p2::parser::parser_symbol&
 c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
     if (const auto op = find_infix_operator(sym.value())) return *op;
-    fmt::print("{}\n",
-               source_diagnostic::error(sym.token_position(),
-                                        "unknown infix operator referenced: {}/2",
-                                        sym.value()));
+    _diag.error(sym.token_position(),
+                "unknown infix operator referenced: {}/2",
+                sym.value());
 
     if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
@@ -645,16 +637,15 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
         ++pos.col_number;
         --pos.col_number_end;
         pos.expanded_range = line;
-        fmt::print("{}\n", source_diagnostic::suggestion(pos,
-                                                         "if you meant to apply a prefix operator after an infix,"
-                                                         " separate them with whitespace or parentheses"));
+        _diag.suggestion(pos,
+                         "if you meant to apply a prefix operator after an infix,"
+                         " separate them with whitespace or parentheses");
     }
 
     if (find_prefix_operator(sym.value()))
-        fmt::print("{}\n",
-                   source_diagnostic::note(sym.token_position(),
-                                           "there exists a prefix operator with name {}/1, did you mean to call that?",
-                                           sym.value()));
+        _diag.note(sym.token_position(),
+                   "there exists a prefix operator with name {}/1, did you mean to call that?",
+                   sym.value());
 
     throw bad_token_error{};
 }
