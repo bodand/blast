@@ -50,6 +50,7 @@
 namespace c4::p2 {
     template<class>
     struct rule_type {
+        // todo decide on input to user string_rule
         using type = regex_rule;
     };
 

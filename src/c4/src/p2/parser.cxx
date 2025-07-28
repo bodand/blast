@@ -134,7 +134,7 @@ c4::p2::parser::parse_symbol() {
     const auto bare_symbol = expect_token<tokens::bare_symbol>();
     if (bare_symbol) {
         next_relevant();
-        return ast2::symbol::from_token(*symbol);
+        return ast2::symbol::from_token(*bare_symbol);
     }
 
     report_failure(symbol, bare_symbol);
@@ -516,14 +516,7 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
         return true; // left-assoc
     }
 
-    const auto assoc_direction_raw = *bare_symbol;
-    const auto assoc_direction = ast2::symbol{
-            assoc_direction_raw.token_position(),
-            assoc_direction_raw.size(),
-            assoc_direction_raw.name(),
-            assoc_direction_raw.arity()
-    };
-
+    const auto assoc_direction = ast2::symbol::from_token(*bare_symbol);
     if (assoc_direction.name() == "right") return false;
     if (assoc_direction.name() == "left") return true;
 

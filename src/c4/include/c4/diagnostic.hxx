@@ -58,6 +58,9 @@ namespace c4 {
         std::string_view line;
         std::size_t row_number{1};
         std::size_t col_number{1};
+        std::size_t row_number_end{1};
+        std::size_t col_number_end{1};
+        std::string_view expanded_range{};
 
         [[nodiscard]] position
         snapshot() const noexcept(std::is_nothrow_copy_constructible_v<position>) {
@@ -74,6 +77,9 @@ namespace c4 {
         explode() const {
             return std::make_tuple(line, row_number, col_number);
         }
+
+        [[nodiscard]] std::string_view
+        range() const;
 
     private:
         p2::token_source* _source{};

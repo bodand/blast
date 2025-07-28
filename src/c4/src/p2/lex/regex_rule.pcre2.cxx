@@ -168,9 +168,10 @@ namespace {
                                         const char* buffer_begin,
                                         std::string_view remaining_buffer,
                                         const std::size_t line_increment) {
-        const auto it = std::ranges::find_first_of(remaining_buffer, line_end_marks);
+        const auto line_end_it = std::ranges::find_first_of(remaining_buffer, line_end_marks);
+        const auto line_sz = distance(begin(remaining_buffer), line_end_it);
 
-        pos.line = remaining_buffer.substr(0, distance(begin(remaining_buffer), it));
+        pos.line = remaining_buffer.substr(0, line_sz);
         pos.col_number = buffer_begin - pos.line.data() + 1;
         pos.row_number += line_increment;
     }
@@ -227,7 +228,8 @@ c4::p2::regex_rule::offset_positions_no_newline(const std::string_view match,
 }
 
 std::optional<c4::position>
-c4::p2::regex_rule::match_into(const char*& begin, const char* end,
+c4::p2::regex_rule::match_into(const char*& data,
+                               const char* end,
                                const position& pos,
                                const regex_match_context& match_context,
                                std::span<std::string_view> matches) const {
@@ -235,11 +237,11 @@ c4::p2::regex_rule::match_into(const char*& begin, const char* end,
     const auto re = static_cast<pcre2_code*>(_impl_handle);
 
     const auto res = pcre2_jit_match(
-        re,
-        reinterpret_cast<PCRE2_SPTR>(begin), end - begin,
-        0, 0,
-        match_data,
-        nullptr
+            re,
+            reinterpret_cast<PCRE2_SPTR>(data), end - data,
+            0, 0,
+            match_data,
+            nullptr
     );
     if (res < 0) return {};
     ASSERT(res >= 0,
@@ -247,9 +249,9 @@ c4::p2::regex_rule::match_into(const char*& begin, const char* end,
 
     const auto ovector = pcre2_get_ovector_pointer(match_data);
     unsigned capture_idx = 0;
-    for (auto i = 0; i < res; ++i) {
+    for (std::ptrdiff_t i = 0; i < res; ++i) {
         matches[capture_idx++] = std::string_view(
-            begin + ovector[2 * i],
+                data + ovector[2 * i],
             ovector[2 * i + 1] - ovector[2 * i]);
     }
 

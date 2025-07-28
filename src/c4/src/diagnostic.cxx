@@ -95,6 +95,18 @@ c4::position::filename() const {
     return _source->file_string();
 }
 
+std::string_view
+c4::position::range() const {
+    const auto range_begin = col_number - 1;
+    const auto last_ln_idx = expanded_range.rfind('\n');
+    if (last_ln_idx == std::string_view::npos) {
+        return expanded_range.substr(range_begin, col_number_end - col_number + 1);
+    }
+    const auto last_line_start = last_ln_idx + 1;
+    const auto last_line_range_end = last_line_start + col_number_end;
+    return expanded_range.substr(range_begin, last_line_range_end - range_begin);
+}
+
 c4::source_diagnostic
 c4::source_diagnostic::suggestion(const std::string& diagnostic,
                                   const position& position,

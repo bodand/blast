@@ -42,7 +42,7 @@ namespace c4::ast2::tags {
       template<class Token>
       [[nodiscard]] static Self
       from_token(const Token& tok) {
-          return Self(tok.token_position(), tok.size(), tok.as_value<typename Self::value_type>());
+          return Self(tok.token_position(), tok.size(), tok.template as_value<typename Self::value_type>());
       }
   };
 }

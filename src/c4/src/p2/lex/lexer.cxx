@@ -71,24 +71,24 @@ c4::p2::lexer::lexer(const std::string_view source,
     , _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
     const auto buffer = std::string_view(begin, end);
     const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
-    _current_position.line = buffer.substr(0, distance(std::next(std::begin(buffer)), it));
+    _current_position.line = buffer.substr(0, distance(std::begin(buffer), it) + 1);
 }
 
 namespace {
     struct matcher {
-        matcher(const char*& begin, const char* end, c4::position& pos)
-            : begin{begin}
+        matcher(const char*& data,  const char* end, c4::position& pos)
+            : data{data}
             , end{end}
             , pos{pos} { }
 
         template<class T>
         bool
         do_match(const auto& rule) {
-            ret = rule.template match<T>(begin, end, pos);
+            ret = rule.template match<T>(data, end, pos);
             return ret.has_value();
         }
 
-        const char* & begin;
+        const char* & data;
         const char* end;
         c4::position& pos;
         std::optional<c4::p2::tokens::token_type> ret;
