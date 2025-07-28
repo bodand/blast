@@ -47,115 +47,125 @@
 #include <fmt/base.h>
 
 namespace c4::p2 {
-    struct token_source;
+  struct token_source;
 }
 
 namespace c4 {
-    struct position {
-        explicit
-        position(p2::token_source* source);
+  struct position {
+      explicit
+      position(p2::token_source* source);
 
-        std::string_view line;
-        std::size_t row_number{1};
-        std::size_t col_number{1};
-        std::size_t row_number_end{1};
-        std::size_t col_number_end{1};
-        std::string_view expanded_range{};
+      std::string_view line;
+      std::size_t row_number{1};
+      std::size_t col_number{1};
+      std::size_t row_number_end{1};
+      std::size_t col_number_end{1};
+      std::string_view expanded_range{};
 
-        [[nodiscard]] position
-        snapshot() const noexcept(std::is_nothrow_copy_constructible_v<position>) {
-            return *this;
-        }
+      [[nodiscard]] position
+      snapshot() const noexcept(std::is_nothrow_copy_constructible_v<position>) {
+          return *this;
+      }
 
-        [[nodiscard]] std::string_view
-        filename() const;
+      [[nodiscard]] std::string_view
+      filename() const;
 
-        [[nodiscard]] p2::token_source*
-        source() const { return _source; }
+      [[nodiscard]] p2::token_source*
+      source() const { return _source; }
 
-        [[nodiscard]] auto
-        explode() const {
-            return std::make_tuple(line, row_number, col_number);
-        }
+      [[nodiscard]] auto
+      explode() const {
+          return std::make_tuple(line, row_number, col_number);
+      }
 
-        [[nodiscard]] std::string_view
-        range() const;
+      [[nodiscard]] std::string_view
+      range() const;
 
-    private:
-        p2::token_source* _source{};
-    };
+      [[nodiscard]] bool
+      is_single_line() const noexcept { return row_number == row_number_end; }
 
-    struct source_diagnostic {
-        enum class diag_type {
-            Note,
-            Warning,
-            Error,
-            Suggestion
-        };
+  private:
+      p2::token_source* _source{};
+  };
 
-        static source_diagnostic
-        suggestion(const std::string& diagnostic,
-                   const position& position,
-                   std::size_t highlight_length = 0);
+  struct source_diagnostic {
+      enum class diag_type {
+          Note,
+          Warning,
+          Error,
+          Suggestion
+      };
 
-        static source_diagnostic
-        suggestion_for_value(const std::string& diagnostic,
-                             const position& position,
-                             std::string_view value);
+      static source_diagnostic
+      suggestion(const std::string& diagnostic,
+                 const position& position,
+                 std::size_t highlight_length = 0);
 
-        static source_diagnostic
-        note(const std::string& diagnostic,
-             const position& position,
-             std::size_t highlight_length = 0);
+      static source_diagnostic
+      suggestion_for_value(const std::string& diagnostic,
+                           const position& position,
+                           std::string_view value);
 
-        static source_diagnostic
-        note_for_value(const std::string& diagnostic,
-                       const position& position,
-                       std::string_view value);
+      static source_diagnostic
+      note(const std::string& diagnostic,
+           const position& position,
+           std::size_t highlight_length = 0);
 
-        static source_diagnostic
-        warning(const std::string& diagnostic,
-                const position& position,
-                std::size_t highlight_length = 0);
+      static source_diagnostic
+      note_for_value(const std::string& diagnostic,
+                     const position& position,
+                     std::string_view value);
 
-        static source_diagnostic
-        warning_for_value(const std::string& diagnostic,
-                          const position& position,
-                          std::string_view value);
-
-        static source_diagnostic
-        error(const std::string& diagnostic,
+      static source_diagnostic
+      warning(const std::string& diagnostic,
               const position& position,
               std::size_t highlight_length = 0);
 
-        static source_diagnostic
-        error_for_value(const std::string& diagnostic,
+      static source_diagnostic
+      warning_for_value(const std::string& diagnostic,
                         const position& position,
                         std::string_view value);
 
-    private:
-        source_diagnostic(const diag_type type,
-                          std::string diagnostic,
-                          const position& position,
-                          const std::size_t highlight_length = 0)
-            : _diagnostic_type{type}
-            , _diagnostic{std::move(diagnostic)}
-            , _filename{position.filename()}
-            , _position{position}
-            , _highlight_length{highlight_length} { }
+      static source_diagnostic
+      error(const std::string& diagnostic,
+            const position& position,
+            std::size_t highlight_length = 0);
 
-        friend std::string
-        format_as(const source_diagnostic& diag);
+      static source_diagnostic
+      error_for_value(const std::string& diagnostic,
+                      const position& position,
+                      std::string_view value);
 
-        diag_type _diagnostic_type;
-        std::string _diagnostic;
-        std::string_view _filename;
-        position _position;
-        std::size_t _highlight_length{};
-    };
+  private:
+      source_diagnostic(const diag_type type,
+                        std::string diagnostic,
+                        const position& position,
+                        const std::size_t highlight_length = 0)
+              : _diagnostic_type{type}
+                , _diagnostic{std::move(diagnostic)}
+                , _filename{position.filename()}
+                , _position{position}
+                , _highlight_length{highlight_length} { }
 
-    std::string
-    format_as(const source_diagnostic& diag);
+      friend struct fmt::formatter<c4::source_diagnostic>;
+
+      diag_type _diagnostic_type;
+      std::string _diagnostic;
+      std::string_view _filename;
+      position _position;
+      std::size_t _highlight_length{};
+  };
 }
+
+template<>
+struct fmt::formatter<c4::source_diagnostic> {
+    constexpr auto
+    parse(format_parse_context& ctx) { return std::ranges::find(ctx, '}'); }
+
+    format_context::iterator
+    format(const c4::source_diagnostic& diag, fmt::format_context& ctx) const;
+};
+
+
 
 #endif

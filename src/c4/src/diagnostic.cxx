@@ -50,43 +50,48 @@
 using namespace std::literals;
 
 namespace {
-    constexpr auto
-    color_from_type(c4::source_diagnostic::diag_type type) {
-        switch (type) {
-        case c4::source_diagnostic::diag_type::Note: return fmt::terminal_color::magenta;
-        case c4::source_diagnostic::diag_type::Warning: return fmt::terminal_color::yellow;
-        case c4::source_diagnostic::diag_type::Error: return fmt::terminal_color::bright_red;
-        case c4::source_diagnostic::diag_type::Suggestion: return fmt::terminal_color::green;
-        }
-        UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
-    }
+  constexpr auto
+  color_from_type(c4::source_diagnostic::diag_type type) {
+      switch (type) {
+      case c4::source_diagnostic::diag_type::Note: return fmt::terminal_color::magenta;
+      case c4::source_diagnostic::diag_type::Warning: return fmt::terminal_color::yellow;
+      case c4::source_diagnostic::diag_type::Error: return fmt::terminal_color::bright_red;
+      case c4::source_diagnostic::diag_type::Suggestion: return fmt::terminal_color::green;
+      }
+      UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
+  }
 
-    constexpr auto
-    prefix_from_type(c4::source_diagnostic::diag_type type) {
-        constexpr static std::string_view prefixes[] = {
-            "note:"sv,
-            "warning:"sv,
-            "error:"sv,
-            "suggestion:"sv,
-        };
-        switch (type) {
-        case c4::source_diagnostic::diag_type::Note: return styled(prefixes[0], fg(color_from_type(type)));
-        case c4::source_diagnostic::diag_type::Warning: return styled(prefixes[1], fg(color_from_type(type)));
-        case c4::source_diagnostic::diag_type::Error: return styled(prefixes[2], fg(color_from_type(type)));
-        case c4::source_diagnostic::diag_type::Suggestion: return styled(prefixes[3], fg(color_from_type(type)));
-        }
-        UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
-    }
+  auto
+  styled_as_type(std::string_view str, c4::source_diagnostic::diag_type type) {
+      return styled(str, fg(color_from_type(type)));
+  }
 
-    std::size_t
-    utf8_strlen(std::string_view str) {
-        auto str_view = str | una::views::utf8;
-        return std::distance(str_view.begin(), str_view.end());
-    }
+  constexpr auto
+  prefix_from_type(c4::source_diagnostic::diag_type type) {
+      constexpr static std::string_view prefixes[] = {
+              "note:"sv,
+              "warning:"sv,
+              "error:"sv,
+              "suggestion:"sv,
+      };
+      switch (type) {
+      case c4::source_diagnostic::diag_type::Note: return styled(prefixes[0], fg(color_from_type(type)));
+      case c4::source_diagnostic::diag_type::Warning: return styled(prefixes[1], fg(color_from_type(type)));
+      case c4::source_diagnostic::diag_type::Error: return styled(prefixes[2], fg(color_from_type(type)));
+      case c4::source_diagnostic::diag_type::Suggestion: return styled(prefixes[3], fg(color_from_type(type)));
+      }
+      UNREACHABLE("invalid diagnostic type", static_cast<int>(type));
+  }
+
+  std::size_t
+  utf8_strlen(std::string_view str) {
+      auto str_view = str | una::views::utf8;
+      return std::distance(str_view.begin(), str_view.end());
+  }
 }
 
 c4::position::position(p2::token_source* source)
-    : _source{source} {
+        : _source{source} {
     ASSERT(source, "token source must be a valid source");
 }
 
@@ -97,10 +102,19 @@ c4::position::filename() const {
 
 std::string_view
 c4::position::range() const {
-    const auto range_begin = col_number - 1;
+    auto leading_utf_str = expanded_range
+                           | una::views::utf8
+                           | una::views::take(col_number - 1)
+                           | una::ranges::to_utf8<std::string>();
+    const auto range_begin = leading_utf_str.size();
     const auto last_ln_idx = expanded_range.rfind('\n');
     if (last_ln_idx == std::string_view::npos) {
-        return expanded_range.substr(range_begin, col_number_end - col_number + 1);
+        auto utf_str = expanded_range
+                       | una::views::utf8
+                       | una::views::drop(col_number)
+                       | una::views::take(col_number_end - col_number + 1)
+                       | una::ranges::to_utf8<std::string>();
+        return expanded_range.substr(range_begin, utf_str.size());
     }
     const auto last_line_start = last_ln_idx + 1;
     const auto last_line_range_end = last_line_start + col_number_end;
@@ -112,10 +126,10 @@ c4::source_diagnostic::suggestion(const std::string& diagnostic,
                                   const position& position,
                                   const std::size_t highlight_length) {
     return {
-        diag_type::Suggestion,
-        diagnostic,
-        position,
-        highlight_length
+            diag_type::Suggestion,
+            diagnostic,
+            position,
+            highlight_length
     };
 }
 
@@ -124,7 +138,7 @@ c4::source_diagnostic::suggestion_for_value(const std::string& diagnostic,
                                             const position& position,
                                             std::string_view value) {
     if (const auto newline_at = value.find('\n');
-        newline_at != std::string_view::npos) {
+            newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
     return suggestion(diagnostic, position, utf8_strlen(value));
@@ -135,10 +149,10 @@ c4::source_diagnostic::note(const std::string& diagnostic,
                             const position& position,
                             const std::size_t highlight_length) {
     return {
-        diag_type::Note,
-        diagnostic,
-        position,
-        highlight_length
+            diag_type::Note,
+            diagnostic,
+            position,
+            highlight_length
     };
 }
 
@@ -147,10 +161,10 @@ c4::source_diagnostic::note_for_value(const std::string& diagnostic,
                                       const position& position,
                                       std::string_view value) {
     if (const auto newline_at = value.find('\n');
-        newline_at != std::string_view::npos) {
+            newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
-    return note(diagnostic,  position, utf8_strlen(value));
+    return note(diagnostic, position, utf8_strlen(value));
 }
 
 c4::source_diagnostic
@@ -158,10 +172,10 @@ c4::source_diagnostic::warning(const std::string& diagnostic,
                                const position& position,
                                const std::size_t highlight_length) {
     return {
-        diag_type::Warning,
-        diagnostic,
-        position,
-        highlight_length
+            diag_type::Warning,
+            diagnostic,
+            position,
+            highlight_length
     };
 }
 
@@ -170,10 +184,10 @@ c4::source_diagnostic::warning_for_value(const std::string& diagnostic,
                                          const position& position,
                                          std::string_view value) {
     if (const auto newline_at = value.find('\n');
-        newline_at != std::string_view::npos) {
+            newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
-    return warning(diagnostic,  position, utf8_strlen(value));
+    return warning(diagnostic, position, utf8_strlen(value));
 }
 
 c4::source_diagnostic
@@ -181,10 +195,10 @@ c4::source_diagnostic::error(const std::string& diagnostic,
                              const position& position,
                              const std::size_t highlight_length) {
     return {
-        diag_type::Error,
-        diagnostic,
-        position,
-        highlight_length
+            diag_type::Error,
+            diagnostic,
+            position,
+            highlight_length
     };
 }
 
@@ -193,55 +207,86 @@ c4::source_diagnostic::error_for_value(const std::string& diagnostic,
                                        const position& position,
                                        std::string_view value) {
     if (const auto newline_at = value.find('\n');
-        newline_at != std::string_view::npos) {
+            newline_at != std::string_view::npos) {
         value = value.substr(0, newline_at + 1);
     }
-    return error(diagnostic,  position, utf8_strlen(value));
+    return error(diagnostic, position, utf8_strlen(value));
 }
 
-std::string
-c4::format_as(const source_diagnostic& diag) {
-    char line_number_buf[19]; // floor(log10(9223372036854775807)) + 1
-    constexpr static auto space_buffer = std::string_view("                   ");
-    static_assert(space_buffer.size() == std::size(line_number_buf));
+fmt::context::iterator
+fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag, fmt::format_context& ctx) const {
+    // XXX UTF-8 support is as hacky as could be... no noone's surprise, really
+    const auto& pos = diag._position;
+    const auto range = pos.range();
 
-    const auto [line, row_number, col_number] = diag._position.explode();
+    // Using row_number_end as it is greater than or equal to row_number, so if
+    // that first nicely with a preceding space, so those the other and all betwixt
+    constexpr static int line_number_padding = 3;
+    const auto line_number_size =
+            static_cast<unsigned long long>(std::floor(std::log10(pos.row_number_end))) + 1
+            + line_number_padding;
 
-    const auto line_number_end = fmt::format_to(line_number_buf, "{}", row_number);
-    const std::string_view line_number(line_number_buf, line_number_end - line_number_buf);
-    const auto line_offset = space_buffer.substr(0, line_number.size());
+    auto leading_utf_str = pos.expanded_range
+                           | una::views::utf8
+                           | una::views::take(pos.col_number - 1)
+                           | una::ranges::to_utf8<std::string>();
 
-    const auto line_before = line
-                             | una::views::utf8
-                             | una::views::take(col_number - 1)
-                             | una::ranges::to_utf8<std::string>();
-    const auto line_content = line
-                              | una::views::utf8
-                              | una::views::drop(col_number - 1)
-                              | una::views::take(diag._highlight_length)
-                              | una::ranges::to_utf8<std::string>();
-    const auto line_after = line
-                            | una::views::utf8
-                            | una::views::drop(col_number - 1 + diag._highlight_length)
-                            | una::ranges::to_utf8<std::string>();
+    const auto first_line_skip = leading_utf_str.size();
+    const auto last_line_take = pos.col_number_end;
 
-    const auto foreground = color_from_type(diag._diagnostic_type);
-    const auto highlight_tail = std::string(std::max(std::size_t{1}, diag._highlight_length) - 1, '~');
+    const auto head_line_str = fmt::format("{{:>{0}}} | {{}}{{}}{{}}\n{{:>{0}}} | {{:>{1}}}{{}}{{}}\n",
+                                           line_number_size,
+                                           utf8_strlen(leading_utf_str));
+    const auto head_line_fmt = fmt::runtime(head_line_str);
+    const auto body_line_str = fmt::format("{{:>{0}}} | {{}}\n{{:>{0}}} | {{}}\n",
+                                           line_number_size);
+    const auto body_line_fmt = fmt::runtime(body_line_str);
+    const auto tail_line_str = fmt::format("{{:>{0}}} | {{}}{{}}\n{{:>{0}}} | {{}}\n",
+                                           line_number_size);
+    const auto tail_line_fmt = fmt::runtime(tail_line_str);
 
-    return fmt::format(
-        "{}:{}:{}: {} {}\n  {} | {}{}{}\n  {} | {}{}{}",
-        diag._filename,
-        row_number,
-        col_number,
-        prefix_from_type(diag._diagnostic_type),
-        diag._diagnostic,
-        line_number,
-        line_before,
-        styled(line_content, fg(foreground)),
-        line_after,
-        line_offset,
-        std::string(col_number - 1, ' '),
-        styled('^', fg(foreground)),
-        styled(highlight_tail, fg(foreground))
-    );
+    fmt::context::iterator ret = ctx.out();
+    auto line_number = pos.row_number;
+
+    for (const auto line: pos.expanded_range | std::views::split('\n')) {
+        auto line_str = std::string_view(line);
+        if (line_number == pos.row_number) {
+            ret = fmt::format_to(ret, "{}:{}: {} {}\n", pos.filename(), line_number,
+                                 prefix_from_type(diag._diagnostic_type), diag._diagnostic);
+
+            const auto first_line_range = range.substr(0, range.find('\n'));
+
+            const auto utf_len = utf8_strlen(first_line_range) - 1; // -1 for ^
+            ret = fmt::format_to(ret, head_line_fmt,
+                                 line_number,
+                                 line_str.substr(0, first_line_skip),
+                                 styled_as_type(first_line_range, diag._diagnostic_type),
+                                 line_str.substr(first_line_skip + first_line_range.size()),
+                                 ' ',
+                                 ' ',
+                                 styled_as_type("^", diag._diagnostic_type),
+                                 styled_as_type(std::string(utf_len, '~'), diag._diagnostic_type));
+        }
+        else if (line_number == pos.row_number_end) {
+            const auto first_line_range = range.substr(range.rfind('\n') + 1);
+            const auto utf_len = utf8_strlen(first_line_range);
+
+            ret = fmt::format_to(ret, tail_line_fmt,
+                                 line_number,
+                                 styled_as_type(line_str.substr(0, last_line_take), diag._diagnostic_type),
+                                 line_str.substr(last_line_take),
+                                 ' ',
+                                 styled_as_type(std::string(utf_len, '~'), diag._diagnostic_type));
+        }
+        else {
+            ret = fmt::format_to(ret, body_line_fmt,
+                                 line_number,
+                                 styled_as_type(line_str, diag._diagnostic_type),
+                                 ' ',
+                                 styled_as_type(std::string(utf8_strlen(line_str), '~'), diag._diagnostic_type));
+        }
+        ++line_number;
+    }
+
+    return ret;
 }

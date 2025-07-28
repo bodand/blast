@@ -269,7 +269,7 @@ c4::p2::parser::parse_let_expression() {
             unbound != symbol.arity()) {
         _valid = false;
         fmt::print("{}\n", source_diagnostic::error(fmt::format(
-                                                            "operator `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
+                                                            "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
                                                             symbol.name(),
                                                             symbol.arity(),
                                                             unbound),
@@ -652,14 +652,14 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
 
     if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
-        auto line = std::string(pos.line);
+        auto line = std::string(pos.expanded_range);
         line.insert(pos.col_number, 1, ' ');
         ++pos.col_number;
-        pos.line = line;
+        pos.expanded_range = line;
         fmt::print("{}\n", source_diagnostic::suggestion(
                 "if you meant to apply multiple prefix operators in sequence, separate them with whitespace or parentheses",
                 pos,
-                1
+                0
         ));
     }
     if (find_infix_operator(sym.value()))
@@ -686,14 +686,14 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
 
     if (sym.size() > 1) {
         auto pos = sym.token_position().snapshot();
-        auto line = std::string(pos.line);
+        auto line = std::string(pos.expanded_range);
         line.insert(pos.col_number, 1, ' ');
         ++pos.col_number;
-        pos.line = line;
+        pos.expanded_range = line;
         fmt::print("{}\n", source_diagnostic::suggestion(
                 "if you meant to apply a prefix operator after an infix, separate them with whitespace or parentheses",
                 pos,
-                1
+                0
         ));
     }
 

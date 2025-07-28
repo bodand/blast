@@ -78,7 +78,9 @@
 #include <c4c/ir_emitter.hxx>
 
 #ifdef _WIN32
+
 #  include <windows.h>
+
 #endif
 
 using namespace std::literals;
@@ -125,22 +127,26 @@ main(int argc, const char** argv) {
     std::string target_arch;
     std::string dump_type;
     bool show_help = false;
+    bool no_color_output = true;
 
     const auto cli = lyra::cli()
+                     | lyra::arg(src_path, "source")("The C4 source file to compile.").required()
                      | lyra::help(show_help).description(
-                         "Compile a C4 script into an object file.")(
-                         "Do not compile, print help and exit.")
+            "Compile a C4 script into an object file.")(
+            "Do not compile, print help and exit.")
                      | lyra::opt(out_path, "output")["-o"]["--output"](
-                         "The name of the output file. When -d is set, STDOUT if `-'.")
+            "The name of the output file. When -d is set, STDOUT if `-'.")
                      | lyra::opt(dump_type, "dump")["-d"]["--dump"](
-                         "Do not compile, dump code instead. [AST, IR, ASM]").choices("AST", "IR", "ASM")
-                     | lyra::arg(src_path, "source")(
-                         "The C4 source file to compile.").required()
+            "Do not compile, dump code instead. [AST, IR, ASM]").choices("AST", "IR", "ASM")
                      | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
-                         "The target triplet to produce the binary for.");
+            "The target triplet to produce the binary for.")
+                     | lyra::opt(no_color_output)["-C"]["--no-color"](
+            "Disable color diagnostic output to STDERR. (Not yet implemented.)")
+    //
+    ;
 
     if (const auto result = cli.parse({argc, argv});
-        !result) {
+            !result) {
         std::cerr << "fatal: " << result.message() << "\n";
         std::cerr << cli << std::endl;
         return 1;
@@ -218,7 +224,7 @@ main(int argc, const char** argv) {
 
         c4c::c4_runtime_emitter rt_emitter(context, module);
         auto ir = c4c::ir_emitter(rt_emitter, ast_context, context, module, builder, parser.promised_symbols());
-        for (const auto& expression : script) {
+        for (const auto& expression: script) {
             expression->accept_skip_self(ir);
         }
         ir.finalize();
