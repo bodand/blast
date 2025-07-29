@@ -202,6 +202,22 @@ namespace c4::p2 {
             };
         }
 
+        std::optional<symbol_resolution>
+        find_scoped_symbol_with_arity(const ast2::symbol& sym) {
+            const auto it = std::find_if(_scope_symbols.rbegin(), _scope_symbols.rend(), [&sym](const auto& scope) {
+                return scope.name == sym.name() && scope.arity == sym.arity();
+            });
+            if (it == _scope_symbols.rend()) return std::nullopt;
+
+            const auto current_scope = _scope_symbol_size.back();
+            const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
+            return symbol_resolution{
+                .symbol = *it,
+                .distance = iter_difference,
+                .from_parent_scope = std::cmp_greater(iter_difference, current_scope)
+            };
+        }
+
         bool
         next_relevant();
 

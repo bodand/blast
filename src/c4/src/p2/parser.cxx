@@ -191,7 +191,10 @@ c4::p2::parser::parse_let_expression() {
         const auto op = parse_op_symbol();
 
         if (op.arity() == 1) {
-            declare_uniop(op.name());
+            auto& sym = declare_symbol_internal(op.name(),
+                                                op.arity(),
+                                                nullptr,
+                                                -1);
 
             auto expr = parse_expression();
             if (unsigned unbound = expr->unbound_parameters();
@@ -210,6 +213,7 @@ c4::p2::parser::parse_let_expression() {
                 op,
                 expr
             );
+            sym.referee = let;
             return _context.build_expression(let);
         }
         if (op.arity() == 2) {
@@ -218,7 +222,11 @@ c4::p2::parser::parse_let_expression() {
             unsigned precedence = parse_precedence(op.name());
             next_relevant();
 
-            declare_binop(op.name(), precedence, !left_assoc);
+            auto& sym = declare_symbol_internal(op.name(),
+                                                op.arity(),
+                                                nullptr,
+                                                precedence,
+                                                !left_assoc);
 
             auto expr = parse_expression();
             if (unsigned unbound = expr->unbound_parameters();
@@ -238,6 +246,7 @@ c4::p2::parser::parse_let_expression() {
                 op,
                 expr
             );
+            sym.referee = let;
             return _context.build_expression(let);
         }
 
@@ -306,15 +315,29 @@ c4::p2::parser::parse_final_expression() {
     const auto prefix_op = expect_token<tokens::operator_>();
     if (prefix_op) {
         next_relevant();
+
         ensure_valid_prefix_operator(*prefix_op);
         const auto op_sym = ast2::symbol(prefix_op->token_position(),
                                          prefix_op->value(),
                                          1);
+        const auto resolved = find_scoped_symbol_with_arity(op_sym);
+        DEBUG_ASSERT(resolved, "prefix operator should have been resolved (ensure_valid_prefix_operator called above)",
+                     op_sym.name(),
+                     op_sym.arity());
+        op_sym.references(resolved->symbol.referee);
+
+        std::vector<ast2::symbol> closure_symbols;
+        if (resolved->from_parent_scope
+            || _scope_symbol_size.size() == 1) { // in root scope
+            closure_symbols.push_back(op_sym);
+            closure_symbols.back().references(resolved->symbol.referee);
+        }
+
         const auto expr = parse_final_expression();
         const auto op = _context.build_unary_op_call(prefix_op->token_position(),
                                                      op_sym,
                                                      expr);
-        return _context.build_expression(op);
+        return _context.build_expression(op, std::move(closure_symbols));
     }
 
     const auto fn_symbol = expect_token<tokens::bare_symbol>();
@@ -526,14 +549,30 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                     if (lookahead) op_ahead = ensure_valid_infix_operator(*lookahead);
                 }
             }
+
             ast2::symbol op_sym(op_token.token_position(),
                                 op_token.value(),
                                 2);
+
+            const auto resolved = find_scoped_symbol_with_arity(op_sym);
+            DEBUG_ASSERT(resolved,
+                         "prefix operator should have been resolved (ensure_valid_infix_operator called above)",
+                         op_sym.name(),
+                         op_sym.arity());
+            op_sym.references(resolved->symbol.referee);
+
+            std::vector<ast2::symbol> closure_symbols;
+            if (resolved->from_parent_scope
+                || _scope_symbol_size.size() == 1) { // in root scope
+                closure_symbols.push_back(op_sym);
+                closure_symbols.back().references(resolved->symbol.referee);
+            }
+
             const auto bin_op = _context.build_binary_op_call(op_token.token_position(),
                                                               op_sym,
                                                               ret,
                                                               rhs);
-            ret = _context.build_expression(bin_op);
+            ret = _context.build_expression(bin_op, std::move(closure_symbols));
 
             if (!lookahead) break;
             op_token = *lookahead;
