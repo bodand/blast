@@ -123,7 +123,7 @@ namespace c4 {
         };
 
         template<class... Args>
-        [[nodiscard]] static source_diagnostic
+        [[nodiscard,deprecated("use diagnostics engine")]] static source_diagnostic
         error(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
             return {
                 diag_type::Error,
