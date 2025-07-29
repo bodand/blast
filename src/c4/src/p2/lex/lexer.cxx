@@ -72,6 +72,7 @@ c4::p2::lexer::lexer(const std::string_view source,
     const auto buffer = std::string_view(begin, end);
     const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
     _current_position.line = buffer.substr(0, distance(std::begin(buffer), it) + 1);
+    _current_position.expanded_range = buffer.substr(0, distance(std::begin(buffer), it) + 1);
 }
 
 namespace {

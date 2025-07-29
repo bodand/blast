@@ -149,9 +149,9 @@ add_library(c4
 target_link_libraries(c4
                       PUBLIC
                       c4rt
+                      fmt::fmt-header-only
                       PRIVATE
                       uni-algo::uni-algo
-                      fmt::fmt-header-only
                       PCRE2::8BIT
                       libassert::assert
                       c4_llvm)

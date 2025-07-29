@@ -43,12 +43,26 @@
 #include <type_traits>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include <fmt/base.h>
 
 namespace c4::p2 {
     struct token_source;
 }
+
+namespace c4 {
+    struct source_diagnostic;
+}
+
+template<>
+struct fmt::formatter<c4::source_diagnostic> {
+    constexpr auto
+    parse(format_parse_context& ctx) { return std::ranges::find(ctx, '}'); }
+
+    format_context::iterator
+    format(const c4::source_diagnostic& diag, fmt::format_context& ctx) const;
+};
 
 namespace c4 {
     struct position {
@@ -72,11 +86,6 @@ namespace c4 {
 
         [[nodiscard]] p2::token_source*
         source() const { return _source; }
-
-        [[nodiscard]] auto
-        explode() const {
-            return std::make_tuple(line, row_number, col_number);
-        }
 
         [[nodiscard]] std::string_view
         range() const;
@@ -106,25 +115,97 @@ namespace c4 {
             };
         }
 
-    private:
+        [[nodiscard]] diag_type
+        diagnostic_type() const { return _diagnostic_type; }
+
+        [[nodiscard]] const std::string&
+        diagnostic() const { return _diagnostic; }
+
+        [[nodiscard]] std::string_view
+        filename() const { return _filename; }
+
+        [[nodiscard]] const position&
+        position() const { return _position; }
+
         source_diagnostic(const diag_type type,
                           std::string diagnostic,
-                          const position& position,
-                          const std::size_t highlight_length = 0)
+                          const struct position& position)
             : _diagnostic_type{type}
             , _diagnostic{std::move(diagnostic)}
             , _filename{position.filename()}
-            , _position{position}
-            , _highlight_length{highlight_length} { }
+            , _position{position} { }
 
-        friend struct diagnostics_engine;
-        friend struct fmt::formatter<source_diagnostic>;
-
+    private:
         diag_type _diagnostic_type;
         std::string _diagnostic;
         std::string_view _filename;
-        position _position;
-        std::size_t _highlight_length{};
+        struct position _position;
+    };
+
+    struct diagnostics_bundle {
+        ~diagnostics_bundle() noexcept;
+
+        diagnostics_bundle&&
+        when(const bool cond) && {
+            _skip_next = !cond;
+            return std::move(*this);
+        }
+
+        template<class... Args>
+        diagnostics_bundle&&
+        note(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) && {
+            return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Note,
+                                                       position,
+                                                       diagnostic,
+                                                       fmt::make_format_args(args...));
+        }
+
+        template<class... Args>
+        diagnostics_bundle&&
+        note(fmt::format_string<Args...> diagnostic, Args&&... args) && {
+            return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Note,
+                                                       _head.position(),
+                                                       diagnostic,
+                                                       fmt::make_format_args(args...));
+        }
+
+        template<class... Args>
+        diagnostics_bundle&&
+        suggest(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) && {
+            return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Suggestion,
+                                                       position,
+                                                       diagnostic,
+                                                       fmt::make_format_args(args...));;
+        }
+
+        template<class... Args>
+        diagnostics_bundle&&
+        suggest(fmt::format_string<Args...> diagnostic, Args&&... args) && {
+            return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Suggestion,
+                                                       _head.position(),
+                                                       diagnostic,
+                                                       fmt::make_format_args(args...));
+        }
+
+    private:
+        friend struct diagnostics_engine;
+
+        explicit
+        diagnostics_bundle(const diagnostics_engine& engine,
+                           source_diagnostic&& head)
+            : _engine(engine)
+            , _head{std::move(head)} { }
+
+        diagnostics_bundle&&
+        emplace_diagnostic(source_diagnostic::diag_type type,
+                           const position& position,
+                           fmt::string_view diagnostic,
+                           fmt::format_args args) &&;
+
+        const diagnostics_engine& _engine;
+        source_diagnostic _head;
+        std::vector<source_diagnostic> _tail{};
+        bool _skip_next{false};
     };
 
     struct diagnostics_engine {
@@ -140,62 +221,33 @@ namespace c4 {
         }
 
         template<class... Args>
-        void
-        suggestion(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            source_diagnostic diag{
-                source_diagnostic::diag_type::Suggestion,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-            fmt::print(_output, "{}", diag);
-        }
-
-        template<class... Args>
-        void
-        note(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            source_diagnostic diag{
-                source_diagnostic::diag_type::Note,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-            fmt::print(_output, "{}", diag);
-        }
-
-        template<class... Args>
-        void
+        decltype(auto)
         warning(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            source_diagnostic diag{
-                source_diagnostic::diag_type::Warning,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
-            fmt::print(_output, "{}", diag);
+            return diagnostics_bundle(*this, source_diagnostic{
+                                          source_diagnostic::diag_type::Warning,
+                                          fmt::format(diagnostic, std::forward<Args>(args)...),
+                                          position
+                                      });
         }
 
         template<class... Args>
-        void
+        decltype(auto)
         error(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
-            source_diagnostic diag{
-                source_diagnostic::diag_type::Error,
-                fmt::format(diagnostic, std::forward<Args>(args)...),
-                position
-            };
+            return diagnostics_bundle(*this, source_diagnostic{
+                                          source_diagnostic::diag_type::Error,
+                                          fmt::format(diagnostic, std::forward<Args>(args)...),
+                                          position
+                                      });
         }
+
+        void
+        emit(const diagnostics_bundle& bundle) const;
 
     private:
         std::FILE* _output;
         bool _color;
     };
 }
-
-template<>
-struct fmt::formatter<c4::source_diagnostic> {
-    constexpr auto
-    parse(format_parse_context& ctx) { return std::ranges::find(ctx, '}'); }
-
-    format_context::iterator
-    format(const c4::source_diagnostic& diag, fmt::format_context& ctx) const;
-};
 
 
 #endif

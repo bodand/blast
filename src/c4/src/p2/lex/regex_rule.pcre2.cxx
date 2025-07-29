@@ -186,7 +186,19 @@ namespace {
     update_position_for_match(c4::position& pos,
                               const char* begin, const char* end,
                               const std::string_view match) {
-        if (const auto [buffer, line_increment] = process_line_change(match, end, pos.line);
+        // CLEVER CODE WARNING: rfind returns npos if it did not find the newline
+        // meaning we have only a single line range so for process_line_change
+        // that needs the last line of the current range, we need to pass the
+        // whole expanded_range, otherwise we need to substr starting from the
+        // return of rfind *+ 1*, so we don't take the newline itself.
+        // Since npos is a maximum value for an UNSIGNED type, adding 1 to it
+        // wraps around to zero, which when used in substr returns the whole
+        // string just as we need it without complex branching code or non-const
+        // variables
+        const auto last_newline_idx = pos.expanded_range.rfind('\n') + 1;
+        const auto last_newline = pos.expanded_range.substr(last_newline_idx);
+
+        if (const auto [buffer, line_increment] = process_line_change(match, end, last_newline);
             line_increment > 0) {
             update_position_for_multiline_match(pos, begin, buffer, line_increment);
         }
@@ -200,14 +212,14 @@ void
 c4::p2::regex_rule::offset_positions_newline(std::string_view match,
                                              const char*& begin, const char* end,
                                              position& pos) {
-    DEBUG_ASSERT(!match.empty(), "empty string matched", pos.line);
+    DEBUG_ASSERT(!match.empty(), "empty string matched", pos.expanded_range);
 
     begin += match.size();
     update_position_for_match(pos, begin, end, match);
 
     DEBUG_ASSERT(begin <= end,
                  "begin must not advance after end",
-                 pos.line,
+                 pos.expanded_range,
                  match);
 }
 
