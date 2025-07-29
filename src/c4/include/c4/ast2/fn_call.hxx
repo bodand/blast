@@ -51,7 +51,6 @@ namespace c4::ast2 {
                            , tags::source_positioned
                            , tags::dynamic_node {
         fn_call(const c4::position& position,
-                std::size_t length,
                 const symbol& sym,
                 std::vector<expression*>&& args);
 

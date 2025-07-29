@@ -207,7 +207,6 @@ c4::p2::parser::parse_let_expression() {
 
             const auto let = _context.build_let_expression(
                 op.position(),
-                op.length(),
                 op,
                 expr
             );
@@ -236,7 +235,6 @@ c4::p2::parser::parse_let_expression() {
 
             const auto let = _context.build_let_expression(
                 op.position(),
-                op.length(),
                 op,
                 expr
             );
@@ -267,7 +265,6 @@ c4::p2::parser::parse_let_expression() {
 
     const auto let = _context.build_let_expression(
         symbol.position(),
-        symbol.length(),
         symbol,
         expr
     );
@@ -311,12 +308,10 @@ c4::p2::parser::parse_final_expression() {
         next_relevant();
         ensure_valid_prefix_operator(*prefix_op);
         const auto op_sym = ast2::symbol(prefix_op->token_position(),
-                                         prefix_op->size(),
                                          prefix_op->value(),
                                          1);
         const auto expr = parse_final_expression();
         const auto op = _context.build_unary_op_call(prefix_op->token_position(),
-                                                     prefix_op->size() + expr->length(),
                                                      op_sym,
                                                      expr);
         return _context.build_expression(op);
@@ -347,7 +342,6 @@ c4::p2::parser::parse_final_expression() {
         parse_n_expressions(params, args);
 
         const auto fn = _context.build_fn_call(sym.position(),
-                                               sym.length(),
                                                sym,
                                                std::move(args));
         return _context.build_expression(fn, std::move(closure_symbols));
@@ -368,8 +362,6 @@ c4::p2::parser::parse_final_expression() {
         parse_n_expressions(params, args);
 
         const auto dyn_call = _context.build_dynamic_call(dyn_call_start->token_position(),
-                                                          static_cast<std::size_t>(
-                                                              dyn_call_end->begin() - dyn_call_start->begin()),
                                                           expr,
                                                           std::move(args));
         return _context.build_expression(dyn_call);
@@ -396,10 +388,12 @@ c4::p2::parser::parse_block() {
         }
         next_relevant();
 
+        // XXX block is positioned at its opening brace, should be expanded to
+        //  contain full range from lbrace to rbrace (next)
+
         leave_scope();
         return _context.build_block(
             lbrace->token_position(),
-            static_cast<std::size_t>(next->begin() - lbrace->begin()),
             std::move(expressions),
             args
         );
@@ -416,12 +410,9 @@ c4::p2::parser::parse_block() {
         std::vector<ast2::expression*> expr;
         expr.emplace_back(parse_expression());
 
-        const auto next = std::visit([](const auto& x) { return x.begin(); }, *_current);
-
         leave_scope();
         return _context.build_block(
             lbrace->token_position(),
-            static_cast<std::size_t>(next - lbrace->begin()),
             std::move(expr),
             args
         );
@@ -536,11 +527,9 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
                 }
             }
             ast2::symbol op_sym(op_token.token_position(),
-                                op_token.size(),
                                 op_token.value(),
                                 2);
             const auto bin_op = _context.build_binary_op_call(op_token.token_position(),
-                                                              op_token.size(),
                                                               op_sym,
                                                               ret,
                                                               rhs);
@@ -586,7 +575,7 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
          .note("there exists an infix operator with name {}/2, did you mean to call that?", sym.value())
          .when(sym.size() > 1)
          .suggest("if you meant to apply multiple prefix operators in sequence,"
-                  " separate them with whitespace or parentheses");
+             " separate them with whitespace or parentheses");
 
     throw bad_token_error{};
 }
@@ -601,7 +590,7 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
          .note("there exists an prefix operator with name {}/1, did you mean to call that?", sym.value())
          .when(sym.size() > 1)
          .suggest("if you meant to apply a prefix operator after an infix,"
-                  " separate them with whitespace or parentheses");
+             " separate them with whitespace or parentheses");
 
     throw bad_token_error{};
 }
@@ -650,7 +639,6 @@ c4::p2::parser::parse_block_args() {
     next_relevant();
 
     const auto block_args = _context.build_block_args(lead->token_position(),
-                                                      static_cast<std::size_t>(tail->begin() - lead->begin()),
                                                       std::span(args));
     for (std::size_t i = 0; i < block_args->size(); ++i) {
         auto& argument = block_args->argument_reference(i);
@@ -687,12 +675,13 @@ c4::p2::parser::declare_symbol_internal(std::string_view symbol,
 }
 
 void
-c4::p2::parser::declare_binop(std::string_view symbol, unsigned precedence, bool right_assoc) {
+c4::p2::parser::declare_binop(const std::string_view symbol,
+                              const unsigned precedence, const bool right_assoc) {
     declare_symbol_internal(symbol, 2, nullptr, precedence, right_assoc);
 }
 
 void
-c4::p2::parser::declare_uniop(std::string_view symbol) {
+c4::p2::parser::declare_uniop(const std::string_view symbol) {
     declare_symbol_internal(symbol, 1, nullptr, -1);
 }
 

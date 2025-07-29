@@ -59,29 +59,22 @@ namespace c4::ast2 {
     struct binary_op_call;
 
     struct ast_context final {
-        pseudo_node*
-        build_pseudo_node(std::string_view name);
-
         block_args*
         build_block_args(const position& position,
-                         std::size_t length,
                          std::span<symbol> args);
 
         block*
         build_block(const position& position,
-                    std::size_t length,
                     std::vector<expression*>&& expressions,
                     block_args* args = nullptr);
 
         dynamic_call*
         build_dynamic_call(const position& position,
-                           std::size_t length,
                            expression* callee,
                            std::vector<expression*>&& args);
 
         fn_call*
         build_fn_call(const position& position,
-                      std::size_t length,
                       const symbol& callee,
                       std::vector<expression*>&& args);
 
@@ -117,19 +110,16 @@ namespace c4::ast2 {
 
         let_expression*
         build_let_expression(const position& position,
-                             std::size_t length,
                              const symbol& sym,
                              expression* expression);
 
         unary_op_call*
         build_unary_op_call(const position& position,
-                            std::size_t length,
                             const symbol& sym,
                             expression* operand);
 
         binary_op_call*
         build_binary_op_call(const position& position,
-                             std::size_t length,
                              const symbol& sym,
                              expression* left,
                              expression* right);

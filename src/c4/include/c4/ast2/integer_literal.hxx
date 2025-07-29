@@ -54,9 +54,8 @@ namespace c4::ast2 {
         using value_type = std::int64_t;
 
         integer_literal(const c4::position& position,
-                        const std::size_t length,
                         const std::int64_t value)
-            : source_positioned{position, length}
+            : source_positioned{position}
             , _value{value} { }
 
         [[nodiscard]] std::int64_t

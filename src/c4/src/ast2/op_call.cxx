@@ -40,11 +40,10 @@
 #include <libassert/assert.hpp>
 
 c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
-                                         const std::size_t length,
                                          const symbol& op,
                                          expression* left,
                                          expression* right)
-    : source_positioned{position, length}
+    : source_positioned{position}
     , _op{op}
     , _left{left}
     , _right{right} {
@@ -64,10 +63,9 @@ const c4::ast2::expression&
 c4::ast2::binary_op_call::right() const noexcept { return *_right; }
 
 c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
-                                       const std::size_t length,
                                        const symbol& op,
                                        expression* operand)
-    : source_positioned{position, length}
+    : source_positioned{position}
     , _op{op}
     , _operand{operand} {
     DEBUG_ASSERT(_op.arity() == 1,

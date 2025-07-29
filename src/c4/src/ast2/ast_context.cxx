@@ -60,40 +60,31 @@ namespace {
     }
 }
 
-c4::ast2::pseudo_node*
-c4::ast2::ast_context::build_pseudo_node(const std::string_view name) {
-    return build_insert<pseudo_node>(_nodes, name);
-}
-
 c4::ast2::block_args*
 c4::ast2::ast_context::build_block_args(const position& position,
-                                        std::size_t length,
                                         std::span<symbol> args) {
-    return build_insert<block_args>(_nodes, position, length, args);
+    return build_insert<block_args>(_nodes, position, args);
 }
 
 c4::ast2::block*
 c4::ast2::ast_context::build_block(const position& position,
-                                   std::size_t length,
                                    std::vector<expression*>&& expressions,
                                    block_args* args) {
-    return build_insert<block>(_nodes, position, length, std::move(expressions), args);
+    return build_insert<block>(_nodes, position, std::move(expressions), args);
 }
 
 c4::ast2::dynamic_call*
 c4::ast2::ast_context::build_dynamic_call(const position& position,
-                                          std::size_t length,
                                           expression* callee,
                                           std::vector<expression*>&& args) {
-    return build_insert<dynamic_call>(_nodes, position, length, callee, std::move(args));
+    return build_insert<dynamic_call>(_nodes, position, callee, std::move(args));
 }
 
 c4::ast2::fn_call*
 c4::ast2::ast_context::build_fn_call(const position& position,
-                                     std::size_t length,
                                      const symbol& callee,
                                      std::vector<expression*>&& args) {
-    return build_insert<fn_call>(_nodes, position, length, callee, std::move(args));
+    return build_insert<fn_call>(_nodes, position, callee, std::move(args));
 }
 
 c4::ast2::expression*
@@ -148,25 +139,22 @@ c4::ast2::ast_context::build_expression(binary_op_call* exp, std::vector<symbol>
 
 c4::ast2::let_expression*
 c4::ast2::ast_context::build_let_expression(const position& position,
-                                            std::size_t length,
                                             const symbol& sym,
                                             expression* expression) {
-    return build_insert<let_expression>(_nodes, position, length, sym, expression);
+    return build_insert<let_expression>(_nodes, position, sym, expression);
 }
 
 c4::ast2::unary_op_call*
 c4::ast2::ast_context::build_unary_op_call(const position& position,
-                                           std::size_t length,
                                            const symbol& sym,
                                            expression* operand) {
-    return build_insert<unary_op_call>(_nodes, position, length, sym, operand);
+    return build_insert<unary_op_call>(_nodes, position, sym, operand);
 }
 
 c4::ast2::binary_op_call*
 c4::ast2::ast_context::build_binary_op_call(const position& position,
-                                            std::size_t length,
                                             const symbol& sym,
                                             expression* left,
                                             expression* right) {
-    return build_insert<binary_op_call>(_nodes, position, length, sym, left, right);
+    return build_insert<binary_op_call>(_nodes, position, sym, left, right);
 }

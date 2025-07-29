@@ -50,7 +50,6 @@ namespace c4::ast2 {
                                 , tags::source_positioned
                                 , tags::dynamic_node {
         dynamic_call(const c4::position& position,
-                     std::size_t length,
                      expression* callee,
                      std::vector<expression*>&& args);
 

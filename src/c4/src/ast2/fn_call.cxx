@@ -38,10 +38,9 @@
 #include <c4/ast2/fn_call.hxx>
 
 c4::ast2::fn_call::fn_call(const c4::position& position,
-                           const std::size_t length,
                            const symbol& sym,
                            std::vector<expression*>&& args)
-    : source_positioned{position,  length}
+    : source_positioned{position}
     , _sym{sym}
     , _args{std::move(args)} { }
 

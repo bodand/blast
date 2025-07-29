@@ -54,7 +54,6 @@ namespace c4::ast2 {
                                   , tags::source_positioned
                                   , tags::evaluation_constness {
         let_expression(const c4::position& position,
-                       std::size_t length,
                        symbol symbol,
                        expression* expr);
 

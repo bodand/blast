@@ -83,14 +83,12 @@ namespace c4::ast2 {
       from_token(const Token& tok) {
           return {
               tok.token_position(),
-              tok.size(),
               tok.name(),
               tok.arity()
           };
       }
 
       symbol(const c4::position& position,
-             std::size_t length,
              std::string_view name,
              unsigned arity);
 

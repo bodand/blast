@@ -43,10 +43,9 @@
 using namespace std::literals;
 
 c4::ast2::symbol::symbol(const c4::position& position,
-                         const std::size_t length,
                          const std::string_view name,
                          const unsigned arity)
-    : source_positioned{position, length}
+    : source_positioned{position}
     , _name{name}
     , _arity{arity} {
     DEBUG_ASSERT(!_name.empty(), "symbol name must not be empty");

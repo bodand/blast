@@ -44,9 +44,8 @@
 #include <utility>
 
 c4::ast2::block_args::block_args(const c4::position& position,
-                                 const std::size_t length,
                                  const std::span<symbol> args)
-    : source_positioned{position, length}
+    : source_positioned{position}
     , _args{args.begin(), args.end()} { }
 
 c4::ast2::block_argument&
@@ -62,10 +61,9 @@ c4::ast2::block_args::argument_reference(std::size_t arg_idx) const {
 }
 
 c4::ast2::block::block(const c4::position& position,
-                       const std::size_t length,
                        std::vector<expression*>&& expressions,
                        block_args* args)
-    : source_positioned{position, length}
+    : source_positioned{position}
     , _args(args)
     , _expressions{std::move(expressions)} { }
 

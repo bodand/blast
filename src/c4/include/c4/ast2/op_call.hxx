@@ -50,7 +50,6 @@ namespace c4::ast2 {
                                   , tags::source_positioned
                                   , tags::dynamic_node {
         binary_op_call(const c4::position& position,
-                       std::size_t length,
                        const symbol& op,
                        expression* left,
                        expression* right);
@@ -88,7 +87,6 @@ namespace c4::ast2 {
                                  , tags::source_positioned
                                  , tags::dynamic_node {
         unary_op_call(const c4::position& position,
-                      std::size_t length,
                       const symbol& op,
                       expression* operand);
 

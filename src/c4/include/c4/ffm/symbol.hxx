@@ -42,30 +42,35 @@
 #include <c4/ast2/symbol.hxx>
 
 namespace c4::ffm {
-  struct symbol : ast2::tags::visitable
-                , ast2::tags::source_positioned {
-      static symbol
-      from_ast(const ast2::symbol& ast_sym) {
-          return {ast_sym.position(), ast_sym.length(),
-                  ast_sym.name(), ast_sym.arity()};
-      }
+    struct symbol
+            : ast2::tags::visitable
+              , ast2::tags::source_positioned {
+        static symbol
+        from_ast(const ast2::symbol& ast_sym) {
+            return {
+                ast_sym.position(),
+                ast_sym.name(),
+                ast_sym.arity()
+            };
+        }
 
-      symbol(const c4::position& position,
-             const std::size_t length,
-             const std::string_view& name,
-             const unsigned arity)
-              : source_positioned{position, length}, _name{name}, _arity{arity} { }
+        symbol(const c4::position& position,
+               const std::string_view& name,
+               const unsigned arity)
+            : source_positioned{position}
+            , _name{name}
+            , _arity{arity} { }
 
-      [[nodiscard]] std::string_view
-      name() const { return _name; }
+        [[nodiscard]] std::string_view
+        name() const { return _name; }
 
-      [[nodiscard]] unsigned
-      arity() const { return _arity; }
+        [[nodiscard]] unsigned
+        arity() const { return _arity; }
 
-  private:
-      std::string_view _name;
-      unsigned _arity;
-  };
+    private:
+        std::string_view _name;
+        unsigned _arity;
+    };
 }
 
 #endif

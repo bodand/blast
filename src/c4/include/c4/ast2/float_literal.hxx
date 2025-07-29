@@ -53,9 +53,8 @@ namespace c4::ast2 {
         using value_type = double;
 
         float_literal(const c4::position& position,
-                      const std::size_t length,
                       const double value)
-            : source_positioned{position, length}
+            : source_positioned{position}
             , _value{value} { }
 
         [[nodiscard]] double

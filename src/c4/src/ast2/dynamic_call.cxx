@@ -40,10 +40,9 @@
 #include <libassert/assert.hpp>
 
 c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
-                                     const std::size_t length,
                                      expression* callee,
                                      std::vector<expression*>&& args)
-    : source_positioned{position,  length}
+    : source_positioned{position}
     , _callee{callee}
     , _args{std::move(args)} { }
 
