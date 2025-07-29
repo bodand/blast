@@ -69,6 +69,16 @@ namespace c4 {
         explicit
         position(p2::token_source* source);
 
+        position(const position& other) = default;
+
+        position(position&& other) noexcept = default;
+
+        position&
+        operator=(const position& other) = default;
+
+        position&
+        operator=(position&& other) noexcept = default;
+
         std::string_view line;
         std::size_t row_number{1};
         std::size_t col_number{1};
@@ -93,7 +103,14 @@ namespace c4 {
         [[nodiscard]] bool
         is_single_line() const noexcept { return row_number == row_number_end; }
 
+        std::string&
+        attach(const std::string_view sv) {
+            _attached = std::string{sv};
+            return _attached;
+        }
+
     private:
+        std::string _attached{};
         p2::token_source* _source{};
     };
 
@@ -135,6 +152,14 @@ namespace c4 {
             , _filename{position.filename()}
             , _position{position} { }
 
+        source_diagnostic(const diag_type type,
+                          std::string diagnostic,
+                          struct position&& position)
+            : _diagnostic_type{type}
+            , _diagnostic{std::move(diagnostic)}
+            , _filename{position.filename()}
+            , _position{position} { }
+
     private:
         diag_type _diagnostic_type;
         std::string _diagnostic;
@@ -151,11 +176,12 @@ namespace c4 {
             return std::move(*this);
         }
 
-        template<class... Args>
+        template<class P, class... Args>
         diagnostics_bundle&&
-        note(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) && {
+        note(P&& position, fmt::format_string<Args...> diagnostic, Args&&... args) &&
+            requires(std::same_as<std::remove_cvref_t<P>, struct position>) {
             return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Note,
-                                                       position,
+                                                       std::forward<P>(position),
                                                        diagnostic,
                                                        fmt::make_format_args(args...));
         }
@@ -169,11 +195,12 @@ namespace c4 {
                                                        fmt::make_format_args(args...));
         }
 
-        template<class... Args>
+        template<class P, class... Args>
         diagnostics_bundle&&
-        suggest(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) && {
+        suggest(P&& position, fmt::format_string<Args...> diagnostic, Args&&... args) &&
+            requires(std::same_as<std::remove_cvref_t<P>, struct position>) {
             return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Suggestion,
-                                                       position,
+                                                       std::forward<P>(position),
                                                        diagnostic,
                                                        fmt::make_format_args(args...));;
         }
@@ -199,6 +226,12 @@ namespace c4 {
         diagnostics_bundle&&
         emplace_diagnostic(source_diagnostic::diag_type type,
                            const position& position,
+                           fmt::string_view diagnostic,
+                           fmt::format_args args) &&;
+
+        diagnostics_bundle&&
+        emplace_diagnostic(source_diagnostic::diag_type type,
+                           position&& position,
                            fmt::string_view diagnostic,
                            fmt::format_args args) &&;
 

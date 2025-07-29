@@ -257,7 +257,7 @@ c4::p2::parser::parse_let_expression() {
                     symbol.name(),
                     symbol.arity(),
                     unbound)
-             .note(expr->position(), "definition is here")
+             .note(expr->position().snapshot(), "definition is here")
              .note("continuing parsing as if `{}' had `{}' parameter(s)",
                    symbol.name(),
                    symbol.arity());
@@ -568,14 +568,23 @@ c4::p2::parser::leave_scope() {
 c4::p2::parser::parser_symbol&
 c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
     if (const auto op = find_prefix_operator(sym.value())) return *op;
+
+    auto pos = sym.token_position().snapshot();
     _diag.error(sym.token_position(),
                 "unknown prefix operator referenced: {}/1",
                 sym.value())
          .when(find_infix_operator(sym.value()))
          .note("there exists an infix operator with name {}/2, did you mean to call that?", sym.value())
          .when(sym.size() > 1)
-         .suggest("if you meant to apply multiple prefix operators in sequence,"
-             " separate them with whitespace or parentheses");
+         .suggest([&pos] -> c4::position&& {
+                      auto& line = pos.attach(pos.expanded_range);
+                      line.insert(pos.col_number + 2, 1, ' ');
+                      pos.col_number_end = ++pos.col_number;
+                      pos.expanded_range = line;
+                      return std::move(pos);
+                  }(),
+                  "if you meant to apply multiple prefix operators in sequence,"
+                  " separate them with whitespace or parentheses");
 
     throw bad_token_error{};
 }
@@ -583,14 +592,23 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
 c4::p2::parser::parser_symbol&
 c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
     if (const auto op = find_infix_operator(sym.value())) return *op;
+
+    auto pos = sym.token_position().snapshot();
     _diag.error(sym.token_position(),
                 "unknown infix operator referenced: {}/1",
                 sym.value())
          .when(find_prefix_operator(sym.value()))
          .note("there exists an prefix operator with name {}/1, did you mean to call that?", sym.value())
          .when(sym.size() > 1)
-         .suggest("if you meant to apply a prefix operator after an infix,"
-             " separate them with whitespace or parentheses");
+         .suggest([&pos] -> position&& {
+                      auto& line = pos.attach(pos.expanded_range);
+                      line.insert(pos.col_number + 2, 1, ' ');
+                      pos.col_number_end = ++pos.col_number;
+                      pos.expanded_range = line;
+                      return std::move(pos);
+                  }(),
+                  "if you meant to apply a prefix operator after an infix,"
+                  " separate them with whitespace or parentheses");
 
     throw bad_token_error{};
 }

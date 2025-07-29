@@ -111,9 +111,9 @@ c4::position::range() const {
     const auto range_begin = leading_utf_str.size();
     const auto last_ln_idx = expanded_range.rfind('\n');
     if (last_ln_idx == std::string_view::npos) {
-        auto utf_str = expanded_range
+        const auto utf_str = expanded_range
                        | una::views::utf8
-                       | una::views::drop(col_number)
+                       | una::views::drop(col_number - 1)
                        | una::views::take(col_number_end - col_number + 1)
                        | una::ranges::to_utf8<std::string>();
         return expanded_range.substr(range_begin, utf_str.size());
@@ -130,6 +130,20 @@ c4::diagnostics_bundle::~diagnostics_bundle() noexcept {
 c4::diagnostics_bundle&&
 c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
                                            const position& position,
+                                           const fmt::string_view diagnostic,
+                                           const fmt::format_args args) && {
+    if (!_skip_next) {
+        _tail.emplace_back(type,
+                           fmt::vformat(diagnostic, args),
+                           position);
+        _skip_next = false;
+    }
+    return std::move(*this);
+}
+
+c4::diagnostics_bundle&&
+c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
+                                           position&& position,
                                            const fmt::string_view diagnostic,
                                            const fmt::format_args args) && {
     if (!_skip_next) {
