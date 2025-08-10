@@ -196,7 +196,9 @@ c4::p2::parser::parse_let_expression() {
                                                 nullptr,
                                                 -1);
 
+            enter_scope();
             auto expr = parse_expression();
+            leave_scope();
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.base_arity()) {
                 _valid = false;
@@ -228,7 +230,9 @@ c4::p2::parser::parse_let_expression() {
                                                 precedence,
                                                 !left_assoc);
 
+            enter_scope();
             auto expr = parse_expression();
+            leave_scope();
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.base_arity()) {
                 _valid = false;
@@ -256,7 +260,9 @@ c4::p2::parser::parse_let_expression() {
     const auto symbol = parse_symbol();
     auto& sym = declare_symbol_internal(symbol.name(), symbol.base_arity());
 
+    enter_scope();
     auto expr = parse_expression();
+    leave_scope();
 
     if (unsigned unbound = expr->unbound_parameters();
         unbound != symbol.base_arity()) {
