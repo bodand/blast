@@ -33,3 +33,5 @@
  * src/c4/src/ffm/function_declaration --
  *   
  */
+
+#include <c4/ffm/function_declaration.hxx>

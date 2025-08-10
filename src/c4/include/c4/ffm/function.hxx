@@ -36,23 +36,47 @@
 #ifndef FFM_FUNCTION_HXX
 #define FFM_FUNCTION_HXX
 
+#include <utility>
+#include <optional>
+#include <variant>
+
 #include <c4/tags/referable.hxx>
 #include <c4/ffm/symbol.hxx>
+#include <c4/ffm/ffm_node.hxx>
 
 namespace c4::ffm {
-    struct function : ast2::tags::referable {
-        explicit
-        function(const ffm::symbol& symbol)
-            : _symbol{symbol} { }
+    struct function_declaration;
+    struct function_definition;
 
-        [[nodiscard]] std::string_view
-        name() override { return _symbol.name(); }
+    struct function final : ffm_node
+                            , ast2::tags::visitable
+                            , ast2::tags::source_positioned
+                            , ast2::tags::referable {
+        using value_type = std::variant<
+            function_declaration*,
+            function_definition*>;
 
-        [[nodiscard]] unsigned
-        arity() const { return _symbol.arity(); }
+        explicit function(value_type value);
+
+        std::string_view
+        name() const override;
+
+        unsigned
+        base_arity() const override;
+
+        unsigned
+        effective_arity() const override;
+
+        template<class V>
+        void
+        accept_skip_self(V&& visitor) const {
+            std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
+                std::forward<T>(val)->accept(v);
+            }, _value);
+        }
 
     private:
-        ffm::symbol _symbol;
+        value_type _value;
     };
 }
 

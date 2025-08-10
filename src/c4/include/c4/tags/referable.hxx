@@ -43,7 +43,16 @@
 namespace c4::ast2::tags {
     struct referable : attributable {
         virtual std::string_view
-        name() = 0;
+        name() const = 0;
+
+        virtual unsigned
+        base_arity() const = 0;
+
+        virtual unsigned
+        effective_arity() const = 0;
+
+        virtual bool
+        closure() const noexcept { return base_arity() != effective_arity(); }
 
         ~referable() override = default;
     };

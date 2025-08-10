@@ -102,6 +102,9 @@ namespace c4::ast2 {
         [[nodiscard]] bool
         closure() const noexcept { return !_closure_symbols.empty(); }
 
+        [[nodiscard]] bool
+        loose_closure() const noexcept;
+
         [[nodiscard]] std::span<const symbol>
         closure_symbols() const noexcept { return _closure_symbols; }
 

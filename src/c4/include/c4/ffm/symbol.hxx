@@ -46,20 +46,25 @@ namespace c4::ffm {
             : ast2::tags::visitable
               , ast2::tags::source_positioned {
         static symbol
-        from_ast(const ast2::symbol& ast_sym) {
+        from_ast(const ast2::symbol& ast_sym, const std::string_view overwrite_name = "") {
+            std::string name = ast_sym.mangle();
+            if (!overwrite_name.empty()) name = overwrite_name;
             return {
                 ast_sym.position(),
-                ast_sym.name(),
-                ast_sym.arity()
+                name,
+                ast_sym.base_arity(),
+                ast_sym.closure()
             };
         }
 
         symbol(const c4::position& position,
                const std::string_view& name,
-               const unsigned arity)
+               const unsigned arity,
+               const bool closure)
             : source_positioned{position}
             , _name{name}
-            , _arity{arity} { }
+            , _arity{arity}
+            , _closure{closure} { }
 
         [[nodiscard]] std::string_view
         name() const { return _name; }
@@ -67,9 +72,13 @@ namespace c4::ffm {
         [[nodiscard]] unsigned
         arity() const { return _arity; }
 
+        [[nodiscard]] unsigned
+        effective_arity() const { return _arity + static_cast<unsigned>(_closure); }
+
     private:
-        std::string_view _name;
+        std::string _name;
         unsigned _arity;
+        bool _closure;
     };
 }
 

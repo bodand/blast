@@ -39,16 +39,15 @@
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
+#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 
 namespace c4::ffm {
-    struct function_call
-            : ast2::tags::visitable
-              , ast2::tags::source_positioned {
+    struct function_call final : ffm_node
+                                 , ast2::tags::source_positioned {
         function_call(const c4::position& position,
-                      const std::size_t length,
                       function* const fn)
-            : source_positioned{position, length}
+            : source_positioned{position}
             , _fn{fn} { }
 
         [[nodiscard]] function*

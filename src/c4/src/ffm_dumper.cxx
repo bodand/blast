@@ -28,10 +28,40 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function_call --
+ * src/c4/src/ffm_dumper --
  *   
  */
 
+#include <c4/ffm_dumper.hxx>
+
+#include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
+#include <c4/ffm/function_declaration.hxx>
+#include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/symbol.hxx>
+
+void
+c4::ffm_dumper::do_visit(const ffm::function& obj) {
+    obj.accept_skip_self(*this);
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
+
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::function_declaration& obj) {
+    _os << "decl " << obj.name() << '/' << obj.base_arity();
+    if (obj.closure()) _os << "+ ";
+    _os << "\n";
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::function_definition& obj) {
+    _os << "def " << obj.name() << '/' << obj.base_arity();
+    if (obj.closure()) _os << "+ ";
+    _os << "\n";
+}

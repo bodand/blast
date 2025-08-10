@@ -65,10 +65,19 @@ namespace {
         return idx != std::string_view::npos;
     }
 
+    std::size_t
+    numeric_length(const unsigned num) {
+        if (num == 0) return 1;
+        return static_cast<std::size_t>(std::floor(std::log10(num)) + 1);
+    }
+
     std::string
     mangle_standard_function(const std::string_view name,
                              const unsigned arity) {
-        return fmt::format("{}{}{}", name.size(), name, arity);
+        return fmt::format("{}{}{}",
+                           name.size() + numeric_length(arity),
+                           name,
+                           arity);
     }
 
     constexpr char
@@ -83,7 +92,10 @@ namespace {
                     const unsigned arity) {
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("o{}{}{}", normalized.size(), normalized, arity);
+        return fmt::format("{}o{}{}",
+                           1 + normalized.size() + numeric_length(arity),
+                           normalized,
+                           arity);
     }
 
     std::string

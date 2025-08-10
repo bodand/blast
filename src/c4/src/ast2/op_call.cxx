@@ -47,7 +47,7 @@ c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
     , _op{op}
     , _left{left}
     , _right{right} {
-    DEBUG_ASSERT(_op.arity() == 2,
+    DEBUG_ASSERT(_op.base_arity() == 2,
                  "non-binary operator passed to binary expression",
                  _op);
     DEBUG_ASSERT(_left != nullptr,
@@ -68,7 +68,7 @@ c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
     : source_positioned{position}
     , _op{op}
     , _operand{operand} {
-    DEBUG_ASSERT(_op.arity() == 1,
+    DEBUG_ASSERT(_op.base_arity() == 1,
                  "unary operator passed to unary expression",
                  _op);
     DEBUG_ASSERT(_operand != nullptr,

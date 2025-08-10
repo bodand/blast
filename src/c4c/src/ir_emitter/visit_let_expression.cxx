@@ -56,13 +56,13 @@ namespace {
         ASSERT(closure_symbol->references(),
                "symbol captured is not emitted",
                closure_symbol->name(),
-               closure_symbol->arity());
+               closure_symbol->base_arity());
         auto attr = closure_symbol->references()->get_attribute("ctx_value");
         if (!attr) attr = closure_symbol->references()->get_attribute("value");
         ASSERT(attr,
                "symbol captured is not emitted (refers to something without value attribute)",
                closure_symbol->name(),
-               closure_symbol->arity(),
+               closure_symbol->base_arity(),
                closure_symbol->references());
         const auto val = attr->value<llvm::Value*>();
         DEBUG_ASSERT(val,

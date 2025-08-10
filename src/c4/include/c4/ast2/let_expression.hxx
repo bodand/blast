@@ -71,7 +71,7 @@ namespace c4::ast2 {
         symbol() const { return _symbol; }
 
         [[nodiscard]] unsigned
-        symbol_arity() const { return _symbol.arity(); }
+        symbol_arity() const { return _symbol.base_arity(); }
 
         [[nodiscard]] const expression&
         value() const;
@@ -83,10 +83,21 @@ namespace c4::ast2 {
         is_constant_evaluable() const noexcept;
 
         std::string_view
-        name() override { return _symbol.name(); }
+        name() const override { return _symbol.name(); }
 
         [[nodiscard]] unsigned
         unbound_parameters() const noexcept { return 0; }
+
+        unsigned
+        base_arity() const override {
+            return _symbol.base_arity();
+        }
+
+        unsigned
+        effective_arity() const override;
+
+        bool
+        closure() const noexcept override;
 
     private:
         struct symbol _symbol;

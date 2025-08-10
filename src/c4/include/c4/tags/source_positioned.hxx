@@ -49,8 +49,7 @@ namespace c4::ast2::tags {
 
     protected:
         explicit
-        source_positioned(const struct position& position,
-                          const std::size_t length = 0)
+        source_positioned(const struct position& position)
             : _position{position} { }
 
     private:

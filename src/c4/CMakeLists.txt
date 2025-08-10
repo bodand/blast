@@ -138,6 +138,13 @@ add_library(c4
             include/c4/visitor/visitor.hxx
             src/visitor/visitor.cxx
 
+            # ffm utils
+            include/c4/ffm_dumper.hxx
+            src/ffm_dumper.cxx
+
+            include/c4/ffm_mapper.hxx
+            src/ffm_mapper.cxx
+
             # Misc
             include/c4/diagnostic.hxx
             src/diagnostic.cxx

@@ -45,7 +45,9 @@ c4::ast2::let_expression::let_expression(const c4::position& position,
                                          expression* expr)
     : source_positioned{position}
     , _symbol{std::move(symbol)}
-    , _value{expr} { }
+    , _value{expr} {
+    _symbol.references(this);
+}
 
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
@@ -55,5 +57,15 @@ c4::ast2::let_expression::value() const {
 
 bool
 c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return _value->const_evaluable();
+    return value().const_evaluable();
+}
+
+unsigned
+c4::ast2::let_expression::effective_arity() const {
+    return _symbol.base_arity() + static_cast<unsigned>(closure());
+}
+
+bool
+c4::ast2::let_expression::closure() const noexcept {
+    return value().loose_closure();
 }

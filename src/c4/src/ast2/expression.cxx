@@ -158,3 +158,14 @@ c4::ast2::expression::expression(value_type value,
     collect_closure(_value, _closure_symbols);
     uniqify_symbols(_closure_symbols);
 }
+
+bool
+c4::ast2::expression::loose_closure() const noexcept {
+    // A loose closure is a closure that does not take into account
+    // the set of externally defined (global) functions. That is,
+    // those symbols that would not need to be passed in anyways.
+    const auto referred_symbols = std::ranges::count_if(_closure_symbols, [](const auto& sym) {
+        return sym.references() != nullptr;
+    });
+    return referred_symbols != 0;
+}

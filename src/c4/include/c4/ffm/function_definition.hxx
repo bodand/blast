@@ -37,17 +37,34 @@
 #define FFM_FUNCTION_DEFINITION_HXX
 
 #include <c4/tags/visitable.hxx>
-#include <c4/tags/attributable.hxx>
 
 #include <c4/ffm/function.hxx>
 
 namespace c4::ffm {
-    struct function_definition final
-            : ffm::function
-              , ast2::tags::visitable {
+    struct function_definition final : ffm_node
+                                        , ast2::tags::visitable
+                                        , ast2::tags::referable
+                                        , ast2::tags::source_positioned {
+        explicit
+        function_definition(const ffm::symbol& symbol)
+            : source_positioned{symbol.position()}
+            , _symbol{symbol} { }
+
+        std::string_view
+        name() const override { return _symbol.name(); }
+
+        unsigned
+        base_arity() const override { return _symbol.arity(); }
+
+        unsigned
+        effective_arity() const override {
+            return _symbol.effective_arity();
+        }
+
     private:
-        bool _variable;
+        symbol _symbol;
     };
+
 }
 
 #endif

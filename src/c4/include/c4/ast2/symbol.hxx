@@ -93,13 +93,16 @@ namespace c4::ast2 {
              unsigned arity);
 
       [[nodiscard]] std::string_view
-      name() const noexcept { return _name; }
-
-      [[nodiscard]] std::string_view
-      name() override { return _name; }
+      name() const noexcept override { return _name; }
 
       [[nodiscard]] unsigned
-      arity() const noexcept { return _arity; }
+      base_arity() const noexcept override { return _arity; }
+
+      [[nodiscard]] unsigned
+      effective_arity() const override {
+          if (_references) return _references->effective_arity();
+          return _arity;
+      }
 
       [[nodiscard]] symbol
       with_arity(unsigned arity) const;

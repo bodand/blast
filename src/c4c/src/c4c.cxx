@@ -75,6 +75,9 @@
 
 #include <lyra/lyra.hpp>
 #include <utility>
+#include <c4/ffm_dumper.hxx>
+#include <c4/ffm_mapper.hxx>
+#include <c4/ffm/ffm_context.hxx>
 #include <c4c/ir_emitter.hxx>
 
 #ifdef _WIN32
@@ -116,6 +119,17 @@ dump_ast(It begin, S end, std::ostream& out) {
                   });
 }
 
+template<class It, class S = It>
+void
+dump_ffm(It begin, S end, std::ostream& out) {
+    c4::ffm_dumper dumper(out);
+    std::for_each(std::move(begin), std::move(end),
+                  [&dumper, &out](const auto& expr) {
+                      expr->accept(dumper);
+                      out << "\n";
+                  });
+}
+
 void
 initialize_targets();
 
@@ -132,21 +146,21 @@ main(int argc, const char** argv) {
     const auto cli = lyra::cli()
                      | lyra::arg(src_path, "source")("The C4 source file to compile.").required()
                      | lyra::help(show_help).description(
-            "Compile a C4 script into an object file.")(
-            "Do not compile, print help and exit.")
+                         "Compile a C4 script into an object file.")(
+                         "Do not compile, print help and exit.")
                      | lyra::opt(out_path, "output")["-o"]["--output"](
-            "The name of the output file. When -d is set, STDOUT if `-'.")
+                         "The name of the output file. When -d is set, STDOUT if `-'.")
                      | lyra::opt(dump_type, "dump")["-d"]["--dump"](
-            "Do not compile, dump code instead. [AST, IR, ASM]").choices("AST", "IR", "ASM")
+                         "Do not compile, dump code instead. [AST, FFM, IR, ASM]").choices("AST", "FFM", "IR", "ASM")
                      | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
-            "The target triplet to produce the binary for.")
+                         "The target triplet to produce the binary for.")
                      | lyra::opt(no_color_output)["-C"]["--no-color"](
-            "Disable color diagnostic output to STDERR. (Not yet implemented.)")
-    //
-    ;
+                         "Disable color diagnostic output to STDERR. (Not yet implemented.)")
+            //
+            ;
 
     if (const auto result = cli.parse({argc, argv});
-            !result) {
+        !result) {
         std::cerr << "fatal: " << result.message() << "\n";
         std::cerr << cli << std::endl;
         return 1;
@@ -201,6 +215,20 @@ main(int argc, const char** argv) {
             return 0;
         }
 
+        if (dump_type == "FFM") {
+            c4::ffm::ffm_context ffm_context;
+            c4::ffm_mapper mapper(ffm_context);
+            for (const auto& expression : script) {
+                expression->accept(mapper);
+            }
+
+            const auto ffm_roots = mapper.roots();
+            auto outstrm = open_outstream(out_path);
+            dump_ffm(ffm_roots.begin(), ffm_roots.end(), *outstrm);
+
+            return 0;
+        }
+
         initialize_targets();
 
         llvm::LLVMContext context;
@@ -225,7 +253,7 @@ main(int argc, const char** argv) {
 
         c4c::c4_runtime_emitter rt_emitter(context, module);
         auto ir = c4c::ir_emitter(rt_emitter, ast_context, context, module, builder, parser.promised_symbols());
-        for (const auto& expression: script) {
+        for (const auto& expression : script) {
             expression->accept_skip_self(ir);
         }
         ir.finalize();

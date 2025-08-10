@@ -85,7 +85,7 @@ namespace c4 {
 
         void
         do_visit(const ast2::symbol& obj) override {
-            os << obj.name() << "/" << obj.arity();
+            os << obj.name() << "/" << obj.base_arity();
         }
 
         void

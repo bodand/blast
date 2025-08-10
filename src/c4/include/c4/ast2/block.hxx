@@ -75,7 +75,18 @@ namespace c4::ast2 {
         symbol() const noexcept { return _symbol; }
 
         std::string_view
-        name() override { return _symbol.name(); }
+        name() const override { return _symbol.name(); }
+
+        [[nodiscard]] unsigned
+        base_arity() const override { return effective_arity(); }
+
+        [[nodiscard]] unsigned
+        effective_arity() const override {
+            // block arguments are always packaged as zero-arity non-closure
+            // functions: that is, they can always be called without arguments
+            // themselves
+            return 0;
+        }
 
     private:
         struct symbol _symbol;

@@ -31,15 +31,10 @@
  * Originally created: 2025-04-04.
  *
  * src/c4/include/c4/ast2/ast_node --
- *   
+ *   Provides the base ast_node interface.
  */
 #ifndef C4_AST2_AST_NODE_HXX
 #define C4_AST2_AST_NODE_HXX
-
-#include <string>
-#include <string_view>
-
-#include <c4/tags/referable.hxx>
 
 namespace c4::ast2 {
     struct ast_node {
@@ -57,22 +52,6 @@ namespace c4::ast2 {
 
     protected:
         ast_node() = default;
-    };
-
-    /**
-     * Helper class to attach attributes to elements that are not physically in
-     * the AST, such as context expansion values.
-     */
-    struct pseudo_node final : tags::referable, ast_node {
-        explicit
-        pseudo_node(const std::string_view name)
-            : _name{name} { }
-
-        std::string_view
-        name() override { return _name; }
-
-    private:
-        std::string _name;
     };
 }
 

@@ -38,28 +38,39 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 
+#include <c4/ast2/symbol.hxx>
 #include <c4/ffm/ffm_node.hxx>
 
+#include "function_declaration.hxx"
+
 namespace c4::ffm {
-  struct function;
-  struct function_call;
-  struct function_declaration;
-  struct function_definition;
+    struct function;
+    struct function_call;
+    struct function_declaration;
+    struct function_definition;
 
-  struct ffm_context {
-      function_call*
-      build_function_call();
+    struct ffm_context {
+        function*
+        build_function(function_declaration* decl);
 
-      function_declaration*
-      build_function_declaration();
+        function*
+        build_function(function_definition* def);
 
-      function_definition*
-      build_function_definition();
-  private:
-      // TODO arena allocator
-      std::list<std::unique_ptr<ffm_node>> _nodes{};
-  };
+        function_call*
+        build_function_call();
+
+        function_declaration*
+        build_function_declaration(const ffm::symbol& sym);
+
+        function_definition*
+        build_function_definition() { return nullptr; } // TODO
+
+    private:
+        // TODO arena allocator
+        std::list<std::unique_ptr<ffm_node>> _nodes{};
+    };
 }
 
 #endif

@@ -33,3 +33,5 @@
  * src/c4/src/ffm/ffm_node --
  *   
  */
+
+#include <c4/ffm/ffm_node.hxx>

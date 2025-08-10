@@ -190,15 +190,15 @@ c4::p2::parser::parse_let_expression() {
         || expect_token<tokens::fn_operator>()) {
         const auto op = parse_op_symbol();
 
-        if (op.arity() == 1) {
+        if (op.base_arity() == 1) {
             auto& sym = declare_symbol_internal(op.name(),
-                                                op.arity(),
+                                                op.base_arity(),
                                                 nullptr,
                                                 -1);
 
             auto expr = parse_expression();
             if (unsigned unbound = expr->unbound_parameters();
-                unbound != op.arity()) {
+                unbound != op.base_arity()) {
                 _valid = false;
                 _diag.error(op.position(),
                             "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
@@ -216,21 +216,21 @@ c4::p2::parser::parse_let_expression() {
             sym.referee = let;
             return _context.build_expression(let);
         }
-        if (op.arity() == 2) {
+        if (op.base_arity() == 2) {
             auto left_assoc = parse_associativity_indicator(op.name());
             next_relevant();
             unsigned precedence = parse_precedence(op.name());
             next_relevant();
 
             auto& sym = declare_symbol_internal(op.name(),
-                                                op.arity(),
+                                                op.base_arity(),
                                                 nullptr,
                                                 precedence,
                                                 !left_assoc);
 
             auto expr = parse_expression();
             if (unsigned unbound = expr->unbound_parameters();
-                unbound != op.arity()) {
+                unbound != op.base_arity()) {
                 _valid = false;
                 _diag.error(op.position(),
                             "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
@@ -254,22 +254,22 @@ c4::p2::parser::parse_let_expression() {
     }
 
     const auto symbol = parse_symbol();
-    auto& sym = declare_symbol_internal(symbol.name(), symbol.arity());
+    auto& sym = declare_symbol_internal(symbol.name(), symbol.base_arity());
 
     auto expr = parse_expression();
 
     if (unsigned unbound = expr->unbound_parameters();
-        unbound != symbol.arity()) {
+        unbound != symbol.base_arity()) {
         _valid = false;
         _diag.error(symbol.position(),
                     "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
                     symbol.name(),
-                    symbol.arity(),
+                    symbol.base_arity(),
                     unbound)
              .note(expr->position().snapshot(), "definition is here")
              .note("continuing parsing as if `{}' had `{}' parameter(s)",
                    symbol.name(),
-                   symbol.arity());
+                   symbol.base_arity());
     }
 
     const auto let = _context.build_let_expression(
@@ -323,7 +323,7 @@ c4::p2::parser::parse_final_expression() {
         const auto resolved = find_scoped_symbol_with_arity(op_sym);
         DEBUG_ASSERT(resolved, "prefix operator should have been resolved (ensure_valid_prefix_operator called above)",
                      op_sym.name(),
-                     op_sym.arity());
+                     op_sym.base_arity());
         op_sym.references(resolved->symbol.referee);
 
         std::vector<ast2::symbol> closure_symbols;
@@ -558,7 +558,7 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
             DEBUG_ASSERT(resolved,
                          "prefix operator should have been resolved (ensure_valid_infix_operator called above)",
                          op_sym.name(),
-                         op_sym.arity());
+                         op_sym.base_arity());
             op_sym.references(resolved->symbol.referee);
 
             std::vector<ast2::symbol> closure_symbols;

@@ -243,3 +243,9 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
 
     return ret;
 }
+
+c4::position
+c4::position::pseudo_position() {
+    static p2::token_source pseudo_source;
+    return {"", 1, 1, 1 ,1, "", &pseudo_source};
+}

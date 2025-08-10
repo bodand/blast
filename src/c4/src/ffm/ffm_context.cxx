@@ -33,3 +33,38 @@
  * src/c4/src/ffm/ffm_context --
  *   
  */
+
+#include <c4/ffm/ffm_context.hxx>
+#include <c4/ffm/function.hxx>
+#include <c4/ffm/function_call.hxx>
+#include <c4/ffm/symbol.hxx>
+#include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/function_declaration.hxx>
+#include <c4/ffm/function_definition.hxx>
+
+namespace {
+    template<class T, class... Args>
+    T*
+    build_insert(std::list<std::unique_ptr<c4::ffm::ffm_node>>& nodes,
+                 Args&&... args) {
+        auto arg = std::make_unique<T>(std::forward<Args>(args)...);
+        auto* ptr = arg.get();
+        nodes.emplace_front(std::move(arg));
+        return ptr;
+    }
+}
+
+c4::ffm::function*
+c4::ffm::ffm_context::build_function(function_declaration* decl) {
+    return build_insert<function>(_nodes, decl);
+}
+
+c4::ffm::function*
+c4::ffm::ffm_context::build_function(function_definition* def) {
+    return build_insert<function>(_nodes, def);
+}
+
+c4::ffm::function_declaration*
+c4::ffm::ffm_context::build_function_declaration(const ffm::symbol& sym) {
+    return build_insert<function_declaration>(_nodes, sym);
+}

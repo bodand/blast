@@ -33,3 +33,33 @@
  * src/c4/src/ffm/function --
  *   
  */
+
+#include <c4/ffm/function.hxx>
+#include <c4/ffm/function_declaration.hxx>
+#include <c4/ffm/function_definition.hxx>
+
+namespace {
+    struct source_position final {
+        c4::position
+        operator()(const auto* thing) const { return thing->position(); }
+    };
+}
+
+c4::ffm::function::function(value_type value)
+    : source_positioned{std::visit(source_position{}, value)}
+    , _value{value} { }
+
+std::string_view
+c4::ffm::function::name() const {
+    return std::visit([](const auto& f) { return f->name(); }, _value);
+}
+
+unsigned
+c4::ffm::function::base_arity() const {
+    return std::visit([](const auto& f) { return f->base_arity(); }, _value);
+}
+
+unsigned
+c4::ffm::function::effective_arity() const {
+    return std::visit([](const auto& f) { return f->effective_arity(); }, _value);
+}

@@ -28,10 +28,41 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function_call --
+ * src/c4/include/c4/ffm_dumper --
  *   
  */
+#ifndef BLAST_FFM_DUMPER_HXX
+#define BLAST_FFM_DUMPER_HXX
 
-#include <c4/ffm/function_call.hxx>
+#include <ostream>
+
+#include <c4/visitor/visitor.hxx>
+#include <c4/ffm/ffm_context.hxx>
+
+namespace c4 {
+    struct ffm_dumper final : ast2::visitor<
+                ffm::function,
+                ffm::function_call,
+                ffm::function_declaration,
+                ffm::function_definition
+            > {
+        explicit
+        ffm_dumper(std::ostream& os)
+            : _os{os} { }
+
+        void do_visit(const ffm::function& obj) override;
+
+        void do_visit(const ffm::function_call& obj) override;
+
+        void do_visit(const ffm::function_declaration& obj) override;
+
+        void do_visit(const ffm::function_definition& obj) override;
+
+    private:
+        std::ostream& _os;
+    };
+}
+
+#endif

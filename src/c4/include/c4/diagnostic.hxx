@@ -66,6 +66,9 @@ struct fmt::formatter<c4::source_diagnostic> {
 
 namespace c4 {
     struct position {
+        static position
+        pseudo_position();
+
         explicit
         position(p2::token_source* source);
 
@@ -110,6 +113,21 @@ namespace c4 {
         }
 
     private:
+        position(const std::string_view& line,
+                 const std::size_t row_number,
+                 const std::size_t col_number,
+                 const std::size_t row_number_end,
+                 const std::size_t col_number_end,
+                 const std::string_view& expanded_range,
+                 p2::token_source* const source)
+            : line{line}
+            , row_number{row_number}
+            , col_number{col_number}
+            , row_number_end{row_number_end}
+            , col_number_end{col_number_end}
+            , expanded_range{expanded_range}
+            , _source{source} { }
+
         std::string _attached{};
         p2::token_source* _source{};
     };

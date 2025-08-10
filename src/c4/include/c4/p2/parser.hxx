@@ -205,7 +205,7 @@ namespace c4::p2 {
         std::optional<symbol_resolution>
         find_scoped_symbol_with_arity(const ast2::symbol& sym) {
             const auto it = std::find_if(_scope_symbols.rbegin(), _scope_symbols.rend(), [&sym](const auto& scope) {
-                return scope.name == sym.name() && scope.arity == sym.arity();
+                return scope.name == sym.name() && scope.arity == sym.base_arity();
             });
             if (it == _scope_symbols.rend()) return std::nullopt;
 
