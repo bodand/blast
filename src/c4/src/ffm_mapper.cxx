@@ -34,6 +34,8 @@
  *   
  */
 
+#include <array>
+
 #include <c4/ffm_mapper.hxx>
 
 #include <c4/ffm/expression.hxx>
@@ -158,7 +160,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
 }
 
 void
-c4::ffm_mapper::build_closure_context_from_symbols(const c4::ast2::expression& obj) {
+c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) {
     std::vector<ffm::block_argument*> closure_symbols;
     for (const auto& sym : obj.closure_symbols()) {
         if (const auto ref = sym.references()) {
@@ -196,70 +198,107 @@ c4::ffm_mapper::do_visit(const ast2::expression& obj) {
     obj.accept_skip_self(*this);
 }
 
-void
-c4::ffm_mapper::build_root_function_call(const c4::ast2::fn_call& obj) {
+c4::ffm::function_declaration*
+c4::ffm_mapper::resolve_function_declaration(const ast2::symbol& sym) {
     ffm::function_declaration* decl;
-    if (const auto ref = obj.sym().references()) {
+    if (const auto ref = sym.references()) {
         const auto decl_opt = ref->attribute_value<ffm::function_declaration*>("declaration");
-        ASSERT(decl_opt, "referenced entity must have a declaration", obj.sym().name(), obj.sym().base_arity());
+        ASSERT(decl_opt, "referenced entity must have a declaration", sym.name(), sym.base_arity());
         decl = *decl_opt;
     }
     else {
-        decl = find_function_declaration(ffm::symbol::from_ast(obj.sym(), false));
-    }
-    ASSERT(decl, "called symbol must have a declaration", obj.sym().name(), obj.sym().base_arity());
-
-    const auto call = _ffm_context.build_function_call(obj.position(), decl); {
-        const auto scope = enter_call_arguments(call);
-        for (const auto& arg : obj.args()) {
-            arg->accept(*this);
-        }
+        decl = find_function_declaration(ffm::symbol::from_ast(sym, false));
     }
 
-    const auto root_expr = _ffm_context.build_root_expression(call);
-    _current_function->push_expression(root_expr);
+    ASSERT(decl, "called symbol must have a declaration", sym.name(), sym.base_arity());
+    return decl;
+}
+
+c4::ffm::function_pack*
+c4::ffm_mapper::build_function_pack_from_symbol(const position& position,
+                                                const ast2::symbol& sym) {
+    const auto decl = resolve_function_declaration(sym);
+    return _ffm_context.build_function_pack(position, decl);
+}
+
+c4::ffm::function_call*
+c4::ffm_mapper::build_function_call_from_symbol(const position& position,
+                                                const ast2::symbol& sym) {
+    const auto decl = resolve_function_declaration(sym);
+    return _ffm_context.build_function_call(position, decl);
 }
 
 c4::ffm::value_expression*
-c4::ffm_mapper::build_function_pack(const c4::ast2::fn_call& obj) {
-    ffm::function_declaration* decl;
-    if (const auto ref = obj.sym().references()) {
-        const auto decl_opt = ref->attribute_value<ffm::function_declaration*>("declaration");
-        ASSERT(decl_opt, "referenced entity must have a declaration", obj.sym().name(), obj.sym().base_arity());
-        decl = *decl_opt;
-    }
-    else {
-        decl = find_function_declaration(ffm::symbol::from_ast(obj.sym(), false));
-    }
-    ASSERT(decl, "called symbol must have a declaration", obj.sym().name(), obj.sym().base_arity());
+c4::ffm_mapper::build_packed_function_call(const position& position,
+                                           const ast2::symbol& sym,
+                                           const std::span<const ast2::expression* const> args) {
+    const auto call = build_function_pack_from_symbol(position, sym);
+    const auto scope = enter_pack_arguments(call);
 
-    const auto call = _ffm_context.build_function_pack(obj.position(), decl); {
-        const auto scope = enter_pack_arguments(call);
-        for (const auto& arg : obj.args()) {
-            arg->accept(*this);
-        }
-    }
+    for (const auto& arg : args) arg->accept(*this);
 
     return _ffm_context.build_value_expression(call);
 }
 
+c4::ffm::root_expression*
+c4::ffm_mapper::build_root_function_call(const position& position,
+                                         const ast2::symbol& sym,
+                                         const std::span<const ast2::expression* const> args) {
+    const auto call = build_function_call_from_symbol(position, sym);
+    const auto scope = enter_call_arguments(call);
+
+    for (const auto& arg : args) arg->accept(*this);
+
+    return _ffm_context.build_root_expression(call);
+}
+
 void
-c4::ffm_mapper::build_call_argument_pack(const ast2::fn_call& obj) {
-    ffm::value_expression* const expr = build_function_pack(obj);
+c4::ffm_mapper::push_call_argument_packed(const position& position,
+                                          const ast2::symbol& sym,
+                                          const std::span<const ast2::expression* const> args) {
+    ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
     _current_call->push_argument(expr);
 }
 
 void
-c4::ffm_mapper::build_pack_argument_pack(const ast2::fn_call& obj) {
-    ffm::value_expression* const expr = build_function_pack(obj);
+c4::ffm_mapper::push_pack_argument_packed(const position& position,
+                                          const ast2::symbol& sym,
+                                          const std::span<const ast2::expression* const> args) {
+    ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
     _current_pack->push_argument(expr);
 }
 
 void
+c4::ffm_mapper::push_root_call(const position& position,
+                               const ast2::symbol& sym,
+                               const std::span<const ast2::expression* const> args) {
+    ffm::root_expression* const expr = build_root_function_call(position, sym, args);
+    _current_function->push_expression(expr);
+}
+
+void
 c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
-    if (_current_pack) return build_pack_argument_pack(obj);
-    if (_current_call) return build_call_argument_pack(obj);
-    build_root_function_call(obj);
+    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.sym(), obj.args());
+    if (_current_call) return push_call_argument_packed(obj.position(), obj.sym(), obj.args());
+    push_root_call(obj.position(), obj.sym(), obj.args());
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
+    std::array<const ast2::expression* const, 2> args{&obj.left(), &obj.right()};
+    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.op(), args);
+    if (_current_call) return push_call_argument_packed(obj.position(), obj.op(), args);
+    push_root_call(obj.position(), obj.op(), args);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
+    std::array<const ast2::expression* const, 1> args{&obj.operand()};
+    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.op(), args);
+    if (_current_call) return push_call_argument_packed(obj.position(), obj.op(), args);
+
+
+    push_root_call(obj.position(), obj.op(), args);
 }
 
 namespace {

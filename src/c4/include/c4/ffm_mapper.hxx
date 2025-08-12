@@ -44,12 +44,16 @@
 #include <c4/visitor/visitor.hxx>
 #include <fmt/ranges.h>
 
+#include "ast2/symbol.hxx"
+
 namespace c4::ast2 {
     struct block;
     struct block_args;
     struct let_expression;
     struct expression;
     struct fn_call;
+    struct binary_op_call;
+    struct unary_op_call;
 }
 
 namespace c4 {
@@ -76,7 +80,9 @@ namespace c4 {
                 ast2::block,
                 ast2::expression,
                 ast2::let_expression,
-                ast2::fn_call
+                ast2::fn_call,
+                ast2::binary_op_call,
+                ast2::unary_op_call
             > {
         explicit ffm_mapper(ffm::ffm_context& ffm_context);
 
@@ -85,6 +91,10 @@ namespace c4 {
         void do_visit(const ast2::block& obj) override;
 
         void do_visit(const ast2::expression& obj) override;
+
+        void do_visit(const ast2::binary_op_call& obj) override;
+
+        void do_visit(const ast2::unary_op_call& obj) override;
 
         void do_visit(const ast2::fn_call& obj) override;
 
@@ -114,7 +124,7 @@ namespace c4 {
         find_function_declaration(const ffm::symbol& sym) const;
 
         void
-        build_closure_context_from_symbols(const c4::ast2::expression& obj);
+        build_closure_context_from_symbols(const ast2::expression& obj);
 
         ffm::function_declaration*
         declare_function(const ffm::symbol&, std::vector<ffm::block_argument*>&& args);
@@ -125,20 +135,43 @@ namespace c4 {
         [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_call*>
         enter_call_arguments(ffm::function_call* call);
 
-        [[nodiscard("store as automatic variable")]] c4::recursive_scope<ffm::function_pack*>
+        [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_pack*>
         enter_pack_arguments(ffm::function_pack* pack);
 
-        void
-        build_root_function_call(const ast2::fn_call& obj);
+        ffm::root_expression*
+        build_root_function_call(const position& position, const ast2::symbol& sym,
+                                 std::span<const ast2::expression* const> args);
+
+        ffm::function_declaration*
+        resolve_function_declaration(const ast2::symbol& sym);
+
+        ffm::function_pack*
+        build_function_pack_from_symbol(const position& position,
+                                        const ast2::symbol& sym);
+
+        ffm::function_call*
+        build_function_call_from_symbol(const position& position,
+                                        const ast2::symbol& sym);
 
         ffm::value_expression*
-        build_function_pack(const ast2::fn_call& obj);
+        build_packed_function_call(const position& position,
+                                   const ast2::symbol& sym,
+                                   std::span<const ast2::expression* const>);
 
         void
-        build_call_argument_pack(const ast2::fn_call& obj);
+        push_call_argument_packed(const position& position,
+                                  const ast2::symbol& sym,
+                                  std::span<const ast2::expression* const> args);
 
         void
-        build_pack_argument_pack(const ast2::fn_call& obj);
+        push_pack_argument_packed(const position& position,
+                                  const ast2::symbol& sym,
+                                  std::span<const ast2::expression* const> args);
+
+        void
+        push_root_call(const position& position,
+                       const ast2::symbol& sym,
+                       std::span<const ast2::expression* const> args);
 
         [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_definition*>
         define_function(const ffm::function_declaration* decl);

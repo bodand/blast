@@ -92,9 +92,10 @@ namespace {
                     const unsigned arity) {
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("{}o{}/{}",
-                           1 + normalized.size() + 1 + numeric_length(arity),
+        return fmt::format("o{}{}/{}",
+                           normalized.size() + 1 + numeric_length(arity),
                            normalized,
+
                            arity);
     }
 
