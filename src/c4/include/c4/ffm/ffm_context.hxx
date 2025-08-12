@@ -64,7 +64,7 @@ namespace c4::ffm {
         build_function_call();
 
         context_type*
-        build_context_type(std::string name, std::vector<symbol> symbols);
+        build_context_type(std::string name, std::vector<block_argument*> symbols);
 
         block_argument*
         build_block_argument(const c4::position& position, std::string_view name, unsigned arity);

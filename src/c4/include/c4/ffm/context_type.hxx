@@ -41,13 +41,15 @@
 #include <utility>
 #include <vector>
 
+#include <c4/ffm/block_argument.hxx>
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/symbol.hxx>
+
 
 namespace c4::ffm {
     struct context_type final : ffm_node {
         context_type(std::string name,
-                     std::vector<symbol> fields);
+                     std::vector<block_argument*> fields);
 
         [[nodiscard]] std::string
         name() const { return _name; }
@@ -55,12 +57,12 @@ namespace c4::ffm {
         void
         name(const std::string_view name) { _name = name; }
 
-        [[nodiscard]] std::span<const symbol>
+        [[nodiscard]] std::span<c4::ffm::block_argument* const>
         fields() const;
 
     private:
         std::string _name;
-        std::vector<symbol> _fields;
+        std::vector<block_argument*> _fields;
     };
 }
 

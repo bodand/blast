@@ -56,7 +56,7 @@ void
 c4::ffm_dumper::do_visit(const ffm::function_declaration& obj) {
     if (obj.ctx_type()) {
         _os << "type " << obj.ctx_type()->name() << "( ";
-        for (const auto& ref : obj.ctx_type()->fields()) _os << ref.name() << " ";
+        for (const auto& ref : obj.ctx_type()->fields()) _os << ref->name() << " ";
         _os << ")\n\n";
     }
 

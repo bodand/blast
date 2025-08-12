@@ -34,6 +34,7 @@
  *   
  */
 
+#include <c4/ast2/block.hxx>
 #include <c4/ffm/ffm_context.hxx>
 
 #include <c4/ffm/block_argument.hxx>
@@ -67,7 +68,7 @@ c4::ffm::ffm_context::build_function(function_definition* def) {
 }
 
 c4::ffm::context_type*
-c4::ffm::ffm_context::build_context_type(std::string name, std::vector<symbol> symbols) {
+c4::ffm::ffm_context::build_context_type(std::string name, std::vector<block_argument*> symbols) {
     return build_insert<context_type>(_nodes, std::move(name), std::move(symbols));
 }
 

@@ -37,9 +37,21 @@
 #include <c4/ffm/context_type.hxx>
 #include <c4/ffm/symbol.hxx>
 
-c4::ffm::context_type::context_type(std::string name, std::vector<symbol> fields)
-    : _name{std::move(name)}
-    , _fields{std::move(fields)} { }
+namespace {
+    struct context_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::context_type*> {
+        explicit
+        context_attribute(c4::ffm::context_type* value)
+            : typed_attribute{value} { }
+    };
+}
 
-std::span<const c4::ffm::symbol>
+c4::ffm::context_type::context_type(std::string name, std::vector<block_argument*> fields)
+    : _name{std::move(name)}
+    , _fields{std::move(fields)} {
+    for (const auto& field : _fields) {
+        field->emplace_attribute<context_attribute>("from_context", this);
+    }
+}
+
+std::span<c4::ffm::block_argument* const>
 c4::ffm::context_type::fields() const { return _fields; }
