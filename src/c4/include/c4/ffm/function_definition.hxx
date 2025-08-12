@@ -43,11 +43,10 @@
 namespace c4::ffm {
     struct function_definition final : ffm_node
                                         , ast2::tags::visitable
-                                        , ast2::tags::referable
-                                        , ast2::tags::source_positioned {
+                                        , ast2::tags::referable {
         explicit
         function_definition(const ffm::symbol& symbol)
-            : source_positioned{symbol.position()}
+            : referable{symbol.position()}
             , _symbol{symbol} { }
 
         std::string_view

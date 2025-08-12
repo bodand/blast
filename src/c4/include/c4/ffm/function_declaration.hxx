@@ -35,21 +35,28 @@
  */
 #ifndef FFM_FUNCTION_DECLARATION_HXX
 #define FFM_FUNCTION_DECLARATION_HXX
+
 #include <c4/tags/referable.hxx>
 #include <c4/tags/visitable.hxx>
 
+#include <c4/ffm/block_argument.hxx>
+#include <c4/ffm/context_type.hxx>
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 
+
 namespace c4::ffm {
-    struct function_declaration final : ffm_node
-                                        , ast2::tags::visitable
-                                        , ast2::tags::referable
-                                        , ast2::tags::source_positioned {
+    struct function_declaration final : ast2::tags::referable
+                                        , ffm_node
+                                        , ast2::tags::visitable {
         explicit
-        function_declaration(const ffm::symbol& symbol)
-            : source_positioned{symbol.position()}
-            , _symbol{symbol} { }
+        function_declaration(const symbol& symbol,
+                             context_type* ctx,
+                             bool known,
+                             std::vector<block_argument*>&& args);
+
+        [[nodiscard]] context_type*
+        ctx_type() const { return _ctx_type; }
 
         std::string_view
         name() const override { return _symbol.name(); }
@@ -62,8 +69,17 @@ namespace c4::ffm {
             return _symbol.effective_arity();
         }
 
+        [[nodiscard]] bool
+        known() const { return _known; }
+
+        [[nodiscard]] std::span<block_argument* const>
+        arguments() const { return _arguments; }
+
     private:
+        context_type* _ctx_type{};
         symbol _symbol;
+        bool _known;
+        std::vector<block_argument*> _arguments;
     };
 }
 

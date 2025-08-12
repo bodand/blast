@@ -43,7 +43,7 @@
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          ast2::symbol symbol,
                                          expression* expr)
-    : source_positioned{position}
+    : referable{position}
     , _symbol{std::move(symbol)}
     , _value{expr} {
     _symbol.references(this);

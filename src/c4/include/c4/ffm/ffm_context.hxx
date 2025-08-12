@@ -46,10 +46,12 @@
 #include "function_declaration.hxx"
 
 namespace c4::ffm {
+    struct context_type;
     struct function;
     struct function_call;
     struct function_declaration;
     struct function_definition;
+    struct block_argument;
 
     struct ffm_context {
         function*
@@ -61,11 +63,18 @@ namespace c4::ffm {
         function_call*
         build_function_call();
 
+        context_type*
+        build_context_type(std::string name, std::vector<symbol> symbols);
+
+        block_argument*
+        build_block_argument(const c4::position& position, std::string_view name, unsigned arity);
+
         function_declaration*
-        build_function_declaration(const ffm::symbol& sym);
+        build_function_declaration(const ffm::symbol& sym, context_type* ctx_type = nullptr, bool known = true, std::vector<ffm::block_argument*>&& args =
+                                           {});
 
         function_definition*
-        build_function_definition() { return nullptr; } // TODO
+        build_function_definition(const symbol& sym);
 
     private:
         // TODO arena allocator

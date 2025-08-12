@@ -50,7 +50,6 @@ namespace c4::ffm {
 
     struct function final : ffm_node
                             , ast2::tags::visitable
-                            , ast2::tags::source_positioned
                             , ast2::tags::referable {
         using value_type = std::variant<
             function_declaration*,

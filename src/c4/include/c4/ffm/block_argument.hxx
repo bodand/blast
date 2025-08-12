@@ -28,38 +28,41 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function --
+ * src/c4/include/c4/ffm/block_argument --
  *   
  */
+#ifndef BLAST_BLOCK_ARGUMENT_HXX
+#define BLAST_BLOCK_ARGUMENT_HXX
 
-#include <c4/ffm/function.hxx>
-#include <c4/ffm/function_declaration.hxx>
-#include <c4/ffm/function_definition.hxx>
+#include <c4/tags/referable.hxx>
 
-namespace {
-    struct source_position final {
-        c4::position
-        operator()(const auto* thing) const { return thing->position(); }
+#include <c4/ffm/ffm_node.hxx>
+
+namespace c4::ffm {
+    struct block_argument final : ast2::tags::referable
+                                  , ffm_node {
+        block_argument(const c4::position& position,
+                       const std::string_view name,
+                       const unsigned arity)
+            : referable{position}
+            , _name{name}
+            , _arity{arity} { }
+
+        [[nodiscard]] std::string_view
+        name() const noexcept override { return _name; }
+
+        [[nodiscard]] unsigned
+        base_arity() const noexcept override { return _arity; }
+
+        [[nodiscard]] unsigned
+        effective_arity() const noexcept override { return _arity; }
+
+    private:
+        std::string_view _name;
+        unsigned _arity;
     };
 }
 
-c4::ffm::function::function(value_type value)
-    : referable{std::visit(source_position{}, value)}
-    , _value{value} { }
-
-std::string_view
-c4::ffm::function::name() const {
-    return std::visit([](const auto& f) { return f->name(); }, _value);
-}
-
-unsigned
-c4::ffm::function::base_arity() const {
-    return std::visit([](const auto& f) { return f->base_arity(); }, _value);
-}
-
-unsigned
-c4::ffm::function::effective_arity() const {
-    return std::visit([](const auto& f) { return f->effective_arity(); }, _value);
-}
+#endif

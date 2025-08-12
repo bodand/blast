@@ -74,7 +74,6 @@ namespace c4 {
 
     struct ffm_mapper final : ast2::visitor<
                 ast2::block,
-                ast2::block_args,
                 ast2::expression,
                 ast2::let_expression
             > {
@@ -83,8 +82,6 @@ namespace c4 {
         void do_visit(const ast2::let_expression& obj) override;
 
         void do_visit(const ast2::block& obj) override;
-
-        void do_visit(const ast2::block_args& obj) override;
 
         void do_visit(const ast2::expression& obj) override;
 
@@ -107,11 +104,19 @@ namespace c4 {
             std::size_t& _counter;
         };
 
+        std::vector<ffm::block_argument*>
+        make_argument_list(const ast2::block_args* args);
+
         [[nodiscard]] ffm::function_declaration*
         find_function_declaration(const ffm::symbol& sym) const;
 
-        void
-        declare_function(const ffm::symbol&);
+        void build_closure_context_from_symbols(const c4::ast2::expression& obj);
+
+        ffm::function_declaration*
+        declare_function(const ffm::symbol&, std::vector<ffm::block_argument*>&& args);
+
+        ffm::function_declaration*
+        declare_extern_function(const ffm::symbol& sym);
 
         [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_definition*>
         define_function(const ffm::symbol&);
@@ -133,8 +138,8 @@ namespace c4 {
 
         std::size_t _block_counter{0};
         std::vector<std::string_view> _block_names{};
-        bool _skip_implicit_block_entry{false};
-        bool _implicit_block_entry_closure{false};
+        ffm::context_type* _closure{};
+        std::optional<const ast2::let_expression*> _currently_in_let{};
 
         ffm::function_definition* _current_function{};
 

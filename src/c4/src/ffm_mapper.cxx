@@ -56,75 +56,135 @@
 #include <c4/ast2/symbol.hxx>
 #include <c4/p2/lex/tokens.hxx>
 
+#include <libassert/assert.hpp>
+
+namespace {
+    struct declaration_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_declaration*> {
+        explicit
+        declaration_attribute(c4::ffm::function_declaration* value)
+            : typed_attribute{value} { }
+    };
+
+    struct argument_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::block_argument*> {
+        explicit
+        argument_attribute(c4::ffm::block_argument* value)
+            : typed_attribute{value} { }
+    };
+
+    struct definition_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_definition*> {
+        explicit
+        definition_attribute(c4::ffm::function_definition* value)
+            : typed_attribute{value} { }
+    };
+}
+
 c4::ffm_mapper::ffm_mapper(ffm::ffm_context& ffm_context)
     : _ffm_context{ffm_context} {
     const ffm::symbol main(position::pseudo_position(), "@main", 0, false);
-    declare_function(main);
+
+    declare_function(main, {});
+    const auto fn_def = _ffm_context.build_function_definition(main);
+    const auto fn = _ffm_context.build_function(fn_def);
+    _roots.push_back(fn);
+    _current_function = fn_def;
 }
 
 void
 c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
-    declare_function(ffm::symbol::from_ast(obj.symbol(), mangled_scope(obj.mangled_name())));
-
-    const auto name = obj.mangled_name();
-    _block_names.push_back(name);
-    _skip_implicit_block_entry = true;
+    _currently_in_let = &obj;
 
     obj.value().accept(*this);
 
-    _skip_implicit_block_entry = false;
-    _block_names.pop_back();
+    // TODO: enable after implementing proper handling of other nodes
+    //  ASSERT(!_currently_in_let.has_value(),
+    //      "entering let's value did not clear let entry",
+    //      obj);
+    _currently_in_let.reset();
 }
 
 void
 c4::ffm_mapper::do_visit(const ast2::block& obj) {
     const auto stack_memory = enter_block();
-    auto named_block = false;
     // _block_names needs to be able to refer to this after the if's scope
-    const auto name = next_block_name(obj.arity());
+    std::string name;
 
-    if (!_skip_implicit_block_entry) {
-        named_block = true;
+    auto arguments = make_argument_list(obj.args());
+
+    if (_currently_in_let) {
+        const auto let = _currently_in_let.value();
+        DEBUG_ASSERT(let, "let is null");
+
+        name = let->mangled_name();
+        const auto block_sym = ffm::symbol::from_ast(
+            let->symbol(),
+            _closure != nullptr,
+            mangled_scope(name));
+
+        _block_names.push_back(name);
+        const auto decl = declare_function(block_sym, std::move(arguments));
+        let->emplace_attribute<declaration_attribute>("declaration", decl);
+    }
+    else {
+        name = next_block_name(obj.arity());
         const auto block_sym = ffm::symbol(obj.position(),
                                            mangled_scope(name),
                                            obj.arity(),
-                                           _implicit_block_entry_closure);
+                                           _closure != nullptr);
         _block_names.push_back(name);
-        declare_function(block_sym);
+        const auto decl = declare_function(block_sym, std::move(arguments));
+        obj.emplace_attribute<declaration_attribute>("declaration", decl);
     }
-    _skip_implicit_block_entry = false;
+    DEBUG_ASSERT(!name.empty(),
+                 "name of function cannot be empty");
 
+    // _currently_in_let needs to be cleared in all cases so no nested blocks
+    // get named under the let object
+    _currently_in_let.reset();
 
     for (const auto& expression : obj.expressions()) {
         expression->accept(*this);
     }
 
-    if (named_block) _block_names.pop_back();
+    // this pops both the anonymous block's name and the let's name, whichever
+    // happened
+    _block_names.pop_back();
 }
 
 void
-c4::ffm_mapper::do_visit(const ast2::block_args& obj) { }
+c4::ffm_mapper::build_closure_context_from_symbols(const c4::ast2::expression& obj) {
+    std::vector<ffm::symbol> closure_symbols;
+    for (const auto& sym : obj.closure_symbols()) {
+        if (const auto ref = sym.references()) {
+            // a referenced symbol means we are a proper closure, thus
+            // it needs to be passed down to blocks if we happen to have
+            // one nested...
+
+            // ...except if the referenced symbol already has a fn. declaration
+            // attached in which case it is a global function that is not a closure itself, meaning
+            // it does not need to be captured, nor declared (as it is already done)
+            if (const auto decl = ref->attribute_value<ffm::function_declaration*>("declaration");
+                decl.has_value() && !(*decl)->closure())
+                continue;
+
+            closure_symbols.emplace_back(ref->position(), ref->name(), ref->base_arity(), ref->closure());
+        }
+        else {
+            // referenced symbols are defined in the source file, that is they
+            // will be found in let expressions, where we can properly name them
+            // only global, extern functions need to be implicitly declared here
+            // because of this
+            // external functions cannot be closures, what could they be closed over
+            // if they happen before anything in the given script happens?
+            declare_extern_function(ffm::symbol::from_ast(sym, false));
+        }
+    }
+    if (!closure_symbols.empty()) _closure = _ffm_context.build_context_type("anon", std::move(closure_symbols));
+}
 
 void
 c4::ffm_mapper::do_visit(const ast2::expression& obj) {
-    _implicit_block_entry_closure = false;
-    if (obj.closure()) {
-        for (const auto& sym : obj.closure_symbols()) {
-            if (sym.references()) {
-                // a referenced symbol means we are a proper closure, thus
-                // it needs to be passed down to blocks if we happen to have
-                // one nested
-                _implicit_block_entry_closure = true;
-            }
-            else {
-                // referenced symbols are defined in the source file, that is they
-                // will be found in let expressions, where we can properly name them
-                // only global, extern functions need to be implicitly declared here
-                // because of this
-                declare_function(ffm::symbol::from_ast(sym));
-            }
-        }
-    }
+    _closure = nullptr;
+    if (obj.closure()) build_closure_context_from_symbols(obj);
     obj.accept_skip_self(*this);
 }
 
@@ -143,8 +203,32 @@ namespace {
         }
 
         c4::ffm::function_declaration* result{};
-        c4::ffm::symbol symbol;
+        const c4::ffm::symbol& symbol;
     };
+}
+
+std::vector<c4::ffm::block_argument*>
+c4::ffm_mapper::make_argument_list(const ast2::block_args* args) {
+    std::vector<ffm::block_argument*> result;
+    if (_closure)
+        result.emplace_back(_ffm_context.build_block_argument(
+            position::pseudo_position(), "@ctx", 0));
+    if (!args) return result;
+
+    result.reserve(result.size() + args->block_arguments().size());
+
+    std::ranges::transform(
+        args->block_arguments(),
+        std::back_inserter(result),
+        [this](const auto& arg) {
+            auto ret = _ffm_context.build_block_argument(arg.position(),
+                                                         arg.name(),
+                                                         arg.base_arity());
+            arg.template emplace_attribute<argument_attribute>("argument", ret);
+            return ret;
+        });
+
+    return result;
 }
 
 c4::ffm::function_declaration*
@@ -157,22 +241,35 @@ c4::ffm_mapper::find_function_declaration(const ffm::symbol& sym) const {
     return nullptr;
 }
 
-void
-c4::ffm_mapper::declare_function(const ffm::symbol& sym) {
-    if (find_function_declaration(sym)) return;
+c4::ffm::function_declaration*
+c4::ffm_mapper::declare_function(const ffm::symbol& sym, std::vector<ffm::block_argument*>&& args) {
+    if (const auto fn = find_function_declaration(sym)) return fn;
 
-    const auto declaration = _ffm_context.build_function_declaration(sym);
+    const auto declaration = _ffm_context.build_function_declaration(sym, _closure, true, std::move(args));
     const auto fun = _ffm_context.build_function(declaration);
     _roots.push_back(fun);
+    return declaration;
 }
 
-c4::recursive_scope<c4::ffm::function_definition*>
-c4::ffm_mapper::define_function(const ffm::symbol&) {
-    const auto fn_def = _ffm_context.build_function_definition();
-    const auto fn = _ffm_context.build_function(fn_def);
-    _roots.push_back(fn);
-    return recursive_scope(_current_function, fn_def);
+c4::ffm::function_declaration*
+c4::ffm_mapper::declare_extern_function(const ffm::symbol& sym) {
+    if (const auto fn = find_function_declaration(sym)) return fn;
+
+    const auto declaration = _ffm_context.build_function_declaration(sym, _closure, false, {});
+    const auto fun = _ffm_context.build_function(declaration);
+    _roots.push_back(fun);
+    return declaration;
 }
+
+// c4::recursive_scope<c4::ffm::function_definition*>
+// c4::ffm_mapper::define_function(const ffm::symbol& sym) {
+//     declare_function(sym, TODO);
+//
+//     const auto fn_def = _ffm_context.build_function_definition(sym);
+//     const auto fn = _ffm_context.build_function(fn_def);
+//     _roots.push_back(fn);
+//     return recursive_scope(_current_function, fn_def);
+// }
 
 namespace {
     std::size_t
@@ -185,7 +282,7 @@ namespace {
 std::string
 c4::ffm_mapper::next_block_name(const unsigned arity) {
     const auto id = get_next_block_id();
-    return fmt::format("{}#{}#{}",
+    return fmt::format("{}#{}/{}",
                        1 + numeric_length(id) + 1 + numeric_length(arity),
                        id,
                        arity);

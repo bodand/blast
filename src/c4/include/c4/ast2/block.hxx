@@ -59,7 +59,8 @@ namespace c4::ast2 {
                                   , ast_node {
         explicit
         block_argument(symbol symbol)
-            : _symbol{std::move(symbol)} { }
+            : referable(symbol.position())
+            , _symbol{std::move(symbol)} { }
 
         block_argument(block_argument&) = delete;
 
@@ -117,6 +118,9 @@ namespace c4::ast2 {
                                    [](const auto& arg) { return &arg.symbol(); });
             return result;
         }
+
+        [[nodiscard]] std::span<const block_argument>
+        block_arguments() const noexcept { return _args; }
 
         [[nodiscard]] std::size_t
         size() const noexcept { return _args.size(); }

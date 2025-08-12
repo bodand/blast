@@ -51,7 +51,6 @@ namespace c4::ast2 {
     struct let_expression final : tags::referable
                                   , ast_node
                                   , tags::visitable
-                                  , tags::source_positioned
                                   , tags::evaluation_constness {
         let_expression(const c4::position& position,
                        symbol symbol,

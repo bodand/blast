@@ -35,3 +35,17 @@
  */
 
 #include <c4/ffm/function_declaration.hxx>
+
+#include <fmt/base.h>
+
+c4::ffm::function_declaration::function_declaration(const ffm::symbol& symbol,
+                                                    context_type* ctx,
+                                                    const bool known,
+                                                    std::vector<block_argument*>&& args)
+    : referable{symbol.position()}
+    , _ctx_type{ctx}
+    , _symbol{symbol}
+    , _known{known}
+    , _arguments{std::move(args)} {
+    if (_ctx_type) _ctx_type->name(fmt::format("ctx@{}", symbol.name()));
+}

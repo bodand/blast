@@ -28,38 +28,40 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function --
+ * src/c4/include/c4/ffm/context_type --
  *   
  */
+#ifndef BLAST_CONTEXT_TYPE_HXX
+#define BLAST_CONTEXT_TYPE_HXX
 
-#include <c4/ffm/function.hxx>
-#include <c4/ffm/function_declaration.hxx>
-#include <c4/ffm/function_definition.hxx>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace {
-    struct source_position final {
-        c4::position
-        operator()(const auto* thing) const { return thing->position(); }
+#include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/symbol.hxx>
+
+namespace c4::ffm {
+    struct context_type final : ffm_node {
+        context_type(std::string name,
+                     std::vector<symbol> fields);
+
+        [[nodiscard]] std::string
+        name() const { return _name; }
+
+        void
+        name(const std::string_view name) { _name = name; }
+
+        [[nodiscard]] std::span<const symbol>
+        fields() const;
+
+    private:
+        std::string _name;
+        std::vector<symbol> _fields;
     };
 }
 
-c4::ffm::function::function(value_type value)
-    : referable{std::visit(source_position{}, value)}
-    , _value{value} { }
-
-std::string_view
-c4::ffm::function::name() const {
-    return std::visit([](const auto& f) { return f->name(); }, _value);
-}
-
-unsigned
-c4::ffm::function::base_arity() const {
-    return std::visit([](const auto& f) { return f->base_arity(); }, _value);
-}
-
-unsigned
-c4::ffm::function::effective_arity() const {
-    return std::visit([](const auto& f) { return f->effective_arity(); }, _value);
-}
+#endif

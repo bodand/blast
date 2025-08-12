@@ -46,14 +46,16 @@ namespace c4::ffm {
             : ast2::tags::visitable
               , ast2::tags::source_positioned {
         static symbol
-        from_ast(const ast2::symbol& ast_sym, const std::string_view overwrite_name = "") {
+        from_ast(const ast2::symbol& ast_sym,
+                 const bool closure,
+                 const std::string_view overwrite_name = "") {
             std::string name = ast_sym.mangle();
             if (!overwrite_name.empty()) name = overwrite_name;
             return {
                 ast_sym.position(),
                 name,
                 ast_sym.base_arity(),
-                ast_sym.closure()
+                closure
             };
         }
 

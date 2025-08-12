@@ -74,8 +74,8 @@ namespace {
     std::string
     mangle_standard_function(const std::string_view name,
                              const unsigned arity) {
-        return fmt::format("{}{}{}",
-                           name.size() + numeric_length(arity),
+        return fmt::format("{}{}/{}",
+                           name.size() + 1 + numeric_length(arity),
                            name,
                            arity);
     }
@@ -92,8 +92,8 @@ namespace {
                     const unsigned arity) {
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("{}o{}{}",
-                           1 + normalized.size() + numeric_length(arity),
+        return fmt::format("{}o{}/{}",
+                           1 + normalized.size() + 1 + numeric_length(arity),
                            normalized,
                            arity);
     }
@@ -120,7 +120,7 @@ std::string
 c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
 void
-c4::ast2::symbol::references(referable* ref) const noexcept {
+c4::ast2::symbol::references(tags::referable* ref) const noexcept {
     if (ref == nullptr) {
         _references = nullptr;
         return;

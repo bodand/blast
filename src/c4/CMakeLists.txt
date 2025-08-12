@@ -92,6 +92,12 @@ add_library(c4
             src/ast2/ast_context.cxx
 
             # FFM
+            include/c4/ffm/block_argument.hxx
+            src/ffm/block_argument.cxx
+
+            include/c4/ffm/context_type.hxx
+            src/ffm/context_type.cxx
+
             include/c4/ffm/ffm_context.hxx
             src/ffm/ffm_context.cxx
 
@@ -121,6 +127,9 @@ add_library(c4
             src/tags/visitable.cxx
 
             include/c4/tags/evaluation_constness.hxx
+
+            include/c4/tags/literal_from_token.hxx
+            src/tags/literal_from_token.cxx
 
             include/c4/tags/attributable.hxx
             src/tags/attributable.cxx

@@ -35,12 +35,14 @@
  */
 
 #include <c4/ffm/ffm_context.hxx>
+
+#include <c4/ffm/block_argument.hxx>
+#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
-#include <c4/ffm/symbol.hxx>
-#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/symbol.hxx>
 
 namespace {
     template<class T, class... Args>
@@ -64,7 +66,27 @@ c4::ffm::ffm_context::build_function(function_definition* def) {
     return build_insert<function>(_nodes, def);
 }
 
+c4::ffm::context_type*
+c4::ffm::ffm_context::build_context_type(std::string name, std::vector<symbol> symbols) {
+    return build_insert<context_type>(_nodes, std::move(name), std::move(symbols));
+}
+
+c4::ffm::block_argument*
+c4::ffm::ffm_context::build_block_argument(const c4::position& position,
+                                           std::string_view name,
+                                           unsigned arity) {
+    return build_insert<block_argument>(_nodes, position, name, arity);
+}
+
 c4::ffm::function_declaration*
-c4::ffm::ffm_context::build_function_declaration(const ffm::symbol& sym) {
-    return build_insert<function_declaration>(_nodes, sym);
+c4::ffm::ffm_context::build_function_declaration(const ffm::symbol& sym,
+                                                 context_type* ctx_type,
+                                                 bool known,
+                                                 std::vector<ffm::block_argument*>&& args) {
+    return build_insert<function_declaration>(_nodes, sym, ctx_type, known, std::move(args));
+}
+
+c4::ffm::function_definition*
+c4::ffm::ffm_context::build_function_definition(const symbol& sym) {
+    return build_insert<function_definition>(_nodes, sym);
 }

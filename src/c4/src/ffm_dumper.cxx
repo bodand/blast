@@ -54,9 +54,15 @@ c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
 
 void
 c4::ffm_dumper::do_visit(const ffm::function_declaration& obj) {
-    _os << "decl " << obj.name() << '/' << obj.base_arity();
-    if (obj.closure()) _os << "+ ";
-    _os << "\n";
+    if (obj.ctx_type()) {
+        _os << "type " << obj.ctx_type()->name() << "( ";
+        for (const auto& ref : obj.ctx_type()->fields()) _os << ref.name() << " ";
+        _os << ")\n\n";
+    }
+
+    _os << "decl " << obj.name() << "( ";
+    for (const auto& ref : obj.arguments()) _os << ref->name() << " ";
+    _os << ")\n";
 }
 
 void

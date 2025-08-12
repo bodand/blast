@@ -40,8 +40,14 @@
 
 #include <c4/tags/attributable.hxx>
 
+#include "source_positioned.hxx"
+
 namespace c4::ast2::tags {
-    struct referable : attributable {
+    struct referable : attributable, source_positioned {
+        explicit
+        referable(const struct c4::position& position)
+            : source_positioned{position} { }
+
         virtual std::string_view
         name() const = 0;
 

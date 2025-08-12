@@ -47,32 +47,32 @@
 
 void
 c4c::ir_emitter::do_visit(const c4::ast2::unary_op_call& obj) {
-    const auto callee_val = lookup_symbol(obj.op().mangle());
-    ASSERT(callee_val,
-           "callee symbol must be known at the point of call",
-           obj.op().name(),
-           obj.op().mangle(),
-           _promised_symbols);
-
-    if (callee_val->getType()->isIntegerTy()) {
-        last.set_expr(callee_val);
-        return;
-    }
-
-    // has arguments, so callee must be a function type
-    ASSERT(callee_val->getType()->isPointerTy(),
-           "fn called with parameters does not have function (pointer) type",
-           callee_val->getName(),
-           callee_val->getType()->getTypeID());
-    const auto fn = cast<llvm::Function>(callee_val);
-
-    std::vector<llvm::Value*> args(1);
-    std::ranges::transform(std::array{&obj.operand()}, args.begin(), [this](const c4::ast2::expression* arg) {
-        arg->accept_skip_self(*this);
-        return this->last.value;
-    });
-
-    const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
-    last.set_expr(call);
+    // const auto callee_val = lookup_symbol(obj.op().mangle());
+    // ASSERT(callee_val,
+    //        "callee symbol must be known at the point of call",
+    //        obj.op().name(),
+    //        obj.op().mangle(),
+    //        _promised_symbols);
+    //
+    // if (callee_val->getType()->isIntegerTy()) {
+    //     last.set_expr(callee_val);
+    //     return;
+    // }
+    //
+    // // has arguments, so callee must be a function type
+    // ASSERT(callee_val->getType()->isPointerTy(),
+    //        "fn called with parameters does not have function (pointer) type",
+    //        callee_val->getName(),
+    //        callee_val->getType()->getTypeID());
+    // const auto fn = cast<llvm::Function>(callee_val);
+    //
+    // std::vector<llvm::Value*> args(1);
+    // std::ranges::transform(std::array{&obj.operand()}, args.begin(), [this](const c4::ast2::expression* arg) {
+    //     arg->accept_skip_self(*this);
+    //     return this->last.value;
+    // });
+    //
+    // const auto call = builder.CreateCall(fn->getFunctionType(), callee_val, args);
+    // last.set_expr(call);
 }
 
