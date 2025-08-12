@@ -30,54 +30,8 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4/include/c4/ffm_dumper --
+ * src/c4/src/ffm/unpack --
  *   
  */
-#ifndef BLAST_FFM_DUMPER_HXX
-#define BLAST_FFM_DUMPER_HXX
 
-#include <ostream>
-#include <span>
-
-#include <c4/visitor/visitor.hxx>
-#include <c4/ffm/ffm_context.hxx>
-
-namespace c4 {
-    struct ffm_dumper final : ast2::visitor<
-                ffm::function,
-                ffm::function_call,
-                ffm::function_declaration,
-                ffm::function_definition,
-                ffm::function_pack,
-                ffm::unpack,
-                ffm::block_argument
-            > {
-        explicit
-        ffm_dumper(std::ostream& os)
-            : _os{os} { }
-
-        void do_visit(const ffm::function& obj) override;
-
-        void do_visit(const ffm::function_call& obj) override;
-
-        void do_visit(const ffm::function_pack& obj) override;
-
-        void do_visit(const ffm::function_declaration& obj) override;
-
-        void do_visit(const ffm::function_definition& obj) override;
-
-        void do_visit(const ffm::unpack& obj) override;
-
-        void do_visit(const ffm::block_argument& obj) override;
-    private:
-        void
-        print_call_like(std::string_view call_type,
-                        const ffm::function_declaration* obj,
-                        std::span<ffm::value_expression* const> args);
-
-        std::ostream& _os;
-        char _call_end{'\n'};
-    };
-}
-
-#endif
+#include <c4/ffm/unpack.hxx>

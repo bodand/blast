@@ -42,6 +42,7 @@
 #include <c4/ffm/function_definition.hxx>
 #include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
+#include <c4/ffm/unpack.hxx>
 
 void
 c4::ffm_dumper::do_visit(const ffm::function& obj) {
@@ -97,4 +98,16 @@ c4::ffm_dumper::do_visit(const ffm::function_definition& obj) {
         expr->accept_skip_self(*this);
     }
     _os << "}\n";
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::unpack& obj) {
+    _os << "unpack ";
+    obj.expr()->accept_skip_self(*this);
+    _os << _call_end;
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::block_argument& obj) {
+    _os << obj.name() << ' ';
 }

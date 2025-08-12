@@ -54,6 +54,7 @@ namespace c4::ffm {
     struct root_expression;
     struct value_expression;
     struct symbol;
+    struct unpack;
 
     struct ffm_context {
         function*
@@ -91,8 +92,20 @@ namespace c4::ffm {
         root_expression*
         build_root_expression(function_call* call);
 
+        root_expression*
+        build_root_expression(block_argument* call);
+
+        root_expression*
+        build_root_expression(unpack* unp);
+
         value_expression*
         build_value_expression(function_pack* call);
+
+        value_expression*
+        build_value_expression(block_argument* arg);
+
+        unpack*
+        build_unpack(value_expression* expr);
 
     private:
         // TODO arena allocator

@@ -35,7 +35,7 @@
  *   argument; it is either a packed literal, argument, or packed fn. call
  *
  *   root_expression can stand at a root from a block's body; it is either a
- *   a packed literal, argument, or raw fn. call.
+ *   a packed literal, argument, unpack, or raw fn. call.
  *   A packed literal or argument in non-last position is for all intents and
  *   purposes useless and may be discarded during ffm generation.
  */
@@ -50,6 +50,7 @@ namespace c4::ffm {
     struct function_call;
     struct block_argument;
     struct function_pack;
+    struct unpack;
 
     struct value_expression final : ffm_node {
         // todo literal
@@ -66,13 +67,16 @@ namespace c4::ffm {
                 std::forward<T>(val)->accept(v);
             }, _value);
         }
+
     private:
         value_type _value;
     };
 
     struct root_expression final : ffm_node {
         // todo literal
-        using value_type = std::variant<block_argument*, function_call*>;
+        using value_type = std::variant<block_argument*,
+                                        function_call*,
+                                        unpack*>;
 
         explicit
         root_expression(const value_type& value)
@@ -88,6 +92,7 @@ namespace c4::ffm {
                 std::forward<T>(val)->accept(v);
             }, _value);
         }
+
     private:
         value_type _value;
     };

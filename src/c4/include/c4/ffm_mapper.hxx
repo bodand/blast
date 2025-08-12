@@ -168,6 +168,12 @@ namespace c4 {
                                   const ast2::symbol& sym,
                                   std::span<const ast2::expression* const> args);
 
+        ffm::unpack* build_argument_unpack(ffm::block_argument* arg);
+
+        c4::ffm::root_expression* build_root_argument(ffm::block_argument* arg);
+
+        c4::ffm::value_expression* build_value_argument(ffm::block_argument* arg) const;
+
         void
         push_root_call(const position& position,
                        const ast2::symbol& sym,

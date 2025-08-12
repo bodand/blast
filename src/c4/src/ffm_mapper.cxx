@@ -58,6 +58,7 @@
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
+#include <c4/ffm/unpack.hxx>
 #include <c4/p2/lex/tokens.hxx>
 
 #include <libassert/assert.hpp>
@@ -240,6 +241,24 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
     return _ffm_context.build_value_expression(call);
 }
 
+c4::ffm::unpack*
+c4::ffm_mapper::build_argument_unpack(ffm::block_argument* arg) {
+    DEBUG_ASSERT(arg, "argument must not be null");
+    const auto value = _ffm_context.build_value_expression(arg);
+    return _ffm_context.build_unpack(value);
+}
+
+c4::ffm::root_expression*
+c4::ffm_mapper::build_root_argument(ffm::block_argument* arg) {
+    const auto unp_expr = build_argument_unpack(arg);
+    return _ffm_context.build_root_expression(unp_expr);
+}
+
+c4::ffm::value_expression*
+c4::ffm_mapper::build_value_argument(ffm::block_argument* arg) const {
+    return _ffm_context.build_value_expression(arg);
+}
+
 c4::ffm::root_expression*
 c4::ffm_mapper::build_root_function_call(const position& position,
                                          const ast2::symbol& sym,
@@ -252,28 +271,67 @@ c4::ffm_mapper::build_root_function_call(const position& position,
     return _ffm_context.build_root_expression(call);
 }
 
+namespace {
+    c4::ffm::block_argument*
+    try_get_referenced_argument(const c4::ast2::symbol& sym) {
+        const auto ref = sym.references();
+        if (!ref) return nullptr;
+
+        const auto attr = ref->attribute_value<c4::ffm::block_argument*>("argument");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
+}
+
 void
 c4::ffm_mapper::push_call_argument_packed(const position& position,
                                           const ast2::symbol& sym,
                                           const std::span<const ast2::expression* const> args) {
-    ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
-    _current_call->push_argument(expr);
+    DEBUG_ASSERT(_current_call, "must be in a call on block root level (proper call)");
+
+    if (const auto arg = try_get_referenced_argument(sym)) {
+        const auto expr = build_value_argument(arg);
+        _current_call->push_argument(expr);
+    }
+    else {
+        ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
+        _current_call->push_argument(expr);
+    }
 }
 
 void
 c4::ffm_mapper::push_pack_argument_packed(const position& position,
                                           const ast2::symbol& sym,
                                           const std::span<const ast2::expression* const> args) {
-    ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
-    _current_pack->push_argument(expr);
+    DEBUG_ASSERT(_current_pack, "must be in a pack in call argument (lazy call)");
+
+    if (const auto arg = try_get_referenced_argument(sym)) {
+        const auto expr = build_value_argument(arg);
+        _current_pack->push_argument(expr);
+    }
+    else {
+        ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
+        _current_pack->push_argument(expr);
+    }
 }
 
 void
 c4::ffm_mapper::push_root_call(const position& position,
                                const ast2::symbol& sym,
                                const std::span<const ast2::expression* const> args) {
-    ffm::root_expression* const expr = build_root_function_call(position, sym, args);
-    _current_function->push_expression(expr);
+    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
+    DEBUG_ASSERT(!_current_call, "must not be in a call on block root level (proper call)");
+    DEBUG_ASSERT(_current_function, "must be in a function definition");
+
+    if (const auto arg = try_get_referenced_argument(sym)) {
+        const auto expr = build_root_argument(arg);
+        _current_function->push_expression(expr);
+    }
+    else {
+        const auto expr = build_root_function_call(position, sym, args);
+        _current_function->push_expression(expr);
+    }
 }
 
 void
@@ -296,8 +354,6 @@ c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
     std::array<const ast2::expression* const, 1> args{&obj.operand()};
     if (_current_pack) return push_pack_argument_packed(obj.position(), obj.op(), args);
     if (_current_call) return push_call_argument_packed(obj.position(), obj.op(), args);
-
-
     push_root_call(obj.position(), obj.op(), args);
 }
 

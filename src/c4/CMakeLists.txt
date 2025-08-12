@@ -125,6 +125,9 @@ add_library(c4
             include/c4/ffm/symbol.hxx
             src/ffm/symbol.cxx
 
+            include/c4/ffm/unpack.hxx
+            src/ffm/unpack.cxx
+
             # Tags
             include/c4/tags/source_positioned.hxx
             src/tags/source_positioned.cxx

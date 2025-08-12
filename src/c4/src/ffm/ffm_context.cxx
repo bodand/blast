@@ -46,6 +46,7 @@
 #include <c4/ffm/function_definition.hxx>
 #include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
+#include <c4/ffm/unpack.hxx>
 
 namespace {
     template<class T, class... Args>
@@ -109,7 +110,27 @@ c4::ffm::ffm_context::build_root_expression(function_call* call) {
     return build_insert<root_expression>(_nodes, call);
 }
 
+c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(block_argument* call) {
+    return build_insert<root_expression>(_nodes, call);
+}
+
+c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(unpack* unp) {
+    return build_insert<root_expression>(_nodes, unp);
+}
+
 c4::ffm::value_expression*
 c4::ffm::ffm_context::build_value_expression(function_pack* call) {
     return build_insert<value_expression>(_nodes, call);
+}
+
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(block_argument* arg) {
+    return build_insert<value_expression>(_nodes, arg);
+}
+
+c4::ffm::unpack*
+c4::ffm::ffm_context::build_unpack(value_expression* expr) {
+    return build_insert<unpack>(_nodes, expr);
 }
