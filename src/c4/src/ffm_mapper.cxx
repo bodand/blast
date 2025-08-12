@@ -151,6 +151,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
     {
         const auto scope = define_function(decl);
         for (const auto& expression : obj.expressions()) {
+            DEBUG_ASSERT(expression, "expression in ast block body must not be null");
             expression->accept(*this);
         }
     }
@@ -236,7 +237,10 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
     const auto call = build_function_pack_from_symbol(position, sym);
     const auto scope = enter_pack_arguments(call);
 
-    for (const auto& arg : args) arg->accept(*this);
+    for (const auto& arg : args) {
+        DEBUG_ASSERT(arg, "argument must not be null");
+        arg->accept(*this);
+    }
 
     return _ffm_context.build_value_expression(call);
 }
@@ -266,7 +270,10 @@ c4::ffm_mapper::build_root_function_call(const position& position,
     const auto call = build_function_call_from_symbol(position, sym);
     const auto scope = enter_call_arguments(call);
 
-    for (const auto& arg : args) arg->accept(*this);
+    for (const auto& arg : args) {
+        DEBUG_ASSERT(arg, "argument must not be null");
+        arg->accept(*this);
+    }
 
     return _ffm_context.build_root_expression(call);
 }
