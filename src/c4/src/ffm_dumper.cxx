@@ -130,8 +130,8 @@ namespace {
 void
 c4::ffm_dumper::do_visit(const ffm::literal& obj) {
     // ReSharper disable once CppDFAConstantConditions
-    _os << (obj.packed() ? "litp(" : "litr(");
+    _os << (obj.packed() ? "litp " : "litr ");
     literal_printer printer{_os};
     std::visit(printer, obj.value());
-    _os << ')' << _call_end;
+    _os << _call_end;
 }
