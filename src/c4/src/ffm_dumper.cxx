@@ -34,6 +34,7 @@
  *   
  */
 
+#include <iomanip>
 #include <c4/ffm_dumper.hxx>
 
 #include <c4/ffm/function.hxx>
@@ -66,7 +67,6 @@ c4::ffm_dumper::print_call_like(const std::string_view call_type,
 void
 c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
     print_call_like("call", obj.function(), obj.arguments());
-
 }
 
 void
@@ -110,4 +110,28 @@ c4::ffm_dumper::do_visit(const ffm::unpack& obj) {
 void
 c4::ffm_dumper::do_visit(const ffm::block_argument& obj) {
     _os << obj.name() << ' ';
+}
+
+namespace {
+    struct literal_printer {
+        std::ostream& _os;
+
+        void
+        operator()(const std::string_view sv) const { _os << std::quoted(sv); }
+
+        void
+        operator()(const std::integral auto x) const { _os << x; }
+
+        void
+        operator()(const double d) const { _os << d; }
+    };
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::literal& obj) {
+    // ReSharper disable once CppDFAConstantConditions
+    _os << (obj.packed() ? "litp(" : "litr(");
+    literal_printer printer{_os};
+    std::visit(printer, obj.value());
+    _os << ')' << _call_end;
 }

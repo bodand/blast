@@ -58,6 +58,7 @@
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
+#include <c4/ffm/literal.hxx>
 #include <c4/ffm/unpack.hxx>
 #include <c4/p2/lex/tokens.hxx>
 
@@ -292,6 +293,48 @@ namespace {
 }
 
 void
+c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
+    std::array<const ast2::expression* const, 2> args{&obj.left(), &obj.right()};
+    push_call(obj.position(), obj.op(), args);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
+    std::array<const ast2::expression* const, 1> args{&obj.operand()};
+    push_call(obj.position(), obj.op(), args);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
+    push_call(obj.position(), obj.sym(), obj.args());
+}
+
+void
+c4::ffm_mapper::push_literal(ffm::literal* const ffm_lit) {
+    if (_current_pack) return push_pack_literal(ffm_lit);
+    if (_current_call) return push_call_literal(ffm_lit);
+    push_root_literal(ffm_lit);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::float_literal& obj) {
+    const auto ffm_lit = _ffm_context.build_literal(obj.value());
+    push_literal(ffm_lit);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::integer_literal& obj) {
+    const auto ffm_lit = _ffm_context.build_literal(obj.value());
+    push_literal(ffm_lit);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::string_literal& obj) {
+    const auto ffm_lit = _ffm_context.build_literal(obj.value());
+    push_literal(ffm_lit);
+}
+
+void
 c4::ffm_mapper::push_call_argument_packed(const position& position,
                                           const ast2::symbol& sym,
                                           const std::span<const ast2::expression* const> args) {
@@ -324,6 +367,15 @@ c4::ffm_mapper::push_pack_argument_packed(const position& position,
 }
 
 void
+c4::ffm_mapper::push_call(const position& position,
+                          const ast2::symbol& sym,
+                          const std::span<const ast2::expression* const> args) {
+    if (_current_pack) return push_pack_argument_packed(position, sym, args);
+    if (_current_call) return push_call_argument_packed(position, sym, args);
+    push_root_call(position, sym, args);
+}
+
+void
 c4::ffm_mapper::push_root_call(const position& position,
                                const ast2::symbol& sym,
                                const std::span<const ast2::expression* const> args) {
@@ -339,29 +391,6 @@ c4::ffm_mapper::push_root_call(const position& position,
         const auto expr = build_root_function_call(position, sym, args);
         _current_function->push_expression(expr);
     }
-}
-
-void
-c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
-    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.sym(), obj.args());
-    if (_current_call) return push_call_argument_packed(obj.position(), obj.sym(), obj.args());
-    push_root_call(obj.position(), obj.sym(), obj.args());
-}
-
-void
-c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
-    std::array<const ast2::expression* const, 2> args{&obj.left(), &obj.right()};
-    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.op(), args);
-    if (_current_call) return push_call_argument_packed(obj.position(), obj.op(), args);
-    push_root_call(obj.position(), obj.op(), args);
-}
-
-void
-c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
-    std::array<const ast2::expression* const, 1> args{&obj.operand()};
-    if (_current_pack) return push_pack_argument_packed(obj.position(), obj.op(), args);
-    if (_current_call) return push_call_argument_packed(obj.position(), obj.op(), args);
-    push_root_call(obj.position(), obj.op(), args);
 }
 
 namespace {
@@ -415,6 +444,45 @@ c4::ffm_mapper::find_function_declaration(const ffm::symbol& sym) const {
         if (finder.result) return finder.result;
     }
     return nullptr;
+}
+
+c4::ffm::root_expression*
+c4::ffm_mapper::build_root_literal(ffm::literal* const lit) const {
+    lit->packed(false);
+    return _ffm_context.build_root_expression(lit);
+}
+
+c4::ffm::value_expression*
+c4::ffm_mapper::build_value_literal(ffm::literal* const lit) const {
+    lit->packed(true);
+    return _ffm_context.build_value_expression(lit);
+}
+
+void
+c4::ffm_mapper::push_pack_literal(ffm::literal* const literal) {
+    DEBUG_ASSERT(_current_pack, "must be in a pack in call argument (lazy call)");
+
+    const auto lit_expr = build_value_literal(literal);
+    _current_pack->push_argument(lit_expr);
+}
+
+void
+c4::ffm_mapper::push_call_literal(ffm::literal* const literal) {
+    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
+    DEBUG_ASSERT(_current_call, "must be in a call on block root level (proper call)");
+
+    const auto lit_expr = build_value_literal(literal);
+    _current_call->push_argument(lit_expr);
+}
+
+void
+c4::ffm_mapper::push_root_literal(ffm::literal* const lit) {
+    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
+    DEBUG_ASSERT(!_current_call, "must not be in a call on block root level (proper call)");
+    DEBUG_ASSERT(_current_function, "must be in a function definition");
+
+    const auto lit_expr = build_root_literal(lit);
+    _current_function->push_expression(lit_expr);
 }
 
 c4::ffm::function_declaration*

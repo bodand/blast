@@ -47,6 +47,7 @@
 #include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
 #include <c4/ffm/unpack.hxx>
+#include <c4/ffm/literal.hxx>
 
 namespace {
     template<class T, class... Args>
@@ -111,8 +112,13 @@ c4::ffm::ffm_context::build_root_expression(function_call* call) {
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(block_argument* call) {
-    return build_insert<root_expression>(_nodes, call);
+c4::ffm::ffm_context::build_root_expression(block_argument* arg) {
+    return build_insert<root_expression>(_nodes, arg);
+}
+
+c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(literal* lit) {
+    return build_insert<root_expression>(_nodes, lit);
 }
 
 c4::ffm::root_expression*
@@ -130,7 +136,32 @@ c4::ffm::ffm_context::build_value_expression(block_argument* arg) {
     return build_insert<value_expression>(_nodes, arg);
 }
 
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(literal* lit) {
+    return build_insert<value_expression>(_nodes, lit);
+}
+
 c4::ffm::unpack*
 c4::ffm::ffm_context::build_unpack(value_expression* expr) {
     return build_insert<unpack>(_nodes, expr);
+}
+
+c4::ffm::literal*
+c4::ffm::ffm_context::build_literal(int32_t i32) {
+    return build_insert<literal>(_nodes, i32);
+}
+
+c4::ffm::literal*
+c4::ffm::ffm_context::build_literal(int64_t i64) {
+    return build_insert<literal>(_nodes, i64);
+}
+
+c4::ffm::literal*
+c4::ffm::ffm_context::build_literal(double d) {
+    return build_insert<literal>(_nodes, d);
+}
+
+c4::ffm::literal*
+c4::ffm::ffm_context::build_literal(std::string_view sv) {
+    return build_insert<literal>(_nodes, sv);
 }

@@ -54,6 +54,9 @@ namespace c4::ast2 {
     struct fn_call;
     struct binary_op_call;
     struct unary_op_call;
+    struct float_literal;
+    struct integer_literal;
+    struct string_literal;
 }
 
 namespace c4 {
@@ -82,7 +85,10 @@ namespace c4 {
                 ast2::let_expression,
                 ast2::fn_call,
                 ast2::binary_op_call,
-                ast2::unary_op_call
+                ast2::unary_op_call,
+                ast2::float_literal,
+                ast2::integer_literal,
+                ast2::string_literal
             > {
         explicit ffm_mapper(ffm::ffm_context& ffm_context);
 
@@ -97,6 +103,12 @@ namespace c4 {
         void do_visit(const ast2::unary_op_call& obj) override;
 
         void do_visit(const ast2::fn_call& obj) override;
+
+        void do_visit(const ast2::float_literal& obj) override;
+
+        void do_visit(const ast2::integer_literal& obj) override;
+
+        void do_visit(const ast2::string_literal& obj) override;
 
         [[nodiscard]] std::span<ffm::function* const>
         roots() const noexcept { return _roots; }
@@ -122,6 +134,22 @@ namespace c4 {
 
         [[nodiscard]] ffm::function_declaration*
         find_function_declaration(const ffm::symbol& sym) const;
+
+        ffm::root_expression* build_root_literal(ffm::literal* lit) const;
+
+        ffm::value_expression* build_value_literal(ffm::literal* lit) const;
+
+        void
+        push_literal(ffm::literal* ffm_lit);
+
+        void
+        push_pack_literal(ffm::literal* literal);
+
+        void
+        push_call_literal(ffm::literal* literal);
+
+        void
+        push_root_literal(ffm::literal* lit);
 
         void
         build_closure_context_from_symbols(const ast2::expression& obj);
@@ -168,11 +196,19 @@ namespace c4 {
                                   const ast2::symbol& sym,
                                   std::span<const ast2::expression* const> args);
 
-        ffm::unpack* build_argument_unpack(ffm::block_argument* arg);
+        ffm::unpack*
+        build_argument_unpack(ffm::block_argument* arg);
 
-        c4::ffm::root_expression* build_root_argument(ffm::block_argument* arg);
+        ffm::root_expression*
+        build_root_argument(ffm::block_argument* arg);
 
-        c4::ffm::value_expression* build_value_argument(ffm::block_argument* arg) const;
+        ffm::value_expression*
+        build_value_argument(ffm::block_argument* arg) const;
+
+        void
+        push_call(const position& position,
+                     const ast2::symbol& sym,
+                     std::span<const ast2::expression* const> args);
 
         void
         push_root_call(const position& position,

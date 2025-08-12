@@ -53,6 +53,7 @@ namespace c4::ffm {
     struct function_pack;
     struct root_expression;
     struct value_expression;
+    struct literal;
     struct symbol;
     struct unpack;
 
@@ -93,7 +94,10 @@ namespace c4::ffm {
         build_root_expression(function_call* call);
 
         root_expression*
-        build_root_expression(block_argument* call);
+        build_root_expression(block_argument* arg);
+
+        root_expression*
+        build_root_expression(literal* lit);
 
         root_expression*
         build_root_expression(unpack* unp);
@@ -104,8 +108,23 @@ namespace c4::ffm {
         value_expression*
         build_value_expression(block_argument* arg);
 
+        value_expression*
+        build_value_expression(literal* lit);
+
         unpack*
         build_unpack(value_expression* expr);
+
+        literal*
+        build_literal(int32_t i32);
+
+        literal*
+        build_literal(int64_t i64);
+
+        literal*
+        build_literal(double d);
+
+        literal*
+        build_literal(std::string_view sv);
 
     private:
         // TODO arena allocator

@@ -30,72 +30,41 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4/include/c4/ffm/expression --
- *   value_expression can be passed to other function calls/packs as an
- *   argument; it is either a packed literal, argument, or packed fn. call
- *
- *   root_expression can stand at a root from a block's body; it is either a
- *   a packed literal, argument, unpack, or raw fn. call.
- *   A packed literal or argument in non-last position is for all intents and
- *   purposes useless and may be discarded during ffm generation.
+ * src/c4/include/c4/ffm/literal --
+ *   
  */
-#ifndef BLAST_EXPRESSION_HXX
-#define BLAST_EXPRESSION_HXX
+#ifndef BLAST_LITERAL_HXX
+#define BLAST_LITERAL_HXX
 
 #include <variant>
+#include <cstdint>
+#include <string_view>
+
+#include <c4/tags/visitable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
-#include <c4/ffm/literal.hxx>
 
 namespace c4::ffm {
-    struct function_call;
-    struct block_argument;
-    struct function_pack;
-    struct unpack;
-
-    struct value_expression final : ffm_node {
-        // todo literal
-        using value_type = std::variant<literal*, block_argument*, function_pack*>;
+    struct literal final : ffm_node
+                           , ast2::tags::visitable {
+        using value_type = std::variant<std::int32_t, std::int64_t, double, std::string_view>;
 
         explicit
-        value_expression(const value_type& value)
+        literal(const value_type& value)
             : _value{value} { }
 
-        template<class V>
-        void
-        accept_skip_self(V&& visitor) const {
-            std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
-                std::forward<T>(val)->accept(v);
-            }, _value);
-        }
-
-    private:
-        value_type _value;
-    };
-
-    struct root_expression final : ffm_node {
-        using value_type = std::variant<literal*,
-                                        block_argument*,
-                                        function_call*,
-                                        unpack*>;
-
-        explicit
-        root_expression(const value_type& value)
-            : _value{value} { }
+        [[nodiscard]] const value_type&
+        value() const noexcept { return _value; }
 
         [[nodiscard]] bool
-        discardable_nonlast() const noexcept;
+        packed() const noexcept { return _packed; }
 
-        template<class V>
         void
-        accept_skip_self(V&& visitor) const {
-            std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
-                std::forward<T>(val)->accept(v);
-            }, _value);
-        }
+        packed(const bool packed) noexcept { _packed = packed; }
 
     private:
         value_type _value;
+        bool _packed{};
     };
 }
 
