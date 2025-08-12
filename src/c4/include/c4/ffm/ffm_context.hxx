@@ -40,18 +40,20 @@
 #include <memory>
 #include <optional>
 
-#include <c4/ast2/symbol.hxx>
+#include <c4/diagnostic.hxx>
 #include <c4/ffm/ffm_node.hxx>
 
-#include "function_declaration.hxx"
-
 namespace c4::ffm {
+    struct block_argument;
     struct context_type;
     struct function;
     struct function_call;
     struct function_declaration;
     struct function_definition;
-    struct block_argument;
+    struct function_pack;
+    struct root_expression;
+    struct value_expression;
+    struct symbol;
 
     struct ffm_context {
         function*
@@ -61,20 +63,36 @@ namespace c4::ffm {
         build_function(function_definition* def);
 
         function_call*
-        build_function_call();
+        build_function_call(const position& position,
+                            function_declaration* fn);
+
+        function_pack*
+        build_function_pack(const position& position,
+                            function_declaration* fn);
 
         context_type*
-        build_context_type(std::string name, std::vector<block_argument*> symbols);
+        build_context_type(std::string name,
+                           std::vector<block_argument*> symbols);
 
         block_argument*
-        build_block_argument(const c4::position& position, std::string_view name, unsigned arity);
+        build_block_argument(const position& position,
+                             std::string_view name,
+                             unsigned arity);
 
         function_declaration*
-        build_function_declaration(const ffm::symbol& sym, context_type* ctx_type = nullptr, bool known = true, std::vector<ffm::block_argument*>&& args =
-                                           {});
+        build_function_declaration(const symbol& sym,
+                                   context_type* ctx_type = nullptr,
+                                   bool known = true,
+                                   std::vector<block_argument*>&& args = {});
 
         function_definition*
-        build_function_definition(const symbol& sym);
+        build_function_definition(const function_declaration* decl);
+
+        root_expression*
+        build_root_expression(function_call* call);
+
+        value_expression*
+        build_value_expression(function_pack* call);
 
     private:
         // TODO arena allocator

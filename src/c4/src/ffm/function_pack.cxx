@@ -28,17 +28,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function_definition --
+ * src/c4/src/ffm/function_pack --
  *   
  */
 
-#include <c4/ffm/function_definition.hxx>
-
-void
-c4::ffm::function_definition::push_expression(root_expression* expr) {
-    if (!_body.empty() && _body.back()->discardable_nonlast()) _body.pop_back();
-
-    _body.push_back(expr);
-}
+#include <c4/ffm/function_pack.hxx>

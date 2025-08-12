@@ -37,6 +37,7 @@
 #define BLAST_FFM_DUMPER_HXX
 
 #include <ostream>
+#include <span>
 
 #include <c4/visitor/visitor.hxx>
 #include <c4/ffm/ffm_context.hxx>
@@ -46,7 +47,8 @@ namespace c4 {
                 ffm::function,
                 ffm::function_call,
                 ffm::function_declaration,
-                ffm::function_definition
+                ffm::function_definition,
+                ffm::function_pack
             > {
         explicit
         ffm_dumper(std::ostream& os)
@@ -56,12 +58,22 @@ namespace c4 {
 
         void do_visit(const ffm::function_call& obj) override;
 
+        void print_call_like(std::string_view call_type, const c4::ffm::function_pack& obj);
+
+        void
+        print_call_like(std::string_view call_type,
+                        const ffm::function_declaration* obj,
+                        std::span<ffm::value_expression* const> args);
+
+        void do_visit(const ffm::function_pack& obj) override;
+
         void do_visit(const ffm::function_declaration& obj) override;
 
         void do_visit(const ffm::function_definition& obj) override;
 
     private:
         std::ostream& _os;
+        char _call_end{'\n'};
     };
 }
 

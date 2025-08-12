@@ -77,6 +77,7 @@
 #include <utility>
 #include <c4/ffm_dumper.hxx>
 #include <c4/ffm_mapper.hxx>
+#include <c4/ffm/function.hxx>
 #include <c4/ffm/ffm_context.hxx>
 #include <c4c/ir_emitter.hxx>
 

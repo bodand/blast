@@ -37,24 +37,32 @@
 #define FFM_FUNCTION_CALL_HXX
 
 #include <c4/tags/source_positioned.hxx>
-#include <c4/tags/visitable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
-#include <c4/ffm/function.hxx>
+#include <c4/ffm/function_declaration.hxx>
+#include <c4/ffm/expression.hxx>
 
 namespace c4::ffm {
     struct function_call final : ffm_node
+                                 , ast2::tags::visitable
                                  , ast2::tags::source_positioned {
         function_call(const c4::position& position,
-                      function* const fn)
+                      function_declaration* const fn)
             : source_positioned{position}
             , _fn{fn} { }
 
-        [[nodiscard]] function*
+        [[nodiscard]] const function_declaration*
         function() const { return _fn; }
 
+
+        [[nodiscard]] std::span<value_expression* const>
+        arguments() const { return _arguments; }
+
+        void
+        push_argument(value_expression* expr) { _arguments.push_back(expr); }
     private:
-        struct function* _fn;
+        function_declaration* _fn;
+        std::vector<value_expression*> _arguments{};
     };
 }
 

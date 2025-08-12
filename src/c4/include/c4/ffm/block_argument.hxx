@@ -39,9 +39,11 @@
 #include <c4/tags/referable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
+#include <c4/tags/visitable.hxx>
 
 namespace c4::ffm {
     struct block_argument final : ast2::tags::referable
+                                  , ast2::tags::visitable
                                   , ffm_node {
         block_argument(const c4::position& position,
                        const std::string_view name,

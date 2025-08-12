@@ -40,6 +40,7 @@
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
 
 void
@@ -48,8 +49,28 @@ c4::ffm_dumper::do_visit(const ffm::function& obj) {
 }
 
 void
-c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
+c4::ffm_dumper::print_call_like(const std::string_view call_type,
+                                const ffm::function_declaration* obj,
+                                const std::span<ffm::value_expression* const> args) {
+    _os << call_type << " " << obj->name() << "( ";
+    for (const auto& arg : args) {
+        const auto last = _call_end;
+        _call_end = ' ';
+        arg->accept_skip_self(*this);
+        _call_end = last;
+    }
+    _os << ")" << _call_end;
+}
 
+void
+c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
+    print_call_like("call", obj.function(), obj.arguments());
+
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::function_pack& obj) {
+    print_call_like("pack", obj.function(), obj.arguments());
 }
 
 void
@@ -67,7 +88,13 @@ c4::ffm_dumper::do_visit(const ffm::function_declaration& obj) {
 
 void
 c4::ffm_dumper::do_visit(const ffm::function_definition& obj) {
-    _os << "def " << obj.name() << '/' << obj.base_arity();
-    if (obj.closure()) _os << "+ ";
-    _os << "\n";
+    _os << "defn " << obj.name() << "( ";
+    for (const auto& ref : obj.decl()->arguments()) _os << ref->name() << " ";
+    _os << ") {\n";
+
+    for (const auto& expr : obj.body()) {
+        _os << "\t";
+        expr->accept_skip_self(*this);
+    }
+    _os << "}\n";
 }

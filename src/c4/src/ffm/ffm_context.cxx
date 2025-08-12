@@ -38,11 +38,13 @@
 #include <c4/ffm/ffm_context.hxx>
 
 #include <c4/ffm/block_argument.hxx>
+#include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
 
 namespace {
@@ -67,27 +69,47 @@ c4::ffm::ffm_context::build_function(function_definition* def) {
     return build_insert<function>(_nodes, def);
 }
 
+c4::ffm::function_call*
+c4::ffm::ffm_context::build_function_call(const position& position, function_declaration* fn) {
+    return build_insert<function_call>(_nodes, position, fn);
+}
+
+c4::ffm::function_pack*
+c4::ffm::ffm_context::build_function_pack(const position& position, function_declaration* fn) {
+    return build_insert<function_pack>(_nodes, position, fn);
+}
+
 c4::ffm::context_type*
 c4::ffm::ffm_context::build_context_type(std::string name, std::vector<block_argument*> symbols) {
     return build_insert<context_type>(_nodes, std::move(name), std::move(symbols));
 }
 
 c4::ffm::block_argument*
-c4::ffm::ffm_context::build_block_argument(const c4::position& position,
+c4::ffm::ffm_context::build_block_argument(const position& position,
                                            std::string_view name,
                                            unsigned arity) {
     return build_insert<block_argument>(_nodes, position, name, arity);
 }
 
 c4::ffm::function_declaration*
-c4::ffm::ffm_context::build_function_declaration(const ffm::symbol& sym,
+c4::ffm::ffm_context::build_function_declaration(const symbol& sym,
                                                  context_type* ctx_type,
                                                  bool known,
-                                                 std::vector<ffm::block_argument*>&& args) {
+                                                 std::vector<block_argument*>&& args) {
     return build_insert<function_declaration>(_nodes, sym, ctx_type, known, std::move(args));
 }
 
 c4::ffm::function_definition*
-c4::ffm::ffm_context::build_function_definition(const symbol& sym) {
-    return build_insert<function_definition>(_nodes, sym);
+c4::ffm::ffm_context::build_function_definition(const function_declaration* decl) {
+    return build_insert<function_definition>(_nodes, decl);
+}
+
+c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(function_call* call) {
+    return build_insert<root_expression>(_nodes, call);
+}
+
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(function_pack* call) {
+    return build_insert<value_expression>(_nodes, call);
 }

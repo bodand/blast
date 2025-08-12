@@ -36,13 +36,15 @@
 
 #include <c4/ffm_mapper.hxx>
 
+#include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_context.hxx>
+#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/symbol.hxx>
-#include <c4/ffm/ffm_node.hxx>
 
 #include <c4/ast2/block.hxx>
 #include <c4/ast2/dynamic_call.hxx>
@@ -82,8 +84,8 @@ c4::ffm_mapper::ffm_mapper(ffm::ffm_context& ffm_context)
     : _ffm_context{ffm_context} {
     const ffm::symbol main(position::pseudo_position(), "@main", 0, false);
 
-    declare_function(main, {});
-    const auto fn_def = _ffm_context.build_function_definition(main);
+    const auto decl = declare_function(main, {});
+    const auto fn_def = _ffm_context.build_function_definition(decl);
     const auto fn = _ffm_context.build_function(fn_def);
     _roots.push_back(fn);
     _current_function = fn_def;
@@ -107,6 +109,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
     const auto stack_memory = enter_block();
     // _block_names needs to be able to refer to this after the if's scope
     std::string name;
+    ffm::function_declaration* decl;
 
     auto arguments = make_argument_list(obj.args());
 
@@ -121,7 +124,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
             mangled_scope(name));
 
         _block_names.push_back(name);
-        const auto decl = declare_function(block_sym, std::move(arguments));
+        decl = declare_function(block_sym, std::move(arguments));
         let->emplace_attribute<declaration_attribute>("declaration", decl);
     }
     else {
@@ -131,7 +134,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
                                            obj.arity(),
                                            _closure != nullptr);
         _block_names.push_back(name);
-        const auto decl = declare_function(block_sym, std::move(arguments));
+        decl = declare_function(block_sym, std::move(arguments));
         obj.emplace_attribute<declaration_attribute>("declaration", decl);
     }
     DEBUG_ASSERT(!name.empty(),
@@ -141,8 +144,12 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
     // get named under the let object
     _currently_in_let.reset();
 
-    for (const auto& expression : obj.expressions()) {
-        expression->accept(*this);
+    // definition scope
+    {
+        const auto scope = define_function(decl);
+        for (const auto& expression : obj.expressions()) {
+            expression->accept(*this);
+        }
     }
 
     // this pops both the anonymous block's name and the let's name, whichever
@@ -187,6 +194,72 @@ c4::ffm_mapper::do_visit(const ast2::expression& obj) {
     _closure = nullptr;
     if (obj.closure()) build_closure_context_from_symbols(obj);
     obj.accept_skip_self(*this);
+}
+
+void
+c4::ffm_mapper::build_root_function_call(const c4::ast2::fn_call& obj) {
+    ffm::function_declaration* decl;
+    if (const auto ref = obj.sym().references()) {
+        const auto decl_opt = ref->attribute_value<ffm::function_declaration*>("declaration");
+        ASSERT(decl_opt, "referenced entity must have a declaration", obj.sym().name(), obj.sym().base_arity());
+        decl = *decl_opt;
+    }
+    else {
+        decl = find_function_declaration(ffm::symbol::from_ast(obj.sym(), false));
+    }
+    ASSERT(decl, "called symbol must have a declaration", obj.sym().name(), obj.sym().base_arity());
+
+    const auto call = _ffm_context.build_function_call(obj.position(), decl); {
+        const auto scope = enter_call_arguments(call);
+        for (const auto& arg : obj.args()) {
+            arg->accept(*this);
+        }
+    }
+
+    const auto root_expr = _ffm_context.build_root_expression(call);
+    _current_function->push_expression(root_expr);
+}
+
+c4::ffm::value_expression*
+c4::ffm_mapper::build_function_pack(const c4::ast2::fn_call& obj) {
+    ffm::function_declaration* decl;
+    if (const auto ref = obj.sym().references()) {
+        const auto decl_opt = ref->attribute_value<ffm::function_declaration*>("declaration");
+        ASSERT(decl_opt, "referenced entity must have a declaration", obj.sym().name(), obj.sym().base_arity());
+        decl = *decl_opt;
+    }
+    else {
+        decl = find_function_declaration(ffm::symbol::from_ast(obj.sym(), false));
+    }
+    ASSERT(decl, "called symbol must have a declaration", obj.sym().name(), obj.sym().base_arity());
+
+    const auto call = _ffm_context.build_function_pack(obj.position(), decl); {
+        const auto scope = enter_pack_arguments(call);
+        for (const auto& arg : obj.args()) {
+            arg->accept(*this);
+        }
+    }
+
+    return _ffm_context.build_value_expression(call);
+}
+
+void
+c4::ffm_mapper::build_call_argument_pack(const ast2::fn_call& obj) {
+    ffm::value_expression* const expr = build_function_pack(obj);
+    _current_call->push_argument(expr);
+}
+
+void
+c4::ffm_mapper::build_pack_argument_pack(const ast2::fn_call& obj) {
+    ffm::value_expression* const expr = build_function_pack(obj);
+    _current_pack->push_argument(expr);
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
+    if (_current_pack) return build_pack_argument_pack(obj);
+    if (_current_call) return build_call_argument_pack(obj);
+    build_root_function_call(obj);
 }
 
 namespace {
@@ -262,15 +335,23 @@ c4::ffm_mapper::declare_extern_function(const ffm::symbol& sym) {
     return declaration;
 }
 
-// c4::recursive_scope<c4::ffm::function_definition*>
-// c4::ffm_mapper::define_function(const ffm::symbol& sym) {
-//     declare_function(sym, TODO);
-//
-//     const auto fn_def = _ffm_context.build_function_definition(sym);
-//     const auto fn = _ffm_context.build_function(fn_def);
-//     _roots.push_back(fn);
-//     return recursive_scope(_current_function, fn_def);
-// }
+c4::recursive_scope<c4::ffm::function_call*>
+c4::ffm_mapper::enter_call_arguments(ffm::function_call* call) {
+    return recursive_scope(_current_call, call);
+}
+
+c4::recursive_scope<c4::ffm::function_pack*>
+c4::ffm_mapper::enter_pack_arguments(ffm::function_pack* pack) {
+    return recursive_scope(_current_pack, pack);
+}
+
+c4::recursive_scope<c4::ffm::function_definition*>
+c4::ffm_mapper::define_function(const ffm::function_declaration* decl) {
+    const auto definition = _ffm_context.build_function_definition(decl);
+    const auto fn = _ffm_context.build_function(definition);
+    _roots.push_back(fn);
+    return recursive_scope(_current_function, definition);
+}
 
 namespace {
     std::size_t

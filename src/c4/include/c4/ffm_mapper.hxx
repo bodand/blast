@@ -45,11 +45,11 @@
 #include <fmt/ranges.h>
 
 namespace c4::ast2 {
-    struct symbol;
     struct block;
     struct block_args;
     struct let_expression;
     struct expression;
+    struct fn_call;
 }
 
 namespace c4 {
@@ -75,7 +75,8 @@ namespace c4 {
     struct ffm_mapper final : ast2::visitor<
                 ast2::block,
                 ast2::expression,
-                ast2::let_expression
+                ast2::let_expression,
+                ast2::fn_call
             > {
         explicit ffm_mapper(ffm::ffm_context& ffm_context);
 
@@ -84,6 +85,8 @@ namespace c4 {
         void do_visit(const ast2::block& obj) override;
 
         void do_visit(const ast2::expression& obj) override;
+
+        void do_visit(const ast2::fn_call& obj) override;
 
         [[nodiscard]] std::span<ffm::function* const>
         roots() const noexcept { return _roots; }
@@ -110,7 +113,8 @@ namespace c4 {
         [[nodiscard]] ffm::function_declaration*
         find_function_declaration(const ffm::symbol& sym) const;
 
-        void build_closure_context_from_symbols(const c4::ast2::expression& obj);
+        void
+        build_closure_context_from_symbols(const c4::ast2::expression& obj);
 
         ffm::function_declaration*
         declare_function(const ffm::symbol&, std::vector<ffm::block_argument*>&& args);
@@ -118,8 +122,26 @@ namespace c4 {
         ffm::function_declaration*
         declare_extern_function(const ffm::symbol& sym);
 
+        [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_call*>
+        enter_call_arguments(ffm::function_call* call);
+
+        [[nodiscard("store as automatic variable")]] c4::recursive_scope<ffm::function_pack*>
+        enter_pack_arguments(ffm::function_pack* pack);
+
+        void
+        build_root_function_call(const ast2::fn_call& obj);
+
+        ffm::value_expression*
+        build_function_pack(const ast2::fn_call& obj);
+
+        void
+        build_call_argument_pack(const ast2::fn_call& obj);
+
+        void
+        build_pack_argument_pack(const ast2::fn_call& obj);
+
         [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_definition*>
-        define_function(const ffm::symbol&);
+        define_function(const ffm::function_declaration* decl);
 
         [[nodiscard]] std::size_t
         get_next_block_id() { return _block_counter++; }
@@ -142,6 +164,8 @@ namespace c4 {
         std::optional<const ast2::let_expression*> _currently_in_let{};
 
         ffm::function_definition* _current_function{};
+        ffm::function_call* _current_call{};
+        ffm::function_pack* _current_pack{};
 
         std::vector<ffm::function*> _roots{};
         ffm::ffm_context& _ffm_context;

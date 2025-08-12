@@ -98,6 +98,9 @@ add_library(c4
             include/c4/ffm/context_type.hxx
             src/ffm/context_type.cxx
 
+            include/c4/ffm/expression.hxx
+            src/ffm/expression.cxx
+
             include/c4/ffm/ffm_context.hxx
             src/ffm/ffm_context.cxx
 
@@ -109,12 +112,15 @@ add_library(c4
 
             include/c4/ffm/function_call.hxx
             src/ffm/function_call.cxx
-
+            
             include/c4/ffm/function_declaration.hxx
             src/ffm/function_declaration.cxx
 
             include/c4/ffm/function_definition.hxx
             src/ffm/function_definition.cxx
+
+            include/c4/ffm/function_pack.hxx
+            src/ffm/function_pack.cxx
 
             include/c4/ffm/symbol.hxx
             src/ffm/symbol.cxx

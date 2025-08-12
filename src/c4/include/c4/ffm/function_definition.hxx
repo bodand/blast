@@ -38,32 +38,39 @@
 
 #include <c4/tags/visitable.hxx>
 
-#include <c4/ffm/function.hxx>
+#include <c4/ffm/expression.hxx>
+#include <c4/ffm/function_declaration.hxx>
 
 namespace c4::ffm {
     struct function_definition final : ffm_node
-                                        , ast2::tags::visitable
-                                        , ast2::tags::referable {
+                                       , ast2::tags::visitable
+                                       , ast2::tags::referable {
         explicit
-        function_definition(const ffm::symbol& symbol)
-            : referable{symbol.position()}
-            , _symbol{symbol} { }
+        function_definition(const function_declaration* decl)
+            : referable{decl->position()}
+            , _decl{decl} { }
 
         std::string_view
-        name() const override { return _symbol.name(); }
+        name() const override { return _decl->name(); }
 
         unsigned
-        base_arity() const override { return _symbol.arity(); }
+        base_arity() const override { return _decl->base_arity(); }
 
         unsigned
-        effective_arity() const override {
-            return _symbol.effective_arity();
-        }
+        effective_arity() const override { return _decl->effective_arity(); }
 
+        [[nodiscard]] std::span<root_expression* const>
+        body() const { return _body; }
+
+        [[nodiscard]] const function_declaration*
+        decl() const { return _decl; }
+
+        void
+        push_expression(root_expression* expr);
     private:
-        symbol _symbol;
+        const function_declaration* _decl;
+        std::vector<root_expression*> _body;
     };
-
 }
 
 #endif

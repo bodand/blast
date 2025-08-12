@@ -28,17 +28,41 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-07-07.
+ * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/function_definition --
+ * src/c4/include/c4/ffm/function_pack --
  *   
  */
+#ifndef BLAST_FUNCTION_PACK_HXX
+#define BLAST_FUNCTION_PACK_HXX
 
-#include <c4/ffm/function_definition.hxx>
+#include <c4/tags/source_positioned.hxx>
 
-void
-c4::ffm::function_definition::push_expression(root_expression* expr) {
-    if (!_body.empty() && _body.back()->discardable_nonlast()) _body.pop_back();
+#include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/expression.hxx>
+#include <c4/ffm/function_declaration.hxx>
 
-    _body.push_back(expr);
+namespace c4::ffm {
+    struct function_pack final : ffm_node
+                                 , ast2::tags::visitable
+                                 , ast2::tags::source_positioned {
+        function_pack(const c4::position& position,
+                      function_declaration* const fn)
+            : source_positioned{position}
+            , _fn{fn} { }
+
+        [[nodiscard]] const function_declaration*
+        function() const { return _fn; }
+
+        [[nodiscard]] std::span<value_expression* const>
+        arguments() const { return _arguments; }
+
+        void
+        push_argument(value_expression* expr) { _arguments.push_back(expr); }
+    private:
+        function_declaration* _fn;
+        std::vector<value_expression*> _arguments{};
+    };
 }
+
+#endif
