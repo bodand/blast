@@ -113,7 +113,7 @@ c4::ffm_dumper::do_visit(const ffm::block_argument& obj) {
 }
 
 namespace {
-    struct literal_printer {
+    struct literal_printer final {
         std::ostream& _os;
 
         void
