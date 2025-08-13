@@ -54,6 +54,9 @@ add_library(c4
             include/c4/p2/lex/string_rule.hxx
             src/p2/lex/string_rule.cxx
 
+            src/p2/lex/match_helper.hxx
+            src/p2/lex/match_helper.cxx
+
             # AST
             include/c4/ast2/symbol.hxx
             src/ast2/symbol.cxx

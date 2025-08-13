@@ -99,8 +99,8 @@ namespace c4::p2 {
       constexpr static std::uint32_t max_capture_groups = 4;
 
       regex_rule(token_source& token_source,
-                 regex_context& ctx,
                  std::string_view regex,
+                 regex_context& ctx,
                  std::uint32_t groups_expected);
 
       regex_rule(regex_rule&& mv) noexcept

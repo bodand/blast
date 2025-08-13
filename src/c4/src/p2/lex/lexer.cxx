@@ -43,20 +43,16 @@ namespace {
 
     template<template<class...> class L, class... Ts>
     struct ruleset_builder<L<Ts...>> {
-        constexpr static auto size = sizeof...(Ts);
-        using type = std::tuple<typename c4::p2::rule_type<Ts>::type...>;
-
-        static type
+        static auto
         build(c4::p2::token_source& token_source,
               c4::p2::regex_context& regex_context) {
-            return {
-                c4::p2::regex_rule(
+            return std::make_tuple(
+                typename c4::p2::rule_type<Ts>::type(
                     token_source,
+                    *c4::p2::rule_type<Ts>::member_pointer(),
                     regex_context,
-                    Ts::regex,
                     c4::p2::token_capture_groups<Ts>::value
-                )...
-            };
+                )...);
         }
     };
 
@@ -77,7 +73,7 @@ c4::p2::lexer::lexer(const std::string_view source,
 
 namespace {
     struct matcher {
-        matcher(const char*& data,  const char* end, c4::position& pos)
+        matcher(const char*& data, const char* end, c4::position& pos)
             : data{data}
             , end{end}
             , pos{pos} { }

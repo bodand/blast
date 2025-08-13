@@ -36,4 +36,62 @@
 #ifndef C4_P2_STRING_RULE_HXX
 #define C4_P2_STRING_RULE_HXX
 
+#include <optional>
+#include <string_view>
+#include <c4/diagnostic.hxx>
+
+#include "token_source.hxx"
+
+namespace c4 {
+    struct position;
+}
+
+namespace c4::p2 {
+    struct string_rule {
+        explicit
+        string_rule(token_source& token_source,
+                    const std::string_view str,
+                    auto&&... /*ignore*/)
+            : _str{str}
+            , _token_source{&token_source} {
+            _match_newline = _str.find('\n') != std::string_view::npos;
+        }
+
+        template<class T>
+        std::optional<T>
+        match(const char*& data, const char* end, position& pos) const {
+            if (std::cmp_less(end - data, _str.size())) return std::nullopt;
+
+            const auto matchee = std::string_view{data, _str.size()};
+            if (matchee != _str) return std::nullopt;
+
+            auto matched_at = pos.snapshot();
+            update_matched_position(data, end, pos, matched_at);
+
+            return _token_source->build<T>(matched_at, matchee);
+        }
+
+    private:
+        void
+        update_matched_position(const char*& data,
+                                const char* end,
+                                position& pos,
+                                position& matched_at) const;
+
+        void
+        offset_positions_newline(const char*& begin,
+                                 const char* end,
+                                 position& pos) const;
+
+        void
+        offset_positions_no_newline(const char*& begin,
+                                    const char* end,
+                                    position& pos) const;
+
+        std::string_view _str;
+        bool _match_newline;
+        token_source* _token_source;
+    };
+}
+
 #endif

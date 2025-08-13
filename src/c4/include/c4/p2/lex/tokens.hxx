@@ -79,7 +79,7 @@ namespace c4::p2::tokens {
 
   private:
       friend token_source;
-      token_source* _source;
+      token_source* _source; // todo remove
   };
 
 #define C4P2_DEFAULT_TOKEN(name) \
@@ -178,49 +178,49 @@ namespace c4::p2::tokens {
 
   struct lbrace final : token_base {
       constexpr static std::string_view token_name = "opening brace '{'";
-      constexpr static std::string_view regex = R"(\A\{)";
+      constexpr static std::string_view string = "{";
   C4P2_DEFAULT_TOKEN_DECL(lbrace)
   };
 
   struct rbrace final : token_base {
       constexpr static std::string_view token_name = "closing brace '}'";
-      constexpr static std::string_view regex = R"(\A\})";
+      constexpr static std::string_view string = "}";
   C4P2_DEFAULT_TOKEN_DECL(rbrace)
   };
 
   struct lparen final : token_base {
       constexpr static std::string_view token_name = "opening parenthesis '('";
-      constexpr static std::string_view regex = R"(\A\()";
+      constexpr static std::string_view string = "(";
   C4P2_DEFAULT_TOKEN_DECL(lparen)
   };
 
   struct rparen final : token_base {
       constexpr static std::string_view token_name = "closing parenthesis ')'";
-      constexpr static std::string_view regex = R"(\A\))";
+      constexpr static std::string_view string = ")";
   C4P2_DEFAULT_TOKEN_DECL(rparen)
   };
 
   struct pipe final : token_base {
       constexpr static std::string_view token_name = "parameter marker '|'";
-      constexpr static std::string_view regex = R"(\A\|)";
+      constexpr static std::string_view string = "|";
   C4P2_DEFAULT_TOKEN_DECL(pipe)
   };
 
   struct ampersand final : token_base {
       constexpr static std::string_view token_name = "indirect call opening ampersand '&('";
-      constexpr static std::string_view regex = R"(\A&\()";
+      constexpr static std::string_view string = "&(";
   C4P2_DEFAULT_TOKEN_DECL(ampersand)
   };
 
   struct semicolon final : token_base {
       constexpr static std::string_view token_name = "semicolon ';'";
-      constexpr static std::string_view regex = R"(\A;)";
+      constexpr static std::string_view string = ";";
   C4P2_DEFAULT_TOKEN_DECL(semicolon)
   };
 
   struct backslash final : token_base {
       constexpr static std::string_view token_name = "backslash '\\'";
-      constexpr static std::string_view regex = R"(\A\\)";
+      constexpr static std::string_view string = R"(\)";
   C4P2_DEFAULT_TOKEN_DECL(backslash)
   };
 

@@ -45,13 +45,50 @@
 #include <c4/p2/lex/token_source.hxx>
 #include <c4/p2/lex/tokens.hxx>
 #include <c4/p2/lex/regex_rule.hxx>
+#include <c4/p2/lex/string_rule.hxx>
 #include <c4/diagnostic.hxx>
 
 namespace c4::p2 {
-    template<class>
+    template<class T>
+    concept regex_based_token = requires
+    {
+        { T::regex } -> std::convertible_to<std::string_view>;
+    };
+    template<class T>
+    concept string_based_token = requires
+    {
+        { T::string } -> std::convertible_to<std::string_view>;
+    };
+
+    namespace aux {
+        template<auto Val>
+        struct type {
+            constexpr static auto value = Val;
+        };
+    }
+
+    template<class T>
     struct rule_type {
-        // todo decide on input to user string_rule
-        using type = regex_rule;
+        struct incorrect_token_type;
+
+        using type = std::conditional_t<
+            regex_based_token<T>,
+            regex_rule,
+            std::conditional_t<
+                string_based_token<T>,
+                string_rule,
+                incorrect_token_type>
+        >;
+
+        constexpr static const std::string_view*
+        member_pointer() requires regex_based_token<T> {
+            return &T::regex;
+        }
+
+        constexpr static const std::string_view*
+        member_pointer() requires string_based_token<T> {
+            return &T::string;
+        }
     };
 
     template<class>
