@@ -216,13 +216,12 @@ main(int argc, const char** argv) {
             return 0;
         }
 
-        if (dump_type == "FFM") {
-            c4::ffm::ffm_context ffm_context;
-            c4::ffm_mapper mapper(ffm_context);
-            for (const auto& expression : script) {
-                expression->accept(mapper);
-            }
+        c4::ffm::ffm_context ffm_context;
+        c4::ffm_mapper mapper(ffm_context);
+        for (const auto& expression : script) expression->accept(mapper);
+        mapper.finalize_block_body();
 
+        if (dump_type == "FFM") {
             const auto ffm_roots = mapper.roots();
             auto outstrm = open_outstream(out_path);
             dump_ffm(ffm_roots.begin(), ffm_roots.end(), *outstrm);

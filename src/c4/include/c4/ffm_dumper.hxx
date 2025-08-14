@@ -43,7 +43,6 @@
 #include <c4/ffm/ffm_context.hxx>
 
 namespace c4 {
-
     struct ffm_dumper final : ast2::visitor<
                 ffm::function,
                 ffm::function_call,
@@ -54,7 +53,8 @@ namespace c4 {
                 ffm::block_argument,
                 ffm::literal,
                 ffm::local,
-                ffm::local_ref
+                ffm::local_ref,
+                ffm::context_access
             > {
         explicit
         ffm_dumper(std::ostream& os)
@@ -79,6 +79,8 @@ namespace c4 {
         void do_visit(const ffm::local& obj) override;
 
         void do_visit(const ffm::local_ref& obj) override;
+
+        void do_visit(const ffm::context_access& obj) override;
 
     private:
         void

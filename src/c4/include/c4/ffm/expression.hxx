@@ -53,12 +53,14 @@ namespace c4::ffm {
     struct block_argument;
     struct function_pack;
     struct unpack;
+    struct context_access;
 
     struct value_expression final : ffm_node {
         using value_type = std::variant<literal*,
                                         block_argument*,
                                         function_pack*,
-                                        local_ref*>;
+                                        local_ref*,
+                                        context_access*>;
 
         explicit
         value_expression(const value_type& value)
@@ -71,6 +73,9 @@ namespace c4::ffm {
                 std::forward<T>(val)->accept(v);
             }, _value);
         }
+
+        [[nodiscard]] const value_type&
+        value() const noexcept { return _value; }
 
     private:
         value_type _value;
@@ -97,6 +102,9 @@ namespace c4::ffm {
                 std::forward<T>(val)->accept(v);
             }, _value);
         }
+
+        [[nodiscard]] const value_type&
+        value() const noexcept { return _value; }
 
     private:
         value_type _value;

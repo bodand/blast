@@ -149,3 +149,8 @@ void
 c4::ffm_dumper::do_visit(const ffm::local_ref& obj) {
     _os << "auto " << obj.ref()->name() << ' ';
 }
+
+void
+c4::ffm_dumper::do_visit(const ffm::context_access& obj) {
+    _os << "arg " << obj.arg()->name() << '.' << obj.name() << ' ';
+}

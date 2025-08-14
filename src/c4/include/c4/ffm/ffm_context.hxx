@@ -44,6 +44,7 @@
 #include <c4/ffm/ffm_node.hxx>
 
 namespace c4::ffm {
+    struct context_access;
     struct local;
     struct local_ref;
     struct block_argument;
@@ -83,6 +84,9 @@ namespace c4::ffm {
                              std::string_view name,
                              unsigned arity);
 
+        context_access*
+        build_context_reference(block_argument* ctx, context_type* type, std::string_view name);
+
         function_declaration*
         build_function_declaration(const symbol& sym,
                                    context_type* ctx_type = nullptr,
@@ -118,6 +122,9 @@ namespace c4::ffm {
 
         value_expression*
         build_value_expression(local_ref* arg);
+
+        value_expression*
+        build_value_expression(context_access* arg);
 
         unpack*
         build_unpack(value_expression* expr);

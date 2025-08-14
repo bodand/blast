@@ -95,6 +95,11 @@ c4::ffm::ffm_context::build_block_argument(const position& position,
     return build_insert<block_argument>(_nodes, position, name, arity);
 }
 
+c4::ffm::context_access*
+c4::ffm::ffm_context::build_context_reference(block_argument* ctx, context_type* type, std::string_view name) {
+    return build_insert<context_access>(_nodes, ctx, type, name);
+}
+
 c4::ffm::function_declaration*
 c4::ffm::ffm_context::build_function_declaration(const symbol& sym,
                                                  context_type* const ctx_type,
@@ -150,6 +155,11 @@ c4::ffm::ffm_context::build_value_expression(literal* const lit) {
 
 c4::ffm::value_expression*
 c4::ffm::ffm_context::build_value_expression(local_ref* const arg) {
+    return build_insert<value_expression>(_nodes, arg);
+}
+
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(context_access* arg) {
     return build_insert<value_expression>(_nodes, arg);
 }
 

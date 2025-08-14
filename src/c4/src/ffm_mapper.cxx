@@ -64,6 +64,8 @@
 
 #include <libassert/assert.hpp>
 
+#include "../../c4c/include/c4c/source_file.hxx"
+
 namespace {
     struct declaration_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_declaration*> {
         explicit
@@ -146,6 +148,19 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
 }
 
 void
+c4::ffm_mapper::finalize_block_body() const {
+    // todo: empty block
+    const auto last_expr = _current_function->body().back();
+    if (const auto local = std::get_if<ffm::local*>(&last_expr->value())) {
+        const auto lref = _ffm_context.build_local_reference(*local);
+        const auto expr = _ffm_context.build_value_expression(lref);
+        const auto unpack = _ffm_context.build_unpack(expr);
+        const auto unpack_expr = _ffm_context.build_root_expression(unpack);
+        _current_function->push_expression(unpack_expr);
+    }
+}
+
+void
 c4::ffm_mapper::do_visit(const ast2::block& obj) {
     const auto stack_memory = enter_block();
     // _block_names needs to be able to refer to this after the if's scope
@@ -192,6 +207,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
             DEBUG_ASSERT(expression, "expression in ast block body must not be null");
             expression->accept(*this);
         }
+        finalize_block_body();
     }
 
     // this pops both the anonymous block's name and the let's name, whichever
@@ -363,9 +379,19 @@ c4::ffm_mapper::push_local(ffm::literal* literal) {
 
 void
 c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
-    if (_currently_in_let) push_local(obj.position(), obj.sym(), obj.args());
-    else push_call(obj.position(), obj.sym(), obj.args());
-    _currently_in_let.reset();
+    if (_currently_in_let) {
+        push_local(obj.position(), obj.sym(), obj.args());
+        return _currently_in_let.reset();
+    }
+    if (_current_function->is_closure_over(obj.sym().name())) {
+        const auto args = _current_function->decl()->arguments();
+        const auto ctx_arg = args.front();
+        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.sym().name());
+        push_context_access(ctx_expr);
+        return;
+    }
+
+    push_call(obj.position(), obj.sym(), obj.args());
 }
 
 void
@@ -408,7 +434,6 @@ c4::ffm_mapper::push_call_argument_packed(const position& position,
         _current_call->push_argument(expr);
     }
     else if (const auto local = try_get_referenced_local(sym)) {
-        // const auto expr = build_root_argument(arg);
         const auto lref = _ffm_context.build_local_reference(local);
         const auto expr = _ffm_context.build_value_expression(lref);
         _current_call->push_argument(expr);
@@ -566,6 +591,17 @@ c4::ffm_mapper::push_root_literal(ffm::literal* const lit) {
 
     const auto lit_expr = build_root_literal(lit);
     _current_function->push_expression(lit_expr);
+}
+
+void
+c4::ffm_mapper::push_context_access(ffm::context_access* ctx_expr) const {
+    const auto expr = _ffm_context.build_value_expression(ctx_expr);
+    if (_current_pack) return _current_pack->push_argument(expr);
+    if (_current_call) return _current_call->push_argument(expr);
+
+    const auto unpack = _ffm_context.build_unpack(expr);
+    const auto root = _ffm_context.build_root_expression(unpack);
+    _current_function->push_expression(root);
 }
 
 c4::ffm::function_declaration*

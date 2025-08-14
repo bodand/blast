@@ -65,6 +65,13 @@ namespace c4::ffm {
         [[nodiscard]] const function_declaration*
         decl() const { return _decl; }
 
+        [[nodiscard]] bool
+        is_closure_over(const std::string_view sym) const noexcept {
+            const auto ctx = _decl->ctx_type();
+            if (!ctx) return false;
+            return ctx->contains(sym);
+        }
+
         void
         push_expression(root_expression* expr);
     private:

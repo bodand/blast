@@ -57,12 +57,37 @@ namespace c4::ffm {
         void
         name(const std::string_view name) { _name = name; }
 
-        [[nodiscard]] std::span<c4::ffm::block_argument* const>
+        [[nodiscard]] std::span<block_argument* const>
         fields() const;
+
+        [[nodiscard]] bool
+        contains(std::string_view) const noexcept;
 
     private:
         std::string _name;
         std::vector<block_argument*> _fields;
+    };
+
+    struct context_access final : ffm_node
+                                  , ast2::tags::visitable {
+        context_access(block_argument* arg, context_type* ctx_type, const std::string_view name)
+            : _ctx_type{ctx_type}
+            , _arg{arg}
+            , _name{name} { }
+
+        [[nodiscard]] context_type*
+        ctx_type() const noexcept { return _ctx_type; }
+
+        [[nodiscard]] std::string_view
+        name() const noexcept { return _name; }
+
+        [[nodiscard]] block_argument*
+        arg() const noexcept { return _arg; }
+
+    private:
+        context_type* _ctx_type;
+        block_argument* _arg;
+        std::string_view _name;
     };
 }
 

@@ -110,6 +110,8 @@ namespace c4 {
 
         void do_visit(const ast2::string_literal& obj) override;
 
+        void finalize_block_body() const;
+
         [[nodiscard]] std::span<ffm::function* const>
         roots() const noexcept { return _roots; }
 
@@ -150,6 +152,9 @@ namespace c4 {
 
         void
         push_root_literal(ffm::literal* lit);
+
+        void
+        push_context_access(ffm::context_access* ctx_expr) const;
 
         void
         build_closure_context_from_symbols(const ast2::expression& obj);
