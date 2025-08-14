@@ -77,9 +77,9 @@ namespace {
             : typed_attribute{value} { }
     };
 
-    struct definition_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_definition*> {
+    struct local_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::local*> {
         explicit
-        definition_attribute(c4::ffm::function_definition* value)
+        local_attribute(c4::ffm::local* value)
             : typed_attribute{value} { }
     };
 }
@@ -290,6 +290,17 @@ namespace {
 
         return *attr;
     }
+
+    c4::ffm::local*
+    try_get_referenced_local(const c4::ast2::symbol& sym) {
+        const auto ref = sym.references();
+        if (!ref) return nullptr;
+
+        const auto attr = ref->attribute_value<c4::ffm::local*>("local");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
 }
 
 void
@@ -305,8 +316,27 @@ c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
 }
 
 void
+c4::ffm_mapper::push_local(const position& position,
+                           const ast2::symbol& sym,
+                           const std::span<const ast2::expression* const> args) {
+    DEBUG_ASSERT(_current_function, "must be in a function definition");
+    DEBUG_ASSERT(_currently_in_let, "must be immediate child of a let expression");
+
+    const auto let = _currently_in_let.value();
+    DEBUG_ASSERT(let, "let is null", sym.name(), sym.base_arity());
+
+    const auto expr = build_pack_value_expression(position, sym, args);
+    const auto local = _ffm_context.build_local(let->name(), expr);
+    let->emplace_attribute<local_attribute>("local", local);
+    const auto root = _ffm_context.build_root_expression(local);
+    _current_function->push_expression(root);
+}
+
+void
 c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
-    push_call(obj.position(), obj.sym(), obj.args());
+    if (_currently_in_let) push_local(obj.position(), obj.sym(), obj.args());
+    else push_call(obj.position(), obj.sym(), obj.args());
+    _currently_in_let.reset();
 }
 
 void
@@ -344,10 +374,30 @@ c4::ffm_mapper::push_call_argument_packed(const position& position,
         const auto expr = build_value_argument(arg);
         _current_call->push_argument(expr);
     }
+    else if (const auto local = try_get_referenced_local(sym)) {
+        // const auto expr = build_root_argument(arg);
+        const auto lref = _ffm_context.build_local_reference(local);
+        const auto expr = _ffm_context.build_value_expression(lref);
+        _current_call->push_argument(expr);
+    }
     else {
         ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
         _current_call->push_argument(expr);
     }
+}
+
+c4::ffm::value_expression*
+c4::ffm_mapper::build_pack_value_expression(const position& position,
+                                            const ast2::symbol& sym,
+                                            const std::span<const ast2::expression* const> args) {
+    if (const auto arg = try_get_referenced_argument(sym))
+        return build_value_argument(arg);
+    if (const auto local = try_get_referenced_local(sym)) {
+        // const auto expr = build_root_argument(arg);
+        const auto lref = _ffm_context.build_local_reference(local);
+        return _ffm_context.build_value_expression(lref);
+    }
+    return build_packed_function_call(position, sym, args);
 }
 
 void
@@ -356,14 +406,8 @@ c4::ffm_mapper::push_pack_argument_packed(const position& position,
                                           const std::span<const ast2::expression* const> args) {
     DEBUG_ASSERT(_current_pack, "must be in a pack in call argument (lazy call)");
 
-    if (const auto arg = try_get_referenced_argument(sym)) {
-        const auto expr = build_value_argument(arg);
-        _current_pack->push_argument(expr);
-    }
-    else {
-        ffm::value_expression* const expr = build_packed_function_call(position, sym, args);
-        _current_pack->push_argument(expr);
-    }
+    const auto expr = build_pack_value_expression(position, sym, args);
+    _current_pack->push_argument(expr);
 }
 
 void

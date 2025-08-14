@@ -135,3 +135,14 @@ c4::ffm_dumper::do_visit(const ffm::literal& obj) {
     std::visit(printer, obj.value());
     _os << _call_end;
 }
+
+void
+c4::ffm_dumper::do_visit(const ffm::local& obj) {
+    _os << "local " << obj.name() << ' ';
+    obj.value()->accept_skip_self(*this);
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::local_ref& obj) {
+    _os << "lref " << obj.ref()->name() << _call_end;
+}

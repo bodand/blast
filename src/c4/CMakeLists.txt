@@ -128,6 +128,9 @@ add_library(c4
             include/c4/ffm/literal.hxx
             src/ffm/literal.cxx
 
+            include/c4/ffm/local.hxx
+            src/ffm/local.cxx
+
             include/c4/ffm/symbol.hxx
             src/ffm/symbol.cxx
 

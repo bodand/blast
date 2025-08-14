@@ -191,6 +191,16 @@ namespace c4 {
                                   const ast2::symbol& sym,
                                   std::span<const ast2::expression* const> args);
 
+        ffm::value_expression*
+        build_pack_value_expression(const position& position,
+                                    const ast2::symbol& sym,
+                                    std::span<const ast2::expression* const> args);
+
+        void
+        push_local(const position& position,
+                   const ast2::symbol& sym,
+                   std::span<const ast2::expression* const> args);
+
         void
         push_pack_argument_packed(const position& position,
                                   const ast2::symbol& sym,
@@ -207,8 +217,8 @@ namespace c4 {
 
         void
         push_call(const position& position,
-                     const ast2::symbol& sym,
-                     std::span<const ast2::expression* const> args);
+                  const ast2::symbol& sym,
+                  std::span<const ast2::expression* const> args);
 
         void
         push_root_call(const position& position,

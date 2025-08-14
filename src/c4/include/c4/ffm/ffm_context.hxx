@@ -44,6 +44,8 @@
 #include <c4/ffm/ffm_node.hxx>
 
 namespace c4::ffm {
+    struct local;
+    struct local_ref;
     struct block_argument;
     struct context_type;
     struct function;
@@ -102,6 +104,9 @@ namespace c4::ffm {
         root_expression*
         build_root_expression(unpack* unp);
 
+        root_expression*
+        build_root_expression(local* loc);
+
         value_expression*
         build_value_expression(function_pack* call);
 
@@ -110,6 +115,9 @@ namespace c4::ffm {
 
         value_expression*
         build_value_expression(literal* lit);
+
+        value_expression*
+        build_value_expression(local_ref* arg);
 
         unpack*
         build_unpack(value_expression* expr);
@@ -125,6 +133,13 @@ namespace c4::ffm {
 
         literal*
         build_literal(std::string_view sv);
+
+        local*
+        build_local(std::string_view name, value_expression* value);
+
+
+        local_ref*
+        build_local_reference(const local* local);
 
     private:
         // TODO arena allocator

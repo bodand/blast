@@ -30,14 +30,47 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/expression --
+ * src/c4/include/c4/ffm/local --
  *   
  */
+#ifndef BLAST_LOCAL_HXX
+#define BLAST_LOCAL_HXX
 
-#include <c4/ffm/expression.hxx>
+#include <c4/tags/visitable.hxx>
+#include <c4/tags/attributable.hxx>
 
-bool
-c4::ffm::root_expression::discardable_nonlast() const noexcept {
-    return std::get_if<literal*>(&_value) != nullptr
-           || std::get_if<block_argument*>(&_value) != nullptr;
+#include <c4/ffm/ffm_node.hxx>
+
+namespace c4::ffm {
+    struct value_expression;
+
+    struct local final : ffm_node
+                         , ast2::tags::visitable {
+        local(const std::string_view name,
+              value_expression* const value) noexcept;
+
+        [[nodiscard]] std::string_view
+        name() const noexcept { return _name; }
+
+        [[nodiscard]] value_expression*
+        value() const noexcept { return _value; }
+
+    private:
+        std::string_view _name;
+        value_expression* _value;
+    };
+
+    struct local_ref final : ffm_node
+                             , ast2::tags::visitable {
+        explicit
+        local_ref(const local* ref) noexcept;
+
+        [[nodiscard]] const local*
+        ref() const noexcept { return _ref; }
+
+    private:
+        const local* _ref;
+    };
 }
+
+#endif

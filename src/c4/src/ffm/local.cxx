@@ -30,14 +30,20 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4/src/ffm/expression --
+ * src/c4/src/ffm/local --
  *   
  */
 
-#include <c4/ffm/expression.hxx>
+#include <c4/ffm/local.hxx>
 
-bool
-c4::ffm::root_expression::discardable_nonlast() const noexcept {
-    return std::get_if<literal*>(&_value) != nullptr
-           || std::get_if<block_argument*>(&_value) != nullptr;
+#include <libassert/assert.hpp>
+
+c4::ffm::local::local(const std::string_view name, value_expression* const value) noexcept: _name{name}
+    , _value{value} {
+    ASSERT(_value, "local must have a value");
+}
+
+c4::ffm::local_ref::local_ref(const local* ref) noexcept
+    : _ref{ref} {
+    ASSERT(_ref, "local_ref must refer to a proper local object");
 }

@@ -45,9 +45,10 @@
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
 #include <c4/ffm/function_pack.hxx>
+#include <c4/ffm/literal.hxx>
+#include <c4/ffm/local.hxx>
 #include <c4/ffm/symbol.hxx>
 #include <c4/ffm/unpack.hxx>
-#include <c4/ffm/literal.hxx>
 
 namespace {
     template<class T, class... Args>
@@ -62,106 +63,128 @@ namespace {
 }
 
 c4::ffm::function*
-c4::ffm::ffm_context::build_function(function_declaration* decl) {
+c4::ffm::ffm_context::build_function(function_declaration* const decl) {
     return build_insert<function>(_nodes, decl);
 }
 
 c4::ffm::function*
-c4::ffm::ffm_context::build_function(function_definition* def) {
+c4::ffm::ffm_context::build_function(function_definition* const def) {
     return build_insert<function>(_nodes, def);
 }
 
 c4::ffm::function_call*
-c4::ffm::ffm_context::build_function_call(const position& position, function_declaration* fn) {
+c4::ffm::ffm_context::build_function_call(const position& position, function_declaration* const fn) {
     return build_insert<function_call>(_nodes, position, fn);
 }
 
 c4::ffm::function_pack*
-c4::ffm::ffm_context::build_function_pack(const position& position, function_declaration* fn) {
+c4::ffm::ffm_context::build_function_pack(const position& position, function_declaration* const fn) {
     return build_insert<function_pack>(_nodes, position, fn);
 }
 
 c4::ffm::context_type*
-c4::ffm::ffm_context::build_context_type(std::string name, std::vector<block_argument*> symbols) {
+c4::ffm::ffm_context::build_context_type(std::string name,
+                                         std::vector<block_argument*> symbols) {
     return build_insert<context_type>(_nodes, std::move(name), std::move(symbols));
 }
 
 c4::ffm::block_argument*
 c4::ffm::ffm_context::build_block_argument(const position& position,
-                                           std::string_view name,
-                                           unsigned arity) {
+                                           const std::string_view name,
+                                           const unsigned arity) {
     return build_insert<block_argument>(_nodes, position, name, arity);
 }
 
 c4::ffm::function_declaration*
 c4::ffm::ffm_context::build_function_declaration(const symbol& sym,
-                                                 context_type* ctx_type,
-                                                 bool known,
+                                                 context_type* const ctx_type,
+                                                 const bool known,
                                                  std::vector<block_argument*>&& args) {
     return build_insert<function_declaration>(_nodes, sym, ctx_type, known, std::move(args));
 }
 
 c4::ffm::function_definition*
-c4::ffm::ffm_context::build_function_definition(const function_declaration* decl) {
+c4::ffm::ffm_context::build_function_definition(const function_declaration* const decl) {
     return build_insert<function_definition>(_nodes, decl);
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(function_call* call) {
+c4::ffm::ffm_context::build_root_expression(function_call* const call) {
     return build_insert<root_expression>(_nodes, call);
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(block_argument* arg) {
+c4::ffm::ffm_context::build_root_expression(block_argument* const arg) {
     return build_insert<root_expression>(_nodes, arg);
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(literal* lit) {
+c4::ffm::ffm_context::build_root_expression(literal* const lit) {
     return build_insert<root_expression>(_nodes, lit);
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(unpack* unp) {
+c4::ffm::ffm_context::build_root_expression(unpack* const unp) {
     return build_insert<root_expression>(_nodes, unp);
 }
 
+c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(local* const loc) {
+    return build_insert<root_expression>(_nodes, loc);
+}
+
 c4::ffm::value_expression*
-c4::ffm::ffm_context::build_value_expression(function_pack* call) {
+c4::ffm::ffm_context::build_value_expression(function_pack* const call) {
     return build_insert<value_expression>(_nodes, call);
 }
 
 c4::ffm::value_expression*
-c4::ffm::ffm_context::build_value_expression(block_argument* arg) {
+c4::ffm::ffm_context::build_value_expression(block_argument* const arg) {
     return build_insert<value_expression>(_nodes, arg);
 }
 
 c4::ffm::value_expression*
-c4::ffm::ffm_context::build_value_expression(literal* lit) {
+c4::ffm::ffm_context::build_value_expression(literal* const lit) {
     return build_insert<value_expression>(_nodes, lit);
 }
 
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(local_ref* const arg) {
+    return build_insert<value_expression>(_nodes, arg);
+}
+
 c4::ffm::unpack*
-c4::ffm::ffm_context::build_unpack(value_expression* expr) {
+c4::ffm::ffm_context::build_unpack(value_expression* const expr) {
     return build_insert<unpack>(_nodes, expr);
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(int32_t i32) {
+c4::ffm::ffm_context::build_literal(const int32_t i32) {
     return build_insert<literal>(_nodes, i32);
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(int64_t i64) {
+c4::ffm::ffm_context::build_literal(const int64_t i64) {
     return build_insert<literal>(_nodes, i64);
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(double d) {
+c4::ffm::ffm_context::build_literal(const double d) {
     return build_insert<literal>(_nodes, d);
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(std::string_view sv) {
+c4::ffm::ffm_context::build_literal(const std::string_view sv) {
     return build_insert<literal>(_nodes, sv);
+}
+
+c4::ffm::local*
+c4::ffm::ffm_context::build_local(const std::string_view name,
+                                  value_expression* const value) {
+    return build_insert<local>(_nodes, name, value);
+}
+
+c4::ffm::local_ref*
+c4::ffm::ffm_context::build_local_reference(const local* const local) {
+    return build_insert<local_ref>(_nodes, local);
 }

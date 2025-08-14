@@ -53,7 +53,7 @@ namespace c4::ffm {
       virtual ~ffm_node() = default;
 
   protected:
-      ffm_node() = default;
+      constexpr ffm_node() noexcept = default;
   };
 }
 
