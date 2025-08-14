@@ -84,7 +84,7 @@ c4::ffm::ffm_context::build_function_pack(const position& position, function_dec
 
 c4::ffm::context_type*
 c4::ffm::ffm_context::build_context_type(std::string name,
-                                         std::vector<block_argument*> symbols) {
+                                         std::vector<ast2::tags::referable*> symbols) {
     return build_insert<context_type>(_nodes, std::move(name), std::move(symbols));
 }
 

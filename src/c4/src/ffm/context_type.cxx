@@ -47,7 +47,7 @@ namespace {
     };
 }
 
-c4::ffm::context_type::context_type(std::string name, std::vector<block_argument*> fields)
+c4::ffm::context_type::context_type(std::string name, std::vector<ast2::tags::referable*> fields)
     : _name{std::move(name)}
     , _fields{std::move(fields)} {
     for (const auto& field : _fields) {
@@ -55,7 +55,7 @@ c4::ffm::context_type::context_type(std::string name, std::vector<block_argument
     }
 }
 
-std::span<c4::ffm::block_argument* const>
+std::span<c4::ast2::tags::referable* const>
 c4::ffm::context_type::fields() const { return _fields; }
 
 bool

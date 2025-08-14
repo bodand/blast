@@ -42,6 +42,7 @@
 
 #include <c4/diagnostic.hxx>
 #include <c4/ffm/ffm_node.hxx>
+#include <c4/tags/referable.hxx>
 
 namespace c4::ffm {
     struct context_access;
@@ -77,7 +78,7 @@ namespace c4::ffm {
 
         context_type*
         build_context_type(std::string name,
-                           std::vector<block_argument*> symbols);
+                           std::vector<ast2::tags::referable*> symbols);
 
         block_argument*
         build_block_argument(const position& position,

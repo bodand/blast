@@ -217,7 +217,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
 
 void
 c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) {
-    std::vector<ffm::block_argument*> closure_symbols;
+    std::vector<ast2::tags::referable*> closure_symbols;
     for (const auto& sym : obj.closure_symbols()) {
         if (const auto ref = sym.references()) {
             // a referenced symbol means we are a proper closure, thus
@@ -231,8 +231,7 @@ c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) 
                 decl.has_value() && !(*decl)->closure())
                 continue;
 
-            closure_symbols.emplace_back(_ffm_context
-                .build_block_argument(ref->position(), ref->name(), ref->base_arity()));
+            closure_symbols.emplace_back(ref);
         }
         else {
             // referenced symbols are defined in the source file, that is they

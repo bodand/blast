@@ -49,7 +49,7 @@
 namespace c4::ffm {
     struct context_type final : ffm_node {
         context_type(std::string name,
-                     std::vector<block_argument*> fields);
+                     std::vector<ast2::tags::referable*> fields);
 
         [[nodiscard]] std::string
         name() const { return _name; }
@@ -57,7 +57,7 @@ namespace c4::ffm {
         void
         name(const std::string_view name) { _name = name; }
 
-        [[nodiscard]] std::span<block_argument* const>
+        [[nodiscard]] std::span<ast2::tags::referable* const>
         fields() const;
 
         [[nodiscard]] bool
@@ -65,7 +65,7 @@ namespace c4::ffm {
 
     private:
         std::string _name;
-        std::vector<block_argument*> _fields;
+        std::vector<ast2::tags::referable*> _fields;
     };
 
     struct context_access final : ffm_node
