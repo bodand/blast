@@ -61,17 +61,19 @@ c4::ffm_dumper::print_call_like(const std::string_view call_type,
         arg->accept_skip_self(*this);
         _call_end = last;
     }
-    _os << ")" << _call_end;
+    _os << ")";
 }
 
 void
 c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
     print_call_like("call", obj.function(), obj.arguments());
+    _os << _call_end;
 }
 
 void
 c4::ffm_dumper::do_visit(const ffm::function_pack& obj) {
     print_call_like("pack", obj.function(), obj.arguments());
+    _os << _call_end;
 }
 
 void
@@ -109,7 +111,7 @@ c4::ffm_dumper::do_visit(const ffm::unpack& obj) {
 
 void
 c4::ffm_dumper::do_visit(const ffm::block_argument& obj) {
-    _os << obj.name() << ' ';
+    _os << "arg " << obj.name() << ' ';
 }
 
 namespace {
@@ -138,11 +140,12 @@ c4::ffm_dumper::do_visit(const ffm::literal& obj) {
 
 void
 c4::ffm_dumper::do_visit(const ffm::local& obj) {
-    _os << "local " << obj.name() << ' ';
+    _os << "auto " << obj.name() << ' ';
     obj.value()->accept_skip_self(*this);
+    _os << '\n';
 }
 
 void
 c4::ffm_dumper::do_visit(const ffm::local_ref& obj) {
-    _os << "lref " << obj.ref()->name() << _call_end;
+    _os << "auto " << obj.ref()->name() << ' ';
 }

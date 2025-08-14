@@ -137,7 +137,6 @@ namespace c4::ffm {
         local*
         build_local(std::string_view name, value_expression* value);
 
-
         local_ref*
         build_local_reference(const local* local);
 

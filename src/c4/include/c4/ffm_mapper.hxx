@@ -202,6 +202,9 @@ namespace c4 {
                    std::span<const ast2::expression* const> args);
 
         void
+        push_local(ffm::literal* literal);
+
+        void
         push_pack_argument_packed(const position& position,
                                   const ast2::symbol& sym,
                                   std::span<const ast2::expression* const> args);
