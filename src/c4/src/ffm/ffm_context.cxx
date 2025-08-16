@@ -163,6 +163,11 @@ c4::ffm::ffm_context::build_value_expression(context_access* arg) {
     return build_insert<value_expression>(_nodes, arg);
 }
 
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(context_object* const arg) {
+    return build_insert<value_expression>(_nodes, arg);
+}
+
 c4::ffm::unpack*
 c4::ffm::ffm_context::build_unpack(value_expression* const expr) {
     return build_insert<unpack>(_nodes, expr);
@@ -197,4 +202,9 @@ c4::ffm::ffm_context::build_local(const std::string_view name,
 c4::ffm::local_ref*
 c4::ffm::ffm_context::build_local_reference(const local* const local) {
     return build_insert<local_ref>(_nodes, local);
+}
+
+c4::ffm::context_object*
+c4::ffm::ffm_context::build_context_object(context_type* const context) {
+    return build_insert<context_object>(_nodes, context);
 }

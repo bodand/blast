@@ -59,9 +59,7 @@ std::span<c4::ast2::tags::referable* const>
 c4::ffm::context_type::fields() const { return _fields; }
 
 bool
-c4::ffm::context_type::contains(const std::string_view sym) const noexcept {
-    const auto field_it = std::ranges::find_if(_fields, [&](const auto& field) {
-        return field->name() == sym;
-    });
+c4::ffm::context_type::contains(const ast2::tags::referable* const ref) const noexcept {
+    const auto field_it = std::ranges::find(_fields, ref);
     return field_it != _fields.end();
 }

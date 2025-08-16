@@ -47,6 +47,12 @@
 
 
 namespace c4::ffm {
+    struct value_expression;
+}
+
+namespace c4::ffm {
+    struct local_ref;
+
     struct context_type final : ffm_node {
         context_type(std::string name,
                      std::vector<ast2::tags::referable*> fields);
@@ -61,11 +67,31 @@ namespace c4::ffm {
         fields() const;
 
         [[nodiscard]] bool
-        contains(std::string_view) const noexcept;
+        contains(const ast2::tags::referable* ref) const noexcept;
 
     private:
         std::string _name;
         std::vector<ast2::tags::referable*> _fields;
+    };
+
+    struct context_object final : ffm_node
+                                  , ast2::tags::visitable {
+        explicit
+        context_object(context_type* ctx_type)
+            : _ctx_type{ctx_type} { }
+
+        [[nodiscard]] context_type*
+        ctx_type() const noexcept { return _ctx_type; }
+
+        [[nodiscard]] std::span<value_expression* const>
+        args() const noexcept { return _args; }
+
+        void
+        push_argument(value_expression* ref) { _args.push_back(ref); }
+
+    private:
+        context_type* _ctx_type;
+        std::vector<value_expression*> _args{};
     };
 
     struct context_access final : ffm_node

@@ -165,8 +165,8 @@ namespace c4::p2 {
                           const unsigned arity,
                           ast2::tags::referable* referee,
                           const unsigned precedence = 0,
-                          const bool right_assoc = false) noexcept(std::is_nothrow_copy_constructible_v<
-                std::string_view>)
+                          const bool right_assoc = false)
+                noexcept(std::is_nothrow_copy_constructible_v<std::string_view>)
                 : name{name}
                 , referee{referee}
                 , arity{arity}
@@ -185,7 +185,7 @@ namespace c4::p2 {
         struct symbol_resolution {
             parser_symbol& symbol;
             std::ptrdiff_t distance;
-            bool from_parent_scope;
+            bool save_in_context;
         };
 
         std::optional<symbol_resolution>
@@ -198,7 +198,7 @@ namespace c4::p2 {
             return symbol_resolution{
                 .symbol = *it,
                 .distance = iter_difference,
-                .from_parent_scope = std::cmp_greater(iter_difference, current_scope)
+                .save_in_context = std::cmp_greater_equal(iter_difference, current_scope)
             };
         }
 
@@ -214,7 +214,7 @@ namespace c4::p2 {
             return symbol_resolution{
                 .symbol = *it,
                 .distance = iter_difference,
-                .from_parent_scope = std::cmp_greater(iter_difference, current_scope)
+                .save_in_context = std::cmp_greater(iter_difference, current_scope)
             };
         }
 
@@ -227,7 +227,7 @@ namespace c4::p2 {
         void
         leave_scope();
 
-        c4::p2::parser::parser_symbol&
+        parser_symbol&
         declare_symbol_internal(std::string_view symbol,
                                 unsigned arity,
                                 ast2::tags::referable* referee = nullptr,

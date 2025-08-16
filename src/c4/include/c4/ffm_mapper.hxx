@@ -153,6 +153,8 @@ namespace c4 {
         void
         push_root_literal(ffm::literal* lit);
 
+        void push_value_expression(c4::ffm::value_expression* expr) const;
+
         void
         push_context_access(ffm::context_access* ctx_expr) const;
 
@@ -222,6 +224,11 @@ namespace c4 {
 
         ffm::value_expression*
         build_value_argument(ffm::block_argument* arg) const;
+
+        ffm::value_expression*
+        build_context_object(const ast2::symbol& sym);
+
+        void push_context_object(const ast2::symbol& sym);
 
         void
         push_call(const position& position,

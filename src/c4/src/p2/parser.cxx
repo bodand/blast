@@ -333,7 +333,7 @@ c4::p2::parser::parse_final_expression() {
         op_sym.references(resolved->symbol.referee);
 
         std::vector<ast2::symbol> closure_symbols;
-        if (resolved->from_parent_scope
+        if (resolved->save_in_context
             || _scope_symbol_size.size() == 1) { // in root scope
             closure_symbols.push_back(op_sym);
             closure_symbols.back().references(resolved->symbol.referee);
@@ -360,7 +360,7 @@ c4::p2::parser::parse_final_expression() {
         sym.references(resolved->symbol.referee);
 
         std::vector<ast2::symbol> closure_symbols;
-        if (resolved->from_parent_scope
+        if (resolved->save_in_context
             || _scope_symbol_size.size() == 1) { // in root scope
             closure_symbols.push_back(sym);
             closure_symbols.back().references(resolved->symbol.referee);
@@ -568,7 +568,7 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
             op_sym.references(resolved->symbol.referee);
 
             std::vector<ast2::symbol> closure_symbols;
-            if (resolved->from_parent_scope
+            if (resolved->save_in_context
                 || _scope_symbol_size.size() == 1) { // in root scope
                 closure_symbols.push_back(op_sym);
                 closure_symbols.back().references(resolved->symbol.referee);

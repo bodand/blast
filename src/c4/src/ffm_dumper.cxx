@@ -154,3 +154,15 @@ void
 c4::ffm_dumper::do_visit(const ffm::context_access& obj) {
     _os << "arg " << obj.arg()->name() << '.' << obj.name() << ' ';
 }
+
+void
+c4::ffm_dumper::do_visit(const ffm::context_object& obj) {
+    _os << "ctx " << obj.ctx_type()->name() << "( ";
+    for (const auto& ref : obj.args()) {
+        const auto last = _call_end;
+        _call_end = ' ';
+        ref->accept_skip_self(*this);
+        _call_end = last;
+    }
+    _os << ")" << _call_end;
+}

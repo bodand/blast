@@ -66,10 +66,10 @@ namespace c4::ffm {
         decl() const { return _decl; }
 
         [[nodiscard]] bool
-        is_closure_over(const std::string_view sym) const noexcept {
+        is_closure_over(const referable* const ref) const noexcept {
             const auto ctx = _decl->ctx_type();
             if (!ctx) return false;
-            return ctx->contains(sym);
+            return ctx->contains(ref);
         }
 
         void

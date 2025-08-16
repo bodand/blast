@@ -64,8 +64,6 @@
 
 #include <libassert/assert.hpp>
 
-#include "../../c4c/include/c4c/source_file.hxx"
-
 namespace {
     struct declaration_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_declaration*> {
         explicit
@@ -102,6 +100,17 @@ namespace {
         if (!ref) return nullptr;
 
         const auto attr = ref->attribute_value<c4::ffm::local*>("local");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
+
+    c4::ffm::function_declaration*
+    try_get_declaration(const c4::ast2::symbol& sym) {
+        const auto ref = sym.references();
+        if (!ref) return nullptr;
+
+        const auto attr = ref->attribute_value<c4::ffm::function_declaration*>("declaration");
         if (!attr) return nullptr;
 
         return *attr;
@@ -150,6 +159,8 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
 void
 c4::ffm_mapper::finalize_block_body() const {
     // todo: empty block
+    if (_current_function->body().empty()) return;
+
     const auto last_expr = _current_function->body().back();
     if (const auto local = std::get_if<ffm::local*>(&last_expr->value())) {
         const auto lref = _ffm_context.build_local_reference(*local);
@@ -227,11 +238,29 @@ c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) 
             // ...except if the referenced symbol already has a fn. declaration
             // attached in which case it is a global function that is not a closure itself, meaning
             // it does not need to be captured, nor declared (as it is already done)
-            if (const auto decl = ref->attribute_value<ffm::function_declaration*>("declaration");
-                decl.has_value() && !(*decl)->closure())
-                continue;
+            if (const auto decl_attr = ref->attribute_value<ffm::function_declaration*>("declaration")) {
+                const auto decl = *decl_attr;
 
-            closure_symbols.emplace_back(ref);
+                // functions that the expression is a closure over that themselves are not closures
+                // don't actually need to be captured, so just ignore all of them (they are globally
+                // available in the binary as functions)
+                if (!decl->closure()) continue;
+
+                // if the referenced symbol is a closure, we need to flatten all references into
+                // a flat array: this allows efficient and easy context object generation
+                const auto outer_ctx_type = decl->ctx_type();
+                ASSERT(outer_ctx_type, "closure must have a context type", decl->name());
+
+                for (auto field : outer_ctx_type->fields()) {
+                    if (const auto attr = field->attribute_value<ffm::local*>("local")) {
+                        closure_symbols.push_back(field);
+                    }
+                }
+            }
+            else {
+                // plain old local variable
+                closure_symbols.emplace_back(ref);
+            }
         }
         else {
             // referenced symbols are defined in the source file, that is they
@@ -290,6 +319,8 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
     const auto call = build_function_pack_from_symbol(position, sym);
     const auto scope = enter_pack_arguments(call);
 
+    push_context_object(sym);
+
     for (const auto& arg : args) {
         DEBUG_ASSERT(arg, "argument must not be null");
         arg->accept(*this);
@@ -316,12 +347,66 @@ c4::ffm_mapper::build_value_argument(ffm::block_argument* arg) const {
     return _ffm_context.build_value_expression(arg);
 }
 
+c4::ffm::value_expression*
+c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
+    const auto decl = try_get_declaration(sym);
+    if (!decl) return nullptr;
+
+    const auto ctx_type = decl->ctx_type();
+    if (!ctx_type) return nullptr;
+
+    const auto ctx_obj = _ffm_context.build_context_object(ctx_type);
+    for (const auto field : ctx_type->fields()) {
+        DEBUG_ASSERT(field, "field is null");
+        const auto field_name = field->name();
+
+        if (_current_function->is_closure_over(field)) {
+            const auto args = _current_function->decl()->arguments();
+            const auto ctx_arg = args.front();
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, field_name);
+            const auto expr = _ffm_context.build_value_expression(ctx_expr);
+            ctx_obj->push_argument(expr);
+            continue;
+        }
+        if (const auto attr = field->attribute_value<ffm::local*>("local")) {
+            DEBUG_ASSERT(*attr, "field has local but is null", field_name);
+
+            const auto lref = _ffm_context.build_local_reference(*attr);
+            const auto expr = _ffm_context.build_value_expression(lref);
+            ctx_obj->push_argument(expr);
+            continue;
+        }
+        ASSERT(false, "symbol in built context not from argument, local, nor our context object",
+               field_name, field->base_arity());
+    }
+    if (ctx_obj->args().empty()) return nullptr;
+
+    return _ffm_context.build_value_expression(ctx_obj);
+}
+
+void
+c4::ffm_mapper::push_context_object(const ast2::symbol& sym) {
+    DEBUG_ASSERT(_current_function, "must be in function body");
+
+    ffm::value_expression* const ctx_expr = build_context_object(sym);
+    if (!ctx_expr) return;
+
+    if (_current_pack) return _current_pack->push_argument(ctx_expr);
+    if (_current_call) return _current_call->push_argument(ctx_expr);
+
+    const auto unpack = _ffm_context.build_unpack(ctx_expr);
+    const auto unpack_expr = _ffm_context.build_root_expression(unpack);
+    _current_function->push_expression(unpack_expr);
+}
+
 c4::ffm::root_expression*
 c4::ffm_mapper::build_root_function_call(const position& position,
                                          const ast2::symbol& sym,
                                          const std::span<const ast2::expression* const> args) {
     const auto call = build_function_call_from_symbol(position, sym);
     const auto scope = enter_call_arguments(call);
+
+    push_context_object(sym);
 
     for (const auto& arg : args) {
         DEBUG_ASSERT(arg, "argument must not be null");
@@ -334,12 +419,32 @@ c4::ffm_mapper::build_root_function_call(const position& position,
 void
 c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
     std::array<const ast2::expression* const, 2> args{&obj.left(), &obj.right()};
+    if (_currently_in_let) {
+        return push_local(obj.position(), obj.op(), args);
+    }
+    if (_current_function->is_closure_over(obj.op().references())) {
+        const auto args = _current_function->decl()->arguments();
+        const auto ctx_arg = args.front();
+        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
+        return push_context_access(ctx_expr);
+    }
+
     push_call(obj.position(), obj.op(), args);
 }
 
 void
 c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
     std::array<const ast2::expression* const, 1> args{&obj.operand()};
+    if (_currently_in_let) {
+        return push_local(obj.position(), obj.op(), args);
+    }
+    if (_current_function->is_closure_over(obj.op().references())) {
+        const auto args = _current_function->decl()->arguments();
+        const auto ctx_arg = args.front();
+        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
+        return push_context_access(ctx_expr);
+    }
+
     push_call(obj.position(), obj.op(), args);
 }
 
@@ -352,6 +457,7 @@ c4::ffm_mapper::push_local(const position& position,
 
     const auto let = _currently_in_let.value();
     DEBUG_ASSERT(let, "let is null", sym.name(), sym.base_arity());
+    _currently_in_let.reset();
 
     const auto expr = build_pack_value_expression(position, sym, args);
     const auto local = _ffm_context.build_local(let->name(), expr);
@@ -367,6 +473,7 @@ c4::ffm_mapper::push_local(ffm::literal* literal) {
 
     const auto let = _currently_in_let.value();
     DEBUG_ASSERT(let, "let is null", literal->value());
+    _currently_in_let.reset();
 
     literal->packed(true);
     const auto expr = _ffm_context.build_value_expression(literal);
@@ -378,16 +485,16 @@ c4::ffm_mapper::push_local(ffm::literal* literal) {
 
 void
 c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
-    if (_currently_in_let) {
-        push_local(obj.position(), obj.sym(), obj.args());
-        return _currently_in_let.reset();
-    }
-    if (_current_function->is_closure_over(obj.sym().name())) {
-        const auto args = _current_function->decl()->arguments();
-        const auto ctx_arg = args.front();
-        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.sym().name());
-        push_context_access(ctx_expr);
-        return;
+    if (_currently_in_let) return push_local(obj.position(), obj.sym(), obj.args());
+
+    if (_current_function->is_closure_over(obj.sym().references())) {
+        if (try_get_referenced_local(obj.sym())
+            || try_get_referenced_argument(obj.sym())) {
+            const auto args = _current_function->decl()->arguments();
+            const auto ctx_arg = args.front();
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.sym().name());
+            return push_context_access(ctx_expr);
+        }
     }
 
     push_call(obj.position(), obj.sym(), obj.args());
@@ -593,14 +700,19 @@ c4::ffm_mapper::push_root_literal(ffm::literal* const lit) {
 }
 
 void
-c4::ffm_mapper::push_context_access(ffm::context_access* ctx_expr) const {
-    const auto expr = _ffm_context.build_value_expression(ctx_expr);
+c4::ffm_mapper::push_value_expression(ffm::value_expression* const expr) const {
     if (_current_pack) return _current_pack->push_argument(expr);
     if (_current_call) return _current_call->push_argument(expr);
 
     const auto unpack = _ffm_context.build_unpack(expr);
     const auto root = _ffm_context.build_root_expression(unpack);
     _current_function->push_expression(root);
+}
+
+void
+c4::ffm_mapper::push_context_access(ffm::context_access* ctx_expr) const {
+    const auto expr = _ffm_context.build_value_expression(ctx_expr);
+    push_value_expression(expr);
 }
 
 c4::ffm::function_declaration*

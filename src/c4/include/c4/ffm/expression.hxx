@@ -53,6 +53,7 @@ namespace c4::ffm {
     struct block_argument;
     struct function_pack;
     struct unpack;
+    struct context_object;
     struct context_access;
 
     struct value_expression final : ffm_node {
@@ -60,7 +61,8 @@ namespace c4::ffm {
                                         block_argument*,
                                         function_pack*,
                                         local_ref*,
-                                        context_access*>;
+                                        context_access*,
+                                        context_object*>;
 
         explicit
         value_expression(const value_type& value)

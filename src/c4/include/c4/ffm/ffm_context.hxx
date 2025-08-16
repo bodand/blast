@@ -46,6 +46,7 @@
 
 namespace c4::ffm {
     struct context_access;
+    struct context_object;
     struct local;
     struct local_ref;
     struct block_argument;
@@ -127,6 +128,9 @@ namespace c4::ffm {
         value_expression*
         build_value_expression(context_access* arg);
 
+        value_expression*
+        build_value_expression(context_object* arg);
+
         unpack*
         build_unpack(value_expression* expr);
 
@@ -147,6 +151,9 @@ namespace c4::ffm {
 
         local_ref*
         build_local_reference(const local* local);
+
+        context_object*
+        build_context_object(context_type* context);
 
     private:
         // TODO arena allocator

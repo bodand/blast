@@ -54,7 +54,8 @@ namespace c4 {
                 ffm::literal,
                 ffm::local,
                 ffm::local_ref,
-                ffm::context_access
+                ffm::context_access,
+                ffm::context_object
             > {
         explicit
         ffm_dumper(std::ostream& os)
@@ -81,6 +82,8 @@ namespace c4 {
         void do_visit(const ffm::local_ref& obj) override;
 
         void do_visit(const ffm::context_access& obj) override;
+
+        void do_visit(const ffm::context_object& obj) override;
 
     private:
         void
