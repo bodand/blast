@@ -38,7 +38,7 @@
 
 #include <fmt/base.h>
 
-c4::ffm::function_declaration::function_declaration(const ffm::symbol& symbol,
+c4::ffm::function_declaration::function_declaration(const symbol& symbol,
                                                     context_type* ctx,
                                                     const bool known,
                                                     std::vector<block_argument*>&& args)

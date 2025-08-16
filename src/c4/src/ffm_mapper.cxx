@@ -172,7 +172,6 @@ c4::ffm_mapper::finalize_block_body() const {
 
 void
 c4::ffm_mapper::do_visit(const ast2::block& obj) {
-    const auto stack_memory = enter_block();
     // _block_names needs to be able to refer to this after the if's scope
     std::string name;
     ffm::function_declaration* decl;
@@ -212,6 +211,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
 
     // definition scope
     {
+        const auto stack_memory = enter_block();
         const auto suspend_pack = recursive_scope(_current_pack);
         const auto suspend_call = recursive_scope(_current_call);
         const auto scope = define_function(decl);

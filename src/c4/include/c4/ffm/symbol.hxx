@@ -64,7 +64,7 @@ namespace c4::ffm {
                const unsigned arity,
                const bool closure)
             : source_positioned{position}
-            , _name{name}
+            , _name{"_C" + std::string(name)}
             , _arity{arity}
             , _closure{closure} { }
 
