@@ -185,6 +185,8 @@ target_link_libraries(c4
                       c4rt
                       fmt::fmt-header-only
                       PRIVATE
+                      internal-warnings
+                      internal-lto
                       uni-algo::uni-algo
                       PCRE2::8BIT
                       libassert::assert
