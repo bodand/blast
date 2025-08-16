@@ -40,16 +40,16 @@
 
 #include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_context.hxx>
-#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
 #include <c4/ffm/function_pack.hxx>
+#include <c4/ffm/literal.hxx>
 #include <c4/ffm/symbol.hxx>
+#include <c4/ffm/unpack.hxx>
 
 #include <c4/ast2/block.hxx>
-#include <c4/ast2/dynamic_call.hxx>
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/float_literal.hxx>
 #include <c4/ast2/fn_call.hxx>
@@ -58,8 +58,7 @@
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
-#include <c4/ffm/literal.hxx>
-#include <c4/ffm/unpack.hxx>
+
 #include <c4/p2/lex/tokens.hxx>
 
 #include <libassert/assert.hpp>
@@ -213,6 +212,8 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
 
     // definition scope
     {
+        const auto suspend_pack = recursive_scope(_current_pack);
+        const auto suspend_call = recursive_scope(_current_call);
         const auto scope = define_function(decl);
         for (const auto& expression : obj.expressions()) {
             DEBUG_ASSERT(expression, "expression in ast block body must not be null");
@@ -220,6 +221,8 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
         }
         finalize_block_body();
     }
+
+    push_block_literal(decl);
 
     // this pops both the anonymous block's name and the let's name, whichever
     // happened
@@ -347,10 +350,9 @@ c4::ffm_mapper::build_value_argument(ffm::block_argument* arg) const {
     return _ffm_context.build_value_expression(arg);
 }
 
-c4::ffm::value_expression*
-c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
-    const auto decl = try_get_declaration(sym);
-    if (!decl) return nullptr;
+c4::ffm::context_object*
+c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl) {
+    DEBUG_ASSERT(decl, "declaration must not be null");
 
     const auto ctx_type = decl->ctx_type();
     if (!ctx_type) return nullptr;
@@ -360,11 +362,9 @@ c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
         DEBUG_ASSERT(field, "field is null");
         const auto field_name = field->name();
 
-        if (_current_function->is_closure_over(field)) {
-            const auto args = _current_function->decl()->arguments();
-            const auto ctx_arg = args.front();
-            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, field_name);
-            const auto expr = _ffm_context.build_value_expression(ctx_expr);
+        if (const auto attr = field->attribute_value<ffm::block_argument*>("argument")) {
+            DEBUG_ASSERT(*attr, "field has argument but is null", field_name);
+            const auto expr = _ffm_context.build_value_expression(*attr);
             ctx_obj->push_argument(expr);
             continue;
         }
@@ -376,10 +376,29 @@ c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
             ctx_obj->push_argument(expr);
             continue;
         }
+        if (_current_function->is_closure_over(field)) {
+            const auto args = _current_function->decl()->arguments();
+            const auto ctx_arg = args.front();
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, field_name);
+            const auto expr = _ffm_context.build_value_expression(ctx_expr);
+            ctx_obj->push_argument(expr);
+            continue;
+        }
         ASSERT(false, "symbol in built context not from argument, local, nor our context object",
                field_name, field->base_arity());
     }
     if (ctx_obj->args().empty()) return nullptr;
+
+    return ctx_obj;
+}
+
+c4::ffm::value_expression*
+c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
+    const auto decl = try_get_declaration(sym);
+    if (!decl) return nullptr;
+
+    const auto ctx_obj = build_context_object(decl);
+    if (!ctx_obj) return nullptr;
 
     return _ffm_context.build_value_expression(ctx_obj);
 }
@@ -423,8 +442,8 @@ c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
         return push_local(obj.position(), obj.op(), args);
     }
     if (_current_function->is_closure_over(obj.op().references())) {
-        const auto args = _current_function->decl()->arguments();
-        const auto ctx_arg = args.front();
+        const auto decl_args = _current_function->decl()->arguments();
+        const auto ctx_arg = decl_args.front();
         const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
         return push_context_access(ctx_expr);
     }
@@ -439,8 +458,8 @@ c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
         return push_local(obj.position(), obj.op(), args);
     }
     if (_current_function->is_closure_over(obj.op().references())) {
-        const auto args = _current_function->decl()->arguments();
-        const auto ctx_arg = args.front();
+        const auto decl_args = _current_function->decl()->arguments();
+        const auto ctx_arg = decl_args.front();
         const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
         return push_context_access(ctx_expr);
     }
@@ -506,6 +525,19 @@ c4::ffm_mapper::push_literal(ffm::literal* const ffm_lit) {
     if (_current_pack) return push_pack_literal(ffm_lit);
     if (_current_call) return push_call_literal(ffm_lit);
     push_root_literal(ffm_lit);
+}
+
+void
+c4::ffm_mapper::push_block_literal(ffm::function_declaration* decl) {
+    const auto ctx = build_context_object(decl);
+    const auto blk_lit = _ffm_context.build_block_literal(decl, ctx);
+
+    if (_current_pack || _current_call) {
+        const auto expr = _ffm_context.build_value_expression(blk_lit);
+        return push_value_expression(expr);
+    }
+    const auto expr = _ffm_context.build_root_expression(blk_lit);
+    _current_function->push_expression(expr);
 }
 
 void

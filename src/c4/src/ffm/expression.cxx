@@ -38,6 +38,8 @@
 
 bool
 c4::ffm::root_expression::discardable_nonlast() const noexcept {
-    return std::get_if<literal*>(&_value) != nullptr
-           || std::get_if<block_argument*>(&_value) != nullptr;
+    if (std::get_if<literal*>(&_value) != nullptr) return true;
+    if (std::get_if<block_literal*>(&_value) != nullptr) return true;
+    if (std::get_if<block_argument*>(&_value) != nullptr) return true;
+    return false;
 }

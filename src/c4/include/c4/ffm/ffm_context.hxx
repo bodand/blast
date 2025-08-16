@@ -59,100 +59,111 @@ namespace c4::ffm {
     struct root_expression;
     struct value_expression;
     struct literal;
+    struct block_literal;
     struct symbol;
     struct unpack;
 
     struct ffm_context {
-        function*
+        [[nodiscard]] function*
         build_function(function_declaration* decl);
 
-        function*
+        [[nodiscard]] function*
         build_function(function_definition* def);
 
-        function_call*
+        [[nodiscard]] function_call*
         build_function_call(const position& position,
                             function_declaration* fn);
 
-        function_pack*
+        [[nodiscard]] function_pack*
         build_function_pack(const position& position,
                             function_declaration* fn);
 
-        context_type*
+        [[nodiscard]] context_type*
         build_context_type(std::string name,
                            std::vector<ast2::tags::referable*> symbols);
 
-        block_argument*
+        [[nodiscard]] block_argument*
         build_block_argument(const position& position,
                              std::string_view name,
                              unsigned arity);
 
-        context_access*
+        [[nodiscard]] context_access*
         build_context_reference(block_argument* ctx, context_type* type, std::string_view name);
 
-        function_declaration*
+        [[nodiscard]] function_declaration*
         build_function_declaration(const symbol& sym,
                                    context_type* ctx_type = nullptr,
                                    bool known = true,
                                    std::vector<block_argument*>&& args = {});
 
-        function_definition*
+        [[nodiscard]] function_definition*
         build_function_definition(const function_declaration* decl);
 
-        root_expression*
+        [[nodiscard]] root_expression*
         build_root_expression(function_call* call);
 
-        root_expression*
+        [[nodiscard]] root_expression*
         build_root_expression(block_argument* arg);
 
-        root_expression*
+        [[nodiscard]] root_expression*
         build_root_expression(literal* lit);
 
-        root_expression*
+        [[nodiscard]] root_expression*
+        build_root_expression(block_literal* lit);
+
+        [[nodiscard]] root_expression*
         build_root_expression(unpack* unp);
 
-        root_expression*
+        [[nodiscard]] root_expression*
         build_root_expression(local* loc);
 
-        value_expression*
+        [[nodiscard]] value_expression*
         build_value_expression(function_pack* call);
 
-        value_expression*
+        [[nodiscard]] value_expression*
         build_value_expression(block_argument* arg);
 
-        value_expression*
+        [[nodiscard]] value_expression*
         build_value_expression(literal* lit);
 
-        value_expression*
+        [[nodiscard]] value_expression*
+        build_value_expression(block_literal* lit);
+
+        [[nodiscard]] value_expression*
         build_value_expression(local_ref* arg);
 
-        value_expression*
+        [[nodiscard]] value_expression*
         build_value_expression(context_access* arg);
 
-        value_expression*
+        [[nodiscard]] value_expression*
         build_value_expression(context_object* arg);
 
-        unpack*
+        [[nodiscard]] unpack*
         build_unpack(value_expression* expr);
 
-        literal*
+        [[nodiscard]] literal*
         build_literal(int32_t i32);
 
-        literal*
+        [[nodiscard]] literal*
         build_literal(int64_t i64);
 
-        literal*
+        [[nodiscard]] literal*
         build_literal(double d);
 
-        literal*
+        [[nodiscard]] literal*
         build_literal(std::string_view sv);
 
-        local*
+        [[nodiscard]] block_literal*
+        build_block_literal(function_declaration* decl,
+                            context_object* context = nullptr);
+
+        [[nodiscard]] local*
         build_local(std::string_view name, value_expression* value);
 
-        local_ref*
+        [[nodiscard]] local_ref*
         build_local_reference(const local* local);
 
-        context_object*
+        [[nodiscard]] context_object*
         build_context_object(context_type* context);
 
     private:

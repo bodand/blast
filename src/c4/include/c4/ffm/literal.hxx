@@ -36,13 +36,14 @@
 #ifndef BLAST_LITERAL_HXX
 #define BLAST_LITERAL_HXX
 
-#include <variant>
 #include <cstdint>
 #include <string_view>
+#include <variant>
 
 #include <c4/tags/visitable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/function_declaration.hxx>
 
 namespace c4::ffm {
     struct literal final : ffm_node
@@ -64,6 +65,31 @@ namespace c4::ffm {
 
     private:
         value_type _value;
+        bool _packed{};
+    };
+
+    struct block_literal final : ffm_node
+                                 , ast2::tags::visitable {
+        explicit
+        block_literal(function_declaration* function, context_object* context = nullptr)
+            : _function{function}
+            , _context{context} { }
+
+        [[nodiscard]] function_declaration*
+        function() const noexcept { return _function; }
+
+        [[nodiscard]] context_object*
+        context() const noexcept { return _context; }
+
+        [[nodiscard]] bool
+        packed() const noexcept { return _packed; }
+
+        void
+        packed(const bool packed) noexcept { _packed = packed; }
+
+    private:
+        function_declaration* _function;
+        context_object* _context{};
         bool _packed{};
     };
 }

@@ -145,6 +145,9 @@ namespace c4 {
         push_literal(ffm::literal* ffm_lit);
 
         void
+        push_block_literal(ffm::function_declaration* decl);
+
+        void
         push_pack_literal(ffm::literal* literal);
 
         void
@@ -224,6 +227,8 @@ namespace c4 {
 
         ffm::value_expression*
         build_value_argument(ffm::block_argument* arg) const;
+
+        ffm::context_object* build_context_object(const c4::ffm::function_declaration* decl);
 
         ffm::value_expression*
         build_context_object(const ast2::symbol& sym);

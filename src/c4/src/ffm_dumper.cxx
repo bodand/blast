@@ -37,11 +37,17 @@
 #include <iomanip>
 #include <c4/ffm_dumper.hxx>
 
+
+#include <c4/ffm/block_argument.hxx>
+#include <c4/ffm/expression.hxx>
+#include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
 #include <c4/ffm/function_pack.hxx>
+#include <c4/ffm/literal.hxx>
+#include <c4/ffm/local.hxx>
 #include <c4/ffm/symbol.hxx>
 #include <c4/ffm/unpack.hxx>
 
@@ -165,4 +171,19 @@ c4::ffm_dumper::do_visit(const ffm::context_object& obj) {
         _call_end = last;
     }
     _os << ")" << _call_end;
+}
+
+void
+c4::ffm_dumper::do_visit(const ffm::block_literal& obj) {
+    // ReSharper disable CppDFAConstantConditions
+    _os << (obj.packed() ? "blkp " : "blkr ");
+    _os << obj.function()->name() << "( ";
+    if (obj.context()) {
+        const auto last = _call_end;
+        _call_end = ' ';
+        visit(*obj.context());
+        _call_end = last;
+    }
+    _os << ')' << _call_end;
+    // ReSharper restore CppDFAConstantConditions
 }

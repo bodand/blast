@@ -52,6 +52,7 @@ namespace c4 {
                 ffm::unpack,
                 ffm::block_argument,
                 ffm::literal,
+                ffm::block_literal,
                 ffm::local,
                 ffm::local_ref,
                 ffm::context_access,
@@ -84,6 +85,8 @@ namespace c4 {
         void do_visit(const ffm::context_access& obj) override;
 
         void do_visit(const ffm::context_object& obj) override;
+
+        void do_visit(const ffm::block_literal& obj) override;
 
     private:
         void

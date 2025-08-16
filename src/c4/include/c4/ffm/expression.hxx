@@ -45,8 +45,6 @@
 #include <variant>
 
 #include <c4/ffm/ffm_node.hxx>
-#include <c4/ffm/literal.hxx>
-#include <c4/ffm/local.hxx>
 
 namespace c4::ffm {
     struct function_call;
@@ -55,9 +53,14 @@ namespace c4::ffm {
     struct unpack;
     struct context_object;
     struct context_access;
+    struct literal;
+    struct block_literal;
+    struct local;
+    struct local_ref;
 
     struct value_expression final : ffm_node {
         using value_type = std::variant<literal*,
+                                        block_literal*,
                                         block_argument*,
                                         function_pack*,
                                         local_ref*,
@@ -85,6 +88,7 @@ namespace c4::ffm {
 
     struct root_expression final : ffm_node {
         using value_type = std::variant<literal*,
+                                        block_literal*,
                                         block_argument*,
                                         function_call*,
                                         unpack*,

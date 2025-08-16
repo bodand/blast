@@ -129,6 +129,12 @@ c4::ffm::ffm_context::build_root_expression(literal* const lit) {
 }
 
 c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(block_literal* const lit) {
+    lit->packed(false);
+    return build_insert<root_expression>(_nodes, lit);
+}
+
+c4::ffm::root_expression*
 c4::ffm::ffm_context::build_root_expression(unpack* const unp) {
     return build_insert<root_expression>(_nodes, unp);
 }
@@ -150,6 +156,12 @@ c4::ffm::ffm_context::build_value_expression(block_argument* const arg) {
 
 c4::ffm::value_expression*
 c4::ffm::ffm_context::build_value_expression(literal* const lit) {
+    return build_insert<value_expression>(_nodes, lit);
+}
+
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(block_literal* const lit) {
+    lit->packed(true);
     return build_insert<value_expression>(_nodes, lit);
 }
 
@@ -191,6 +203,12 @@ c4::ffm::ffm_context::build_literal(const double d) {
 c4::ffm::literal*
 c4::ffm::ffm_context::build_literal(const std::string_view sv) {
     return build_insert<literal>(_nodes, sv);
+}
+
+c4::ffm::block_literal*
+c4::ffm::ffm_context::build_block_literal(function_declaration* const decl,
+                                          context_object* const context) {
+    return build_insert<block_literal>(_nodes, decl, context);
 }
 
 c4::ffm::local*
