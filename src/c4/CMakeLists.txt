@@ -122,9 +122,6 @@ add_library(c4
             include/c4/ffm/function_definition.hxx
             src/ffm/function_definition.cxx
 
-            include/c4/ffm/function_pack.hxx
-            src/ffm/function_pack.cxx
-
             include/c4/ffm/literal.hxx
             src/ffm/literal.cxx
 

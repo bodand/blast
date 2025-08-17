@@ -55,7 +55,6 @@ namespace c4::ffm {
     struct function_call;
     struct function_declaration;
     struct function_definition;
-    struct function_pack;
     struct root_expression;
     struct value_expression;
     struct literal;
@@ -74,9 +73,8 @@ namespace c4::ffm {
         build_function_call(const position& position,
                             function_declaration* fn);
 
-        [[nodiscard]] function_pack*
-        build_function_pack(const position& position,
-                            function_declaration* fn);
+        [[nodiscard]] function_call* build_function_pack(const position& position,
+                                                         function_declaration* fn);
 
         [[nodiscard]] context_type*
         build_context_type(std::string name,
@@ -118,7 +116,7 @@ namespace c4::ffm {
         build_root_expression(local* loc);
 
         [[nodiscard]] value_expression*
-        build_value_expression(function_pack* call);
+        build_value_expression(function_call* call);
 
         [[nodiscard]] value_expression*
         build_value_expression(block_argument* arg);

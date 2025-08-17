@@ -43,26 +43,70 @@
 #include <c4/ffm/expression.hxx>
 
 namespace c4::ffm {
-    struct function_call final : ffm_node
-                                 , ast2::tags::visitable
-                                 , ast2::tags::source_positioned {
-        function_call(const c4::position& position,
-                      function_declaration* const fn)
-            : source_positioned{position}
-            , _fn{fn} { }
+    struct argument_holder {
+        argument_holder(const argument_holder& other) = delete;
 
-        [[nodiscard]] const function_declaration*
-        function() const { return _fn; }
+        argument_holder&
+        operator=(const argument_holder& other) = delete;
 
+        argument_holder(argument_holder&& other) noexcept = delete;
+
+        argument_holder&
+        operator=(argument_holder&& other) noexcept = delete;
+
+        virtual ~argument_holder() = default;
 
         [[nodiscard]] std::span<value_expression* const>
         arguments() const { return _arguments; }
 
         void
         push_argument(value_expression* expr) { _arguments.push_back(expr); }
+
+        [[nodiscard]] bool
+        packed() const noexcept { return _packed; }
+
+    protected:
+        explicit
+        argument_holder(const bool packed)
+            : _packed{packed} { }
+
+    private:
+        bool _packed{};
+        std::vector<value_expression*> _arguments{};
+    };
+
+    struct function_call final : ffm_node
+                                 , ast2::tags::visitable
+                                 , ast2::tags::source_positioned
+                                 , argument_holder {
+        function_call(const c4::position& position,
+                      function_declaration* const fn,
+                      const bool packed = false)
+            : source_positioned{position}
+            , argument_holder{packed}
+            , _fn{fn} { }
+
+        [[nodiscard]] const function_declaration*
+        function() const noexcept { return _fn; }
+
     private:
         function_declaration* _fn;
-        std::vector<value_expression*> _arguments{};
+    };
+
+    struct dynamic_call final : ffm_node
+                                , ast2::tags::visitable
+                                , argument_holder {
+        explicit
+        dynamic_call(value_expression* callee,
+                     const bool packed = false)
+            : argument_holder{packed}
+            , _callee{callee} { }
+
+        [[nodiscard]] const value_expression*
+        callee() const { return _callee; }
+
+    private:
+        value_expression* _callee;
     };
 }
 

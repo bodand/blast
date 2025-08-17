@@ -57,9 +57,13 @@ namespace c4::ast2 {
     struct float_literal;
     struct integer_literal;
     struct string_literal;
+    struct dynamic_call;
 }
 
-namespace c4 {
+namespace c4 { namespace ffm {
+        struct argument_holder;
+    }
+
     template<class T>
     struct recursive_scope {
         explicit
@@ -88,7 +92,8 @@ namespace c4 {
                 ast2::unary_op_call,
                 ast2::float_literal,
                 ast2::integer_literal,
-                ast2::string_literal
+                ast2::string_literal,
+                ast2::dynamic_call
             > {
         explicit ffm_mapper(ffm::ffm_context& ffm_context);
 
@@ -109,6 +114,8 @@ namespace c4 {
         void do_visit(const ast2::integer_literal& obj) override;
 
         void do_visit(const ast2::string_literal& obj) override;
+
+        void do_visit(const ast2::dynamic_call& obj) override;
 
         void finalize_block_body() const;
 
@@ -148,15 +155,12 @@ namespace c4 {
         push_block_literal(ffm::function_declaration* decl);
 
         void
-        push_pack_literal(ffm::literal* literal);
-
-        void
         push_call_literal(ffm::literal* literal);
 
         void
         push_root_literal(ffm::literal* lit);
 
-        void push_value_expression(c4::ffm::value_expression* expr) const;
+        void push_value_expression(ffm::value_expression* expr) const;
 
         void
         push_context_access(ffm::context_access* ctx_expr) const;
@@ -170,11 +174,8 @@ namespace c4 {
         ffm::function_declaration*
         declare_extern_function(const ffm::symbol& sym);
 
-        [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_call*>
-        enter_call_arguments(ffm::function_call* call);
-
-        [[nodiscard("store as automatic variable")]] recursive_scope<ffm::function_pack*>
-        enter_pack_arguments(ffm::function_pack* pack);
+        [[nodiscard("store as automatic variable")]] recursive_scope<ffm::argument_holder*>
+        enter_call_arguments(ffm::argument_holder* call);
 
         ffm::root_expression*
         build_root_function_call(const position& position, const ast2::symbol& sym,
@@ -183,9 +184,8 @@ namespace c4 {
         ffm::function_declaration*
         resolve_function_declaration(const ast2::symbol& sym);
 
-        ffm::function_pack*
-        build_function_pack_from_symbol(const position& position,
-                                        const ast2::symbol& sym);
+        ffm::function_call* build_function_pack_from_symbol(const position& position,
+                                                                const ast2::symbol& sym);
 
         ffm::function_call*
         build_function_call_from_symbol(const position& position,
@@ -214,11 +214,6 @@ namespace c4 {
         void
         push_local(ffm::literal* literal);
 
-        void
-        push_pack_argument_packed(const position& position,
-                                  const ast2::symbol& sym,
-                                  std::span<const ast2::expression* const> args);
-
         ffm::unpack*
         build_argument_unpack(ffm::block_argument* arg);
 
@@ -228,12 +223,14 @@ namespace c4 {
         ffm::value_expression*
         build_value_argument(ffm::block_argument* arg) const;
 
-        ffm::context_object* build_context_object(const c4::ffm::function_declaration* decl);
+        ffm::context_object*
+        build_context_object(const ffm::function_declaration* decl);
 
         ffm::value_expression*
         build_context_object(const ast2::symbol& sym);
 
-        void push_context_object(const ast2::symbol& sym);
+        void
+        push_context_object(const ast2::symbol& sym);
 
         void
         push_call(const position& position,
@@ -269,8 +266,8 @@ namespace c4 {
         std::optional<const ast2::let_expression*> _currently_in_let{};
 
         ffm::function_definition* _current_function{};
-        ffm::function_call* _current_call{};
-        ffm::function_pack* _current_pack{};
+        ffm::argument_holder* _current_call{};
+        // ffm::argument_holder* _current_pack{};
 
         std::vector<ffm::function*> _roots{};
         ffm::ffm_context& _ffm_context;

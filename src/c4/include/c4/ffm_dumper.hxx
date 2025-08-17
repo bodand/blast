@@ -48,7 +48,6 @@ namespace c4 {
                 ffm::function_call,
                 ffm::function_declaration,
                 ffm::function_definition,
-                ffm::function_pack,
                 ffm::unpack,
                 ffm::block_argument,
                 ffm::literal,
@@ -65,8 +64,6 @@ namespace c4 {
         void do_visit(const ffm::function& obj) override;
 
         void do_visit(const ffm::function_call& obj) override;
-
-        void do_visit(const ffm::function_pack& obj) override;
 
         void do_visit(const ffm::function_declaration& obj) override;
 

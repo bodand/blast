@@ -49,7 +49,6 @@
 namespace c4::ffm {
     struct function_call;
     struct block_argument;
-    struct function_pack;
     struct unpack;
     struct context_object;
     struct context_access;
@@ -62,7 +61,7 @@ namespace c4::ffm {
         using value_type = std::variant<literal*,
                                         block_literal*,
                                         block_argument*,
-                                        function_pack*,
+                                        function_call*,
                                         local_ref*,
                                         context_access*,
                                         context_object*>;

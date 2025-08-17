@@ -44,7 +44,6 @@
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
-#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/literal.hxx>
 #include <c4/ffm/symbol.hxx>
 #include <c4/ffm/unpack.hxx>
@@ -137,14 +136,6 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
            "entering let's value did not clear let entry",
            obj);
 
-    if (_current_pack) {
-        const auto lit = try_get_referenced_local(obj.symbol());
-        ASSERT(lit, "let used in pack argument but does not define local");
-
-        const auto lref = _ffm_context.build_local_reference(lit);
-        const auto expr = _ffm_context.build_value_expression(lref);
-        _current_pack->push_argument(expr);
-    }
     if (_current_call) {
         const auto lit = try_get_referenced_local(obj.symbol());
         ASSERT(lit, "let used in call argument but does not define local");
@@ -212,8 +203,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
     // definition scope
     {
         const auto stack_memory = enter_block();
-        const auto suspend_pack = recursive_scope(_current_pack);
-        const auto suspend_call = recursive_scope(_current_call);
+        const auto suspend_call = enter_call_arguments(nullptr);
         const auto scope = define_function(decl);
         for (const auto& expression : obj.expressions()) {
             DEBUG_ASSERT(expression, "expression in ast block body must not be null");
@@ -301,7 +291,7 @@ c4::ffm_mapper::resolve_function_declaration(const ast2::symbol& sym) {
     return decl;
 }
 
-c4::ffm::function_pack*
+c4::ffm::function_call*
 c4::ffm_mapper::build_function_pack_from_symbol(const position& position,
                                                 const ast2::symbol& sym) {
     const auto decl = resolve_function_declaration(sym);
@@ -320,7 +310,7 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
                                            const ast2::symbol& sym,
                                            const std::span<const ast2::expression* const> args) {
     const auto call = build_function_pack_from_symbol(position, sym);
-    const auto scope = enter_pack_arguments(call);
+    const auto scope = enter_call_arguments(call);
 
     push_context_object(sym);
 
@@ -410,7 +400,6 @@ c4::ffm_mapper::push_context_object(const ast2::symbol& sym) {
     ffm::value_expression* const ctx_expr = build_context_object(sym);
     if (!ctx_expr) return;
 
-    if (_current_pack) return _current_pack->push_argument(ctx_expr);
     if (_current_call) return _current_call->push_argument(ctx_expr);
 
     const auto unpack = _ffm_context.build_unpack(ctx_expr);
@@ -522,7 +511,6 @@ c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
 void
 c4::ffm_mapper::push_literal(ffm::literal* const ffm_lit) {
     if (_currently_in_let) return push_local(ffm_lit);
-    if (_current_pack) return push_pack_literal(ffm_lit);
     if (_current_call) return push_call_literal(ffm_lit);
     push_root_literal(ffm_lit);
 }
@@ -532,7 +520,7 @@ c4::ffm_mapper::push_block_literal(ffm::function_declaration* decl) {
     const auto ctx = build_context_object(decl);
     const auto blk_lit = _ffm_context.build_block_literal(decl, ctx);
 
-    if (_current_pack || _current_call) {
+    if (_current_call) {
         const auto expr = _ffm_context.build_value_expression(blk_lit);
         return push_value_expression(expr);
     }
@@ -559,6 +547,10 @@ c4::ffm_mapper::do_visit(const ast2::string_literal& obj) {
     const auto ffm_lit = _ffm_context.build_literal(obj.value());
     push_literal(ffm_lit);
     _currently_in_let.reset();
+}
+
+void
+c4::ffm_mapper::do_visit(const ast2::dynamic_call& obj) {
 }
 
 void
@@ -596,20 +588,9 @@ c4::ffm_mapper::build_pack_value_expression(const position& position,
 }
 
 void
-c4::ffm_mapper::push_pack_argument_packed(const position& position,
-                                          const ast2::symbol& sym,
-                                          const std::span<const ast2::expression* const> args) {
-    DEBUG_ASSERT(_current_pack, "must be in a pack in call argument (lazy call)");
-
-    const auto expr = build_pack_value_expression(position, sym, args);
-    _current_pack->push_argument(expr);
-}
-
-void
 c4::ffm_mapper::push_call(const position& position,
                           const ast2::symbol& sym,
                           const std::span<const ast2::expression* const> args) {
-    if (_current_pack) return push_pack_argument_packed(position, sym, args);
     if (_current_call) return push_call_argument_packed(position, sym, args);
     push_root_call(position, sym, args);
 }
@@ -618,8 +599,7 @@ void
 c4::ffm_mapper::push_root_call(const position& position,
                                const ast2::symbol& sym,
                                const std::span<const ast2::expression* const> args) {
-    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
-    DEBUG_ASSERT(!_current_call, "must not be in a call on block root level (proper call)");
+    DEBUG_ASSERT(!_current_call, "must not be in a call");
     DEBUG_ASSERT(_current_function, "must be in a function definition");
 
     if (const auto arg = try_get_referenced_argument(sym)) {
@@ -705,16 +685,7 @@ c4::ffm_mapper::build_value_literal(ffm::literal* const lit) const {
 }
 
 void
-c4::ffm_mapper::push_pack_literal(ffm::literal* const literal) {
-    DEBUG_ASSERT(_current_pack, "must be in a pack in call argument (lazy call)");
-
-    const auto lit_expr = build_value_literal(literal);
-    _current_pack->push_argument(lit_expr);
-}
-
-void
 c4::ffm_mapper::push_call_literal(ffm::literal* const literal) {
-    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
     DEBUG_ASSERT(_current_call, "must be in a call on block root level (proper call)");
 
     const auto lit_expr = build_value_literal(literal);
@@ -723,7 +694,6 @@ c4::ffm_mapper::push_call_literal(ffm::literal* const literal) {
 
 void
 c4::ffm_mapper::push_root_literal(ffm::literal* const lit) {
-    DEBUG_ASSERT(!_current_pack, "must not be in a pack in call argument (lazy call)");
     DEBUG_ASSERT(!_current_call, "must not be in a call on block root level (proper call)");
     DEBUG_ASSERT(_current_function, "must be in a function definition");
 
@@ -733,7 +703,6 @@ c4::ffm_mapper::push_root_literal(ffm::literal* const lit) {
 
 void
 c4::ffm_mapper::push_value_expression(ffm::value_expression* const expr) const {
-    if (_current_pack) return _current_pack->push_argument(expr);
     if (_current_call) return _current_call->push_argument(expr);
 
     const auto unpack = _ffm_context.build_unpack(expr);
@@ -767,14 +736,9 @@ c4::ffm_mapper::declare_extern_function(const ffm::symbol& sym) {
     return declaration;
 }
 
-c4::recursive_scope<c4::ffm::function_call*>
-c4::ffm_mapper::enter_call_arguments(ffm::function_call* call) {
+c4::recursive_scope<c4::ffm::argument_holder*>
+c4::ffm_mapper::enter_call_arguments(ffm::argument_holder* call) {
     return recursive_scope(_current_call, call);
-}
-
-c4::recursive_scope<c4::ffm::function_pack*>
-c4::ffm_mapper::enter_pack_arguments(ffm::function_pack* pack) {
-    return recursive_scope(_current_pack, pack);
 }
 
 c4::recursive_scope<c4::ffm::function_definition*>

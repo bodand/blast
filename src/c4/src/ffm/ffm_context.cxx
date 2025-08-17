@@ -44,7 +44,6 @@
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
-#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/literal.hxx>
 #include <c4/ffm/local.hxx>
 #include <c4/ffm/symbol.hxx>
@@ -74,12 +73,12 @@ c4::ffm::ffm_context::build_function(function_definition* const def) {
 
 c4::ffm::function_call*
 c4::ffm::ffm_context::build_function_call(const position& position, function_declaration* const fn) {
-    return build_insert<function_call>(_nodes, position, fn);
+    return build_insert<function_call>(_nodes, position, fn, false);
 }
 
-c4::ffm::function_pack*
+c4::ffm::function_call*
 c4::ffm::ffm_context::build_function_pack(const position& position, function_declaration* const fn) {
-    return build_insert<function_pack>(_nodes, position, fn);
+    return build_insert<function_call>(_nodes, position, fn, true);
 }
 
 c4::ffm::context_type*
@@ -145,7 +144,7 @@ c4::ffm::ffm_context::build_root_expression(local* const loc) {
 }
 
 c4::ffm::value_expression*
-c4::ffm::ffm_context::build_value_expression(function_pack* const call) {
+c4::ffm::ffm_context::build_value_expression(function_call* const call) {
     return build_insert<value_expression>(_nodes, call);
 }
 

@@ -45,7 +45,6 @@
 #include <c4/ffm/function_call.hxx>
 #include <c4/ffm/function_declaration.hxx>
 #include <c4/ffm/function_definition.hxx>
-#include <c4/ffm/function_pack.hxx>
 #include <c4/ffm/literal.hxx>
 #include <c4/ffm/local.hxx>
 #include <c4/ffm/symbol.hxx>
@@ -72,13 +71,8 @@ c4::ffm_dumper::print_call_like(const std::string_view call_type,
 
 void
 c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
-    print_call_like("call", obj.function(), obj.arguments());
-    _os << _call_end;
-}
-
-void
-c4::ffm_dumper::do_visit(const ffm::function_pack& obj) {
-    print_call_like("pack", obj.function(), obj.arguments());
+    // ReSharper disable once CppDFAConstantConditions
+    print_call_like(obj.packed() ? "pack" : "call", obj.function(), obj.arguments());
     _os << _call_end;
 }
 
