@@ -109,9 +109,6 @@ namespace c4::ffm {
         build_root_expression(function_call* call);
 
         [[nodiscard]] root_expression*
-        build_root_expression(dynamic_call* dyn);
-
-        [[nodiscard]] root_expression*
         build_root_expression(block_argument* arg);
 
         [[nodiscard]] root_expression*

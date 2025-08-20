@@ -92,7 +92,6 @@ namespace c4::ffm {
                                         block_literal*,
                                         block_argument*,
                                         function_call*,
-                                        dynamic_call*,
                                         unpack*,
                                         local*>;
 

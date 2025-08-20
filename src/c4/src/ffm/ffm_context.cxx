@@ -125,11 +125,6 @@ c4::ffm::ffm_context::build_root_expression(function_call* const call) {
 }
 
 c4::ffm::root_expression*
-c4::ffm::ffm_context::build_root_expression(dynamic_call* const dyn) {
-    return build_insert<root_expression>(_nodes, dyn);
-}
-
-c4::ffm::root_expression*
 c4::ffm::ffm_context::build_root_expression(block_argument* const arg) {
     return build_insert<root_expression>(_nodes, arg);
 }
