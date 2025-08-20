@@ -112,10 +112,10 @@ c4::position::range() const {
     const auto last_ln_idx = expanded_range.rfind('\n');
     if (last_ln_idx == std::string_view::npos) {
         const auto utf_str = expanded_range
-                       | una::views::utf8
-                       | una::views::drop(col_number - 1)
-                       | una::views::take(col_number_end - col_number + 1)
-                       | una::ranges::to_utf8<std::string>();
+                             | una::views::utf8
+                             | una::views::drop(col_number - 1)
+                             | una::views::take(col_number_end - col_number + 1)
+                             | una::ranges::to_utf8<std::string>();
         return expanded_range.substr(range_begin, utf_str.size());
     }
     const auto last_line_start = last_ln_idx + 1;
@@ -187,9 +187,13 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
     const auto first_line_skip = leading_utf_str.size();
     const auto last_line_take = pos.col_number_end;
 
-    const auto head_line_str = fmt::format("{{:>{0}}} | {{}}{{}}{{}}\n{{:>{0}}} | {{:>{1}}}{{}}{{}}\n",
-                                           line_number_size,
-                                           utf8_strlen(leading_utf_str));
+    const auto caret_leading_spaces = utf8_strlen(leading_utf_str);
+    const auto head_line_str = caret_leading_spaces == 0
+                               ? fmt::format("{{0:>{0}}} | {{1}}{{2}}{{3}}\n{{4:>{0}}} | {{6}}{{7}}\n",
+                                             line_number_size)
+                               : fmt::format("{{0:>{0}}} | {{1}}{{2}}{{3}}\n{{4:>{0}}} | {{5:>{1}}}{{6}}{{7}}\n",
+                                             line_number_size,
+                                             caret_leading_spaces);
     const auto head_line_fmt = fmt::runtime(head_line_str);
     const auto body_line_str = fmt::format("{{:>{0}}} | {{}}\n{{:>{0}}} | {{}}\n",
                                            line_number_size);
@@ -247,5 +251,5 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
 c4::position
 c4::position::pseudo_position() {
     static p2::token_source pseudo_source;
-    return {"", 1, 1, 1 ,1, "", &pseudo_source};
+    return {"", 1, 1, 1, 1, "", &pseudo_source};
 }

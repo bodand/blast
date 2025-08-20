@@ -51,7 +51,6 @@
 
 namespace {
     struct token_ignorer final {
-        bool& valid;
         c4::diagnostics_engine& diag;
 
         bool
@@ -62,7 +61,6 @@ namespace {
 
         bool
         operator()(const c4::p2::tokens::unknown& unk) const {
-            valid = false;
             // format position before passing it to source_diagnostic to escape
             // the likely unprintable characters:
             auto pos = unk.token_position();
@@ -201,7 +199,6 @@ c4::p2::parser::parse_let_expression() {
             leave_scope();
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.base_arity()) {
-                _valid = false;
                 _diag.error(op.position(),
                             "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
                             op.name(),
@@ -235,7 +232,6 @@ c4::p2::parser::parse_let_expression() {
             leave_scope();
             if (unsigned unbound = expr->unbound_parameters();
                 unbound != op.base_arity()) {
-                _valid = false;
                 _diag.error(op.position(),
                             "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
                             op.name(),
@@ -266,7 +262,6 @@ c4::p2::parser::parse_let_expression() {
 
     if (unsigned unbound = expr->unbound_parameters();
         unbound != symbol.base_arity()) {
-        _valid = false;
         _diag.error(symbol.position(),
                     "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
                     symbol.name(),
@@ -400,6 +395,8 @@ c4::p2::parser::parse_final_expression() {
         const auto params = dyn_call_end->arity();
         parse_n_expressions(params, args);
 
+        // XXX make dynamic_call be positioned between (- dyn_call_{end,start})
+
         const auto dyn_call = _context.build_dynamic_call(dyn_call_start->token_position(),
                                                           pseudo_let,
                                                           std::move(args));
@@ -491,7 +488,6 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     if (!bare_symbol) {
         if (!_current) report_failure(bare_symbol);
 
-        _valid = false;
         _diag.error(position_of(*_current),
                     "expected associativity indicator (`left' or `right') found `{}'",
                     name_of(*_current))
@@ -503,7 +499,6 @@ c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     if (assoc_direction.name() == "right") return false;
     if (assoc_direction.name() == "left") return true;
 
-    _valid = false;
     _diag.error(assoc_direction.position(),
                 "expected associativity indicator (`left' or `right') found `{}'",
                 assoc_direction.name())
@@ -516,7 +511,6 @@ c4::p2::parser::parse_precedence(std::string_view op) {
     const auto int_lit = expect_token<tokens::integer_literal>();
     if (!int_lit) {
         if (!_current) report_failure(int_lit);
-        _valid = false;
 
         _diag.error(position_of(*_current),
                     "expected precedence value (0..10) found `{}'",
@@ -528,7 +522,6 @@ c4::p2::parser::parse_precedence(std::string_view op) {
     const auto uint = ast2::integer_literal::from_token(*int_lit);
     if (uint.value() <= 10) return uint.value();
 
-    _valid = false;
     _diag.error(uint.position(),
                 "expected precedence value (0..10) found `{}'",
                 uint.value())
@@ -604,7 +597,7 @@ c4::p2::parser::next_relevant() {
     do {
         _current = _lexer.next();
         if (!_current) return false;
-    } while (std::visit(token_ignorer{_valid, _diag}, *_current));
+    } while (std::visit(token_ignorer{_diag}, *_current));
     return true;
 }
 

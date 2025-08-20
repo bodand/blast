@@ -37,6 +37,7 @@
 #include <array>
 
 #include <c4/ffm_mapper.hxx>
+#include <c4/diagnostic.hxx>
 
 #include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_context.hxx>
@@ -64,8 +65,9 @@
 
 #include "ffm/attributes.hxx"
 
-c4::ffm_mapper::ffm_mapper(ffm::ffm_context& ffm_context)
-    : _ffm_context{ffm_context} {
+c4::ffm_mapper::ffm_mapper(diagnostics_engine& diag, ffm::ffm_context& ffm_context)
+    : _diag{diag}
+    , _ffm_context{ffm_context} {
     const ffm::symbol main(position::pseudo_position(), "@main", 0, false);
 
     const auto decl = declare_function(main, {});
@@ -515,7 +517,14 @@ c4::ffm_mapper::do_visit(const ast2::dynamic_call& obj) {
         return push_value_expression(dyn_expr);
     }
     if (const auto decl = ffm::try_get_declaration(let->symbol())) {
-        // TODO warn if decl and obj arity mismatch
+        if (const auto callee_arity = decl->arguments().size();
+            callee_arity != obj.args().size()) {
+            _diag.error(obj.position(),
+                        "dynamic call with incompatible callee: block has mismatched arity: {} but call is made with {}",
+                        callee_arity, obj.args().size())
+                 .note(decl->position(), "callee defined here");
+        }
+
         const auto fn_call = _ffm_context.build_function_call(obj.position(), decl);
         process_call_arguments(let->symbol(), obj.args(), fn_call);
         if (_current_call) {

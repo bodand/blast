@@ -271,6 +271,9 @@ namespace c4 {
             std::fclose(_output);
         }
 
+        [[nodiscard]] bool
+        errored() const noexcept { return _errored; }
+
         template<class... Args>
         decltype(auto)
         warning(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
@@ -284,6 +287,7 @@ namespace c4 {
         template<class... Args>
         decltype(auto)
         error(const position& position, fmt::format_string<Args...> diagnostic, Args&&... args) {
+            _errored = true;
             return diagnostics_bundle(*this, source_diagnostic{
                                           source_diagnostic::diag_type::Error,
                                           fmt::format(diagnostic, std::forward<Args>(args)...),
@@ -295,6 +299,7 @@ namespace c4 {
         emit(const diagnostics_bundle& bundle) const;
 
     private:
+        bool _errored{};
         std::FILE* _output;
         bool _color;
     };

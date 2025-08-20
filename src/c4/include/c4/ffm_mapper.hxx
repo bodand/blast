@@ -97,7 +97,7 @@ namespace c4 {
                 ast2::string_literal,
                 ast2::dynamic_call
             > {
-        explicit ffm_mapper(ffm::ffm_context& ffm_context);
+        explicit ffm_mapper(diagnostics_engine& diag, ffm::ffm_context& ffm_context);
 
         void do_visit(const ast2::let_expression& obj) override;
 
@@ -270,6 +270,8 @@ namespace c4 {
 
         [[nodiscard]] std::string
         next_block_name(unsigned arity);
+
+        diagnostics_engine& _diag;
 
         std::size_t _block_counter{0};
         std::vector<std::string_view> _block_names{};

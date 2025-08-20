@@ -182,7 +182,7 @@ main(int argc, const char** argv) {
     c4::ast2::ast_context ast_context;
     c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
     c4::diagnostics_engine diagnostics_engine{stderr, !no_color_output};
-    c4::p2::parser parser(ast_context, std::move(diagnostics_engine), std::move(lexer));
+    c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
 
     parser.declare_binop("+", 4, false);
     parser.declare_binop("-", 4, false);
@@ -207,7 +207,7 @@ main(int argc, const char** argv) {
 
     try {
         const auto script = parser.parse_script();
-        if (!parser.valid())
+        if (diagnostics_engine.errored())
             return 1;
 
         if (dump_type == "AST") {
@@ -217,9 +217,12 @@ main(int argc, const char** argv) {
         }
 
         c4::ffm::ffm_context ffm_context;
-        c4::ffm_mapper mapper(ffm_context);
+        c4::ffm_mapper mapper(diagnostics_engine, ffm_context);
         for (const auto& expression : script) expression->accept(mapper);
         mapper.finalize_block_body();
+
+        if (diagnostics_engine.errored())
+            return 1;
 
         if (dump_type == "FFM") {
             const auto ffm_roots = mapper.roots();

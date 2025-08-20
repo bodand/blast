@@ -80,7 +80,7 @@ namespace c4::p2 {
     struct parser {
         explicit
         parser(ast2::ast_context& context,
-               diagnostics_engine&& diagnostics_engine,
+               diagnostics_engine& diagnostics_engine,
                lexer&& lexer)
             : _lexer{std::move(lexer)}
             , _diag{diagnostics_engine}
@@ -133,9 +133,6 @@ namespace c4::p2 {
 
         void
         declare_uniop(std::string_view symbol);
-
-        [[nodiscard]] bool
-        valid() const noexcept { return _valid; }
 
         [[nodiscard]] std::vector<ast2::undef_symbol>
         promised_symbols() const;
@@ -264,10 +261,9 @@ namespace c4::p2 {
         unsigned _dynamic_call_index{};
         std::list<std::string> _dynamic_call_buffers;
 
-        bool _valid{true};
         std::optional<tokens::token_type> _current{};
         lexer _lexer;
-        diagnostics_engine _diag;
+        diagnostics_engine& _diag;
         ast2::ast_context& _context;
     };
 }
