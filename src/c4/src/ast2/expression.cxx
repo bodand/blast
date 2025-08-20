@@ -148,6 +148,38 @@ namespace {
     collect_closure(Value& value, std::vector<c4::ast2::symbol>& symbols) {
         std::visit(closure_collector{symbols}, value);
     }
+
+    struct type_namer final {
+        std::string_view
+        operator()(const c4::ast2::float_literal&) const noexcept { return "float literal"; }
+
+        std::string_view
+        operator()(const c4::ast2::integer_literal&) const noexcept { return "integer literal"; }
+
+        std::string_view
+        operator()(const c4::ast2::string_literal&) const noexcept { return "string literal"; }
+
+        std::string_view
+        operator()(c4::ast2::let_expression*) const noexcept { return "let expression"; }
+
+        std::string_view
+        operator()(const c4::ast2::symbol&) const noexcept { return "symbol"; }
+
+        std::string_view
+        operator()(c4::ast2::fn_call*) const noexcept { return "function call"; }
+
+        std::string_view
+        operator()(c4::ast2::dynamic_call*) const noexcept { return "dynamic call"; }
+
+        std::string_view
+        operator()(c4::ast2::binary_op_call*) const noexcept { return "binary operator call"; }
+
+        std::string_view
+        operator()(c4::ast2::unary_op_call*) const noexcept { return "unary operator call"; }
+
+        std::string_view
+        operator()(c4::ast2::block*) const noexcept { return "block"; }
+    };
 }
 
 c4::ast2::expression::expression(value_type value,
@@ -168,4 +200,9 @@ c4::ast2::expression::loose_closure() const noexcept {
         return sym.references() != nullptr;
     });
     return referred_symbols != 0;
+}
+
+std::string_view
+c4::ast2::expression::containee_name() const noexcept {
+    return std::visit(type_namer{}, _value);
 }

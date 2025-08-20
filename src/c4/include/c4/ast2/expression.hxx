@@ -132,6 +132,9 @@ namespace c4::ast2 {
             }, _value);
         }
 
+        [[nodiscard]] std::string_view
+        containee_name() const noexcept;
+
     private:
         value_type _value;
         std::vector<symbol> _closure_symbols;

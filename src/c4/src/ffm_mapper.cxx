@@ -83,9 +83,14 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
 
     obj.value().accept(*this);
 
-    ASSERT(!_currently_in_let,
-           "entering let's value did not clear let entry",
-           obj);
+    if (_currently_in_let) {
+        _diag.error(obj.position(), "expression could not be used because its value was faulty")
+             .note("see previous errors for more information about the faulty value");
+        const auto ffm_sym = ffm::symbol::from_ast(obj.symbol(), obj.closure());
+        const auto fun = declare_extern_function(ffm_sym);
+        obj.emplace_attribute<ffm::declaration_attribute>("declaration", fun);
+        _currently_in_let.reset();
+    }
 
     if (_current_call) {
         const auto lit = ffm::try_get_referenced_local(obj.symbol());
@@ -500,10 +505,32 @@ c4::ffm_mapper::do_visit(const ast2::string_literal& obj) {
     _currently_in_let.reset();
 }
 
+namespace {
+    [[nodiscard]] bool
+    is_literal(const c4::ast2::expression& expr) {
+        return std::get_if<c4::ast2::float_literal>(&expr.value())
+               || std::get_if<c4::ast2::integer_literal>(&expr.value())
+               || std::get_if<c4::ast2::string_literal>(&expr.value());
+    }
+
+    [[nodiscard]] bool
+    is_let(const c4::ast2::expression& expr) {
+        return std::get_if<c4::ast2::let_expression*>(&expr.value());
+    }
+}
+
 void
 c4::ffm_mapper::do_visit(const ast2::dynamic_call& obj) {
     auto let = obj.callee();
     DEBUG_ASSERT(let, "callee must not be null");
+
+    // XXX nasty typecheck here
+    if (is_literal(let->value()) || is_let(let->value())) {
+        _diag.error(obj.position(), "dynamic call with invalid callee")
+             .note(obj.callee()->position(), "expected function call or block definition: found {}",
+                   obj.callee()->value().containee_name());
+        return;
+    }
 
     visit(*let);
     if (const auto local = ffm::try_get_referenced_local(let->symbol())) {
