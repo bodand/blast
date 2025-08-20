@@ -115,7 +115,7 @@ add_library(c4
 
             include/c4/ffm/function_call.hxx
             src/ffm/function_call.cxx
-            
+
             include/c4/ffm/function_declaration.hxx
             src/ffm/function_declaration.cxx
 
@@ -168,6 +168,9 @@ add_library(c4
 
             include/c4/ffm_mapper.hxx
             src/ffm_mapper.cxx
+
+            src/ffm/attributes.cxx
+            src/ffm/attributes.hxx
 
             # Misc
             include/c4/diagnostic.hxx

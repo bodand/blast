@@ -46,6 +46,7 @@ namespace c4 {
     struct ffm_dumper final : ast2::visitor<
                 ffm::function,
                 ffm::function_call,
+                ffm::dynamic_call,
                 ffm::function_declaration,
                 ffm::function_definition,
                 ffm::unpack,
@@ -64,6 +65,8 @@ namespace c4 {
         void do_visit(const ffm::function& obj) override;
 
         void do_visit(const ffm::function_call& obj) override;
+
+        void do_visit(const ffm::dynamic_call& obj) override;
 
         void do_visit(const ffm::function_declaration& obj) override;
 

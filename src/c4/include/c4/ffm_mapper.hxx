@@ -44,7 +44,7 @@
 #include <c4/visitor/visitor.hxx>
 #include <fmt/ranges.h>
 
-#include "ast2/symbol.hxx"
+#include <c4/ast2/symbol.hxx>
 
 namespace c4::ast2 {
     struct block;
@@ -60,7 +60,9 @@ namespace c4::ast2 {
     struct dynamic_call;
 }
 
-namespace c4 { namespace ffm {
+namespace c4 {
+    //
+    namespace ffm {
         struct argument_holder;
     }
 
@@ -144,9 +146,11 @@ namespace c4 { namespace ffm {
         [[nodiscard]] ffm::function_declaration*
         find_function_declaration(const ffm::symbol& sym) const;
 
-        ffm::root_expression* build_root_literal(ffm::literal* lit) const;
+        ffm::root_expression*
+        build_root_literal(ffm::literal* lit) const;
 
-        ffm::value_expression* build_value_literal(ffm::literal* lit) const;
+        ffm::value_expression*
+        build_value_literal(ffm::literal* lit) const;
 
         void
         push_literal(ffm::literal* ffm_lit);
@@ -160,7 +164,8 @@ namespace c4 { namespace ffm {
         void
         push_root_literal(ffm::literal* lit);
 
-        void push_value_expression(ffm::value_expression* expr) const;
+        void
+        push_value_expression(ffm::value_expression* expr) const;
 
         void
         push_context_access(ffm::context_access* ctx_expr) const;
@@ -184,8 +189,9 @@ namespace c4 { namespace ffm {
         ffm::function_declaration*
         resolve_function_declaration(const ast2::symbol& sym);
 
-        ffm::function_call* build_function_pack_from_symbol(const position& position,
-                                                                const ast2::symbol& sym);
+        ffm::function_call*
+        build_function_pack_from_symbol(const position& position,
+                                        const ast2::symbol& sym);
 
         ffm::function_call*
         build_function_call_from_symbol(const position& position,
@@ -257,6 +263,11 @@ namespace c4 { namespace ffm {
             return fmt::format("N{}E{}", fmt::join(_block_names, ""), mangled);
         }
 
+        void
+        process_call_arguments(const ast2::symbol& sym,
+                               std::span<const ast2::expression* const> args,
+                               ffm::argument_holder* call);
+
         [[nodiscard]] std::string
         next_block_name(unsigned arity);
 
@@ -267,7 +278,6 @@ namespace c4 { namespace ffm {
 
         ffm::function_definition* _current_function{};
         ffm::argument_holder* _current_call{};
-        // ffm::argument_holder* _current_pack{};
 
         std::vector<ffm::function*> _roots{};
         ffm::ffm_context& _ffm_context;

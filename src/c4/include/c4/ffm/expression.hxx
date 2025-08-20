@@ -48,6 +48,7 @@
 
 namespace c4::ffm {
     struct function_call;
+    struct dynamic_call;
     struct block_argument;
     struct unpack;
     struct context_object;
@@ -62,6 +63,7 @@ namespace c4::ffm {
                                         block_literal*,
                                         block_argument*,
                                         function_call*,
+                                        dynamic_call*,
                                         local_ref*,
                                         context_access*,
                                         context_object*>;
@@ -90,6 +92,7 @@ namespace c4::ffm {
                                         block_literal*,
                                         block_argument*,
                                         function_call*,
+                                        dynamic_call*,
                                         unpack*,
                                         local*>;
 

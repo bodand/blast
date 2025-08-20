@@ -62,58 +62,7 @@
 
 #include <libassert/assert.hpp>
 
-namespace {
-    struct declaration_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::function_declaration*> {
-        explicit
-        declaration_attribute(c4::ffm::function_declaration* value)
-            : typed_attribute{value} { }
-    };
-
-    struct argument_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::block_argument*> {
-        explicit
-        argument_attribute(c4::ffm::block_argument* value)
-            : typed_attribute{value} { }
-    };
-
-    struct local_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::local*> {
-        explicit
-        local_attribute(c4::ffm::local* value)
-            : typed_attribute{value} { }
-    };
-
-    c4::ffm::block_argument*
-    try_get_referenced_argument(const c4::ast2::symbol& sym) {
-        const auto ref = sym.references();
-        if (!ref) return nullptr;
-
-        const auto attr = ref->attribute_value<c4::ffm::block_argument*>("argument");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
-
-    c4::ffm::local*
-    try_get_referenced_local(const c4::ast2::symbol& sym) {
-        const auto ref = sym.references();
-        if (!ref) return nullptr;
-
-        const auto attr = ref->attribute_value<c4::ffm::local*>("local");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
-
-    c4::ffm::function_declaration*
-    try_get_declaration(const c4::ast2::symbol& sym) {
-        const auto ref = sym.references();
-        if (!ref) return nullptr;
-
-        const auto attr = ref->attribute_value<c4::ffm::function_declaration*>("declaration");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
-}
+#include "ffm/attributes.hxx"
 
 c4::ffm_mapper::ffm_mapper(ffm::ffm_context& ffm_context)
     : _ffm_context{ffm_context} {
@@ -137,7 +86,7 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
            obj);
 
     if (_current_call) {
-        const auto lit = try_get_referenced_local(obj.symbol());
+        const auto lit = ffm::try_get_referenced_local(obj.symbol());
         ASSERT(lit, "let used in call argument but does not define local");
 
         const auto lref = _ffm_context.build_local_reference(lit);
@@ -181,7 +130,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
 
         _block_names.push_back(name);
         decl = declare_function(block_sym, std::move(arguments));
-        let->emplace_attribute<declaration_attribute>("declaration", decl);
+        let->emplace_attribute<ffm::declaration_attribute>("declaration", decl);
     }
     else {
         name = next_block_name(obj.arity());
@@ -191,7 +140,7 @@ c4::ffm_mapper::do_visit(const ast2::block& obj) {
                                            _closure != nullptr);
         _block_names.push_back(name);
         decl = declare_function(block_sym, std::move(arguments));
-        obj.emplace_attribute<declaration_attribute>("declaration", decl);
+        obj.emplace_attribute<ffm::declaration_attribute>("declaration", decl);
     }
     DEBUG_ASSERT(!name.empty(),
                  "name of function cannot be empty");
@@ -310,14 +259,7 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
                                            const ast2::symbol& sym,
                                            const std::span<const ast2::expression* const> args) {
     const auto call = build_function_pack_from_symbol(position, sym);
-    const auto scope = enter_call_arguments(call);
-
-    push_context_object(sym);
-
-    for (const auto& arg : args) {
-        DEBUG_ASSERT(arg, "argument must not be null");
-        arg->accept(*this);
-    }
+    process_call_arguments(sym, args, call);
 
     return _ffm_context.build_value_expression(call);
 }
@@ -384,7 +326,7 @@ c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl
 
 c4::ffm::value_expression*
 c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
-    const auto decl = try_get_declaration(sym);
+    const auto decl = ffm::try_get_declaration(sym);
     if (!decl) return nullptr;
 
     const auto ctx_obj = build_context_object(decl);
@@ -407,11 +349,10 @@ c4::ffm_mapper::push_context_object(const ast2::symbol& sym) {
     _current_function->push_expression(unpack_expr);
 }
 
-c4::ffm::root_expression*
-c4::ffm_mapper::build_root_function_call(const position& position,
-                                         const ast2::symbol& sym,
-                                         const std::span<const ast2::expression* const> args) {
-    const auto call = build_function_call_from_symbol(position, sym);
+void
+c4::ffm_mapper::process_call_arguments(const ast2::symbol& sym,
+                                       const std::span<const ast2::expression* const> args,
+                                       ffm::argument_holder* const call) {
     const auto scope = enter_call_arguments(call);
 
     push_context_object(sym);
@@ -420,6 +361,14 @@ c4::ffm_mapper::build_root_function_call(const position& position,
         DEBUG_ASSERT(arg, "argument must not be null");
         arg->accept(*this);
     }
+}
+
+c4::ffm::root_expression*
+c4::ffm_mapper::build_root_function_call(const position& position,
+                                         const ast2::symbol& sym,
+                                         const std::span<const ast2::expression* const> args) {
+    const auto call = build_function_call_from_symbol(position, sym);
+    process_call_arguments(sym, args, call);
 
     return _ffm_context.build_root_expression(call);
 }
@@ -469,7 +418,7 @@ c4::ffm_mapper::push_local(const position& position,
 
     const auto expr = build_pack_value_expression(position, sym, args);
     const auto local = _ffm_context.build_local(let->name(), expr);
-    let->emplace_attribute<local_attribute>("local", local);
+    let->emplace_attribute<ffm::local_attribute>("local", local);
     const auto root = _ffm_context.build_root_expression(local);
     _current_function->push_expression(root);
 }
@@ -486,7 +435,7 @@ c4::ffm_mapper::push_local(ffm::literal* literal) {
     literal->packed(true);
     const auto expr = _ffm_context.build_value_expression(literal);
     const auto local = _ffm_context.build_local(let->name(), expr);
-    let->emplace_attribute<local_attribute>("local", local);
+    let->emplace_attribute<ffm::local_attribute>("local", local);
     const auto root = _ffm_context.build_root_expression(local);
     _current_function->push_expression(root);
 }
@@ -496,8 +445,8 @@ c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
     if (_currently_in_let) return push_local(obj.position(), obj.sym(), obj.args());
 
     if (_current_function->is_closure_over(obj.sym().references())) {
-        if (try_get_referenced_local(obj.sym())
-            || try_get_referenced_argument(obj.sym())) {
+        if (ffm::try_get_referenced_local(obj.sym())
+            || ffm::try_get_referenced_argument(obj.sym())) {
             const auto args = _current_function->decl()->arguments();
             const auto ctx_arg = args.front();
             const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.sym().name());
@@ -551,6 +500,33 @@ c4::ffm_mapper::do_visit(const ast2::string_literal& obj) {
 
 void
 c4::ffm_mapper::do_visit(const ast2::dynamic_call& obj) {
+    auto let = obj.callee();
+    DEBUG_ASSERT(let, "callee must not be null");
+
+    visit(*let);
+    if (const auto local = ffm::try_get_referenced_local(let->symbol())) {
+        const auto lref = _ffm_context.build_local_reference(local);
+        const auto callee_expr = _ffm_context.build_value_expression(lref);
+        const auto dyn_call = _ffm_context.build_dynamic_call(obj.position(), callee_expr, _current_call != nullptr);
+
+        process_call_arguments(let->symbol(), obj.args(), dyn_call);
+
+        const auto dyn_expr = _ffm_context.build_value_expression(dyn_call);
+        return push_value_expression(dyn_expr);
+    }
+    if (const auto decl = ffm::try_get_declaration(let->symbol())) {
+        // TODO warn if decl and obj arity mismatch
+        const auto fn_call = _ffm_context.build_function_call(obj.position(), decl);
+        process_call_arguments(let->symbol(), obj.args(), fn_call);
+        if (_current_call) {
+            const auto expr = _ffm_context.build_value_expression(fn_call);
+            return push_value_expression(expr);
+        }
+        const auto expr = _ffm_context.build_root_expression(fn_call);
+        return _current_function->push_expression(expr);
+    }
+
+    ASSERT(false, "callee is not a local or function declaration", let->symbol().name(), let->symbol().base_arity());
 }
 
 void
@@ -559,11 +535,11 @@ c4::ffm_mapper::push_call_argument_packed(const position& position,
                                           const std::span<const ast2::expression* const> args) {
     DEBUG_ASSERT(_current_call, "must be in a call on block root level (proper call)");
 
-    if (const auto arg = try_get_referenced_argument(sym)) {
+    if (const auto arg = ffm::try_get_referenced_argument(sym)) {
         const auto expr = build_value_argument(arg);
         _current_call->push_argument(expr);
     }
-    else if (const auto local = try_get_referenced_local(sym)) {
+    else if (const auto local = ffm::try_get_referenced_local(sym)) {
         const auto lref = _ffm_context.build_local_reference(local);
         const auto expr = _ffm_context.build_value_expression(lref);
         _current_call->push_argument(expr);
@@ -578,9 +554,9 @@ c4::ffm::value_expression*
 c4::ffm_mapper::build_pack_value_expression(const position& position,
                                             const ast2::symbol& sym,
                                             const std::span<const ast2::expression* const> args) {
-    if (const auto arg = try_get_referenced_argument(sym))
+    if (const auto arg = ffm::try_get_referenced_argument(sym))
         return build_value_argument(arg);
-    if (const auto local = try_get_referenced_local(sym)) {
+    if (const auto local = ffm::try_get_referenced_local(sym)) {
         const auto lref = _ffm_context.build_local_reference(local);
         return _ffm_context.build_value_expression(lref);
     }
@@ -602,11 +578,11 @@ c4::ffm_mapper::push_root_call(const position& position,
     DEBUG_ASSERT(!_current_call, "must not be in a call");
     DEBUG_ASSERT(_current_function, "must be in a function definition");
 
-    if (const auto arg = try_get_referenced_argument(sym)) {
+    if (const auto arg = ffm::try_get_referenced_argument(sym)) {
         const auto expr = build_root_argument(arg);
         _current_function->push_expression(expr);
     }
-    else if (const auto local = try_get_referenced_local(sym)) {
+    else if (const auto local = ffm::try_get_referenced_local(sym)) {
         const auto lref = _ffm_context.build_local_reference(local);
         const auto expr = _ffm_context.build_value_expression(lref);
         const auto unpack = _ffm_context.build_unpack(expr);
@@ -655,7 +631,7 @@ c4::ffm_mapper::make_argument_list(const ast2::block_args* args) {
             auto ret = _ffm_context.build_block_argument(arg.position(),
                                                          arg.name(),
                                                          arg.base_arity());
-            arg.template emplace_attribute<argument_attribute>("argument", ret);
+            arg.template emplace_attribute<ffm::argument_attribute>("argument", ret);
             return ret;
         });
 

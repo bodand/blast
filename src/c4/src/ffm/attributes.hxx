@@ -28,54 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-08-08.
  *
- * src/c4/include/c4/ast2/dynamic_call --
- *   
+ * src/c4/src/ffm/attributes --
+ *   Collection of attributes used by ffm mapping.
  */
-#ifndef C4_AST2_DYNAMIC_CALL_HXX
-#define C4_AST2_DYNAMIC_CALL_HXX
+#ifndef BLAST_ATTRIBUTES_HXX
+#define BLAST_ATTRIBUTES_HXX
 
-#include <span>
-
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
+#include <c4/tags/attributable.hxx>
 
 namespace c4::ast2 {
-    struct let_expression;
+    struct symbol;
+}
 
-    struct dynamic_call final : ast_node
-                                , tags::visitable
-                                , tags::source_positioned
-                                , tags::dynamic_node {
-        dynamic_call(const c4::position& position,
-                     let_expression* callee,
-                     std::vector<expression*>&& args);
+namespace c4::ffm {
+    struct function_declaration;
+    struct local;
+    struct block_argument;
 
-        dynamic_call(const dynamic_call& cp) = delete;
-
-        dynamic_call&
-        operator=(const dynamic_call& cp) = delete;
-
-        dynamic_call(dynamic_call&& other) noexcept = delete;
-
-        dynamic_call&
-        operator=(dynamic_call&& other) noexcept = delete;
-
-        [[nodiscard]] const let_expression*
-        callee() const;
-
-        [[nodiscard]] std::span<const expression* const>
-        args() const;
-
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
-
-    private:
-        let_expression* _callee;
-        std::vector<expression*> _args;
+    struct declaration_attribute final : ast2::tags::typed_attribute<function_declaration*> {
+        explicit
+        declaration_attribute(function_declaration* value)
+            : typed_attribute{value} { }
     };
+
+    struct argument_attribute final : ast2::tags::typed_attribute<block_argument*> {
+        explicit
+        argument_attribute(block_argument* value)
+            : typed_attribute{value} { }
+    };
+
+    struct local_attribute final : ast2::tags::typed_attribute<local*> {
+        explicit
+        local_attribute(local* value)
+            : typed_attribute{value} { }
+    };
+
+    block_argument*
+    try_get_referenced_argument(const ast2::symbol& sym);
+
+    local*
+    try_get_referenced_local(const ast2::symbol& sym);
+
+    function_declaration*
+    try_get_declaration(const ast2::symbol& sym);
 }
 
 #endif

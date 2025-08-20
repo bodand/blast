@@ -70,7 +70,7 @@ namespace c4::ast2 {
 
         dynamic_call*
         build_dynamic_call(const position& position,
-                           expression* callee,
+                           let_expression* callee,
                            std::vector<expression*>&& args);
 
         fn_call*

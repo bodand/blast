@@ -28,54 +28,45 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-08-08.
  *
- * src/c4/include/c4/ast2/dynamic_call --
+ * src/c4/src/ffm/attributes --
  *   
  */
-#ifndef C4_AST2_DYNAMIC_CALL_HXX
-#define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <span>
+#include "attributes.hxx"
 
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
+#include <c4/ast2/symbol.hxx>
 
-namespace c4::ast2 {
-    struct let_expression;
+c4::ffm::block_argument*
+c4::ffm::try_get_referenced_argument(const ast2::symbol& sym) {
+    const auto ref = sym.references();
+    if (!ref) return nullptr;
 
-    struct dynamic_call final : ast_node
-                                , tags::visitable
-                                , tags::source_positioned
-                                , tags::dynamic_node {
-        dynamic_call(const c4::position& position,
-                     let_expression* callee,
-                     std::vector<expression*>&& args);
+    const auto attr = ref->attribute_value<block_argument*>("argument");
+    if (!attr) return nullptr;
 
-        dynamic_call(const dynamic_call& cp) = delete;
-
-        dynamic_call&
-        operator=(const dynamic_call& cp) = delete;
-
-        dynamic_call(dynamic_call&& other) noexcept = delete;
-
-        dynamic_call&
-        operator=(dynamic_call&& other) noexcept = delete;
-
-        [[nodiscard]] const let_expression*
-        callee() const;
-
-        [[nodiscard]] std::span<const expression* const>
-        args() const;
-
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
-
-    private:
-        let_expression* _callee;
-        std::vector<expression*> _args;
-    };
+    return *attr;
 }
 
-#endif
+c4::ffm::local*
+c4::ffm::try_get_referenced_local(const ast2::symbol& sym) {
+    const auto ref = sym.references();
+    if (!ref) return nullptr;
+
+    const auto attr = ref->attribute_value<local*>("local");
+    if (!attr) return nullptr;
+
+    return *attr;
+}
+
+c4::ffm::function_declaration*
+c4::ffm::try_get_declaration(const ast2::symbol& sym) {
+    const auto ref = sym.references();
+    if (!ref) return nullptr;
+
+    const auto attr = ref->attribute_value<function_declaration*>("declaration");
+    if (!attr) return nullptr;
+
+    return *attr;
+}

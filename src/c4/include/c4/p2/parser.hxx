@@ -261,6 +261,9 @@ namespace c4::p2 {
         std::vector<unsigned> _scope_symbol_size;
         std::deque<parser_symbol> _scope_symbols;
 
+        unsigned _dynamic_call_index{};
+        std::list<std::string> _dynamic_call_buffers;
+
         bool _valid{true};
         std::optional<tokens::token_type> _current{};
         lexer _lexer;

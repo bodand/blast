@@ -75,7 +75,7 @@ c4::ast2::ast_context::build_block(const position& position,
 
 c4::ast2::dynamic_call*
 c4::ast2::ast_context::build_dynamic_call(const position& position,
-                                          expression* callee,
+                                          let_expression* callee,
                                           std::vector<expression*>&& args) {
     return build_insert<dynamic_call>(_nodes, position, callee, std::move(args));
 }

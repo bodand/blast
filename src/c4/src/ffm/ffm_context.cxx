@@ -76,6 +76,13 @@ c4::ffm::ffm_context::build_function_call(const position& position, function_dec
     return build_insert<function_call>(_nodes, position, fn, false);
 }
 
+c4::ffm::dynamic_call*
+c4::ffm::ffm_context::build_dynamic_call(const position& position,
+                                         value_expression* expr,
+                                         const bool packed) {
+    return build_insert<dynamic_call>(_nodes, position, expr, packed);
+}
+
 c4::ffm::function_call*
 c4::ffm::ffm_context::build_function_pack(const position& position, function_declaration* const fn) {
     return build_insert<function_call>(_nodes, position, fn, true);
@@ -118,6 +125,11 @@ c4::ffm::ffm_context::build_root_expression(function_call* const call) {
 }
 
 c4::ffm::root_expression*
+c4::ffm::ffm_context::build_root_expression(dynamic_call* const dyn) {
+    return build_insert<root_expression>(_nodes, dyn);
+}
+
+c4::ffm::root_expression*
 c4::ffm::ffm_context::build_root_expression(block_argument* const arg) {
     return build_insert<root_expression>(_nodes, arg);
 }
@@ -145,6 +157,11 @@ c4::ffm::ffm_context::build_root_expression(local* const loc) {
 
 c4::ffm::value_expression*
 c4::ffm::ffm_context::build_value_expression(function_call* const call) {
+    return build_insert<value_expression>(_nodes, call);
+}
+
+c4::ffm::value_expression*
+c4::ffm::ffm_context::build_value_expression(dynamic_call* const call) {
     return build_insert<value_expression>(_nodes, call);
 }
 

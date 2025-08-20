@@ -45,7 +45,7 @@
 #include <ranges>
 #include <memory>
 
-#include "c4/visitor/visitor.hxx"
+#include <c4/visitor/visitor.hxx>
 
 namespace {
     struct value_extractor final {

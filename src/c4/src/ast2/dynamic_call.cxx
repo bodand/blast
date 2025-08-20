@@ -40,13 +40,13 @@
 #include <libassert/assert.hpp>
 
 c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
-                                     expression* callee,
+                                     let_expression* callee,
                                      std::vector<expression*>&& args)
     : source_positioned{position}
     , _callee{callee}
     , _args{std::move(args)} { }
 
-const c4::ast2::expression*
+const c4::ast2::let_expression*
 c4::ast2::dynamic_call::callee() const { return _callee; }
 
 std::span<const c4::ast2::expression* const>

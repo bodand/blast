@@ -94,12 +94,15 @@ namespace c4::ffm {
     };
 
     struct dynamic_call final : ffm_node
+                                , ast2::tags::source_positioned
                                 , ast2::tags::visitable
                                 , argument_holder {
         explicit
-        dynamic_call(value_expression* callee,
+        dynamic_call(const c4::position& position,
+                     value_expression* callee,
                      const bool packed = false)
-            : argument_holder{packed}
+            : source_positioned{position}
+            , argument_holder{packed}
             , _callee{callee} { }
 
         [[nodiscard]] const value_expression*

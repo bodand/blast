@@ -77,6 +77,22 @@ c4::ffm_dumper::do_visit(const ffm::function_call& obj) {
 }
 
 void
+c4::ffm_dumper::do_visit(const ffm::dynamic_call& obj) {
+    _os << "dyn (";
+    obj.callee()->accept_skip_self(*this);
+    _os << ")( ";
+
+    for (const auto& arg : obj.arguments()) {
+        const auto last = _call_end;
+        _call_end = ' ';
+        arg->accept_skip_self(*this);
+        _call_end = last;
+    }
+
+    _os << ")" << _call_end;
+}
+
+void
 c4::ffm_dumper::do_visit(const ffm::function_declaration& obj) {
     if (obj.ctx_type()) {
         _os << "type " << obj.ctx_type()->name() << "( ";

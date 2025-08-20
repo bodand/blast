@@ -380,7 +380,17 @@ c4::p2::parser::parse_final_expression() {
     if (dyn_call_start) {
         next_relevant();
 
+        // dynamic calls are parsed in two steps:
+        // 1. The callee expression is parsed, in complete generality.
+        // 2. A pseudo-let node is generated into the ast. This is used to
+        //    allow generation of variables in later processing when the
+        //    dynamic call is generated.
         auto expr = parse_expression();
+
+        _dynamic_call_buffers.push_front(fmt::format("dyn@{}", ++_dynamic_call_index));
+        auto pseudo_let = _context.build_let_expression(expr->position(),
+                                                        ast2::symbol(expr->position(), _dynamic_call_buffers.front(), 0),
+                                                        expr);
 
         const auto dyn_call_end = expect_token<tokens::arity_marker>();
         if (!dyn_call_end) report_failure(dyn_call_end);
@@ -391,7 +401,7 @@ c4::p2::parser::parse_final_expression() {
         parse_n_expressions(params, args);
 
         const auto dyn_call = _context.build_dynamic_call(dyn_call_start->token_position(),
-                                                          expr,
+                                                          pseudo_let,
                                                           std::move(args));
         return _context.build_expression(dyn_call);
     }

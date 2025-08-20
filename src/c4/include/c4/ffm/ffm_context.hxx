@@ -44,6 +44,8 @@
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/tags/referable.hxx>
 
+#include "function_call.hxx"
+
 namespace c4::ffm {
     struct context_access;
     struct context_object;
@@ -73,8 +75,14 @@ namespace c4::ffm {
         build_function_call(const position& position,
                             function_declaration* fn);
 
-        [[nodiscard]] function_call* build_function_pack(const position& position,
-                                                         function_declaration* fn);
+        [[nodiscard]] dynamic_call*
+        build_dynamic_call(const position& position,
+                           value_expression* expr,
+                           bool packed = false);
+
+        [[nodiscard]] function_call*
+        build_function_pack(const position& position,
+                            function_declaration* fn);
 
         [[nodiscard]] context_type*
         build_context_type(std::string name,
@@ -101,6 +109,9 @@ namespace c4::ffm {
         build_root_expression(function_call* call);
 
         [[nodiscard]] root_expression*
+        build_root_expression(dynamic_call* dyn);
+
+        [[nodiscard]] root_expression*
         build_root_expression(block_argument* arg);
 
         [[nodiscard]] root_expression*
@@ -117,6 +128,9 @@ namespace c4::ffm {
 
         [[nodiscard]] value_expression*
         build_value_expression(function_call* call);
+
+        [[nodiscard]] value_expression*
+        build_value_expression(dynamic_call* call);
 
         [[nodiscard]] value_expression*
         build_value_expression(block_argument* arg);
