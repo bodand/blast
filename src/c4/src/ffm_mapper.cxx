@@ -493,8 +493,15 @@ c4::ffm_mapper::do_visit(const ast2::float_literal& obj) {
 
 void
 c4::ffm_mapper::do_visit(const ast2::integer_literal& obj) {
-    const auto ffm_lit = _ffm_context.build_literal(obj.value());
-    push_literal(ffm_lit);
+    if (obj.value() < std::numeric_limits<std::int32_t>::max()
+        && obj.value() > std::numeric_limits<std::int32_t>::min()) {
+        const auto ffm_lit = _ffm_context.build_literal(static_cast<std::int32_t>(obj.value()));
+        push_literal(ffm_lit);
+    }
+    else {
+        const auto ffm_lit = _ffm_context.build_literal(obj.value());
+        push_literal(ffm_lit);
+    }
     _currently_in_let.reset();
 }
 
