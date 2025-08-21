@@ -79,6 +79,7 @@
 #include <c4/ffm_mapper.hxx>
 #include <c4/ffm/function.hxx>
 #include <c4/ffm/ffm_context.hxx>
+#include <c4c/ffm_ir_emitter.hxx>
 #include <c4c/ir_emitter.hxx>
 
 #ifdef _WIN32
@@ -224,87 +225,50 @@ main(int argc, const char** argv) {
         if (diagnostics_engine.errored())
             return 1;
 
+        const auto roots = mapper.roots();
         if (dump_type == "FFM") {
-            const auto ffm_roots = mapper.roots();
             auto outstrm = open_outstream(out_path);
-            dump_ffm(ffm_roots.begin(), ffm_roots.end(), *outstrm);
+            dump_ffm(roots.begin(), roots.end(), *outstrm);
 
             return 0;
         }
-        //
-        // initialize_targets();
-        //
-        // llvm::LLVMContext context;
-        // llvm::SMDiagnostic diag;
+
+        initialize_targets();
+
+        llvm::LLVMContext context;
+        llvm::SMDiagnostic diag;
         // const auto module_ptr = llvm::parseIRFile("rt.ll", diag, context);
         // auto& module = *module_ptr;
-        // llvm::IRBuilder<> builder(context);
-        //
-        // const auto target_triple = target_arch.empty()
-        //                            ? llvm::sys::getDefaultTargetTriple()
-        //                            : target_arch;
-        // std::string target_error;
-        // const auto target = llvm::TargetRegistry::lookupTarget(target_triple, target_error);
-        // if (!target) {
-        //     std::cerr << "fatal: " << target_error << "\n";
-        //     return 2;
-        // }
-        //
-        // const auto machine = target->createTargetMachine(target_triple, "generic", "", {}, llvm::Reloc::PIC_);
-        // module.setDataLayout(machine->createDataLayout());
-        // module.setTargetTriple(target_triple);
-        //
-        // c4c::c4_runtime_emitter rt_emitter(context, module);
-        // auto ir = c4c::ir_emitter(rt_emitter, ast_context, context, module, builder, parser.promised_symbols());
-        // for (const auto& expression : script) {
-        //     expression->accept_skip_self(ir);
-        // }
-        // ir.finalize();
-        //
-        // auto entry_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false);
-        // auto crt = llvm::Function::Create(entry_type, llvm::Function::ExternalLinkage,
-        //                                   "mainCRTStartup",
-        //                                   module);
-        // auto crt_bb = llvm::BasicBlock::Create(context, "", crt);
-        // builder.SetInsertPoint(crt_bb);
-        //
-        // const auto c4_ret = builder.CreateCall(ir.entry);
-        // const auto main_ret_call = rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumCoerceInt32, builder,
-        //                                                    {c4_ret});
-        // rt_emitter.emit_rt_call(c4c::c4rt_symbol::DatumFree, builder, {c4_ret});
-        // builder.CreateRet(main_ret_call);
-        //
-        // if (dump_type == "IR") {
-        //     std::string dump;
-        //     llvm::raw_string_ostream os(dump);
-        //     module.print(os, nullptr);
-        //     *open_outstream(out_path) << dump;
-        //     return 0;
-        // }
-        //
-        // if (out_path == "-" && dump_type != "ASM") {
-        //     std::cerr << "fatal: cowardly refusing to dump binary data to STDOUT\n";
-        //     return 1;
-        // }
-        //
-        // std::error_code ec;
-        // llvm::raw_fd_ostream fout(out_path.string(), ec, llvm::sys::fs::OF_None);
-        // if (ec) {
-        //     std::cerr << "fatal: could not open file `" << out_path << "'\n";
-        //     return 1;
-        // }
-        //
-        // auto out_type = llvm::CodeGenFileType::ObjectFile;
-        // if (dump_type == "ASM")
-        //     out_type = llvm::CodeGenFileType::AssemblyFile;
-        //
-        // llvm::legacy::PassManager pass_mgr;
-        // machine->addPassesToEmitFile(pass_mgr,
-        //                              fout,
-        //                              nullptr,
-        //                              out_type);
-        // pass_mgr.run(module);
-        // fout.flush();
+        const auto module_id = src_path.string();
+        llvm::Module module(module_id, context);
+        llvm::IRBuilder<> builder(context);
+
+        const auto target_triple = target_arch.empty()
+                                   ? llvm::sys::getDefaultTargetTriple()
+                                   : target_arch;
+        std::string target_error;
+        const auto target = llvm::TargetRegistry::lookupTarget(target_triple, target_error);
+        if (!target) {
+            std::cerr << "fatal: " << target_error << "\n";
+            return 2;
+        }
+
+        const auto machine = target->createTargetMachine(target_triple, "generic", "", {}, llvm::Reloc::PIC_);
+        module.setDataLayout(machine->createDataLayout());
+        module.setTargetTriple(target_triple);
+
+        c4c::ffm_ir_emitter ir(context, module, builder);
+        for (const auto& ffm_entry : roots) {
+            ffm_entry->accept(ir);
+        }
+
+        if (dump_type == "IR") {
+            std::string dump;
+            llvm::raw_string_ostream os(dump);
+            module.print(os, nullptr);
+            *open_outstream(out_path) << dump;
+            return 0;
+        }
     }
     catch (const std::exception& e) {
         std::cerr << "fatal: " << e.what() << "\n";

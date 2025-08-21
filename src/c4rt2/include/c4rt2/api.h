@@ -28,33 +28,41 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-03-03.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4rt/include/c4rt/api --
+ *   A set of macros that expand to compiler specific values to expand
+ *   given symbols.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef C4RT2_API_HXX
+#define C4RT2_API_HXX
 
-#include <c4/tags/attributable.hxx>
+#ifdef __cplusplus
+#  include <cstdint>
+#else
+#  include <stdint.h>
+#  include <stdbool.h>
+#endif
 
-namespace llvm {
-    class Value;
-    class Function;
-}
+#ifdef __cplusplus
+#  define C4RT_EXTERN extern "C"
+#else
+#  define C4RT_EXTERN extern
+#endif
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
+#ifdef _WIN32
+#  define C4RT_IMPL
+#  ifdef C4RT2_EXPORTS
+#    define C4RT_API C4RT_EXTERN __declspec(dllexport)
+#  else
+#    define C4RT_API C4RT_EXTERN __declspec(dllimport)
+#  endif
+#elif defined(__GNUC__)
+#  define C4RT_IMPL __attribute__((visibility("hidden")))
+#  define C4RT_API C4RT_EXTERN __attribute__((visibility("default")))
+#else
+#  define C4RT_IMPL
+#  define C4RT_API C4RT_EXTERN
+#endif
 
 #endif

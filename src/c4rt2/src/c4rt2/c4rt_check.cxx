@@ -28,33 +28,22 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4rt2/src/c4rt2/c4rt --
+ *   Statically check that C4 ABI structures are properly packed.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/tags/attributable.hxx>
+#include <c4rt2/c4rt.h>
 
-namespace llvm {
-    class Value;
-    class Function;
+namespace {
+    template<class... Args>
+    struct sizeof_sum {
+        constexpr static size_t value = (sizeof(Args) + ...);
+    };
+    template<class... Args>
+    constexpr auto sizeof_sum_v = sizeof_sum<Args...>::value;
 }
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
-
-#endif
+static_assert(sizeof(c4_package_t) == sizeof_sum_v<int64_t, void*, void*>);
+static_assert(sizeof(c4_package_t[2]) == sizeof_sum_v<c4_package_t, c4_package_t>);

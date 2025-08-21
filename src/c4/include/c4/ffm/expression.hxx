@@ -45,6 +45,7 @@
 #include <variant>
 
 #include <c4/ffm/ffm_node.hxx>
+#include <c4/tags/visitable.hxx>
 
 namespace c4::ffm {
     struct function_call;
@@ -58,7 +59,8 @@ namespace c4::ffm {
     struct local;
     struct local_ref;
 
-    struct value_expression final : ffm_node {
+    struct value_expression final : ffm_node
+                                    , ast2::tags::visitable {
         using value_type = std::variant<literal*,
                                         block_literal*,
                                         block_argument*,
@@ -87,7 +89,8 @@ namespace c4::ffm {
         value_type _value;
     };
 
-    struct root_expression final : ffm_node {
+    struct root_expression final : ffm_node
+                                   , ast2::tags::visitable {
         using value_type = std::variant<literal*,
                                         block_literal*,
                                         block_argument*,

@@ -136,10 +136,8 @@ find_package(pcre2 CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
 find_package(lyra CONFIG REQUIRED)
-
-if (BLAST_USE_MIMALLOC)
     find_package(mimalloc CONFIG REQUIRED)
-endif ()
+
 
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED)
@@ -171,6 +169,7 @@ fetchcontent_declare(libassert
 fetchcontent_makeavailable(fmt libassert)
 
 add_subdirectory(src/c4rt)
+add_subdirectory(src/c4rt2)
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
 

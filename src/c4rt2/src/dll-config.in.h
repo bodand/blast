@@ -28,33 +28,34 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-03-03.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
+ * src/c4rt/src/dll --
  *   
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef C4RT_DLL_CONFIG_H
+#define C4RT_DLL_CONFIG_H
 
-#include <c4/tags/attributable.hxx>
+@PVOID_SIZE_CODE@
 
-namespace llvm {
-    class Value;
-    class Function;
-}
+#cmakedefine C4RT2_USE_MIMALLOC
+#ifdef C4RT2_USE_MIMALLOC
+#  include <mimalloc.h>
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
+#  define C4_MALLOC(...) mi_malloc(__VA_ARGS__)
+#  define C4_MALLOC_SMALL(...) mi_malloc_small(__VA_ARGS__)
+#  define C4_STRDUP(...) mi_strdup(__VA_ARGS__)
+#  define C4_FREE(...) mi_free(__VA_ARGS__)
+#  define C4_SMALL_ALLOC_SIZE MI_SMALL_SIZE_MAX
+#else
+#  define C4_MALLOC(...) malloc(__VA_ARGS__)
+#  define C4_MALLOC_SMALL(...) malloc(__VA_ARGS__)
+#  define C4_STRDUP(...) strdup(__VA_ARGS__)
+#  define C4_FREE(...) free(__VA_ARGS__)
+#  define C4_SMALL_ALLOC_SIZE 0U
+#endif
+#define C4_ALLOCATE(type, count) (((sizeof(type)*(count)) < C4_SMALL_ALLOC_SIZE) \
+    ? C4_MALLOC_SMALL(sizeof(type)*(count)) \
+    : C4_MALLOC(sizeof(type)*(count)))
 
 #endif

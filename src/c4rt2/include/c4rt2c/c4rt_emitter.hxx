@@ -28,32 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4rt2/include/c4rt2c/c4rt_emitter --
+ *   Emitter for generating LLVM IR for calling into
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/tags/attributable.hxx>
+#ifndef BLAST_C4RT_EMITTER_HXX
+#define BLAST_C4RT_EMITTER_HXX
+
+#include <cstdint>
+#include <string_view>
 
 namespace llvm {
     class Value;
-    class Function;
+    class ConstantFolder;
+    class IRBuilderDefaultInserter;
+    template<typename FolderTy, typename InserterTy>
+    class IRBuilder;
 }
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
+namespace c4rt2c {
+    struct c4_rt2_emitter {
+        c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder);
 
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
+        [[nodiscard]] llvm::Value*
+        emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
+
+        [[nodiscard]] llvm::Value*
+        encode_datum(double d) const;
+
+        [[nodiscard]] llvm::Value*
+        encode_datum_int32(std::int32_t i) const;
+
+        [[nodiscard]] llvm::Value*
+        encode_datum_int64(std::int64_t i) const;
+
+        [[nodiscard]] llvm::Value*
+        encode_datum_string(std::string_view i) const;
+
+    private:
+        llvm::Type* _c4rt_datum_type;
+        llvm::Type* _c4rt_package_type;
+
+        llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>* _builder;
+        llvm::Module& _module;
     };
 }
 

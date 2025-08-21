@@ -56,10 +56,13 @@ add_executable(c4c
                src/ir_emitter/visit_string_literal.cxx
                include/c4c/ir_emitter_memento.hxx
                src/ir_emitter_memento.cxx
+               include/c4c/ffm_ir_emitter.hxx
+               src/ffm_ir_emitter.cxx
                )
 
 target_link_libraries(c4c PRIVATE
-                      c4 c4rt
+                      c4
+                      c4rt2c
                       c4_llvm
                       bfg::lyra
                       libassert::assert
@@ -74,7 +77,7 @@ if (WIN32)
             TARGET c4c POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE:c4rt>
+            $<TARGET_FILE:c4rt2>
             $<TARGET_FILE_DIR:c4c>
             )
 endif ()

@@ -28,33 +28,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4rt2/src/c4rt2/c4rt --
+ *    Common implementations for c4rt functions.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/tags/attributable.hxx>
+#include <assert.h>
+#include <dll-config.h>
+#include <limits.h>
 
-namespace llvm {
-    class Value;
-    class Function;
-}
-
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
-
+#if PVOID_SIZE > 8
+#  error "systems with pointer sizes up-to 64bit are supported"
 #endif
+
+#include <c4rt2/c4rt.h>

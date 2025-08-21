@@ -28,33 +28,64 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4/src/ffm/fwd --
+ *   Set of forward declarations for FFM symbols.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef BLAST_FWD_HXX
+#define BLAST_FWD_HXX
 
-#include <c4/tags/attributable.hxx>
+#include <c4/visitor/visitor.hxx>
 
-namespace llvm {
-    class Value;
-    class Function;
-}
+namespace c4::ffm {
+    // block_argument.hxx
+    struct block_argument;
+    // context_type.hxx
+    struct context_type;
+    struct context_object;
+    struct context_access;
+    // expression.hxx
+    struct root_expression;
+    struct value_expression;
+    // function.hxx
+    struct function;
+    // function_call.hxx
+    struct function_call;
+    struct dynamic_call;
+    // function_declaration.hxx
+    struct function_declaration;
+    // function_definition.hxx
+    struct function_definition;
+    // literal.hxx
+    struct literal;
+    struct block_literal;
+    // local.hxx
+    struct local;
+    struct local_ref;
+    // symbol.hxx
+    struct symbol;
+    // unpack.hxx
+    struct unpack;
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
+    using ffm_visitor = ast2::visitor<
+        block_argument,
+        context_type,
+        context_object,
+        context_access,
+        root_expression,
+        value_expression,
+        function_call,
+        dynamic_call,
+        function,
+        function_declaration,
+        function_definition,
+        literal,
+        block_literal,
+        local,
+        local_ref,
+        unpack
+    >;
 }
 
 #endif

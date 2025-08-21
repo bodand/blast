@@ -1,0 +1,75 @@
+# blAST project
+#
+# Copyright (c) 2025 András Bodor <bodand@proton.me>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# - Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# - Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# - Neither the name of the copyright holder nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Originally created: 2025-08-21.
+#
+# src/c4rt2/CMakeLists.txt --
+#   c4rt2 provides two interfaces: c4rt2 and c4rt2c. Both of them provide
+#   aim at providing the runtime functionality required by C4, but c4rt2
+#   provides this using a stable ABI interface in C. This can be linked against
+#   using LLVM's JIT runtime or a normal linker when using c4c while c4rt2c
+#   provides a subset of this functionality in an unstable C++ API meant to only
+#   be used by c4c and c4 when generating LLVM IR.
+#   Most code is ported over from c4rt.
+
+include(CheckTypeSize)
+
+check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
+
+set(C4RT2_USE_MIMALLOC YES)
+configure_file(src/dll-config.in.h dll-config.h @ONLY)
+
+add_library(c4rt2 SHARED
+            src/c4rt2/DllMain.c
+            src/c4rt2/c4rt_check.cxx
+            include/c4rt2/c4rt.h
+            src/c4rt2/c4rt.c
+            include/c4rt2/package.h
+            src/c4rt2/package.c
+            src/c4rt2/c4rt_package_versions.h
+            src/c4rt2/package.1.h
+            src/c4rt2/package.1.c
+            include/c4rt2/datum.h
+            src/c4rt2/datum.cxx
+            )
+target_include_directories(c4rt2
+                           PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_link_libraries(c4rt2 PRIVATE mimalloc-static)
+target_compile_definitions(c4rt2 PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
+
+add_library(c4rt2c STATIC
+            include/c4rt2c/c4rt_emitter.hxx
+            src/c4rt2c/c4rt_emitter.cxx
+            )
+target_link_libraries(c4rt2c PUBLIC c4rt2 PRIVATE c4_llvm libassert::assert)
+target_include_directories(c4rt2c
+                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

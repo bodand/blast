@@ -28,33 +28,15 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4rt2/src/c4rt2/c4rt_package_versions --
+ *   Defines the known versions for c4rt package sizes. Used to provide ABI
+ *   stability.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef BLAST_C4RT_PACKAGE_VERSIONS_H
+#define BLAST_C4RT_PACKAGE_VERSIONS_H
 
-#include <c4/tags/attributable.hxx>
-
-namespace llvm {
-    class Value;
-    class Function;
-}
-
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
+#define C4_PACKAGE_SIZE_VERSION_1 (sizeof(int64_t) + sizeof(c4_ptr64_t) * 2)
 
 #endif

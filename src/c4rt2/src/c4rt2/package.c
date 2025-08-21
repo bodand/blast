@@ -28,33 +28,52 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
+ * src/c4rt2/src/c4rt2/c4rt_package --
  *   
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/tags/attributable.hxx>
+#include <assert.h>
+#include <c4rt2/c4rt.h>
 
-namespace llvm {
-    class Value;
-    class Function;
+#include "c4rt_package_versions.h"
+#include "package.1.h"
+
+C4RT_API c4_ptr64_t
+c4rt_pad_pointer(void* const ptr) {
+    return c4rt_pad_pointer_1(ptr);
 }
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
+C4RT_API void*
+c4rt_unpad_pointer(const c4_ptr64_t ptr) {
+    return c4rt_unpad_pointer_1(ptr);
 }
 
-#endif
+void
+c4rt_package_init(struct c4_package_t* const pkg) {
+    assert(pkg && "pkg must not be null");
+    c4rt_package_init_1(pkg);
+}
+
+void
+c4rt_package_set_from_packages(struct c4_package_t* const pkg,
+                               c4rt_package_function_t* const calc_fun,
+                               struct c4_package_t* const fn_data) {
+    assert(pkg && "pkg must not be null");
+    assert(calc_fun && "calc_fun must not be null");
+    c4rt_package_set_from_packages_1(pkg, calc_fun, fn_data);
+}
+
+void
+c4rt_package_set_from_result(struct c4_package_t* const pkg,
+                             const c4_datum_t datum) {
+    assert(pkg && "pkg must not be null");
+    c4rt_package_set_from_result_1(pkg, datum);
+}
+
+C4RT_API c4_datum_t
+c4rt_evaluate_package(struct c4_package_t* const pkg) {
+    assert(pkg && "pkg must not be null");
+    return c4rt_evaluate_package_1(pkg);
+}

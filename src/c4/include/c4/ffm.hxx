@@ -28,33 +28,27 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
- *   
+ * src/c4/include/c4/ffm --
+ *   Include utility for FFM classes. Prefer ffm/fwd.hxx unless struct
+ *   definitions are actually needed.
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef BLAST_FFM_HXX
+#define BLAST_FFM_HXX
 
-#include <c4/tags/attributable.hxx>
-
-namespace llvm {
-    class Value;
-    class Function;
-}
-
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
+#include <c4/ffm/block_argument.hxx>
+#include <c4/ffm/context_type.hxx>
+#include <c4/ffm/expression.hxx>
+#include <c4/ffm/ffm_context.hxx>
+#include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/function.hxx>
+#include <c4/ffm/function_call.hxx>
+#include <c4/ffm/function_declaration.hxx>
+#include <c4/ffm/function_definition.hxx>
+#include <c4/ffm/literal.hxx>
+#include <c4/ffm/local.hxx>
+#include <c4/ffm/symbol.hxx>
+#include <c4/ffm/unpack.hxx>
 
 #endif

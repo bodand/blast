@@ -95,6 +95,9 @@ add_library(c4
             src/ast2/ast_context.cxx
 
             # FFM
+            include/c4/ffm/fwd.hxx
+            include/c4/ffm.hxx
+
             include/c4/ffm/block_argument.hxx
             src/ffm/block_argument.cxx
 
@@ -178,6 +181,7 @@ add_library(c4
 
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
+            include/c4/ffm.hxx
             )
 
 target_link_libraries(c4

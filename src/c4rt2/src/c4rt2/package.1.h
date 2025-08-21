@@ -28,33 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-08-08.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
+ * src/c4rt2/src/c4rt2/c4rt_package --
  *   
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
+#ifndef BLAST_C4RT_PACKAGE_1_H
+#define BLAST_C4RT_PACKAGE_1_H
 
-#include <c4/tags/attributable.hxx>
+C4RT_IMPL c4_ptr64_t
+c4rt_pad_pointer_1(void* ptr);
 
-namespace llvm {
-    class Value;
-    class Function;
-}
+C4RT_IMPL void*
+c4rt_unpad_pointer_1(c4_ptr64_t ptr);
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
+C4RT_IMPL void
+c4rt_package_init_1(struct c4_package_t* pkg);
 
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
+C4RT_IMPL void
+c4rt_package_set_from_packages_1(struct c4_package_t* pkg,
+                                 c4rt_package_function_t* calc_fun,
+                                 struct c4_package_t* fn_data);
+
+C4RT_IMPL void
+c4rt_package_set_from_result_1(struct c4_package_t* pkg,
+                               c4_datum_t datum);
+
+C4RT_IMPL c4_datum_t
+c4rt_evaluate_package_1(struct c4_package_t* pkg);
 
 #endif

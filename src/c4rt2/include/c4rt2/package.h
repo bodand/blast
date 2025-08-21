@@ -1,0 +1,115 @@
+/* blAST project
+ *
+ * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * - Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * - Neither the name of the copyright holder nor the names of its contributors
+ *   may be used to endorse or promote products derived from this software
+ *   without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Originally created: 2025-08-08.
+ *
+ * src/c4rt2/include/c4rt2/package --
+ *   Provides the C4 runtime's ABI stable package handling symbols.
+ */
+#ifndef BLAST_C4RT_PACKAGE_H
+#define BLAST_C4RT_PACKAGE_H
+
+#include <c4rt2/api.h>
+#include <c4rt2/datum.h>
+
+typedef uint64_t c4_ptr64_t;
+
+struct c4_package_t {
+    uint64_t package_size;
+    c4_ptr64_t function;
+
+    union {
+        c4_ptr64_t data;
+        c4_datum_t result;
+    };
+};
+
+typedef c4_datum_t (c4rt_package_function_t)(struct c4_package_t*);
+
+/// c4rt_pad_pointer(ptr) --
+///     Pads ptr to 64 bit on all platforms where it is less than 64 bit.
+C4RT_API c4_ptr64_t
+c4rt_pad_pointer(void* ptr);
+
+/// c4rt_unpad_pointer(ptr) --
+///     Removes padding from ptr. Padding must have been created using
+///     c4rt_pad_pointer in the same system and process, unless behavior is
+///     undefined.
+C4RT_API void*
+c4rt_unpad_pointer(c4_ptr64_t ptr);
+
+/// c4rt_package_complete(pkg) --
+///     Returns whether the given package has been calculated.
+#define c4rt_package_complete(pkg) (c4rt_unpad_pointer((pkg)->function) == NULL)
+
+/// c4rt_package_incomplete(pkg) --
+///     Returns whether the given package has not been calculated.
+#define c4rt_package_incomplete(pkg) (c4rt_unpad_pointer((pkg)->function) != NULL)
+
+/// c4rt_package_init(pkg) --
+///     Initializes common attributes for c4_package_t structures. It is
+///     imperative to call this on every created package to ensure back and
+///     forward compatibility in the ABI.
+///
+///     Behavior is undefined if pkg is null.
+C4RT_API void
+c4rt_package_init(struct c4_package_t* pkg);
+
+/// c4rt_package_set_from_packages(pkg, calc_fun, fn_data) --
+///     Packages a function calc_fun to be calculated later, using the
+///     parameters set in fn_data into pkg.
+///     The fn_data pointer can be null, but then null will be passed to
+///     calc_fun when/if it is evaluated, ensure it can handle it.
+///
+///     Behavior is undefined if either pkg or calc_fun is null.
+C4RT_API void
+c4rt_package_set_from_packages(struct c4_package_t* pkg,
+                               c4rt_package_function_t* calc_fun,
+                               struct c4_package_t* fn_data);
+
+/// c4rt_package_set_from_result(pkg, datum) --
+///     Packages a given datum as a successfully calculated result into pkg.
+///
+///     Behavior is undefined if pkg is null.
+C4RT_API void
+c4rt_package_set_from_result(struct c4_package_t* pkg,
+                             c4_datum_t datum);
+
+/// c4rt_evaluate_package(pkg) --
+///     Calculates the value of pkg if it has not yet been calculated and
+///     returns the result. Modifies pkg to store the calculated datum, and
+///     pkg will thereafter report as completed.
+///     If pkg is already completed, just returns the stored result.
+///
+///     Behavior is undefined if pkg is null.
+C4RT_API c4_datum_t
+c4rt_evaluate_package(struct c4_package_t* pkg);
+
+#endif

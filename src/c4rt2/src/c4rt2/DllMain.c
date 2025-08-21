@@ -28,33 +28,30 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2025-03-03.
  *
- * src/c4c/include/c4c/llvm_value_attribute --
+ * src/c4rt/src/DllMain --
  *   
  */
-#ifndef C4C_LLVM_VALUE_ATTRIBUTE_HXX
-#define C4C_LLVM_VALUE_ATTRIBUTE_HXX
 
-#include <c4/tags/attributable.hxx>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
 
-namespace llvm {
-    class Value;
-    class Function;
-}
+#include <dll-config.h>
 
-namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
-
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
-}
-
+#ifdef C4RT2_USE_MIMALLOC
+#  include <mimalloc.h>
+#  define MI_VERSION mi_version()
+#else
+#  define MI_VERSION
 #endif
+
+BOOL WINAPI DllMain(
+    HINSTANCE hinstDLL, // handle to DLL module
+    DWORD fdwReason, // reason for calling function
+    LPVOID lpvReserved) // reserved
+{
+    MI_VERSION;
+    return TRUE;
+}

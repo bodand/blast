@@ -132,7 +132,7 @@ namespace c4::ast2::tags {
 
         template<class T>
         std::expected<T, expected_error>
-        attribute_value(const std::string_view key) {
+        attribute_value(const std::string_view key) const {
             const auto attr = get_attribute(key);
             if (!attr) return std::unexpected{expected_error::NO_VALUE};
             return attr->value<T>();
