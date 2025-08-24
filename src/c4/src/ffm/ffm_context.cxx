@@ -101,6 +101,11 @@ c4::ffm::ffm_context::build_block_argument(const position& position,
     return build_insert<block_argument>(_nodes, position, name, arity);
 }
 
+c4::ffm::block_argument*
+c4::ffm::ffm_context::build_stored_argument(const position& position, std::string&& name, unsigned arity) {
+    return build_insert<storing_block_argument>(_nodes, position, std::move(name), arity);
+}
+
 c4::ffm::context_access*
 c4::ffm::ffm_context::build_context_reference(block_argument* ctx, context_type* type, std::string_view name) {
     return build_insert<context_access>(_nodes, ctx, type, name);

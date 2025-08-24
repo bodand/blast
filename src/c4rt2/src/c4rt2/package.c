@@ -57,12 +57,13 @@ c4rt_package_init(struct c4_package_t* const pkg) {
 }
 
 void
-c4rt_package_set_from_packages(struct c4_package_t* const pkg,
+c4rt_package_set_from_function(struct c4_package_t* const pkg,
                                c4rt_package_function_t* const calc_fun,
-                               struct c4_package_t* const fn_data) {
+                               struct c4_package_t* const fn_data,
+                                 uint16_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
-    c4rt_package_set_from_packages_1(pkg, calc_fun, fn_data);
+    c4rt_package_set_from_function_1(pkg, calc_fun, fn_data, fn_data_sz);
 }
 
 void
@@ -73,7 +74,7 @@ c4rt_package_set_from_result(struct c4_package_t* const pkg,
 }
 
 C4RT_API c4_datum_t
-c4rt_evaluate_package(struct c4_package_t* const pkg) {
+c4rt_package_evaluate(struct c4_package_t* const pkg) {
     assert(pkg && "pkg must not be null");
-    return c4rt_evaluate_package_1(pkg);
+    return c4rt_package_evaluate_1(pkg);
 }

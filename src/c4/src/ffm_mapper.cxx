@@ -70,7 +70,7 @@ c4::ffm_mapper::ffm_mapper(diagnostics_engine& diag, ffm::ffm_context& ffm_conte
     , _ffm_context{ffm_context} {
     const ffm::symbol main(position::pseudo_position(), "@main", 0, false);
 
-    const auto decl = declare_function(main, {});
+    const auto decl = declare_extern_function(main);
     const auto fn_def = _ffm_context.build_function_definition(decl);
     const auto fn = _ffm_context.build_function(fn_def);
     _roots.push_back(fn);
@@ -741,7 +741,7 @@ c4::ffm_mapper::declare_function(const ffm::symbol& sym, std::vector<ffm::block_
 
     const auto declaration = _ffm_context.build_function_declaration(sym, _closure, true, std::move(args));
     const auto fun = _ffm_context.build_function(declaration);
-    _roots.push_back(fun);
+    _roots.push_front(fun);
     return declaration;
 }
 
@@ -749,9 +749,17 @@ c4::ffm::function_declaration*
 c4::ffm_mapper::declare_extern_function(const ffm::symbol& sym) {
     if (const auto fn = find_function_declaration(sym)) return fn;
 
-    const auto declaration = _ffm_context.build_function_declaration(sym, _closure, false, {});
+    std::vector<ffm::block_argument*> args;
+    for (unsigned i = 0; i < sym.arity(); ++i) {
+        const auto arg = _ffm_context.build_stored_argument(position::pseudo_position(),
+                                                            fmt::format("arg@{}", i),
+                                                            0);
+        args.push_back(arg);
+    }
+
+    const auto declaration = _ffm_context.build_function_declaration(sym, _closure, false, std::move(args));
     const auto fun = _ffm_context.build_function(declaration);
-    _roots.push_back(fun);
+    _roots.push_front(fun);
     return declaration;
 }
 

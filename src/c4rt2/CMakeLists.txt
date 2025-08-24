@@ -41,11 +41,74 @@
 
 include(CheckTypeSize)
 
+set(clang-tools-location-hint)
+if (IS_DIRECTORY "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}")
+    set(clang-tools-location-hint
+        "HINTS"
+        "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/tools/llvm/")
+endif ()
+
+find_program(CLANG_EXEC clang
+             NAMES clang clang-cl
+             ${clang-tools-location-hint}
+             DOC "Clang: used to generate LLVM bitcode from C code"
+             REQUIRED)
+find_program(CLANGXX_EXEC clang++
+             NAMES clang++ clang-cl
+             ${clang-tools-location-hint}
+             DOC "Clang++: used to generate LLVM bitcode from C++ code"
+             REQUIRED)
+find_program(OPT_EXEC opt
+             ${clang-tools-location-hint}
+             DOC "LLVM optimizer for optimizing bitcode in release mode"
+             REQUIRED)
+find_program(LLVM_LINK_EXEC llvm-link
+             ${clang-tools-location-hint}
+             DOC "Tool to use for merging LLVM bitcode files"
+             REQUIRED)
+
+set(opt $<CONFIG:Release,RelWithDebInfo,MinSizeRel>)
+function(compile_into_bitcode in CC)
+    set(out "${in}.bc")
+    set(optim "${out}.opt")
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
+                       COMMAND "${CC}" -c -emit-llvm
+                       -fvisibility=hidden
+                       -DC4RT2_STATIC
+                       $<${opt}:-DNDEBUG>
+                       -I "${CMAKE_CURRENT_BINARY_DIR}"
+                       -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                       -o "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
+                       VERBATIM)
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${optim}"
+                       DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       COMMAND "$<IF:${opt},${OPT_EXEC},cmake>"
+                       $<IF:${opt},--tailcallopt,-E>
+                       $<IF:${opt},--hot-cold-split,cat>
+                       "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       "$<IF:${opt},-p,${CMAKE_CURRENT_SOURCE_DIR}/src/empty.txt>"
+                       "$<IF:${opt},default<O3$<ANGLE-R>,${CMAKE_CURRENT_SOURCE_DIR}/src/empty.txt>"
+                       $<IF:${opt},-o,$<ANGLE-R>> "${CMAKE_CURRENT_BINARY_DIR}/${optim}"
+                       VERBATIM)
+endfunction()
+
+function(link_bitcode out)
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       DEPENDS "$<LIST:TRANSFORM,${ARGN},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>"
+                       COMMAND "${LLVM_LINK_EXEC}" -o "${CMAKE_CURRENT_BINARY_DIR}/${out}"
+                       "$<LIST:TRANSFORM,${ARGN},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>"
+                       VERBATIM
+                       COMMAND_EXPAND_LISTS)
+endfunction()
+
 check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
 
-set(C4RT2_USE_MIMALLOC YES)
+set(C4RT2_USE_MIMALLOC NO)
 configure_file(src/dll-config.in.h dll-config.h @ONLY)
 
+# Dynamic runtime library used by compiler through c4rt2c
 add_library(c4rt2 SHARED
             src/c4rt2/DllMain.c
             src/c4rt2/c4rt_check.cxx
@@ -58,6 +121,9 @@ add_library(c4rt2 SHARED
             src/c4rt2/package.1.c
             include/c4rt2/datum.h
             src/c4rt2/datum.cxx
+            include/c4rt2/datum_type.h
+            include/c4rt2/package_type.h
+            src/c4rt2/dynamic_call_hacks.h
             )
 target_include_directories(c4rt2
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -65,6 +131,18 @@ target_include_directories(c4rt2
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 target_link_libraries(c4rt2 PRIVATE mimalloc-static)
 target_compile_definitions(c4rt2 PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
+
+# Static compile into LLVM bitcode used by both c4c and c4j for generated C4 code
+compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}")
+compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}")
+compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}")
+
+link_bitcode(src/c4rt2/rt.bc
+             src/c4rt2/package.c.bc.opt
+             src/c4rt2/package.1.c.bc.opt
+             src/c4rt2/c4rt.c.bc.opt)
+add_custom_target(c4rt2-bitcode ALL
+                  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/src/c4rt2/rt.bc")
 
 add_library(c4rt2c STATIC
             include/c4rt2c/c4rt_emitter.hxx

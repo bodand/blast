@@ -93,6 +93,11 @@ namespace c4::ffm {
                              std::string_view name,
                              unsigned arity);
 
+        [[nodiscard]] block_argument*
+        build_stored_argument(const position& position,
+                              std::string&& name,
+                              unsigned arity);
+
         [[nodiscard]] context_access*
         build_context_reference(block_argument* ctx, context_type* type, std::string_view name);
 

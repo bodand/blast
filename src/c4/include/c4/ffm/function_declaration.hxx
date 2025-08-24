@@ -75,6 +75,9 @@ namespace c4::ffm {
         [[nodiscard]] std::span<block_argument* const>
         arguments() const { return _arguments; }
 
+        [[nodiscard]] const block_argument*
+        argument(const std::size_t i) const { return _arguments[i]; }
+
     private:
         context_type* _ctx_type{};
         symbol _symbol;

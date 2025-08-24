@@ -39,9 +39,13 @@
 
 #include <cstdint>
 #include <string_view>
+#include <span>
+#include <array>
 
 namespace llvm {
     class Value;
+    class Type;
+    class Module;
     class ConstantFolder;
     class IRBuilderDefaultInserter;
     template<typename FolderTy, typename InserterTy>
@@ -49,11 +53,28 @@ namespace llvm {
 }
 
 namespace c4rt2c {
-    struct c4_rt2_emitter {
+    struct c4_rt2_emitter final {
         c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder);
 
         [[nodiscard]] llvm::Value*
         emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
+
+        void
+        emit_package_init(llvm::Value* ptr) const;
+
+        void
+        emit_package_set_from_result(llvm::Value* ptr, llvm::Value* datum) const;
+
+        void
+        emit_package_set_from_function(llvm::Value* pkg,
+                                       llvm::Function* function,
+                                       const std::vector<llvm::Value*>& vector) const;
+
+        llvm::Value*
+        emit_unpack(llvm::Value* value) const;
+
+        [[nodiscard]] llvm::Value*
+        local_package() const;
 
         [[nodiscard]] llvm::Value*
         encode_datum(double d) const;
@@ -68,8 +89,37 @@ namespace c4rt2c {
         encode_datum_string(std::string_view i) const;
 
     private:
+        template<class... Args>
+        void
+        declare_rt_function(std::string_view name, llvm::Type* ret_type, Args&&... arg_types) const {
+            std::array<llvm::Type*, sizeof...(Args)> args{std::forward<Args>(arg_types)...};
+            declare_rt_function_impl(name, ret_type, args);
+        }
+
+        void
+        declare_rt_function_impl(std::string_view name,
+                                 llvm::Type* ret_type,
+                                 std::span<llvm::Type* const> arg_types) const;
+
+        template<class... Args>
+        void
+        get_rt_function(llvm::FunctionCallee* callee,
+                        std::string_view name,
+                        llvm::Type* ret_type,
+                        Args&&... arg_types) const {
+            std::array<llvm::Type*, sizeof...(Args)> args{std::forward<Args>(arg_types)...};
+            get_rt_function_impl(callee, name, ret_type, args);
+        }
+
+        void
+        get_rt_function_impl(llvm::FunctionCallee* callee,
+                             std::string_view name,
+                             llvm::Type* ret_type,
+                             std::span<llvm::Type* const> arg_types) const;
+
         llvm::Type* _c4rt_datum_type;
         llvm::Type* _c4rt_package_type;
+        llvm::StructType* _package_struct_type;
 
         llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>* _builder;
         llvm::Module& _module;

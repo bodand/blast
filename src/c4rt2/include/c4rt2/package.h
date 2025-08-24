@@ -37,21 +37,7 @@
 #define BLAST_C4RT_PACKAGE_H
 
 #include <c4rt2/api.h>
-#include <c4rt2/datum.h>
-
-typedef uint64_t c4_ptr64_t;
-
-struct c4_package_t {
-    uint64_t package_size;
-    c4_ptr64_t function;
-
-    union {
-        c4_ptr64_t data;
-        c4_datum_t result;
-    };
-};
-
-typedef c4_datum_t (c4rt_package_function_t)(struct c4_package_t*);
+#include <c4rt2/package_type.h>
 
 /// c4rt_pad_pointer(ptr) --
 ///     Pads ptr to 64 bit on all platforms where it is less than 64 bit.
@@ -82,17 +68,22 @@ c4rt_unpad_pointer(c4_ptr64_t ptr);
 C4RT_API void
 c4rt_package_init(struct c4_package_t* pkg);
 
-/// c4rt_package_set_from_packages(pkg, calc_fun, fn_data) --
+/// c4rt_package_set_from_function(pkg, calc_fun, fn_data, fn_data_sz) --
 ///     Packages a function calc_fun to be calculated later, using the
 ///     parameters set in fn_data into pkg.
 ///     The fn_data pointer can be null, but then null will be passed to
 ///     calc_fun when/if it is evaluated, ensure it can handle it.
 ///
+///     Note that fn_data_sz and thusly fn_data are limited to 16-bits worth
+///     of size. This is because C4 only supports 65535 parameters for each
+///     function. Also note that the current runtime only supports 127 of them.
+///
 ///     Behavior is undefined if either pkg or calc_fun is null.
 C4RT_API void
-c4rt_package_set_from_packages(struct c4_package_t* pkg,
+c4rt_package_set_from_function(struct c4_package_t* pkg,
                                c4rt_package_function_t* calc_fun,
-                               struct c4_package_t* fn_data);
+                               struct c4_package_t* fn_data,
+                               uint16_t fn_data_sz);
 
 /// c4rt_package_set_from_result(pkg, datum) --
 ///     Packages a given datum as a successfully calculated result into pkg.
@@ -102,7 +93,7 @@ C4RT_API void
 c4rt_package_set_from_result(struct c4_package_t* pkg,
                              c4_datum_t datum);
 
-/// c4rt_evaluate_package(pkg) --
+/// c4rt_package_evaluate(pkg) --
 ///     Calculates the value of pkg if it has not yet been calculated and
 ///     returns the result. Modifies pkg to store the calculated datum, and
 ///     pkg will thereafter report as completed.
@@ -110,6 +101,6 @@ c4rt_package_set_from_result(struct c4_package_t* pkg,
 ///
 ///     Behavior is undefined if pkg is null.
 C4RT_API c4_datum_t
-c4rt_evaluate_package(struct c4_package_t* pkg);
+c4rt_package_evaluate(struct c4_package_t* pkg);
 
 #endif

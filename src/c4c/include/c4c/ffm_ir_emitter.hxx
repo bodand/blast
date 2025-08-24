@@ -46,6 +46,7 @@ namespace llvm {
     class Module;
     class LLVMContext;
     class Function;
+    class Type;
     class FunctionType;
     class Value;
     class BasicBlock;
@@ -96,13 +97,56 @@ namespace c4c {
         llvm::Function* entry;
 
     private:
+        struct call_stack {
+            call_stack(bool& outer_call,
+                       std::vector<llvm::Value*>& outer_args)
+                : _outer_call{outer_call}
+                , _outer_args{outer_args}
+                , active_call{outer_call}
+                , call_args{std::move(outer_args)} {
+                outer_call = true;
+                outer_args.clear();
+            }
+
+            void
+            pop() const {
+                if (popped) return;
+                popped = true;
+                _outer_call = active_call;
+                _outer_args = std::move(call_args);
+            }
+
+            ~call_stack() { pop(); }
+
+            bool& _outer_call;
+            std::vector<llvm::Value*>& _outer_args;
+            bool active_call;
+            std::vector<llvm::Value*> call_args{};
+
+        private:
+            mutable bool popped{false};
+        };
+
+        void
+        push_value(llvm::Value* value);
+
+        llvm::Value*
+        build_literal(const c4::ffm::literal& lit);
+
         llvm::FunctionType*
-        build_type_for(const c4::ffm::function_declaration& function_declaration);
+        build_type_for(const c4::ffm::function_declaration& decl);
+
+        llvm::FunctionType*
+        build_type_with_arity(unsigned arity) const;
 
         [[nodiscard]] llvm::BasicBlock*
         build_bblock(std::string_view name) const;
 
         llvm::Function* _current_function{};
+
+        bool _returned_value{false};
+        bool _active_call{false};
+        std::vector<llvm::Value*> _current_args{};
 
         llvm::LLVMContext& _context;
         llvm::Module& _module;

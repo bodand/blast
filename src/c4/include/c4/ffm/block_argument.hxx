@@ -42,9 +42,10 @@
 #include <c4/tags/visitable.hxx>
 
 namespace c4::ffm {
-    struct block_argument final : ast2::tags::referable
-                                  , ast2::tags::visitable
-                                  , ffm_node {
+    struct block_argument
+            : ast2::tags::referable
+              , ast2::tags::visitable
+              , ffm_node {
         block_argument(const c4::position& position,
                        const std::string_view name,
                        const unsigned arity)
@@ -61,9 +62,26 @@ namespace c4::ffm {
         [[nodiscard]] unsigned
         effective_arity() const noexcept override { return _arity; }
 
+    protected:
+        void
+        name(const std::string_view name) { _name = name; }
+
     private:
         std::string_view _name;
         unsigned _arity;
+    };
+
+    struct storing_block_argument final : block_argument {
+        storing_block_argument(const c4::position& position,
+                               std::string&& name,
+                               const unsigned arity)
+            : block_argument{position, "", arity}
+            , _storage{std::move(name)} {
+            this->name(_storage);
+        }
+
+    private:
+        std::string _storage;
     };
 }
 

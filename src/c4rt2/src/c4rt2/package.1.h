@@ -46,15 +46,16 @@ C4RT_IMPL void
 c4rt_package_init_1(struct c4_package_t* pkg);
 
 C4RT_IMPL void
-c4rt_package_set_from_packages_1(struct c4_package_t* pkg,
+c4rt_package_set_from_function_1(struct c4_package_t* pkg,
                                  c4rt_package_function_t* calc_fun,
-                                 struct c4_package_t* fn_data);
+                                 struct c4_package_t* fn_data,
+                                 uint16_t fn_data_sz);
 
 C4RT_IMPL void
 c4rt_package_set_from_result_1(struct c4_package_t* pkg,
                                c4_datum_t datum);
 
 C4RT_IMPL c4_datum_t
-c4rt_evaluate_package_1(struct c4_package_t* pkg);
+c4rt_package_evaluate_1(struct c4_package_t* pkg);
 
 #endif

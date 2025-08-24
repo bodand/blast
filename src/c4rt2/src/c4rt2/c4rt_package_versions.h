@@ -37,6 +37,6 @@
 #ifndef BLAST_C4RT_PACKAGE_VERSIONS_H
 #define BLAST_C4RT_PACKAGE_VERSIONS_H
 
-#define C4_PACKAGE_SIZE_VERSION_1 (sizeof(int64_t) + sizeof(c4_ptr64_t) * 2)
+#define C4_PACKAGE_SIZE_VERSION_1 (sizeof(int64_t) + sizeof(uint64_t) + sizeof(c4_ptr64_t) * 2)
 
 #endif

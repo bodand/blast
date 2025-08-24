@@ -68,15 +68,17 @@ c4rt_package_init_1(struct c4_package_t* pkg) {
 }
 
 C4RT_IMPL void
-c4rt_package_set_from_packages_1(struct c4_package_t* pkg,
+c4rt_package_set_from_function_1(struct c4_package_t* pkg,
                                  c4rt_package_function_t* calc_fun,
-                                 struct c4_package_t* fn_data) {
+                                 struct c4_package_t* fn_data,
+                                 const uint16_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert((pkg->package_size > C4_PACKAGE_SIZE_VERSION_1)
         && "invalid package size information: only version 1 and up are supported");
 
     pkg->function = c4rt_pad_pointer_1(calc_fun);
+    pkg->function_arity = fn_data_sz;
     pkg->data = c4rt_pad_pointer_1(fn_data);
 }
 
@@ -91,8 +93,10 @@ c4rt_package_set_from_result_1(struct c4_package_t* pkg,
     pkg->result = datum;
 }
 
+#include "dynamic_call_hacks.h"
+
 C4RT_IMPL c4_datum_t
-c4rt_evaluate_package_1(struct c4_package_t* const pkg) {
+c4rt_package_evaluate_1(struct c4_package_t* const pkg) {
     assert(pkg && "pkg must not be null");
     assert((pkg->package_size > C4_PACKAGE_SIZE_VERSION_1)
         && "invalid package size information: only version 1 and up are supported");
@@ -100,7 +104,7 @@ c4rt_evaluate_package_1(struct c4_package_t* const pkg) {
     c4rt_package_function_t* const calc_func = c4rt_unpad_pointer_1(pkg->function);
     if (calc_func) {
         struct c4_package_t* fn_data = c4rt_unpad_pointer_1(pkg->data);
-        const c4_datum_t result = calc_func(fn_data);
+        const c4_datum_t result = c4_dynamic_call(pkg->function_arity, calc_func, fn_data);
 
         ptr64_set_nullptr(&pkg->function);
         pkg->result = result;

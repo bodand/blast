@@ -30,20 +30,23 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4rt2/src/c4rt2/c4rt --
- *   Statically check that C4 ABI structures are properly packed.
+ * src/c4rt2/include/c4rt2/datum_type --
+ *   Provides the types for dealing with c4rt' datum.
  */
+#ifndef C4RT_DATUM_TYPE_H
+#define C4RT_DATUM_TYPE_H
 
-#include <c4rt2/c4rt.h>
+#include <c4rt2/api.h>
 
-namespace {
-    template<class... Args>
-    struct sizeof_sum {
-        constexpr static size_t value = (sizeof(Args) + ...);
-    };
-    template<class... Args>
-    constexpr auto sizeof_sum_v = sizeof_sum<Args...>::value;
-}
+typedef uint64_t c4_datum_t;
 
-static_assert(sizeof(c4_package_t) == sizeof_sum_v<int64_t, uint16_t, uint16_t, uint32_t, void*, void*>);
-static_assert(sizeof(c4_package_t[2]) == sizeof_sum_v<c4_package_t, c4_package_t>);
+enum c4_datum_type {
+    C4_Float = 0x0, /* 0000 */
+    C4_Block = 0x1, /* 0001 */
+    C4_Integer = 0x2, /* 0010 */
+    C4_String = 0x4, /* 0100 */
+};
+
+C4RT_EXTERN const c4_datum_t gC4_Empty_Block;
+
+#endif

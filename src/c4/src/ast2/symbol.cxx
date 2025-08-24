@@ -74,8 +74,8 @@ namespace {
     std::string
     mangle_standard_function(const std::string_view name,
                              const unsigned arity) {
-        return fmt::format("{}{}/{}",
-                           name.size() + 1 + numeric_length(arity),
+        return fmt::format("s{}{}{}E",
+                           name.size(),
                            name,
                            arity);
     }
@@ -92,10 +92,9 @@ namespace {
                     const unsigned arity) {
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("o{}{}/{}",
-                           normalized.size() + 1 + numeric_length(arity),
+        return fmt::format("o{}{}{}E",
+                           normalized.size(),
                            normalized,
-
                            arity);
     }
 

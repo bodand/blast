@@ -36,6 +36,7 @@
 #ifndef BLAST_FFM_MAPPER_HXX
 #define BLAST_FFM_MAPPER_HXX
 
+#include <deque>
 #include <optional>
 #include <span>
 #include <vector>
@@ -121,7 +122,7 @@ namespace c4 {
 
         void finalize_block_body() const;
 
-        [[nodiscard]] std::span<ffm::function* const>
+        [[nodiscard]] const std::deque<ffm::function*>&
         roots() const noexcept { return _roots; }
 
     private:
@@ -281,7 +282,7 @@ namespace c4 {
         ffm::function_definition* _current_function{};
         ffm::argument_holder* _current_call{};
 
-        std::vector<ffm::function*> _roots{};
+        std::deque<ffm::function*> _roots{};
         ffm::ffm_context& _ffm_context;
     };
 }

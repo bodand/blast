@@ -34,6 +34,13 @@
  *   
  */
 
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <vector>
+#include <array>
+#include <span>
+
 #include <c4/ffm.hxx>
 #include <c4c/llvm_value_attribute.hxx>
 
@@ -69,11 +76,15 @@ c4c::ffm_ir_emitter::ffm_ir_emitter(llvm::LLVMContext& context,
     , _module{module}
     , _builder{builder}
     , _c4rt_datum_type{llvm::Type::getInt64Ty(context)}
-    , _c4rt_package_type{llvm::Type::getInt64Ty(context)}
+    , _c4rt_package_type{llvm::PointerType::get(context, 0)}
     , _rt_emitter{_module, &_builder} { }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_argument& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_argument& obj) {
+    const auto llvm_arg = obj.attribute_value<llvm::Value*>("value");
+    ASSERT(llvm_arg, "block argument must have a value attribute", obj.name());
+    _current_args.push_back(*llvm_arg);
+}
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_type& obj) { }
@@ -90,21 +101,71 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::root_expression& obj) {
 }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::value_expression& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::value_expression& obj) {
+    obj.accept_skip_self(*this);
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_call& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_call& obj) {
+    const auto stack = call_stack(_active_call, _current_args);
+    for (const auto& argument : obj.arguments()) argument->accept(*this);
+
+    const auto decl = obj.function();
+    DEBUG_ASSERT(decl, "function call must have a function");
+    const auto llvm_decl = try_get_function_attribute(decl);
+    ASSERT(llvm_decl, "function must be declared in ffm before it is called");
+
+    if (obj.packed()) {
+        const auto pkg = _rt_emitter.local_package();
+        _rt_emitter.emit_package_set_from_function(pkg, llvm_decl, _current_args);
+
+        stack.pop();
+        push_value(pkg);
+    }
+    else {
+        const auto fn_type = llvm_decl->getFunctionType();
+        const auto call = _builder.CreateCall(fn_type, llvm_decl, _current_args);
+
+        stack.pop();
+        push_value(call);
+    }
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) {
+    const auto stack = call_stack(_active_call, _current_args);
+    for (const auto& argument : obj.arguments()) argument->accept(*this);
+
+    const auto callee = obj.callee();
+    callee->accept(*this);
+
+    const auto callee_type = build_type_with_arity(static_cast<unsigned>(obj.arguments().size()));
+    const auto callee_value = _current_args.back();
+    _current_args.pop_back();
+
+    const auto call = _builder.CreateCall(callee_type, callee_value, _current_args);
+    const auto pkg = _rt_emitter.local_package();
+    _rt_emitter.emit_package_set_from_result(pkg, call);
+    stack.pop();
+    push_value(pkg);
+}
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_declaration& obj) {
     const auto fn_type = build_type_for(obj);
+    const auto linkage = obj.known()
+                         ? llvm::Function::InternalLinkage
+                         : llvm::Function::ExternalLinkage;
     const auto fn = llvm::Function::Create(fn_type,
-                                           llvm::Function::InternalLinkage,
+                                           linkage,
                                            obj.name(),
                                            _module);
+    for (std::size_t i = 0;
+         auto& arg : fn->args()) {
+        const auto ffm_arg = obj.argument(i++);
+        arg.setName(ffm_arg->name());
+        ffm_arg->emplace_attribute<llvm_value_attribute>("value", &arg);
+    }
     obj.emplace_attribute<llvm_function_attribute>("function", fn);
 }
 
@@ -117,11 +178,15 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_definition& obj) {
 
     const auto ip = _builder.saveAndClearIP();
     _current_function = llvm_decl;
-    const auto fn_body = build_bblock("body");
+    std::ignore = build_bblock("body");
 
-    for (const auto& expression : obj.body()) {
+    for (std::size_t i = 0;
+         const auto& expression : obj.body()) {
+        _returned_value = i == obj.body().size() - 1;
         expression->accept(*this);
+        ++i;
     }
+    _returned_value = false;
 
     _builder.restoreIP(ip);
 }
@@ -154,37 +219,80 @@ namespace {
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::literal& obj) {
-    DEBUG_ASSERT(!obj.packed(), "sorry, not implemented", obj.value());
-
-    literal_visitor visitor{_rt_emitter};
-    _builder.CreateRet(std::visit(visitor, obj.value()));
+    const auto llvm_lit = build_literal(obj);
+    push_value(llvm_lit);
 }
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_literal& obj) { }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::local& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::local& obj) {
+    const auto scope = call_stack(_active_call, _current_args);
+    obj.value()->accept(*this);
+    ASSERT(_current_args.size() == 1, "local must be set with one value");
+    auto value = _current_args.back();
+    value->setName(obj.name());
+    obj.emplace_attribute<llvm_value_attribute>("value", value);
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::local_ref& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::local_ref& obj) {
+    const auto val = obj.ref()->attribute_value<llvm::Value*>("value");
+    ASSERT(val, "referenced symbol must have a value attribute to the callee",
+           obj.ref()->name(),
+           val);
+    push_value(*val);
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::unpack& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::unpack& obj) {
+    const auto scope = call_stack(_active_call, _current_args);
+    obj.expr()->accept(*this);
+    ASSERT(_current_args.size() == 1, "unpack must be called with one value");
+    const auto unpackee = _current_args.back();
+    scope.pop();
+
+    const auto val = _rt_emitter.emit_unpack(unpackee);
+    push_value(val);
+}
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::function& obj) {
     obj.accept_skip_self(*this);
 }
 
+void
+c4c::ffm_ir_emitter::push_value(llvm::Value* value) {
+    if (_active_call) return _current_args.push_back(value);
+    if (_returned_value) {
+        _builder.CreateRet(value);
+        return;
+    }
+}
+
+llvm::Value*
+c4c::ffm_ir_emitter::build_literal(const c4::ffm::literal& lit) {
+    literal_visitor visitor{_rt_emitter};
+    const auto lit_val = std::visit(visitor, lit.value());
+    if (!lit.packed()) return lit_val;
+
+    const auto pkg = _rt_emitter.local_package();
+    _rt_emitter.emit_package_set_from_result(pkg, lit_val);
+    return pkg;
+}
+
 llvm::FunctionType*
 c4c::ffm_ir_emitter::build_type_for(const c4::ffm::function_declaration& decl) {
     DEBUG_ASSERT(!decl.closure(), "closure typing not yet implemented");
 
-    const auto basic_args_sz = decl.base_arity();
-    std::vector<llvm::Type*> args(basic_args_sz);
-    std::ranges::generate(args, [&] { return _c4rt_package_type; });
+    return build_type_with_arity(decl.base_arity());
+}
 
+llvm::FunctionType*
+c4c::ffm_ir_emitter::build_type_with_arity(const unsigned arity) const {
+    std::vector<llvm::Type*> args(arity);
+    std::ranges::generate(args, [&] { return _c4rt_package_type; });
     return llvm::FunctionType::get(_c4rt_datum_type, args, false);
 }
 

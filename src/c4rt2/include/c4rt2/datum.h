@@ -37,17 +37,9 @@
 #define C4RT_DATUM_H
 
 #include <c4rt2/api.h>
+#include <c4rt2/datum_type.h>
 
-typedef uint64_t c4_datum_t;
-
-enum c4_datum_type {
-    C4_Float = 0x0, /* 0000 */
-    C4_Block = 0x1, /* 0001 */
-    C4_Integer = 0x2, /* 0010 */
-    C4_String = 0x4, /* 0100 */
-};
-
-C4RT_API const c4_datum_t gC4_Empty_Block;
+#include "package_type.h"
 
 C4RT_API void
 c4rt_free(void* mem);
@@ -82,6 +74,10 @@ c4rt_datum_from_string(const char* s);
 
 C4RT_API c4_datum_t
 c4rt_datum_from_string_sz(const char* s, size_t s_sz);
+
+C4RT_API c4_datum_t
+c4rt_datum_from_function(c4rt_package_function_t* calc_fun,
+                         struct c4_package_t* fn_data);
 
 C4RT_API void
 c4rt_datum_free(c4_datum_t d);
@@ -119,5 +115,7 @@ c4rt_datum_coerce_string(c4_datum_t datum);
 C4RT_API c4_datum_t
 c4rt_datum_dup(c4_datum_t datum);
 
+C4RT_API c4_datum_t
+c4rt_datum_evaluate(c4_datum_t datum);
 
 #endif

@@ -30,20 +30,30 @@
  *
  * Originally created: 2025-08-08.
  *
- * src/c4rt2/src/c4rt2/c4rt --
- *   Statically check that C4 ABI structures are properly packed.
+ * src/c4rt2/include/c4rt2/package_type --
+ *   Provides the types for dealing with c4rt' package.
  */
+#ifndef BLAST_PACKAGE_TYPE_H
+#define BLAST_PACKAGE_TYPE_H
 
-#include <c4rt2/c4rt.h>
+#include <c4rt2/api.h>
+#include <c4rt2/datum_type.h>
 
-namespace {
-    template<class... Args>
-    struct sizeof_sum {
-        constexpr static size_t value = (sizeof(Args) + ...);
+typedef uint64_t c4_ptr64_t;
+
+struct c4_package_t {
+    uint64_t package_size;
+    c4_ptr64_t function;
+    uint16_t function_arity;
+    uint16_t reserved_0;
+    uint32_t reserved_1;
+
+    union {
+        c4_ptr64_t data;
+        c4_datum_t result;
     };
-    template<class... Args>
-    constexpr auto sizeof_sum_v = sizeof_sum<Args...>::value;
-}
+};
 
-static_assert(sizeof(c4_package_t) == sizeof_sum_v<int64_t, uint16_t, uint16_t, uint32_t, void*, void*>);
-static_assert(sizeof(c4_package_t[2]) == sizeof_sum_v<c4_package_t, c4_package_t>);
+typedef c4_datum_t (c4rt_package_function_t)();
+
+#endif

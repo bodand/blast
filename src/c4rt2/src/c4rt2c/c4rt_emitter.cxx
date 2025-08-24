@@ -40,6 +40,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 #include <c4rt2c/c4rt_emitter.hxx>
+#include <catch2/internal/catch_void_type.hpp>
 
 #include <libassert/assert.hpp>
 
@@ -49,11 +50,18 @@ c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder)
     , _c4rt_package_type{llvm::PointerType::get(builder->getContext(), 0)}
     , _builder{builder}
     , _module(module) {
+    const auto int64_t = llvm::Type::getInt64Ty(_builder->getContext());
+    _package_struct_type = llvm::StructType::create({int64_t, int64_t, int64_t}, "c4_package_t", true);
+
     const auto type_t = llvm::Type::getInt32Ty(_builder->getContext());
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
-    llvm::FunctionType *datum_from_static_ptr_ft = llvm::FunctionType::get(_c4rt_datum_type, {type_t, ptr_t}, false);
-    llvm::Function::Create(datum_from_static_ptr_ft, llvm::Function::ExternalLinkage, "c4rt_datum_from_static_ptr", module);
+    declare_rt_function("c4rt_datum_from_static_ptr", _c4rt_datum_type, type_t, ptr_t);
+    declare_rt_function("c4rt_package_init", void_t, ptr_t);
+    declare_rt_function("c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t);
+    declare_rt_function("c4rt_package_set_from_result", void_t, ptr_t, _c4rt_datum_type);
+    declare_rt_function("c4rt_package_evaluate", _c4rt_datum_type, ptr_t);
 }
 
 llvm::Value*
@@ -61,11 +69,71 @@ c4rt2c::c4_rt2_emitter::emit_datum_from_static_ptr(llvm::Value* type, llvm::Valu
     const auto type_t = llvm::Type::getInt32Ty(_builder->getContext());
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
 
-    llvm::FunctionType *datum_from_static_ptr_ft = llvm::FunctionType::get(_c4rt_datum_type, {type_t, ptr_t}, false);
+    llvm::FunctionType* datum_from_static_ptr_ft = llvm::FunctionType::get(_c4rt_datum_type, {type_t, ptr_t}, false);
     const auto fn = _module.getFunction("c4rt_datum_from_static_ptr");
     ASSERT(fn, "c4rt_datum_from_static_ptr must be defined in module");
 
     return _builder->CreateCall(datum_from_static_ptr_ft, fn, {type, ptr});
+}
+
+void
+c4rt2c::c4_rt2_emitter::emit_package_init(llvm::Value* ptr) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_package_init", void_t, ptr_t);
+    _builder->CreateCall(fn, {ptr});
+}
+
+void
+c4rt2c::c4_rt2_emitter::emit_package_set_from_result(llvm::Value* ptr, llvm::Value* datum) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_package_set_from_result", void_t, ptr_t, _c4rt_datum_type);
+    _builder->CreateCall(fn, {ptr, datum});
+}
+
+void
+c4rt2c::c4_rt2_emitter::emit_package_set_from_function(llvm::Value* pkg,
+                                                       llvm::Function* function,
+                                                       const std::vector<llvm::Value*>& vector) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
+
+    const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+    const auto mem_type = llvm::ArrayType::get(_package_struct_type, vector.size());
+    const auto mem = _builder->CreateAlloca(_package_struct_type,
+                                            llvm::ConstantInt::get(index_type, vector.size()),
+                                            "pkg_params");
+    const auto ptr = _builder->CreatePointerCast(mem, _c4rt_package_type);
+    for (std::size_t i = 0; i < vector.size(); ++i) {
+        const auto param_ptr = _builder->CreateInBoundsGEP(mem_type, ptr,llvm::ConstantInt::get(index_type, i));
+        _builder->CreateStore(vector[i], param_ptr);
+    }
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t);
+    _builder->CreateCall(fn, {pkg, function, ptr});
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_unpack(llvm::Value* value) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_package_evaluate", _c4rt_datum_type, ptr_t);
+    return _builder->CreateCall(fn, {value});
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::local_package() const {
+    const auto local = _builder->CreateAlloca(_package_struct_type, nullptr, "pkg");
+    const auto ptr = _builder->CreatePointerCast(local, _c4rt_package_type);
+    emit_package_init(ptr);
+    return local;
 }
 
 llvm::Value*
@@ -111,4 +179,23 @@ c4rt2c::c4_rt2_emitter::encode_datum_string(const std::string_view i) const {
     const auto const_int64_datum_type = llvm::ConstantInt::get(int32_type, C4_String);
 
     return emit_datum_from_static_ptr(const_int64_datum_type, str_ptr);
+}
+
+void
+c4rt2c::c4_rt2_emitter::declare_rt_function_impl(const std::string_view name,
+                                                 llvm::Type* ret_type,
+                                                 std::span<llvm::Type* const> arg_types) const {
+    llvm::FunctionType* fn_type = llvm::FunctionType::get(ret_type, {arg_types.data(), arg_types.size()}, false);
+    llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, name, _module);
+}
+
+void
+c4rt2c::c4_rt2_emitter::get_rt_function_impl(llvm::FunctionCallee* callee, std::string_view name, llvm::Type* ret_type,
+                                             std::span<llvm::Type* const> arg_types) const {
+    llvm::FunctionType* fn_type = llvm::FunctionType::get(ret_type, {arg_types.data(), arg_types.size()}, false);
+    const auto fn = _module.getFunction(name);
+    ASSERT(fn, "function {} must be defined in module", name);
+    DEBUG_ASSERT(fn->getFunctionType() == fn_type, "function {} must have the same signature", name);
+
+    *callee = llvm::FunctionCallee(fn_type, fn);
 }

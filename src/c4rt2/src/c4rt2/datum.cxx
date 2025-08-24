@@ -169,6 +169,29 @@ c4rt_datum_from_string_sz(const char* s, size_t s_sz) {
 }
 
 namespace {
+    struct datum_function {
+        c4rt_package_function_t* calc_fun;
+        size_t fn_data_sz;
+        c4_package_t fn_data[];
+    };
+}
+
+c4_datum_t
+c4rt_datum_from_function(c4rt_package_function_t* calc_fun,
+                         c4_package_t* fn_data,
+                         const size_t fn_data_sz) {
+    static_assert(sizeof(calc_fun) == sizeof(fn_data), "pointer sizes differ");
+    const auto data = C4_MALLOC(sizeof(datum_function) + (fn_data_sz * sizeof(c4_package_t)));
+    const auto remote_fn = std::construct_at(static_cast<datum_function*>(data));
+    remote_fn->calc_fun = calc_fun;
+    remote_fn->fn_data_sz = fn_data_sz;
+    std::copy_n(fn_data, fn_data_sz, remote_fn->fn_data);
+
+    return remoteness_mask | nan_mask | shifted_type(C4_Block)
+           | put_pointer_value(data, true);
+}
+
+namespace {
     void
     datum_free_long_string(char* ptr) {
         C4_FREE(ptr - sizeof(std::size_t));
@@ -354,8 +377,9 @@ c4rt_datum_coerce_string(c4_datum_t datum) {
 
     switch (const auto type = c4rt_datum_type_of(datum)) {
     case C4_Float: return C4_STRDUP(std::format("{}", *reinterpret_cast<double*>(datum)).c_str());
-    case C4_Block: if (datum != gC4_Empty_Block) return C4_STRDUP(
-            std::format("(block {})", get_pointer_value(datum)).c_str());
+    case C4_Block: if (datum != gC4_Empty_Block)
+            return C4_STRDUP(
+                std::format("(block {})", get_pointer_value(datum)).c_str());
         return C4_STRDUP("{}");
     case C4_Integer: if (!remoteness) return C4_STRDUP(std::format("{}", datum_get_int32_unck(datum)).c_str());
         return C4_STRDUP(std::format("{}", datum_get_int64_unck_remote(datum)).c_str());
@@ -385,4 +409,17 @@ c4rt_datum_dup(const c4_datum_t datum) {
             datum_get_cstr_size_unck_remote(datum));
     default: UNREACHABLE("invalid datum type {}", static_cast<int>(type));
     }
+}
+
+#include "dynamic_call_hacks.h"
+
+c4_datum_t
+c4rt_datum_evaluate(c4_datum_t datum) {
+    if (const auto type = c4rt_datum_type_of(datum);
+        type != C4_Block)
+        return datum;
+    if (datum == gC4_Empty_Block) return gC4_Empty_Block;
+
+    const auto ptr = get_pointer_value(datum);
+
 }
