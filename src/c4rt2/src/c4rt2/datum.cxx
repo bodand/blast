@@ -171,9 +171,13 @@ c4rt_datum_from_string_sz(const char* s, size_t s_sz) {
 namespace {
     struct datum_function {
         c4rt_package_function_t* calc_fun;
-        size_t fn_data_sz;
+        uint16_t fn_data_sz;
+        uint16_t reserved_0;
+        uint32_t reserved_1;
         c4_package_t fn_data[];
     };
+    static_assert(sizeof(datum_function) == sizeof(c4rt_package_function_t*) + (64/CHAR_BIT));
+    static_assert(offsetof(datum_function, fn_data) == sizeof(c4rt_package_function_t*) + (64/CHAR_BIT));
 }
 
 c4_datum_t
@@ -414,12 +418,16 @@ c4rt_datum_dup(const c4_datum_t datum) {
 #include "dynamic_call_hacks.h"
 
 c4_datum_t
-c4rt_datum_evaluate(c4_datum_t datum) {
+c4rt_datum_evaluate(const c4_datum_t datum) {
     if (const auto type = c4rt_datum_type_of(datum);
         type != C4_Block)
         return datum;
     if (datum == gC4_Empty_Block) return gC4_Empty_Block;
 
     const auto ptr = get_pointer_value(datum);
-
+    const auto fn_data = static_cast<datum_function*>(ptr);
+    const auto fn_data_sz = fn_data->fn_data_sz;
+    const auto fn_data_ptr = fn_data->fn_data;
+    const auto fn_ptr = fn_data->calc_fun;
+    return c4_dynamic_call(fn_data_sz, fn_ptr, fn_data_ptr);
 }

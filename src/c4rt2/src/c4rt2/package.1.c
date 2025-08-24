@@ -74,7 +74,7 @@ c4rt_package_set_from_function_1(struct c4_package_t* pkg,
                                  const uint16_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
-    assert((pkg->package_size > C4_PACKAGE_SIZE_VERSION_1)
+    assert((pkg->package_size >= C4_PACKAGE_SIZE_VERSION_1)
         && "invalid package size information: only version 1 and up are supported");
 
     pkg->function = c4rt_pad_pointer_1(calc_fun);
@@ -86,7 +86,7 @@ C4RT_IMPL void
 c4rt_package_set_from_result_1(struct c4_package_t* pkg,
                                const c4_datum_t datum) {
     assert(pkg && "pkg must not be null");
-    assert((pkg->package_size > C4_PACKAGE_SIZE_VERSION_1)
+    assert((pkg->package_size >= C4_PACKAGE_SIZE_VERSION_1)
         && "invalid package size information: only version 1 and up are supported");
 
     ptr64_set_nullptr(&pkg->function);
@@ -98,7 +98,7 @@ c4rt_package_set_from_result_1(struct c4_package_t* pkg,
 C4RT_IMPL c4_datum_t
 c4rt_package_evaluate_1(struct c4_package_t* const pkg) {
     assert(pkg && "pkg must not be null");
-    assert((pkg->package_size > C4_PACKAGE_SIZE_VERSION_1)
+    assert((pkg->package_size >= C4_PACKAGE_SIZE_VERSION_1)
         && "invalid package size information: only version 1 and up are supported");
 
     c4rt_package_function_t* const calc_func = c4rt_unpad_pointer_1(pkg->function);
