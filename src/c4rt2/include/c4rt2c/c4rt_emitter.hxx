@@ -59,6 +59,9 @@ namespace c4rt2c {
         [[nodiscard]] llvm::Value*
         emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
 
+        [[nodiscard]] llvm::Value*
+        emit_datum_evaluate(llvm::Value* datum) const;
+
         void
         emit_package_init(llvm::Value* ptr) const;
 

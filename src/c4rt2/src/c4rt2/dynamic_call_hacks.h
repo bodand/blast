@@ -317,7 +317,7 @@
 #endif
 
 #define c4_dynamic_call_fn(cnt) \
-    C4RT_IMPL c4_datum_t \
+    inline C4RT_IMPL c4_datum_t \
     c4_dynamic_call_##cnt(c4rt_package_function_t* fn, struct c4_package_t* args) { \
         c4_dynamic_call_var(cnt) = fn_cast_to(c4_dynamic_call_type(cnt), fn);\
         return callee(c4_dynamic_args(cnt)); \
@@ -472,7 +472,7 @@ c4_dynamic_call_fn(128)
 
 #define c4_dynamic_cases(max) c4_dynamic_args##max(case, max, c4_underscores(max))
 
-C4RT_IMPL c4_datum_t
+inline C4RT_IMPL c4_datum_t
 c4_dynamic_call(const unsigned arity,
                 c4rt_package_function_t* fn,
                 struct c4_package_t* args) {

@@ -36,8 +36,11 @@
 
 #include <c4rt2/c4rt.h>
 
+#include <llvm/Linker/Linker.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IRReader/IRReader.h>
+#include <llvm/Support/SourceMgr.h>
 
 #include <c4rt2c/c4rt_emitter.hxx>
 #include <catch2/internal/catch_void_type.hpp>
@@ -49,17 +52,19 @@ c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder)
     : _c4rt_datum_type{llvm::Type::getInt64Ty(builder->getContext())}
     , _c4rt_package_type{llvm::PointerType::get(builder->getContext(), 0)}
     , _builder{builder}
-    , _module(module) {
+    , _module{module} {
     const auto int64_t = llvm::Type::getInt64Ty(_builder->getContext());
-    _package_struct_type = llvm::StructType::create({int64_t, int64_t, int64_t}, "c4_package_t", true);
+    const auto int16_t = llvm::Type::getInt16Ty(_builder->getContext());
+    _package_struct_type = llvm::StructType::get(_module.getContext(), {int64_t, int64_t, int64_t}, true);
 
     const auto type_t = llvm::Type::getInt32Ty(_builder->getContext());
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
     declare_rt_function("c4rt_datum_from_static_ptr", _c4rt_datum_type, type_t, ptr_t);
+    declare_rt_function("c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type);
     declare_rt_function("c4rt_package_init", void_t, ptr_t);
-    declare_rt_function("c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t);
+    declare_rt_function("c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t, int16_t);
     declare_rt_function("c4rt_package_set_from_result", void_t, ptr_t, _c4rt_datum_type);
     declare_rt_function("c4rt_package_evaluate", _c4rt_datum_type, ptr_t);
 }
@@ -74,6 +79,13 @@ c4rt2c::c4_rt2_emitter::emit_datum_from_static_ptr(llvm::Value* type, llvm::Valu
     ASSERT(fn, "c4rt_datum_from_static_ptr must be defined in module");
 
     return _builder->CreateCall(datum_from_static_ptr_ft, fn, {type, ptr});
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum) const {
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type);
+    return _builder->CreateCall(fn, {datum});
 }
 
 void
@@ -100,6 +112,7 @@ void
 c4rt2c::c4_rt2_emitter::emit_package_set_from_function(llvm::Value* pkg,
                                                        llvm::Function* function,
                                                        const std::vector<llvm::Value*>& vector) const {
+    const auto int16_t = llvm::Type::getInt16Ty(_builder->getContext());
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
@@ -114,9 +127,12 @@ c4rt2c::c4_rt2_emitter::emit_package_set_from_function(llvm::Value* pkg,
         _builder->CreateStore(vector[i], param_ptr);
     }
 
+    const auto arity = static_cast<uint16_t>(vector.size());
+    const auto arity_val = llvm::ConstantInt::get(int16_t, arity);
+
     llvm::FunctionCallee fn;
-    get_rt_function(&fn, "c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t);
-    _builder->CreateCall(fn, {pkg, function, ptr});
+    get_rt_function(&fn, "c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t, int16_t);
+    _builder->CreateCall(fn, {pkg, function, ptr, arity_val});
 }
 
 llvm::Value*

@@ -237,10 +237,9 @@ main(int argc, const char** argv) {
 
         llvm::LLVMContext context;
         llvm::SMDiagnostic diag;
-        // const auto module_ptr = llvm::parseIRFile("rt.ll", diag, context);
-        // auto& module = *module_ptr;
         const auto module_id = src_path.string();
         llvm::Module module(module_id, context);
+        module.setSourceFileName(module_id);
         llvm::IRBuilder<> builder(context);
 
         const auto target_triple = target_arch.empty()
@@ -289,7 +288,6 @@ initialize_targets() {
     LLVMInitializeAArch64AsmPrinter();
 
     LLVMInitializeRISCVTarget();
-    LLVMInitializeRISCVTargetInfo();
     LLVMInitializeRISCVTargetInfo();
     LLVMInitializeRISCVTargetMC();
     LLVMInitializeRISCVAsmPrinter();

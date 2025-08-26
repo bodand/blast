@@ -139,15 +139,21 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) {
     const auto callee = obj.callee();
     callee->accept(*this);
 
-    const auto callee_type = build_type_with_arity(static_cast<unsigned>(obj.arguments().size()));
     const auto callee_value = _current_args.back();
     _current_args.pop_back();
 
-    const auto call = _builder.CreateCall(callee_type, callee_value, _current_args);
-    const auto pkg = _rt_emitter.local_package();
-    _rt_emitter.emit_package_set_from_result(pkg, call);
+    const auto callee_datum = _rt_emitter.emit_unpack(callee_value);
+    const auto result_datum = _rt_emitter.emit_datum_evaluate(callee_datum);
     stack.pop();
-    push_value(pkg);
+
+    if (_in_unpack) {
+        _in_unpack = false;
+        return push_value(result_datum);
+    }
+
+    const auto packaged = _rt_emitter.local_package();
+    _rt_emitter.emit_package_set_from_result(packaged, result_datum);
+    push_value(packaged);
 }
 
 void
@@ -246,15 +252,23 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::local_ref& obj) {
 }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::unpack& obj) {
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::unpack& obj) try {
     const auto scope = call_stack(_active_call, _current_args);
+    _in_unpack = true;
     obj.expr()->accept(*this);
     ASSERT(_current_args.size() == 1, "unpack must be called with one value");
     const auto unpackee = _current_args.back();
     scope.pop();
 
+    if (!_in_unpack) return push_value(unpackee);
+
     const auto val = _rt_emitter.emit_unpack(unpackee);
     push_value(val);
+    _in_unpack = false;
+}
+catch (...) {
+    _in_unpack = false;
+    throw;
 }
 
 void

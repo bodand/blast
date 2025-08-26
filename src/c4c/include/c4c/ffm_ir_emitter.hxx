@@ -144,6 +144,7 @@ namespace c4c {
 
         llvm::Function* _current_function{};
 
+        bool _in_unpack{false};
         bool _returned_value{false};
         bool _active_call{false};
         std::vector<llvm::Value*> _current_args{};

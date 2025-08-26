@@ -73,9 +73,15 @@ function(compile_into_bitcode in CC)
     set(optim "${out}.opt")
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
                        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/dynamic_call_hacks.h"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/c4rt_package_versions.h"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/package.1.h"
                        COMMAND "${CC}" -c -emit-llvm
                        -fvisibility=hidden
                        -DC4RT2_STATIC
+                       -D_CRT_NONSTDC_NO_DEPRECATE
+                       -D_CRT_SECURE_NO_WARNINGS
+                       ${ARGN}
                        $<${opt}:-DNDEBUG>
                        -I "${CMAKE_CURRENT_BINARY_DIR}"
                        -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -120,7 +126,7 @@ add_library(c4rt2 SHARED
             src/c4rt2/package.1.h
             src/c4rt2/package.1.c
             include/c4rt2/datum.h
-            src/c4rt2/datum.cxx
+            src/c4rt2/datum.c
             include/c4rt2/datum_type.h
             include/c4rt2/package_type.h
             src/c4rt2/dynamic_call_hacks.h
@@ -136,8 +142,10 @@ target_compile_definitions(c4rt2 PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
 compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}")
 compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}")
 compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}")
+compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}")
 
 link_bitcode(src/c4rt2/rt.bc
+             src/c4rt2/datum.c.bc.opt
              src/c4rt2/package.c.bc.opt
              src/c4rt2/package.1.c.bc.opt
              src/c4rt2/c4rt.c.bc.opt)
