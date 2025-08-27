@@ -39,50 +39,47 @@
 #include <c4rt2/api.h>
 #include <c4rt2/package_type.h>
 
-/// c4rt_pad_pointer(ptr) --
-///     Pads ptr to 64 bit on all platforms where it is less than 64 bit.
-C4RT_API c4_ptr64_t
-c4rt_pad_pointer(void* ptr);
-
-/// c4rt_unpad_pointer(ptr) --
-///     Removes padding from ptr. Padding must have been created using
-///     c4rt_pad_pointer in the same system and process, unless behavior is
-///     undefined.
-C4RT_API void*
-c4rt_unpad_pointer(c4_ptr64_t ptr);
-
-/// c4rt_package_complete(pkg) --
-///     Returns whether the given package has been calculated.
-#define c4rt_package_complete(pkg) (c4rt_unpad_pointer((pkg)->function) == NULL)
-
-/// c4rt_package_incomplete(pkg) --
-///     Returns whether the given package has not been calculated.
-#define c4rt_package_incomplete(pkg) (c4rt_unpad_pointer((pkg)->function) != NULL)
-
-/// c4rt_package_init(pkg) --
-///     Initializes common attributes for c4_package_t structures. It is
-///     imperative to call this on every created package to ensure back and
-///     forward compatibility in the ABI.
+/// c4rt_package_init_from_function(*pkg, *calc_fun, *fn_data, fn_data_sz) --
+///     Initializes a new C4 package at pkg. There must be enough space in the
+///     buffer for package_version bytes which must be set on the object.
+///     The correct package version will be initialized based on this field.
 ///
-///     Behavior is undefined if pkg is null.
-C4RT_API void
-c4rt_package_init(struct c4_package_t* pkg);
-
-/// c4rt_package_set_from_function(pkg, calc_fun, fn_data, fn_data_sz) --
-///     Packages a function calc_fun to be calculated later, using the
-///     parameters set in fn_data into pkg.
-///     The fn_data pointer can be null, but then null will be passed to
-///     calc_fun when/if it is evaluated, ensure it can handle it.
-///
-///     Note that fn_data_sz and thusly fn_data are limited to 16-bits worth
-///     of size. This is because C4 only supports 65535 parameters for each
-///     function. Also note that the current runtime only supports 127 of them.
+///     If fn_data is null, fn_data_sz must be zero.
+///     If not null, fn_data must point to an array of size fn_data_sz (in bytes)
+///     that contains packages of the same version as specified in pkg's
+///     package_version.
 ///
 ///     Behavior is undefined if either pkg or calc_fun is null.
 C4RT_API void
-c4rt_package_set_from_function(struct c4_package_t* pkg,
+c4rt_package_init_from_function(struct c4_package_t* pkg,
+                                c4rt_package_function_t* calc_fun,
+                                const struct c4_package_t* fn_data,
+                                uint16_t fn_data_sz);
+
+/// c4rt_package_init_from_closure(*pkg, *calc_fun,
+///                                *ctx, ctx_sz,
+///                                *fn_data, fn_data_sz) --
+///     Initializes a new C4 package at pkg. There must be enough space in the
+///     buffer for package_version bytes which must be set on the object.
+///     The correct package version will be initialized based on this field.
+///
+///     If fn_data is null, fn_data_sz must be zero.
+///     If not null, fn_data must point to an array of size fn_data_sz (in bytes)
+///     that contains packages of the same version as specified in pkg's
+///     package_version.
+///
+///     Context passed in [ctx, ctx_sz|) bytes can be any structure and will
+///     be passed as the first argument to the given function. Note that it
+///     is not deep copied nor released: only the given bytes are copied over
+///     and passed to the function.
+///
+///     Behavior is undefined if either ctx, pkg, or calc_fun is null.
+C4RT_API void
+c4rt_package_init_from_closure(struct c4_package_t* pkg,
                                c4rt_package_function_t* calc_fun,
-                               struct c4_package_t* fn_data,
+                               const void* ctx,
+                               uint32_t ctx_sz,
+                               const struct c4_package_t* fn_data,
                                uint16_t fn_data_sz);
 
 /// c4rt_package_set_from_result(pkg, datum) --
@@ -90,8 +87,8 @@ c4rt_package_set_from_function(struct c4_package_t* pkg,
 ///
 ///     Behavior is undefined if pkg is null.
 C4RT_API void
-c4rt_package_set_from_result(struct c4_package_t* pkg,
-                             c4_datum_t datum);
+c4rt_package_init_from_result(struct c4_package_t** pkg,
+                              c4_datum_t datum);
 
 /// c4rt_package_evaluate(pkg) --
 ///     Calculates the value of pkg if it has not yet been calculated and

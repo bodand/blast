@@ -66,6 +66,38 @@ namespace {
 
         return *attr;
     }
+
+    llvm::Type*
+    try_get_type_attribute(const c4::ast2::tags::attributable* ref) {
+        const auto attr = ref->attribute_value<llvm::Type*>("type");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
+
+    llvm::Value*
+    try_get_value_attribute(const c4::ast2::tags::attributable* ref) {
+        const auto attr = ref->attribute_value<llvm::Value*>("value");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
+
+    c4::ffm::local*
+    try_get_local_attribute(const c4::ast2::tags::attributable* ref) {
+        const auto attr = ref->attribute_value<c4::ffm::local*>("local");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
+
+    c4::ffm::block_argument*
+    try_get_arg_attribute(const c4::ast2::tags::attributable* ref) {
+        const auto attr = ref->attribute_value<c4::ffm::block_argument*>("argument");
+        if (!attr) return nullptr;
+
+        return *attr;
+    }
 }
 
 c4c::ffm_ir_emitter::ffm_ir_emitter(llvm::LLVMContext& context,
@@ -87,13 +119,72 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_argument& obj) {
 }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_type& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_type& obj) {
+    const auto types = std::vector(obj.fields().size(), _c4rt_package_type);
+
+    const auto ctx_type = llvm::StructType::create(_context, types, obj.name());
+    obj.emplace_attribute<llvm_type_attribute>("type", ctx_type);
+}
+
+namespace {
+    llvm::Value*
+    retrieve_value(const c4::ast2::tags::referable* const ref) {
+        if (const auto direct_value = try_get_value_attribute(ref)) return direct_value;
+
+        if (const auto local = try_get_local_attribute(ref))
+            if (const auto local_val = try_get_value_attribute(local))
+                return local_val;
+
+        if (const auto arg = try_get_arg_attribute(ref))
+            if (const auto arg_val = try_get_value_attribute(arg))
+                return arg_val;
+
+        return nullptr;
+    }
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_object& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_object& obj) {
+    const auto ctx_type = try_get_type_attribute(obj.ctx_type());
+    ASSERT(ctx_type, "constructed context object must have known type layout", obj.ctx_type()->name());
+
+    const auto local_var = _builder.CreateAlloca(ctx_type);
+    for (std::size_t i = 0;
+         const auto field : obj.args()) {
+        const auto scope = call_stack(_active_call, _current_args);
+        field->accept(*this);
+        const auto field_val = _current_args.back();
+        ASSERT(field_val, "context object must refer to proper llvm::Value",
+               obj.ctx_type()->name());
+        const auto member_ptr = _builder.CreateStructGEP(ctx_type, local_var, i++);
+        _builder.CreateStore(field_val, member_ptr);
+    }
+    _current_args.push_back(local_var);
+}
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_access& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_access& obj) {
+    const auto name = obj.name();
+    const auto llvm_type = try_get_type_attribute(obj.ctx_type());
+    ASSERT(llvm_type, "context type must have a type attribute", obj.ctx_type()->name());
+
+    obj.arg()->accept(*this);
+    const auto arg_val = _current_args.back();
+    _current_args.pop_back();
+
+    const auto fields = obj.ctx_type()->fields();
+    const auto field_it = std::ranges::find_if(fields, [&](const auto& field) {
+        return field->name() == name;
+    });
+    ASSERT(field_it != fields.end(), "context object must have a field with the accessed name",
+           obj.ctx_type()->name(),
+           obj.name());
+    const auto field_idx = std::distance(fields.begin(), field_it);
+    const auto field_type = llvm_type->getStructElementType(field_idx);
+    const auto field_ptr = _builder.CreateStructGEP(llvm_type, arg_val, field_idx);
+    const auto field_val = _builder.CreateLoad(field_type, field_ptr);
+    push_value(field_val);
+}
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::root_expression& obj) {
@@ -143,7 +234,7 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) {
     _current_args.pop_back();
 
     const auto callee_datum = _rt_emitter.emit_unpack(callee_value);
-    const auto result_datum = _rt_emitter.emit_datum_evaluate(callee_datum);
+    const auto result_datum = _rt_emitter.emit_datum_evaluate(callee_datum, _current_args);
     stack.pop();
 
     if (_in_unpack) {
@@ -166,8 +257,11 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_declaration& obj) {
                                            linkage,
                                            obj.name(),
                                            _module);
+
+    if (const auto ctx = obj.ctx_type()) ctx->accept(*this);
+
     for (std::size_t i = 0;
-         auto& arg : fn->args()) {
+         auto& arg : std::span(fn->arg_begin(), fn->arg_end())) {
         const auto ffm_arg = obj.argument(i++);
         arg.setName(ffm_arg->name());
         ffm_arg->emplace_attribute<llvm_value_attribute>("value", &arg);
@@ -230,7 +324,46 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::literal& obj) {
 }
 
 void
-c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_literal& obj) { }
+c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_literal& obj) {
+    const auto scope = call_stack(_active_call, _current_args);
+    if (const auto ctx = obj.context()) ctx->accept(*this);
+
+    const auto eff_arity = obj.function()->effective_arity();
+    const auto arity_val = llvm::ConstantInt::get(_context, llvm::APInt(16, eff_arity));
+
+    const auto fn = try_get_function_attribute(obj.function());
+    ASSERT(fn, "block literal must have a function attribute",
+           obj.function()->name());
+
+    llvm::Value* args = llvm::ConstantPointerNull::get(llvm::PointerType::get(_context, 0));
+    llvm::Value* args_sz = llvm::ConstantInt::get(_context, llvm::APInt(64, 0));
+    if (!_current_args.empty()) {
+        args_sz = llvm::ConstantInt::get(_context, llvm::APInt(64, _current_args.size()));
+        if (_current_args.size() == 1) {
+            args = _current_args.front();
+        }
+        else {
+            args = _rt_emitter.local_package_array(_current_args.size());
+            for (size_t i = 0;
+                 const auto arg : _current_args) {
+                const auto arg_ptr = _builder.CreateInBoundsGEP(
+                    args->getType(),
+                    args,
+                    {
+                        llvm::ConstantInt::get(_context, llvm::APInt(64, i++))
+                    });
+                _builder.CreateMemCpy(arg_ptr, llvm::Align(8), arg, llvm::Align(8), 4 * 64 / 8);
+            }
+        }
+    }
+
+    const auto datum = _rt_emitter.emit_datum_from_function(fn,
+                                                            arity_val,
+                                                            args,
+                                                            args_sz);
+    scope.pop();
+    push_value(datum);
+}
 
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::local& obj) {
@@ -298,9 +431,7 @@ c4c::ffm_ir_emitter::build_literal(const c4::ffm::literal& lit) {
 
 llvm::FunctionType*
 c4c::ffm_ir_emitter::build_type_for(const c4::ffm::function_declaration& decl) {
-    DEBUG_ASSERT(!decl.closure(), "closure typing not yet implemented");
-
-    return build_type_with_arity(decl.base_arity());
+    return build_type_with_arity(decl.effective_arity());
 }
 
 llvm::FunctionType*

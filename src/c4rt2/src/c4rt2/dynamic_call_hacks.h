@@ -37,6 +37,8 @@
 #ifndef BLAST_DYNAMIC_CALL_HACKS_H
 #define BLAST_DYNAMIC_CALL_HACKS_H
 
+#include "package.1.h"
+
 #define c4_underscores_0(n)
 #define c4_underscores_1(n) n, c4_underscores_0(n)
 #define c4_underscores_2(n) n, c4_underscores_1(n)
@@ -300,182 +302,209 @@
 #define c4_dynamic_args127(xver, x, ...) _X##xver(1, __VA_ARGS__)  c4_dynamic_args126(xver, __VA_ARGS__)
 #define c4_dynamic_args128(xver, x, ...) _X##xver(0, __VA_ARGS__)   c4_dynamic_args127(xver, __VA_ARGS__)
 
-#define c4_dynamic_args(cnt) \
+#define c4_dynamic_args(v, cnt) \
     c4_dynamic_args##cnt(arg, cnt, c4_underscores(cnt))
 
-#define c4_dynamic_call_var(cnt) \
-    c4_datum_t(*callee)(c4_dynamic_args##cnt(type, cnt, c4_underscores(cnt)))
+#define c4_dynamic_call_var(v, cnt) \
+    c4_datum_t(*callee)(c4_dynamic_args##cnt(type_ ## v, cnt, c4_underscores(cnt)))
 
-#define c4_dynamic_call_type(cnt) \
-    c4_datum_t(*)(c4_dynamic_args##cnt(type, cnt, c4_underscores(cnt)))
+#define c4_dynamic_call_var_ctx(v, cnt) \
+    c4_datum_t(*callee)(void* WHEN(cnt)(COMMA) c4_dynamic_args##cnt(type_ ## v, cnt, c4_underscores(cnt)))
 
-#ifdef __cplusplus
-#  define fn_cast_to(type, fn) fn_cast_to_I(type, fn)
-#  define fn_cast_to_I(type, fn) reinterpret_cast<type>(fn)
-#else
-#  define fn_cast_to(type, fn) fn
-#endif
-
-#define c4_dynamic_call_fn(cnt) \
+#define c4_dynamic_call_fn(v, cnt) \
     inline C4RT_IMPL c4_datum_t \
-    c4_dynamic_call_##cnt(c4rt_package_function_t* fn, struct c4_package_t* args) { \
-        c4_dynamic_call_var(cnt) = fn_cast_to(c4_dynamic_call_type(cnt), fn);\
-        return callee(c4_dynamic_args(cnt)); \
+    c4_dynamic_call_##v##_##cnt(c4rt_package_function_t* fn, struct c4_package_v1_t* args) { \
+        c4_dynamic_call_var(v, cnt) = fn;\
+        return callee(c4_dynamic_args(v, cnt)); \
     }
+
+#define c4_dynamic_call_fn_ctx(v, cnt) \
+    inline C4RT_IMPL c4_datum_t \
+    c4_dynamic_call_##v##_ctx_##cnt(c4rt_package_function_t* fn, void* ctx, struct c4_package_v1_t* args) { \
+        c4_dynamic_call_var_ctx(v, cnt) = fn;\
+        return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
+    }
+
+#define c4_dynamic_call_fn_all(v, cnt) \
+    c4_dynamic_call_fn(v, cnt) \
+    c4_dynamic_call_fn_ctx(v, cnt)
 
 #define HEAD(...) HEAD_I(__VA_ARGS__)
 #define HEAD_I(x, ...) x
 #define IS_EMPTY(...) HEAD(IS_EMPTY_I(__VA_ARGS__))
 #define IS_EMPTY_I(...) __VA_OPT__(0,) 1
 
+#define CHECK_N(x, n, ...) n
+#define CHECK(...) CHECK_N(__VA_ARGS__, 0,)
+#define PROBE(x) x, 1,
+
 #define COMMA ,
 #define NOTHING
 
-#define _Xtype(x,y,...) struct c4_package_t* IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
+#define CAT_I(x, ...) x ## __VA_ARGS__
+
+#define _Xtype_v1(x,y,...) struct c4_package_v1_t* IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
 #define _Xarg(x,y,...) &args[y-128+x] IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
-#define _Xcase(x,y,...) case (y-128+x): return c4_dynamic_call_##x(fn, args);
+
+#define _Xcase_v1(x,y,...) case (y-128+x): return c4_dynamic_call_v1_##x(fn, args);
+#define _Xcase_v1_ctx(x,y,...) case (y-128+x): return c4_dynamic_call_v1_ctx_##x(fn, ctx, args);
 
 #define IIF(c) IIF_I(c)
 #define IIF_I(c) IIF_##c
 #define IIF_0(t,f) f
 #define IIF_1(t,f) t
 
-c4_dynamic_call_fn(0)
-c4_dynamic_call_fn(1)
-c4_dynamic_call_fn(2)
-c4_dynamic_call_fn(3)
-c4_dynamic_call_fn(4)
-c4_dynamic_call_fn(5)
-c4_dynamic_call_fn(6)
-c4_dynamic_call_fn(7)
-c4_dynamic_call_fn(8)
-c4_dynamic_call_fn(9)
-c4_dynamic_call_fn(10)
-c4_dynamic_call_fn(11)
-c4_dynamic_call_fn(12)
-c4_dynamic_call_fn(13)
-c4_dynamic_call_fn(14)
-c4_dynamic_call_fn(15)
-c4_dynamic_call_fn(16)
-c4_dynamic_call_fn(17)
-c4_dynamic_call_fn(18)
-c4_dynamic_call_fn(19)
-c4_dynamic_call_fn(20)
-c4_dynamic_call_fn(21)
-c4_dynamic_call_fn(22)
-c4_dynamic_call_fn(23)
-c4_dynamic_call_fn(24)
-c4_dynamic_call_fn(25)
-c4_dynamic_call_fn(26)
-c4_dynamic_call_fn(27)
-c4_dynamic_call_fn(28)
-c4_dynamic_call_fn(29)
-c4_dynamic_call_fn(30)
-c4_dynamic_call_fn(31)
-c4_dynamic_call_fn(32)
-c4_dynamic_call_fn(33)
-c4_dynamic_call_fn(34)
-c4_dynamic_call_fn(35)
-c4_dynamic_call_fn(36)
-c4_dynamic_call_fn(37)
-c4_dynamic_call_fn(38)
-c4_dynamic_call_fn(39)
-c4_dynamic_call_fn(40)
-c4_dynamic_call_fn(41)
-c4_dynamic_call_fn(42)
-c4_dynamic_call_fn(43)
-c4_dynamic_call_fn(44)
-c4_dynamic_call_fn(45)
-c4_dynamic_call_fn(46)
-c4_dynamic_call_fn(47)
-c4_dynamic_call_fn(48)
-c4_dynamic_call_fn(49)
-c4_dynamic_call_fn(50)
-c4_dynamic_call_fn(51)
-c4_dynamic_call_fn(52)
-c4_dynamic_call_fn(53)
-c4_dynamic_call_fn(54)
-c4_dynamic_call_fn(55)
-c4_dynamic_call_fn(56)
-c4_dynamic_call_fn(57)
-c4_dynamic_call_fn(58)
-c4_dynamic_call_fn(59)
-c4_dynamic_call_fn(60)
-c4_dynamic_call_fn(61)
-c4_dynamic_call_fn(62)
-c4_dynamic_call_fn(63)
-c4_dynamic_call_fn(64)
-c4_dynamic_call_fn(65)
-c4_dynamic_call_fn(66)
-c4_dynamic_call_fn(67)
-c4_dynamic_call_fn(68)
-c4_dynamic_call_fn(69)
-c4_dynamic_call_fn(70)
-c4_dynamic_call_fn(71)
-c4_dynamic_call_fn(72)
-c4_dynamic_call_fn(73)
-c4_dynamic_call_fn(74)
-c4_dynamic_call_fn(75)
-c4_dynamic_call_fn(76)
-c4_dynamic_call_fn(77)
-c4_dynamic_call_fn(78)
-c4_dynamic_call_fn(79)
-c4_dynamic_call_fn(80)
-c4_dynamic_call_fn(81)
-c4_dynamic_call_fn(82)
-c4_dynamic_call_fn(83)
-c4_dynamic_call_fn(84)
-c4_dynamic_call_fn(85)
-c4_dynamic_call_fn(86)
-c4_dynamic_call_fn(87)
-c4_dynamic_call_fn(88)
-c4_dynamic_call_fn(89)
-c4_dynamic_call_fn(90)
-c4_dynamic_call_fn(91)
-c4_dynamic_call_fn(92)
-c4_dynamic_call_fn(93)
-c4_dynamic_call_fn(94)
-c4_dynamic_call_fn(95)
-c4_dynamic_call_fn(96)
-c4_dynamic_call_fn(97)
-c4_dynamic_call_fn(98)
-c4_dynamic_call_fn(99)
-c4_dynamic_call_fn(100)
-c4_dynamic_call_fn(101)
-c4_dynamic_call_fn(102)
-c4_dynamic_call_fn(103)
-c4_dynamic_call_fn(104)
-c4_dynamic_call_fn(105)
-c4_dynamic_call_fn(106)
-c4_dynamic_call_fn(107)
-c4_dynamic_call_fn(108)
-c4_dynamic_call_fn(109)
-c4_dynamic_call_fn(110)
-c4_dynamic_call_fn(111)
-c4_dynamic_call_fn(112)
-c4_dynamic_call_fn(113)
-c4_dynamic_call_fn(114)
-c4_dynamic_call_fn(115)
-c4_dynamic_call_fn(116)
-c4_dynamic_call_fn(117)
-c4_dynamic_call_fn(118)
-c4_dynamic_call_fn(119)
-c4_dynamic_call_fn(120)
-c4_dynamic_call_fn(121)
-c4_dynamic_call_fn(122)
-c4_dynamic_call_fn(123)
-c4_dynamic_call_fn(124)
-c4_dynamic_call_fn(125)
-c4_dynamic_call_fn(126)
-c4_dynamic_call_fn(127)
-c4_dynamic_call_fn(128)
+#define COMPL(b) CAT_I(COMPL_, b)
+#define COMPL_0 1
+#define COMPL_1 0
 
-#define c4_dynamic_cases(max) c4_dynamic_args##max(case, max, c4_underscores(max))
+#define NOT(x) CHECK(CAT_I(NOT_, x))
+#define NOT_0 PROBE(~)
+
+#define BOOL(x) COMPL(NOT(x))
+#define IF(c) IIF(BOOL(c))
+
+#define EAT(...)
+#define EXPAND(...) __VA_ARGS__
+#define WHEN(c) IF(c)(EXPAND, EAT)
+
+c4_dynamic_call_fn_all(v1, 0)
+c4_dynamic_call_fn_all(v1, 1)
+c4_dynamic_call_fn_all(v1, 2)
+c4_dynamic_call_fn_all(v1, 3)
+c4_dynamic_call_fn_all(v1, 4)
+c4_dynamic_call_fn_all(v1, 5)
+c4_dynamic_call_fn_all(v1, 6)
+c4_dynamic_call_fn_all(v1, 7)
+c4_dynamic_call_fn_all(v1, 8)
+c4_dynamic_call_fn_all(v1, 9)
+c4_dynamic_call_fn_all(v1, 10)
+c4_dynamic_call_fn_all(v1, 11)
+c4_dynamic_call_fn_all(v1, 12)
+c4_dynamic_call_fn_all(v1, 13)
+c4_dynamic_call_fn_all(v1, 14)
+c4_dynamic_call_fn_all(v1, 15)
+c4_dynamic_call_fn_all(v1, 16)
+c4_dynamic_call_fn_all(v1, 17)
+c4_dynamic_call_fn_all(v1, 18)
+c4_dynamic_call_fn_all(v1, 19)
+c4_dynamic_call_fn_all(v1, 20)
+c4_dynamic_call_fn_all(v1, 21)
+c4_dynamic_call_fn_all(v1, 22)
+c4_dynamic_call_fn_all(v1, 23)
+c4_dynamic_call_fn_all(v1, 24)
+c4_dynamic_call_fn_all(v1, 25)
+c4_dynamic_call_fn_all(v1, 26)
+c4_dynamic_call_fn_all(v1, 27)
+c4_dynamic_call_fn_all(v1, 28)
+c4_dynamic_call_fn_all(v1, 29)
+c4_dynamic_call_fn_all(v1, 30)
+c4_dynamic_call_fn_all(v1, 31)
+c4_dynamic_call_fn_all(v1, 32)
+c4_dynamic_call_fn_all(v1, 33)
+c4_dynamic_call_fn_all(v1, 34)
+c4_dynamic_call_fn_all(v1, 35)
+c4_dynamic_call_fn_all(v1, 36)
+c4_dynamic_call_fn_all(v1, 37)
+c4_dynamic_call_fn_all(v1, 38)
+c4_dynamic_call_fn_all(v1, 39)
+c4_dynamic_call_fn_all(v1, 40)
+c4_dynamic_call_fn_all(v1, 41)
+c4_dynamic_call_fn_all(v1, 42)
+c4_dynamic_call_fn_all(v1, 43)
+c4_dynamic_call_fn_all(v1, 44)
+c4_dynamic_call_fn_all(v1, 45)
+c4_dynamic_call_fn_all(v1, 46)
+c4_dynamic_call_fn_all(v1, 47)
+c4_dynamic_call_fn_all(v1, 48)
+c4_dynamic_call_fn_all(v1, 49)
+c4_dynamic_call_fn_all(v1, 50)
+c4_dynamic_call_fn_all(v1, 51)
+c4_dynamic_call_fn_all(v1, 52)
+c4_dynamic_call_fn_all(v1, 53)
+c4_dynamic_call_fn_all(v1, 54)
+c4_dynamic_call_fn_all(v1, 55)
+c4_dynamic_call_fn_all(v1, 56)
+c4_dynamic_call_fn_all(v1, 57)
+c4_dynamic_call_fn_all(v1, 58)
+c4_dynamic_call_fn_all(v1, 59)
+c4_dynamic_call_fn_all(v1, 60)
+c4_dynamic_call_fn_all(v1, 61)
+c4_dynamic_call_fn_all(v1, 62)
+c4_dynamic_call_fn_all(v1, 63)
+c4_dynamic_call_fn_all(v1, 64)
+c4_dynamic_call_fn_all(v1, 65)
+c4_dynamic_call_fn_all(v1, 66)
+c4_dynamic_call_fn_all(v1, 67)
+c4_dynamic_call_fn_all(v1, 68)
+c4_dynamic_call_fn_all(v1, 69)
+c4_dynamic_call_fn_all(v1, 70)
+c4_dynamic_call_fn_all(v1, 71)
+c4_dynamic_call_fn_all(v1, 72)
+c4_dynamic_call_fn_all(v1, 73)
+c4_dynamic_call_fn_all(v1, 74)
+c4_dynamic_call_fn_all(v1, 75)
+c4_dynamic_call_fn_all(v1, 76)
+c4_dynamic_call_fn_all(v1, 77)
+c4_dynamic_call_fn_all(v1, 78)
+c4_dynamic_call_fn_all(v1, 79)
+c4_dynamic_call_fn_all(v1, 80)
+c4_dynamic_call_fn_all(v1, 81)
+c4_dynamic_call_fn_all(v1, 82)
+c4_dynamic_call_fn_all(v1, 83)
+c4_dynamic_call_fn_all(v1, 84)
+c4_dynamic_call_fn_all(v1, 85)
+c4_dynamic_call_fn_all(v1, 86)
+c4_dynamic_call_fn_all(v1, 87)
+c4_dynamic_call_fn_all(v1, 88)
+c4_dynamic_call_fn_all(v1, 89)
+c4_dynamic_call_fn_all(v1, 90)
+c4_dynamic_call_fn_all(v1, 91)
+c4_dynamic_call_fn_all(v1, 92)
+c4_dynamic_call_fn_all(v1, 93)
+c4_dynamic_call_fn_all(v1, 94)
+c4_dynamic_call_fn_all(v1, 95)
+c4_dynamic_call_fn_all(v1, 96)
+c4_dynamic_call_fn_all(v1, 97)
+c4_dynamic_call_fn_all(v1, 98)
+c4_dynamic_call_fn_all(v1, 99)
+c4_dynamic_call_fn_all(v1, 100)
+c4_dynamic_call_fn_all(v1, 101)
+c4_dynamic_call_fn_all(v1, 102)
+c4_dynamic_call_fn_all(v1, 103)
+c4_dynamic_call_fn_all(v1, 104)
+c4_dynamic_call_fn_all(v1, 105)
+c4_dynamic_call_fn_all(v1, 106)
+c4_dynamic_call_fn_all(v1, 107)
+c4_dynamic_call_fn_all(v1, 108)
+c4_dynamic_call_fn_all(v1, 109)
+c4_dynamic_call_fn_all(v1, 110)
+c4_dynamic_call_fn_all(v1, 111)
+c4_dynamic_call_fn_all(v1, 112)
+c4_dynamic_call_fn_all(v1, 113)
+c4_dynamic_call_fn_all(v1, 114)
+c4_dynamic_call_fn_all(v1, 115)
+c4_dynamic_call_fn_all(v1, 116)
+c4_dynamic_call_fn_all(v1, 117)
+c4_dynamic_call_fn_all(v1, 118)
+c4_dynamic_call_fn_all(v1, 119)
+c4_dynamic_call_fn_all(v1, 120)
+c4_dynamic_call_fn_all(v1, 121)
+c4_dynamic_call_fn_all(v1, 122)
+c4_dynamic_call_fn_all(v1, 123)
+c4_dynamic_call_fn_all(v1, 124)
+c4_dynamic_call_fn_all(v1, 125)
+c4_dynamic_call_fn_all(v1, 126)
+c4_dynamic_call_fn_all(v1, 127)
+c4_dynamic_call_fn_all(v1, 128)
+
+#define c4_dynamic_cases(max) c4_dynamic_args##max(case_v1, max, c4_underscores(max))
+#define c4_dynamic_cases_ctx(max) c4_dynamic_args##max(case_v1_ctx, max, c4_underscores(max))
 
 inline C4RT_IMPL c4_datum_t
-c4_dynamic_call(const unsigned arity,
-                c4rt_package_function_t* fn,
-                struct c4_package_t* args) {
+c4_dynamic_call_v1(const unsigned arity,
+                   c4rt_package_function_t* fn,
+                   struct c4_package_v1_t* args) {
     assert(arity <= 128);
     switch (arity) {
     c4_dynamic_cases(128)
@@ -484,8 +513,22 @@ c4_dynamic_call(const unsigned arity,
     __builtin_unreachable();
 }
 
-#undef _Xcase
-#undef _Xtype
+inline C4RT_IMPL c4_datum_t
+c4_dynamic_call_v1_ctx(const unsigned arity,
+                       c4rt_package_function_t* fn,
+                       void* ctx,
+                       struct c4_package_v1_t* args) {
+    assert(arity <= 128);
+    switch (arity) {
+    c4_dynamic_cases_ctx(128)
+    default: ;
+    }
+    __builtin_unreachable();
+}
+
+#undef _Xcase_v1
+#undef _Xcase_v1_ctx
+#undef _Xtype_v1
 #undef _Xarg
 
 #endif

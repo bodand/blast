@@ -60,7 +60,12 @@ namespace c4rt2c {
         emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
 
         [[nodiscard]] llvm::Value*
-        emit_datum_evaluate(llvm::Value* datum) const;
+        emit_datum_from_function(llvm::Value* func,
+                                 llvm::Value* arity,
+                                 llvm::Value* fn_data, llvm::Value* fn_data_sz) const;
+
+        [[nodiscard]] llvm::Value*
+        emit_datum_evaluate(llvm::Value* datum, std::span<llvm::Value*> args) const;
 
         void
         emit_package_init(llvm::Value* ptr) const;
@@ -78,6 +83,9 @@ namespace c4rt2c {
 
         [[nodiscard]] llvm::Value*
         local_package() const;
+
+        [[nodiscard]] llvm::Value*
+        local_package_array(size_t n) const;
 
         [[nodiscard]] llvm::Value*
         encode_datum(double d) const;

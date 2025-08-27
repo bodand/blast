@@ -47,6 +47,8 @@
 
 #include <libassert/assert.hpp>
 
+#include "../../include/c4rt2/c4rt_package_versions.h"
+
 c4rt2c::c4_rt2_emitter::
 c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder)
     : _c4rt_datum_type{llvm::Type::getInt64Ty(builder->getContext())}
@@ -55,14 +57,15 @@ c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder)
     , _module{module} {
     const auto int64_t = llvm::Type::getInt64Ty(_builder->getContext());
     const auto int16_t = llvm::Type::getInt16Ty(_builder->getContext());
-    _package_struct_type = llvm::StructType::get(_module.getContext(), {int64_t, int64_t, int64_t}, true);
+    _package_struct_type = llvm::StructType::get(_module.getContext(), {int64_t, int64_t, int64_t, int64_t}, true);
 
     const auto type_t = llvm::Type::getInt32Ty(_builder->getContext());
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
     declare_rt_function("c4rt_datum_from_static_ptr", _c4rt_datum_type, type_t, ptr_t);
-    declare_rt_function("c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type);
+    declare_rt_function("c4rt_datum_from_function", _c4rt_datum_type, ptr_t, int16_t, ptr_t, int64_t);
+    declare_rt_function("c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type, ptr_t);
     declare_rt_function("c4rt_package_init", void_t, ptr_t);
     declare_rt_function("c4rt_package_set_from_function", void_t, ptr_t, ptr_t, ptr_t, int16_t);
     declare_rt_function("c4rt_package_set_from_result", void_t, ptr_t, _c4rt_datum_type);
@@ -82,10 +85,39 @@ c4rt2c::c4_rt2_emitter::emit_datum_from_static_ptr(llvm::Value* type, llvm::Valu
 }
 
 llvm::Value*
-c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum) const {
+c4rt2c::c4_rt2_emitter::emit_datum_from_function(llvm::Value* func,
+                                                 llvm::Value* arity,
+                                                 llvm::Value* fn_data,
+                                                 llvm::Value* fn_data_sz) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto int16_t = llvm::Type::getInt16Ty(_builder->getContext());
+    const auto int64_t = llvm::Type::getInt64Ty(_builder->getContext());
+
     llvm::FunctionCallee fn;
-    get_rt_function(&fn, "c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type);
-    return _builder->CreateCall(fn, {datum});
+    get_rt_function(&fn, "c4rt_datum_from_function", _c4rt_datum_type, ptr_t, int16_t, ptr_t, int64_t);
+    return _builder->CreateCall(fn, {func, arity, fn_data, fn_data_sz});
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum, const std::span<llvm::Value*> args) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+
+    llvm::Value* pkg_args = llvm::ConstantPointerNull::get(ptr_t);
+    if (!args.empty()) {
+        const auto args_sz_val = llvm::ConstantInt::get(index_type, args.size());
+        pkg_args = _builder->CreateAlloca(_package_struct_type, args_sz_val);
+        const auto ptr = _builder->CreatePointerCast(pkg_args, _c4rt_package_type);
+        for (std::size_t i = 0; i < args.size(); ++i) {
+            const auto param_ptr = _builder->CreateInBoundsGEP(_package_struct_type, ptr,
+                                                               llvm::ConstantInt::get(index_type, i));
+            _builder->CreateMemCpy(param_ptr, llvm::Align(8), args[i], llvm::Align(8), C4_PACKAGE_VERSION_1);
+        }
+    }
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type, ptr_t);
+    return _builder->CreateCall(fn, {datum, pkg_args});
 }
 
 void
@@ -117,14 +149,20 @@ c4rt2c::c4_rt2_emitter::emit_package_set_from_function(llvm::Value* pkg,
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
     const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+    _module.getDataLayout().getTypeAllocSize(_package_struct_type);
     const auto mem_type = llvm::ArrayType::get(_package_struct_type, vector.size());
     const auto mem = _builder->CreateAlloca(_package_struct_type,
                                             llvm::ConstantInt::get(index_type, vector.size()),
                                             "pkg_params");
     const auto ptr = _builder->CreatePointerCast(mem, _c4rt_package_type);
     for (std::size_t i = 0; i < vector.size(); ++i) {
-        const auto param_ptr = _builder->CreateInBoundsGEP(mem_type, ptr,llvm::ConstantInt::get(index_type, i));
-        _builder->CreateStore(vector[i], param_ptr);
+        const auto param_ptr = _builder->CreateInBoundsGEP(mem_type, ptr, llvm::ConstantInt::get(index_type, i));
+        if (vector[i]->getType()->isPointerTy()) {
+            _builder->CreateStore(vector[i], param_ptr);
+        }
+        else {
+            _builder->CreateMemCpy(param_ptr, llvm::Align(8), vector[i], llvm::Align(8), C4_PACKAGE_VERSION_1);
+        }
     }
 
     const auto arity = static_cast<uint16_t>(vector.size());
@@ -149,6 +187,15 @@ c4rt2c::c4_rt2_emitter::local_package() const {
     const auto local = _builder->CreateAlloca(_package_struct_type, nullptr, "pkg");
     const auto ptr = _builder->CreatePointerCast(local, _c4rt_package_type);
     emit_package_init(ptr);
+    return local;
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::local_package_array(const size_t n) const {
+    const auto local = _builder->CreateAlloca(
+        _package_struct_type,
+        llvm::ConstantInt::get(_module.getContext(), llvm::APInt(64, n)),
+        "args");
     return local;
 }
 

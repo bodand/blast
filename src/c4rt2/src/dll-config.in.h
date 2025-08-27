@@ -38,6 +38,12 @@
 
 @PVOID_SIZE_CODE@
 
+#ifdef __cplusplus
+#  define C4_EXTERNC extern "C"
+#else
+#  define C4_EXTERNC
+#endif
+
 #cmakedefine C4RT2_USE_MIMALLOC
 #ifdef C4RT2_USE_MIMALLOC
 #  include <mimalloc.h>
@@ -48,14 +54,22 @@
 #  define C4_FREE(...) mi_free(__VA_ARGS__)
 #  define C4_SMALL_ALLOC_SIZE MI_SMALL_SIZE_MAX
 #else
+#  include <stdlib.h>
+#  include <string.h>
+
 #  define C4_MALLOC(...) malloc(__VA_ARGS__)
 #  define C4_MALLOC_SMALL(...) malloc(__VA_ARGS__)
 #  define C4_STRDUP(...) strdup(__VA_ARGS__)
 #  define C4_FREE(...) free(__VA_ARGS__)
 #  define C4_SMALL_ALLOC_SIZE 0U
 #endif
-#define C4_ALLOCATE(type, count) (((sizeof(type)*(count)) < C4_SMALL_ALLOC_SIZE) \
-    ? C4_MALLOC_SMALL(sizeof(type)*(count)) \
-    : C4_MALLOC(sizeof(type)*(count)))
+
+C4_EXTERNC inline void*
+C4_ALLOCATE(const size_t bytes) {
+    if (bytes < C4_SMALL_ALLOC_SIZE) return C4_MALLOC_SMALL(bytes);
+    return C4_MALLOC(bytes);
+}
+
+#define C4_NEW(type, count) C4_ALLOCATE(sizeof(type)*(count))
 
 #endif

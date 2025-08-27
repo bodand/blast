@@ -307,19 +307,20 @@ c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl
             ctx_obj->push_argument(expr);
             continue;
         }
+        if (_current_function->is_closure_over(field)) {
+            const auto args = _current_function->decl()->arguments();
+            const auto ctx_arg = args.front();
+            const auto fn_ctx = _current_function->decl()->ctx_type();
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, fn_ctx, field_name);
+            const auto expr = _ffm_context.build_value_expression(ctx_expr);
+            ctx_obj->push_argument(expr);
+            continue;
+        }
         if (const auto attr = field->attribute_value<ffm::local*>("local")) {
             DEBUG_ASSERT(*attr, "field has local but is null", field_name);
 
             const auto lref = _ffm_context.build_local_reference(*attr);
             const auto expr = _ffm_context.build_value_expression(lref);
-            ctx_obj->push_argument(expr);
-            continue;
-        }
-        if (_current_function->is_closure_over(field)) {
-            const auto args = _current_function->decl()->arguments();
-            const auto ctx_arg = args.front();
-            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, field_name);
-            const auto expr = _ffm_context.build_value_expression(ctx_expr);
             ctx_obj->push_argument(expr);
             continue;
         }
@@ -389,7 +390,8 @@ c4::ffm_mapper::do_visit(const ast2::binary_op_call& obj) {
     if (_current_function->is_closure_over(obj.op().references())) {
         const auto decl_args = _current_function->decl()->arguments();
         const auto ctx_arg = decl_args.front();
-        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
+        const auto fn_ctx = _current_function->decl()->ctx_type();
+        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, fn_ctx, obj.op().name());
         return push_context_access(ctx_expr);
     }
 
@@ -405,7 +407,8 @@ c4::ffm_mapper::do_visit(const ast2::unary_op_call& obj) {
     if (_current_function->is_closure_over(obj.op().references())) {
         const auto decl_args = _current_function->decl()->arguments();
         const auto ctx_arg = decl_args.front();
-        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.op().name());
+        const auto fn_ctx = _current_function->decl()->ctx_type();
+        const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, fn_ctx, obj.op().name());
         return push_context_access(ctx_expr);
     }
 
@@ -454,9 +457,14 @@ c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
     if (_current_function->is_closure_over(obj.sym().references())) {
         if (ffm::try_get_referenced_local(obj.sym())
             || ffm::try_get_referenced_argument(obj.sym())) {
-            const auto args = _current_function->decl()->arguments();
+            const auto function_declaration = _current_function->decl();
+            DEBUG_ASSERT(function_declaration, "function declaration is null", obj.sym().name(), obj.sym().base_arity());
+            const auto closure = function_declaration->ctx_type();
+            DEBUG_ASSERT(closure, "closure is null in function that should have a context", obj.sym().name(), obj.sym().base_arity());
+
+            const auto args = function_declaration->arguments();
             const auto ctx_arg = args.front();
-            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, _closure, obj.sym().name());
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, closure, obj.sym().name());
             return push_context_access(ctx_expr);
         }
     }
@@ -787,8 +795,8 @@ namespace {
 std::string
 c4::ffm_mapper::next_block_name(const unsigned arity) {
     const auto id = get_next_block_id();
-    return fmt::format("{}#{}/{}",
-                       1 + numeric_length(id) + 1 + numeric_length(arity),
+    return fmt::format("b{}#{}{}E",
+                       1 + numeric_length(id),
                        id,
                        arity);
 }

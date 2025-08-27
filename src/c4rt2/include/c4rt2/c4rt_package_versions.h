@@ -31,12 +31,12 @@
  * Originally created: 2025-08-08.
  *
  * src/c4rt2/src/c4rt2/c4rt_package_versions --
- *   Defines the known versions for c4rt package sizes. Used to provide ABI
+ *   Defines the known versions for c4rt packages. Used to provide ABI
  *   stability.
  */
 #ifndef BLAST_C4RT_PACKAGE_VERSIONS_H
 #define BLAST_C4RT_PACKAGE_VERSIONS_H
 
-#define C4_PACKAGE_SIZE_VERSION_1 (sizeof(int64_t) + sizeof(uint64_t) + sizeof(c4_ptr64_t) * 2)
+#define C4_PACKAGE_VERSION_1 1
 
 #endif

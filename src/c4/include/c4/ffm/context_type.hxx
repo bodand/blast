@@ -53,7 +53,9 @@ namespace c4::ffm {
 namespace c4::ffm {
     struct local_ref;
 
-    struct context_type final : ffm_node {
+    struct context_type final : ffm_node
+                                , ast2::tags::attributable
+                                , ast2::tags::visitable {
         context_type(std::string name,
                      std::vector<ast2::tags::referable*> fields);
 
@@ -96,10 +98,7 @@ namespace c4::ffm {
 
     struct context_access final : ffm_node
                                   , ast2::tags::visitable {
-        context_access(block_argument* arg, context_type* ctx_type, const std::string_view name)
-            : _ctx_type{ctx_type}
-            , _arg{arg}
-            , _name{name} { }
+        context_access(block_argument* arg, context_type* ctx_type, const std::string_view name);
 
         [[nodiscard]] context_type*
         ctx_type() const noexcept { return _ctx_type; }

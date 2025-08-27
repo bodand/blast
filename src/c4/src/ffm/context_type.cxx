@@ -39,20 +39,11 @@
 #include <c4/ffm/context_type.hxx>
 #include <c4/ffm/symbol.hxx>
 
-namespace {
-    struct context_attribute final : c4::ast2::tags::typed_attribute<c4::ffm::context_type*> {
-        explicit
-        context_attribute(c4::ffm::context_type* value)
-            : typed_attribute{value} { }
-    };
-}
+#include <libassert/assert.hpp>
 
 c4::ffm::context_type::context_type(std::string name, std::vector<ast2::tags::referable*> fields)
     : _name{std::move(name)}
     , _fields{std::move(fields)} {
-    for (const auto& field : _fields) {
-        field->emplace_attribute<context_attribute>("from_context", this);
-    }
 }
 
 std::span<c4::ast2::tags::referable* const>
@@ -62,4 +53,10 @@ bool
 c4::ffm::context_type::contains(const ast2::tags::referable* const ref) const noexcept {
     const auto field_it = std::ranges::find(_fields, ref);
     return field_it != _fields.end();
+}
+
+c4::ffm::context_access::context_access(block_argument* arg, context_type* ctx_type, const std::string_view name): _ctx_type{ctx_type}
+    , _arg{arg}
+    , _name{name} {
+    DEBUG_ASSERT(_ctx_type->name() != "anon", "anonymous context types are not allowed");
 }

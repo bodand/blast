@@ -36,6 +36,11 @@
 
 #include <c4rt2/c4rt.h>
 
+#include "package.1.h"
+
+static_assert(alignof(void*) > 2);
+static_assert(alignof(c4rt_package_function_t*) > 2);
+
 namespace {
     template<class... Args>
     struct sizeof_sum {
@@ -45,5 +50,7 @@ namespace {
     constexpr auto sizeof_sum_v = sizeof_sum<Args...>::value;
 }
 
-static_assert(sizeof(c4_package_t) == sizeof_sum_v<int64_t, uint16_t, uint16_t, uint32_t, void*, void*>);
+static_assert(sizeof(c4_package_v1_t) == sizeof_sum_v<uint16_t, uint16_t, uint16_t, uint16_t, uint64_t>);
 static_assert(sizeof(c4_package_t[2]) == sizeof_sum_v<c4_package_t, c4_package_t>);
+static_assert(alignof(c4_package_t) == alignof(c4_package_v1_t));
+static_assert(sizeof(c4_package_v1_t[2]) == sizeof_sum_v<c4_package_v1_t, c4_package_v1_t>);

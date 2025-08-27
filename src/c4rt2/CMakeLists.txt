@@ -42,10 +42,13 @@
 include(CheckTypeSize)
 
 set(clang-tools-location-hint)
+set(INC_MIMALLOC)
 if (IS_DIRECTORY "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}")
     set(clang-tools-location-hint
         "HINTS"
         "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/tools/llvm/")
+    set(INC_MIMALLOC
+        "-I${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include")
 endif ()
 
 find_program(CLANG_EXEC clang
@@ -111,7 +114,7 @@ endfunction()
 
 check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
 
-set(C4RT2_USE_MIMALLOC NO)
+set(C4RT2_USE_MIMALLOC YES)
 configure_file(src/dll-config.in.h dll-config.h @ONLY)
 
 # Dynamic runtime library used by compiler through c4rt2c
@@ -122,7 +125,7 @@ add_library(c4rt2 SHARED
             src/c4rt2/c4rt.c
             include/c4rt2/package.h
             src/c4rt2/package.c
-            src/c4rt2/c4rt_package_versions.h
+            include/c4rt2/c4rt_package_versions.h
             src/c4rt2/package.1.h
             src/c4rt2/package.1.c
             include/c4rt2/datum.h
@@ -139,10 +142,10 @@ target_link_libraries(c4rt2 PRIVATE mimalloc-static)
 target_compile_definitions(c4rt2 PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
 
 # Static compile into LLVM bitcode used by both c4c and c4j for generated C4 code
-compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}")
-compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}")
-compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}")
-compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}")
+compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}" ${INC_MIMALLOC})
+compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}" ${INC_MIMALLOC})
+compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}" ${INC_MIMALLOC})
+compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 
 link_bitcode(src/c4rt2/rt.bc
              src/c4rt2/datum.c.bc.opt

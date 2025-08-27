@@ -41,6 +41,7 @@
 namespace llvm {
     class Value;
     class Function;
+    class Type;
 }
 
 namespace c4c {
@@ -53,6 +54,12 @@ namespace c4c {
     struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
         explicit
         llvm_function_attribute(llvm::Function* const& value)
+            : typed_attribute{value} { }
+    };
+
+    struct llvm_type_attribute final : c4::ast2::tags::typed_attribute<llvm::Type*> {
+        explicit
+        llvm_type_attribute(llvm::Type* const& value)
             : typed_attribute{value} { }
     };
 }

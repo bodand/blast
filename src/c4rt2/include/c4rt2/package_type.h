@@ -31,7 +31,7 @@
  * Originally created: 2025-08-08.
  *
  * src/c4rt2/include/c4rt2/package_type --
- *   Provides the types for dealing with c4rt' package.
+ *   Provides the types for dealing with c4rt's package.
  */
 #ifndef BLAST_PACKAGE_TYPE_H
 #define BLAST_PACKAGE_TYPE_H
@@ -41,18 +41,18 @@
 
 typedef uint64_t c4_ptr64_t;
 
+C4_MSVC_ALIGNMENT_BEGIN(8)
+/**
+ * Type erased generic package type.
+ * ABI stable, backwards and forwards compatible.
+ *
+ * Aligned to 8 bytes: storage arrays should follow.
+ */
 struct c4_package_t {
-    uint64_t package_size;
-    c4_ptr64_t function;
-    uint16_t function_arity;
-    uint16_t reserved_0;
-    uint32_t reserved_1;
+    uint16_t version;
+} C4_GCC_ALIGNMENT(8);
 
-    union {
-        c4_ptr64_t data;
-        c4_datum_t result;
-    };
-};
+C4_MSVC_ALIGNMENT_END()
 
 typedef c4_datum_t (c4rt_package_function_t)();
 

@@ -50,6 +50,20 @@
 #  define C4RT_EXTERN extern
 #endif
 
+#ifdef _MSC_VER
+#  define C4_MSVC_ALIGNMENT_BEGIN(...) __pragma( pack(push __VA_OPT__(,) __VA_ARGS__ ) )
+#  define C4_MSVC_ALIGNMENT_END() __pragma( pack(pop) )
+#else
+#  define C4_MSVC_ALIGNMENT_BEGIN(n)
+#  define C4_MSVC_ALIGNMENT_END()
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#  define C4_GCC_ALIGNMENT(n) __attribute__((aligned(n)))
+#else
+#  define C4_GCC_ALIGNMENT(n)
+#endif
+
 #ifndef C4RT2_STATIC
 #  ifdef _WIN32
 #    define C4RT_IMPL

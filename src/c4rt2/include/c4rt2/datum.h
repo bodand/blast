@@ -77,8 +77,8 @@ c4rt_datum_from_string_sz(const char* s, size_t s_sz);
 
 C4RT_API c4_datum_t
 c4rt_datum_from_function(c4rt_package_function_t* calc_fun,
-                         struct c4_package_t* fn_data,
-                         size_t fn_data_sz);
+                         uint16_t eff_arity,
+                         const struct c4_package_t* fn_data, size_t fn_data_sz);
 
 C4RT_API void
 c4rt_datum_free(c4_datum_t d);
@@ -93,7 +93,7 @@ C4RT_API double
 c4rt_datum_get_double(c4_datum_t datum);
 
 C4RT_API const char*
-c4rt_datum_get_string(c4_datum_t datum);
+c4rt_datum_get_string(c4_datum_t* datum);
 
 C4RT_API int32_t
 c4rt_datum_coerce_int32(c4_datum_t datum);
@@ -117,6 +117,6 @@ C4RT_API c4_datum_t
 c4rt_datum_dup(c4_datum_t datum);
 
 C4RT_API c4_datum_t
-c4rt_datum_evaluate(c4_datum_t datum);
+c4rt_datum_evaluate(c4_datum_t datum, struct c4_package_t* args);
 
 #endif
