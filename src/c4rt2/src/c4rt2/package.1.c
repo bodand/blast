@@ -37,6 +37,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <c4rt2/package.h>
 #include <c4rt2/datum_type.h>
@@ -45,7 +46,6 @@
 #include "package.1.h"
 
 #include <dll-config.h>
-#include <stdlib.h>
 
 static c4_ptr64_t
 pad_pointer_1(void* const ptr) {

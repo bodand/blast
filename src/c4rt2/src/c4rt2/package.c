@@ -44,10 +44,12 @@
 #include "package.1.h"
 
 uint16_t
-c4rt_package_version_to_size(uint16_t version) {
+c4rt_package_version_to_size(const uint16_t version) {
     switch (version) {
     case C4_PACKAGE_VERSION_1: return C4_PACKAGE_VERSION_1_SIZE;
-    default: assert(false && "unsupported package version");
+    default:
+        assert(false && "unsupported package version");
+        C4_UNREACHABLE;
     }
     return 0;
 }
@@ -67,9 +69,11 @@ c4rt_package_init_from_function(struct c4_package_t* pkg,
                                            calc_fun,
                                            (const struct c4_package_v1_t*)fn_data,
                                            fn_data_sz);
+        assert(pkg->version == C4_PACKAGE_VERSION_1);
         break;
     default:
         assert(false && "invalid package version");
+        C4_UNREACHABLE;
     }
 }
 
@@ -94,9 +98,11 @@ c4rt_package_init_from_closure(struct c4_package_t* const pkg,
                                           ctx_sz,
                                           (const struct c4_package_v1_t*)fn_data,
                                           fn_data_sz);
+        assert(pkg->version == C4_PACKAGE_VERSION_1);
         break;
     default:
         assert(false && "invalid package version");
+        C4_UNREACHABLE;
     }
 }
 
@@ -108,9 +114,11 @@ c4rt_package_init_from_result(struct c4_package_t* const pkg,
     switch (pkg->version) {
     case C4_PACKAGE_VERSION_1://
         c4rt_package_init_from_result_v1((struct c4_package_v1_t*)pkg, datum);
+        assert(pkg->version == C4_PACKAGE_VERSION_1);
         break;
     default:
         assert(false && "invalid package version");
+        C4_UNREACHABLE;
     }
 }
 
@@ -119,8 +127,11 @@ c4rt_package_evaluate(struct c4_package_t* const pkg) {
     assert(pkg && "pkg must not be null");
 
     switch (pkg->version) {
-    case C4_PACKAGE_VERSION_1://
-        return c4rt_package_evaluate_v1((struct c4_package_v1_t*)pkg);
+    case C4_PACKAGE_VERSION_1: {
+        const c4_datum_t res = c4rt_package_evaluate_v1((struct c4_package_v1_t*)pkg);
+        assert(pkg->version == C4_PACKAGE_VERSION_1);
+        return res;
+    }
     default:
         assert(false && "invalid package version");
         C4_UNREACHABLE;

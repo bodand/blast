@@ -177,7 +177,10 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
     const auto array_type = llvm::ArrayType::get(_package_struct_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
         const auto param_ptr = _builder->CreateInBoundsGEP(array_type, args_array,
-                                                           llvm::ConstantInt::get(size_ty, i));
+                                                           {
+                                                               llvm::ConstantInt::get(size_ty, 0),
+                                                               llvm::ConstantInt::get(size_ty, i),
+                                                           });
         _builder->CreateMemCpy(param_ptr, llvm::Align(8), vector[i], llvm::Align(8), C4_PACKAGE_VERSION_1_SIZE);
     }
 

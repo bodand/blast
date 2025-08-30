@@ -112,7 +112,6 @@ c4rt_datum_from_static_ptr(const int32_t type, void* ptr) {
 
 c4_datum_t
 c4rt_datum_from_int32(int32_t i) {
-    if (i < 0) i = -i;
     return nan_mask | shifted_type(C4_Integer) | (c4_datum_t)(uint32_t)i;
 }
 
