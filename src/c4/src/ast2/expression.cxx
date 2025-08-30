@@ -79,11 +79,11 @@ namespace {
             > {
         explicit
         recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
-            : symbols(symbols) { }
+            : _symbols(symbols) { }
 
         void
         do_visit(const c4::ast2::expression& obj) override {
-            symbols.append_range(obj.closure_symbols());
+            _symbols.append_range(obj.closure_symbols());
         }
 
         void
@@ -93,8 +93,8 @@ namespace {
 
         void
         do_visit(const c4::ast2::block& obj) override {
-            auto block_symols = obj.effective_context_symbols();
-            symbols.append_range(std::move(block_symols));
+            auto block_symbols = obj.effective_context_symbols();
+            _symbols.append_range(std::move(block_symbols));
         }
 
         void
@@ -119,7 +119,8 @@ namespace {
             obj.operand().accept(*this);
         }
 
-        std::vector<c4::ast2::symbol>& symbols;
+    private:
+        std::vector<c4::ast2::symbol>& _symbols;
     };
 
     struct closure_collector final {

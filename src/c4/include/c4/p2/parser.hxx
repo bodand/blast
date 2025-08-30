@@ -60,6 +60,12 @@ namespace c4::p2 {
     };
 
     namespace aux {
+        struct token_info final {
+            std::string_view name;
+            std::string_view value;
+            position position;
+        };
+
         template<class T>
         struct token_selector {
             std::expected<T, source_diagnostic>

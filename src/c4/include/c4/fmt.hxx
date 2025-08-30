@@ -28,30 +28,20 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2025-08-08.
  *
- * src/c4rt/src/DllMain --
- *   
+ * src/c4/include/c4/fmt --
+ *   Wrapper for fmt headers to try to disable warnings from fmtlib.
  */
+#ifndef C4_FMT_HXX
+#define C4_FMT_HXX
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-
-#include <dll-config.h>
-
-#ifdef BLAST_USE_MIMALLOC
-#  include <mimalloc.h>
-#  define MI_VERSION mi_version()
-#else
-#  define MI_VERSION
+#if defined(__GNU__) || defined(__clang__) || _MSC_VER > 1900
+#  pragma system_header
 #endif
 
-BOOL WINAPI DllMain(
-    HINSTANCE hinstDLL, // handle to DLL module
-    DWORD fdwReason, // reason for calling function
-    LPVOID lpvReserved) // reserved
-{
-    MI_VERSION;
-    return TRUE;
-}
+#include <fmt/base.h>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
+
+#endif

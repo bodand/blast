@@ -41,10 +41,12 @@
 #include <utility>
 #include <vector>
 
+#include <c4/tags/attributable.hxx>
+#include <c4/tags/visitable.hxx>
+
 #include <c4/ffm/block_argument.hxx>
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/symbol.hxx>
-
 
 namespace c4::ffm {
     struct value_expression;

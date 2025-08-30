@@ -38,8 +38,8 @@
 
 #include <c4/tags/visitable.hxx>
 
-#include "expression.hxx"
-#include "ffm_node.hxx"
+#include <c4/ffm/expression.hxx>
+#include <c4/ffm/ffm_node.hxx>
 
 namespace c4::ffm {
     struct unpack final : ffm_node

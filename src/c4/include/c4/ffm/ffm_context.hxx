@@ -38,13 +38,16 @@
 
 #include <list>
 #include <memory>
-#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include <c4/diagnostic.hxx>
-#include <c4/ffm/ffm_node.hxx>
+
 #include <c4/tags/referable.hxx>
 
-#include "function_call.hxx"
+#include <c4/ffm/ffm_node.hxx>
+#include <c4/ffm/function_call.hxx>
 
 namespace c4::ffm {
     struct context_access;
@@ -156,10 +159,10 @@ namespace c4::ffm {
         build_unpack(value_expression* expr);
 
         [[nodiscard]] literal*
-        build_literal(int32_t i32);
+        build_literal(std::int32_t i32);
 
         [[nodiscard]] literal*
-        build_literal(int64_t i64);
+        build_literal(std::int64_t i64);
 
         [[nodiscard]] literal*
         build_literal(double d);

@@ -77,10 +77,10 @@ function(compile_into_bitcode in CC)
     add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
                        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
                        "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/dynamic_call_hacks.h"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/c4rt_package_versions.h"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/include/c4rt2/c4rt_package_versions.h"
                        "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/package.1.h"
                        COMMAND "${CC}" -c -emit-llvm
-                       -fvisibility=hidden
+                       -fvisibility=hidden -g
                        -DC4RT2_STATIC
                        -D_CRT_NONSTDC_NO_DEPRECATE
                        -D_CRT_SECURE_NO_WARNINGS

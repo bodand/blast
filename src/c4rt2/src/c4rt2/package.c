@@ -42,17 +42,29 @@
 
 #include "package.1.h"
 
+uint16_t
+c4rt_package_version_to_size(uint16_t version) {
+    switch (version) {
+    case C4_PACKAGE_VERSION_1: return C4_PACKAGE_VERSION_1_SIZE;
+    default: assert(false && "unsupported package version");
+    }
+    return 0;
+}
+
 C4RT_API void
 c4rt_package_init_from_function(struct c4_package_t* pkg,
                                 c4rt_package_function_t* calc_fun,
                                 const struct c4_package_t* fn_data,
-                                const uint16_t fn_data_sz) {
+                                const uint32_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert((fn_data_sz == 0 || fn_data) && "fn_data must be null or valid");
+
     switch (pkg->version) {
     case C4_PACKAGE_VERSION_1://
-        c4rt_package_init_from_function_v1((struct c4_package_v1_t*)pkg, calc_fun, fn_data,
+        c4rt_package_init_from_function_v1((struct c4_package_v1_t*)pkg,
+                                           calc_fun,
+                                           (const struct c4_package_v1_t*)fn_data,
                                            fn_data_sz);
         break;
     default:
@@ -66,18 +78,35 @@ c4rt_package_init_from_closure(struct c4_package_t* const pkg,
                                const void* const ctx,
                                const uint32_t ctx_sz,
                                const struct c4_package_t* fn_data,
-                               const uint16_t fn_data_sz) {
+                               const uint32_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert(ctx && "ctx must not be null");
     assert(ctx_sz > 0 && "ctx_sz must be > 0");
     assert((fn_data_sz == 0 || fn_data) && "fn_data must be null or valid");
+
     switch (pkg->version) {
     case C4_PACKAGE_VERSION_1://
         c4rt_package_init_from_closure_v1((struct c4_package_v1_t*)pkg,
                                           calc_fun,
-                                          ctx, ctx_sz,
-                                          fn_data, fn_data_sz);
+                                          ctx,
+                                          ctx_sz,
+                                          (const struct c4_package_v1_t*)fn_data,
+                                          fn_data_sz);
+        break;
+    default:
+        assert(false && "invalid package version");
+    }
+}
+
+void
+c4rt_package_init_from_result(struct c4_package_t* const pkg,
+                              const c4_datum_t datum) {
+    assert(pkg && "pkg must not be null");
+
+    switch (pkg->version) {
+    case C4_PACKAGE_VERSION_1://
+        c4rt_package_init_from_result_v1((struct c4_package_v1_t*)pkg, datum);
         break;
     default:
         assert(false && "invalid package version");

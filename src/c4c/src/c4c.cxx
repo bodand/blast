@@ -39,16 +39,22 @@
 
 #include <fstream>
 #include <ranges>
+#include <utility>
 #include <unordered_set>
 
 #include <c4/ast_dumper.hxx>
 
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
-#include <c4c/c4_runtime_emitter.hxx>
+#include <c4/ffm.hxx>
+#include <c4/ffm_dumper.hxx>
+#include <c4/ffm_mapper.hxx>
+
+#include <c4rt2/datum.h>
 
 #include <c4c/source_file.hxx>
-#include <c4rt/datum.h>
+#include <c4c/ffm_ir_emitter.hxx>
+
 #include <libassert/assert.hpp>
 
 #include <llvm/ADT/APFloat.h>
@@ -74,13 +80,6 @@
 #include <llvm/IR/LegacyPassManager.h>
 
 #include <lyra/lyra.hpp>
-#include <utility>
-#include <c4/ffm_dumper.hxx>
-#include <c4/ffm_mapper.hxx>
-#include <c4/ffm/function.hxx>
-#include <c4/ffm/ffm_context.hxx>
-#include <c4c/ffm_ir_emitter.hxx>
-#include <c4c/ir_emitter.hxx>
 
 #ifdef _WIN32
 

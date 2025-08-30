@@ -9,6 +9,7 @@
     "uni-algo",
     "bfgroup-lyra",
     "mio",
+    "libassert",
     "fmt",
     "pcre2",
     "catch2",

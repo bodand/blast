@@ -155,10 +155,10 @@ namespace c4::ast2 {
         [[nodiscard]] const block_args*
         args() const { return _args; }
 
-        [[nodiscard]] std::size_t
+        [[nodiscard]] unsigned
         arity() const noexcept {
-            if (!_args) return 0;
-            return _args->size();
+            if (!_args) return 0U;
+            return static_cast<unsigned>(_args->size());
         }
 
         [[nodiscard]] bool
@@ -177,8 +177,8 @@ namespace c4::ast2 {
 
         [[nodiscard]] unsigned
         unbound_parameters() const noexcept {
-            if (!_args) return 0;
-            return _args->size();
+            if (!_args) return 0U;
+            return static_cast<unsigned>(_args->size());
         }
 
     private:

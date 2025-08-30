@@ -37,6 +37,7 @@
 #define FFM_FUNCTION_CALL_HXX
 
 #include <c4/tags/source_positioned.hxx>
+#include <c4/tags/visitable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function_declaration.hxx>

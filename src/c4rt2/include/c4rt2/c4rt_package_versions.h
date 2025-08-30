@@ -37,6 +37,10 @@
 #ifndef BLAST_C4RT_PACKAGE_VERSIONS_H
 #define BLAST_C4RT_PACKAGE_VERSIONS_H
 
-#define C4_PACKAGE_VERSION_1 1
+#define C4_PACKAGE_VERSION_1 1U
+#define C4_PACKAGE_VERSION_1_SIZE 16U
+
+uint16_t
+c4rt_package_version_to_size(uint16_t version);
 
 #endif

@@ -34,7 +34,11 @@
  *   
  */
 
-#include <iostream>
+#include <algorithm>
+#include <ranges>
+#include <string>
+#include <string_view>
+
 #include <c4/ast2/symbol.hxx>
 
 #include <fmt/base.h>
@@ -63,12 +67,6 @@ namespace {
     is_operator_symbol(const std::string_view name) {
         const auto idx = name.find_first_of(operator_chars);
         return idx != std::string_view::npos;
-    }
-
-    std::size_t
-    numeric_length(const unsigned num) {
-        if (num == 0) return 1;
-        return static_cast<std::size_t>(std::floor(std::log10(num)) + 1);
     }
 
     std::string

@@ -45,7 +45,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/base.h>
+#include <c4/fmt.hxx>
 
 namespace c4::p2 {
     struct token_source;
@@ -113,19 +113,19 @@ namespace c4 {
         }
 
     private:
-        position(const std::string_view& line,
-                 const std::size_t row_number,
-                 const std::size_t col_number,
-                 const std::size_t row_number_end,
-                 const std::size_t col_number_end,
-                 const std::string_view& expanded_range,
+        position(const std::string_view& line_,
+                 const std::size_t row_number_,
+                 const std::size_t col_number_,
+                 const std::size_t row_number_end_,
+                 const std::size_t col_number_end_,
+                 const std::string_view& expanded_range_,
                  p2::token_source* const source)
-            : line{line}
-            , row_number{row_number}
-            , col_number{col_number}
-            , row_number_end{row_number_end}
-            , col_number_end{col_number_end}
-            , expanded_range{expanded_range}
+            : line{line_}
+            , row_number{row_number_}
+            , col_number{col_number_}
+            , row_number_end{row_number_end_}
+            , col_number_end{col_number_end_}
+            , expanded_range{expanded_range_}
             , _source{source} { }
 
         std::string _attached{};
@@ -220,7 +220,7 @@ namespace c4 {
             return std::move(*this).emplace_diagnostic(source_diagnostic::diag_type::Suggestion,
                                                        std::forward<P>(position),
                                                        diagnostic,
-                                                       fmt::make_format_args(args...));;
+                                                       fmt::make_format_args(args...));
         }
 
         template<class... Args>

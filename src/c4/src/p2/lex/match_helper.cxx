@@ -60,13 +60,17 @@ namespace {
     }
 
     void
-    update_position_for_multiline_match(c4::position& pos, const char* buffer_begin, std::string_view remaining_buffer,
+    update_position_for_multiline_match(c4::position& pos,
+                                        const char* buffer_begin,
+                                        std::string_view remaining_buffer,
                                         const std::size_t line_increment) {
         const auto line_end_it = std::ranges::find_first_of(remaining_buffer, line_end_marks);
-        const auto line_sz = distance(begin(remaining_buffer), line_end_it);
+        const auto line_sz = static_cast<size_t>(distance(begin(remaining_buffer), line_end_it));
+
+        DEBUG_ASSERT(buffer_begin >= pos.line.data(), "negative length match");
 
         pos.line = remaining_buffer.substr(0, line_sz);
-        pos.col_number = buffer_begin - pos.line.data() + 1;
+        pos.col_number = static_cast<std::size_t>(buffer_begin - pos.line.data()) + 1;
         pos.row_number += line_increment;
     }
 

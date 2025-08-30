@@ -65,7 +65,10 @@ c4::ast2::block::block(const c4::position& position,
                        block_args* args)
     : source_positioned{position}
     , _args(args)
-    , _expressions{std::move(expressions)} { }
+    , _expressions{std::move(expressions)} {
+    ASSERT(_args->size() < std::numeric_limits<unsigned>::max(),
+           "too many arguments in block");
+}
 
 bool
 c4::ast2::block::requires_context() const noexcept {

@@ -141,6 +141,18 @@ namespace c4::ast2::tags {
         const attribute*
         operator[](const std::string_view key) const { return get_attribute(key); }
 
+        attributable() = default;
+
+        attributable(const attributable&) = default;
+
+        attributable&
+        operator=(const attributable&) = delete;
+
+        attributable(attributable&&) noexcept = default;
+
+        attributable&
+        operator=(attributable&&) noexcept = delete;
+
         virtual ~attributable();
 
     private:

@@ -34,10 +34,22 @@
  *   
  */
 
+#include <algorithm>
 #include <array>
+#include <concepts>
+#include <cstdlib>
+#include <limits>
+#include <ranges>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <variant>
+#include <vector>
 
-#include <c4/ffm_mapper.hxx>
 #include <c4/diagnostic.hxx>
+#include <c4/ffm_mapper.hxx>
+#include <c4rt2/datum_type.h>
 
 #include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_context.hxx>
@@ -58,10 +70,10 @@
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
-
 #include <c4/p2/lex/tokens.hxx>
 
 #include <libassert/assert.hpp>
+
 
 #include "ffm/attributes.hxx"
 
@@ -92,7 +104,7 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
         _currently_in_let.reset();
     }
 
-    if (_current_call) {
+    if (_current_call && !obj.pseudo_let()) {
         const auto lit = ffm::try_get_referenced_local(obj.symbol());
         ASSERT(lit, "let used in call argument but does not define local");
 
@@ -104,8 +116,12 @@ c4::ffm_mapper::do_visit(const ast2::let_expression& obj) {
 
 void
 c4::ffm_mapper::finalize_block_body() const {
-    // todo: empty block
-    if (_current_function->body().empty()) return;
+    if (_current_function->body().empty()) {
+        const auto lit = _ffm_context.build_literal(static_cast<std::int64_t>(gC4_Empty_Block));
+        const auto expr = _ffm_context.build_root_expression(lit);
+        _current_function->push_expression(expr);
+        return;
+    }
 
     const auto last_expr = _current_function->body().back();
     if (const auto local = std::get_if<ffm::local*>(&last_expr->value())) {
@@ -357,6 +373,12 @@ c4::ffm_mapper::push_context_object(const ast2::symbol& sym) {
     _current_function->push_expression(unpack_expr);
 }
 
+std::string
+c4::ffm_mapper::mangled_scope(const std::string_view mangled) const {
+    if (_block_names.empty()) return std::string(mangled);
+    return fmt::format("N{}E{}", fmt::join(_block_names, ""), mangled);
+}
+
 void
 c4::ffm_mapper::process_call_arguments(const ast2::symbol& sym,
                                        const std::span<const ast2::expression* const> args,
@@ -458,9 +480,11 @@ c4::ffm_mapper::do_visit(const ast2::fn_call& obj) {
         if (ffm::try_get_referenced_local(obj.sym())
             || ffm::try_get_referenced_argument(obj.sym())) {
             const auto function_declaration = _current_function->decl();
-            DEBUG_ASSERT(function_declaration, "function declaration is null", obj.sym().name(), obj.sym().base_arity());
+            DEBUG_ASSERT(function_declaration, "function declaration is null", obj.sym().name(),
+                         obj.sym().base_arity());
             const auto closure = function_declaration->ctx_type();
-            DEBUG_ASSERT(closure, "closure is null in function that should have a context", obj.sym().name(), obj.sym().base_arity());
+            DEBUG_ASSERT(closure, "closure is null in function that should have a context", obj.sym().name(),
+                         obj.sym().base_arity());
 
             const auto args = function_declaration->arguments();
             const auto ctx_arg = args.front();
@@ -786,7 +810,7 @@ c4::ffm_mapper::define_function(const ffm::function_declaration* decl) {
 
 namespace {
     std::size_t
-    numeric_length(const unsigned num) {
+    numeric_length(const std::integral auto num) {
         if (num == 0) return 1;
         return static_cast<std::size_t>(std::floor(std::log10(num)) + 1);
     }

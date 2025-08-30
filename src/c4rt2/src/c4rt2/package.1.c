@@ -36,7 +36,6 @@
 
 #include <assert.h>
 #include <limits.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <c4rt2/c4rt.h>
@@ -57,24 +56,17 @@ unpad_pointer_1(const c4_ptr64_t ptr) {
     return (void*)(ptr >> (CHAR_BIT * (sizeof(c4_ptr64_t) - sizeof(void*))));
 }
 
-static void
-ptr64_set_nullptr(c4_ptr64_t* ptr) {
-    // nullptr may not be bitwise zero, take proper pointer and manually pad
-    // it to integer to ensure proper nullptr encoding on weird platforms
-    *ptr = pad_pointer_1(NULL);
-}
-
 void
 c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
                                    c4rt_package_function_t* const calc_fun,
-                                   const struct c4_package_t* fn_data,
+                                   const struct c4_package_v1_t* fn_data,
                                    const uint16_t fn_data_sz_bytes) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
-    assert(pkg->package_size == C4_PACKAGE_VERSION_1);
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
-    pkg->function_arity = fn_data_sz_bytes;
+    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t);
 
     // Note: this function does not handle closures.
     pkg->context_sz_divided_bytes = 0;
@@ -90,6 +82,7 @@ c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
             C4_ALLOCATE(
                 sizeof(struct c4_package_v1_function_payload) +
                 fn_data_sz_bytes);
+    assert(payload && "alloc failed");
     payload->calc_fun = calc_fun;
     memcpy(payload->args_untyped, fn_data, fn_data_sz_bytes);
 
@@ -97,7 +90,7 @@ c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
 }
 
 static uint32_t
-round_up(const uint32_t num, const int factor) {
+round_up(const uint32_t num, const size_t factor) {
     return num - 1u - (num - 1u) % factor + factor;
 }
 
@@ -106,21 +99,22 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
                                   c4rt_package_function_t* const calc_fun,
                                   const void* const ctx,
                                   const uint32_t ctx_sz_bytes,
-                                  const struct c4_package_t* const fn_data,
-                                  const uint16_t fn_data_sz_bytes) {
+                                  const struct c4_package_v1_t* const fn_data,
+                                  const uint32_t fn_data_sz_bytes) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert(ctx && "ctx must not be null");
     assert(ctx_sz_bytes > 0 && "ctx_sz_bytes must be > 0");
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
-    assert(pkg->package_size == C4_PACKAGE_VERSION_1);
-    pkg->package_size = C4_PACKAGE_VERSION_1;
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
-    pkg->function_arity = fn_data_sz_bytes + 1;
+    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t) + 1u;
 
-    const uint32_t ctx_size_as_pkg_multiple = round_up(ctx_sz_bytes, pkg->package_size);
+    const size_t pkg_sz = sizeof(struct c4_package_v1_t);
+
+    const uint32_t ctx_size_as_pkg_multiple = round_up(ctx_sz_bytes, pkg_sz);
     const uint32_t ctx_size_as_pkg_multiple_divided_bytes =
-            ctx_size_as_pkg_multiple / pkg->package_size;
+            ctx_size_as_pkg_multiple / pkg_sz;
     assert(ctx_size_as_pkg_multiple_divided_bytes < UINT16_MAX
         && "context size too large for package version 1");
     pkg->context_sz_divided_bytes = (uint16_t)ctx_size_as_pkg_multiple_divided_bytes;
@@ -137,6 +131,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
                 ctx_size_as_pkg_multiple +                       // context
                 args_padding +
                 fn_data_sz_bytes);  // args
+    assert(payload && "alloc failed");
     payload->calc_fun = calc_fun;
     memcpy(payload->args_untyped + ctx_offset, ctx, ctx_sz_bytes);
     memcpy(payload->args_untyped + proper_args_offset, fn_data, fn_data_sz_bytes);
@@ -148,8 +143,7 @@ void
 c4rt_package_init_from_result_v1(struct c4_package_v1_t* const pkg,
                                  const c4_datum_t datum) {
     assert(pkg && "pkg must not be null");
-    assert(pkg->package_size == C4_PACKAGE_VERSION_1);
-    pkg->package_size = C4_PACKAGE_VERSION_1;
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = true;
     pkg->data = datum;
 }
@@ -159,7 +153,7 @@ c4rt_package_init_from_result_v1(struct c4_package_v1_t* const pkg,
 c4_datum_t
 c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
     assert(pkg && "pkg must not be null");
-    assert(pkg->package_size == C4_PACKAGE_VERSION_1);
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
     if (pkg->completed) return pkg->data;
 
     void* const ptr = unpad_pointer_1(pkg->data);
@@ -177,18 +171,20 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
     c4rt_package_function_t* const calc_fun = payload->calc_fun;
 
     if (pkg->context_sz_divided_bytes == 0) {
-        struct c4_package_v1_t* args = payload->args_untyped;
+        struct c4_package_v1_t* args = (void*)payload->args_untyped;
         const c4_datum_t datum = c4_dynamic_call_v1(pkg->function_arity,
                                                     calc_fun,
                                                     args);
         pkg->data = datum;
     }
     else {
+        const size_t pkg_sz = sizeof(struct c4_package_v1_t);
+
         void* ctx = payload->args_untyped;
-        struct c4_package_v1_t* args = payload->args_untyped
-                                       + (ptrdiff_t)pkg->context_sz_divided_bytes
-                                       /*        */ * pkg->package_size;
-        const c4_datum_t datum = c4_dynamic_call_v1_ctx(pkg->function_arity, calc_fun, ctx, args);
+        struct c4_package_v1_t* args = (void*)(payload->args_untyped
+                                               + (ptrdiff_t)pkg->context_sz_divided_bytes
+                                               /*        */ * pkg_sz);
+        const c4_datum_t datum = c4_dynamic_call_v1_ctx(pkg->function_arity - 1, calc_fun, ctx, args);
         pkg->data = datum;
     }
 
@@ -199,7 +195,7 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
 void
 c4rt_package_free_v1(const struct c4_package_v1_t* const pkg) {
     assert(pkg && "pkg must not be null");
-    assert(pkg->package_size == C4_PACKAGE_VERSION_1);
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
     if (pkg->completed) return;
     if (pkg->function_arity == 0) return;
 

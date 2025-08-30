@@ -44,7 +44,6 @@
 #include <c4/ffm/ffm_node.hxx>
 #include <c4/ffm/function.hxx>
 
-
 namespace c4::ffm {
     struct function_declaration final : ast2::tags::referable
                                         , ffm_node

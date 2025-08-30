@@ -45,7 +45,10 @@
 namespace llvm {
     class Value;
     class Type;
+    class StructType;
     class Module;
+    class Function;
+    class FunctionCallee;
     class ConstantFolder;
     class IRBuilderDefaultInserter;
     template<typename FolderTy, typename InserterTy>
@@ -54,7 +57,7 @@ namespace llvm {
 
 namespace c4rt2c {
     struct c4_rt2_emitter final {
-        c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder);
+        c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>* builder);
 
         [[nodiscard]] llvm::Value*
         emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
@@ -65,18 +68,30 @@ namespace c4rt2c {
                                  llvm::Value* fn_data, llvm::Value* fn_data_sz) const;
 
         [[nodiscard]] llvm::Value*
+        emit_datum_from_closure(llvm::Value* func,
+                                llvm::Value* arity,
+                                llvm::Value* ctx,
+                                llvm::Value* ctx_sz, llvm::Value* fn_data, llvm::Value* fn_data_sz) const;
+
+        [[nodiscard]] llvm::Value*
         emit_datum_evaluate(llvm::Value* datum, std::span<llvm::Value*> args) const;
 
         void
         emit_package_init(llvm::Value* ptr) const;
 
         void
-        emit_package_set_from_result(llvm::Value* ptr, llvm::Value* datum) const;
+        emit_package_init_from_result(llvm::Value* ptr, llvm::Value* datum) const;
 
         void
-        emit_package_set_from_function(llvm::Value* pkg,
+        emit_package_init_from_function(llvm::Value* pkg,
+                                        llvm::Function* function,
+                                        const std::vector<llvm::Value*>& vector) const;
+
+        void
+        emit_package_init_from_closure(llvm::Value* pkg,
                                        llvm::Function* function,
-                                       const std::vector<llvm::Value*>& vector) const;
+                                       llvm::Value* ctx,
+                                       std::span<llvm::Value*> vector) const;
 
         llvm::Value*
         emit_unpack(llvm::Value* value) const;
@@ -86,6 +101,9 @@ namespace c4rt2c {
 
         [[nodiscard]] llvm::Value*
         local_package_array(size_t n) const;
+
+        [[nodiscard]] llvm::Value*
+        local_package_array_uninit(size_t n) const;
 
         [[nodiscard]] llvm::Value*
         encode_datum(double d) const;
@@ -100,6 +118,9 @@ namespace c4rt2c {
         encode_datum_string(std::string_view i) const;
 
     private:
+        void
+        set_package_version(llvm::Value* pkg) const;
+
         template<class... Args>
         void
         declare_rt_function(std::string_view name, llvm::Type* ret_type, Args&&... arg_types) const {

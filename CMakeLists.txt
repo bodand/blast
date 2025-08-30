@@ -133,11 +133,11 @@ endif ()
 # dependencies
 find_package(mio CONFIG REQUIRED)
 find_package(pcre2 CONFIG REQUIRED)
-find_package(ZLIB REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(libassert CONFIG REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
 find_package(lyra CONFIG REQUIRED)
-    find_package(mimalloc CONFIG REQUIRED)
-
+find_package(mimalloc CONFIG REQUIRED)
 
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED)
@@ -157,18 +157,17 @@ target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS})
 target_include_directories(c4_llvm INTERFACE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
 
-# libassert is fetchcontent not vcpkg, to allow us to link with the libraries
-# we want to use more easily (zlib, zstd)
-fetchcontent_declare(fmt
-                     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-                     GIT_TAG "11.1.4"
-                     )
-fetchcontent_declare(libassert
-                     GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
-                     GIT_TAG v2.1.5)
-fetchcontent_makeavailable(fmt libassert)
+## libassert is fetchcontent not vcpkg, to allow us to link with the libraries
+## we want to use more easily (zlib, zstd)
+#fetchcontent_declare(fmt
+#                     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+#                     GIT_TAG "11.1.4"
+#                     )
+#fetchcontent_declare(libassert
+#                     GIT_REPOSITORY https://github.com/jeremy-rifkin/libassert.git
+#                     GIT_TAG v2.1.5)
+#fetchcontent_makeavailable(fmt libassert)
 
-add_subdirectory(src/c4rt)
 add_subdirectory(src/c4rt2)
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)

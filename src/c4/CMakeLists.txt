@@ -182,12 +182,13 @@ add_library(c4
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
             include/c4/ffm.hxx
+            include/c4/fmt.hxx
             )
 
 target_link_libraries(c4
                       PUBLIC
-                      c4rt
-                      fmt::fmt-header-only
+                      c4rt2
+                      fmt::fmt
                       PRIVATE
                       internal-warnings
                       internal-lto

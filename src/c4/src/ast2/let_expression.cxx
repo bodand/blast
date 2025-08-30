@@ -69,3 +69,10 @@ bool
 c4::ast2::let_expression::closure() const noexcept {
     return value().loose_closure();
 }
+
+bool
+c4::ast2::let_expression::pseudo_let() const noexcept {
+    const auto pseudo_let = attribute_value<bool>("pseudo_let");
+    if (!pseudo_let) return false;
+    return *pseudo_let;
+}

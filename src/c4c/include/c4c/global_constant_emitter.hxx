@@ -40,7 +40,7 @@
 
 #include <c4/visitor/visitor.hxx>
 
-#include <c4rt/datum.h>
+#include <c4rt2/datum.h>
 
 namespace llvm {
     class Twine;

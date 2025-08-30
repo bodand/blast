@@ -47,8 +47,8 @@ namespace c4::ffm {
     struct local final : ffm_node
                          , ast2::tags::attributable
                          , ast2::tags::visitable {
-        local(const std::string_view name,
-              value_expression* const value) noexcept;
+        local(std::string_view name,
+              value_expression* value) noexcept;
 
         [[nodiscard]] std::string_view
         name() const noexcept { return _name; }

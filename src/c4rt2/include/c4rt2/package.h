@@ -54,7 +54,7 @@ C4RT_API void
 c4rt_package_init_from_function(struct c4_package_t* pkg,
                                 c4rt_package_function_t* calc_fun,
                                 const struct c4_package_t* fn_data,
-                                uint16_t fn_data_sz);
+                                uint32_t fn_data_sz);
 
 /// c4rt_package_init_from_closure(*pkg, *calc_fun,
 ///                                *ctx, ctx_sz,
@@ -80,14 +80,14 @@ c4rt_package_init_from_closure(struct c4_package_t* pkg,
                                const void* ctx,
                                uint32_t ctx_sz,
                                const struct c4_package_t* fn_data,
-                               uint16_t fn_data_sz);
+                               uint32_t fn_data_sz);
 
-/// c4rt_package_set_from_result(pkg, datum) --
+/// c4rt_package_set_from_result(*pkg, datum) --
 ///     Packages a given datum as a successfully calculated result into pkg.
 ///
 ///     Behavior is undefined if pkg is null.
 C4RT_API void
-c4rt_package_init_from_result(struct c4_package_t** pkg,
+c4rt_package_init_from_result(struct c4_package_t* pkg,
                               c4_datum_t datum);
 
 /// c4rt_package_evaluate(pkg) --

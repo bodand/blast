@@ -41,6 +41,7 @@
 #include <variant>
 
 #include <c4/tags/referable.hxx>
+#include <c4/tags/visitable.hxx>
 #include <c4/ffm/symbol.hxx>
 #include <c4/ffm/ffm_node.hxx>
 

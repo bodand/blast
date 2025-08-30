@@ -42,6 +42,7 @@
 typedef uint64_t c4_ptr64_t;
 
 C4_MSVC_ALIGNMENT_BEGIN(8)
+#pragma pack(push, 8)
 /**
  * Type erased generic package type.
  * ABI stable, backwards and forwards compatible.
@@ -52,6 +53,7 @@ struct c4_package_t {
     uint16_t version;
 } C4_GCC_ALIGNMENT(8);
 
+C4_MSVC_ALIGNMENT_END()
 C4_MSVC_ALIGNMENT_END()
 
 typedef c4_datum_t (c4rt_package_function_t)();

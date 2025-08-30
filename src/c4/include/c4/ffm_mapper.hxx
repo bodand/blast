@@ -43,7 +43,6 @@
 
 #include <c4/ffm/ffm_context.hxx>
 #include <c4/visitor/visitor.hxx>
-#include <fmt/ranges.h>
 
 #include <c4/ast2/symbol.hxx>
 
@@ -259,10 +258,7 @@ namespace c4 {
         enter_block() noexcept { return recursive_scope(_block_counter); }
 
         [[nodiscard]] std::string
-        mangled_scope(const std::string_view mangled) const {
-            if (_block_names.empty()) return std::string(mangled);
-            return fmt::format("N{}E{}", fmt::join(_block_names, ""), mangled);
-        }
+        mangled_scope(std::string_view mangled) const;
 
         void
         process_call_arguments(const ast2::symbol& sym,

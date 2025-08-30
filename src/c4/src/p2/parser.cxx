@@ -386,6 +386,7 @@ c4::p2::parser::parse_final_expression() {
         auto pseudo_let = _context.build_let_expression(expr->position(),
                                                         ast2::symbol(expr->position(), _dynamic_call_buffers.front(), 0),
                                                         expr);
+        std::ignore = pseudo_let->emplace_attribute<ast2::dynamic_call_pseudo_let_attribute>("pseudo_let");
 
         const auto dyn_call_end = expect_token<tokens::arity_marker>();
         if (!dyn_call_end) report_failure(dyn_call_end);

@@ -50,8 +50,3 @@ add_covered_test(NAME blast-test CATCH
                  c4/p2/lex/token_source.cxx
                  c4/p2/lex/lexer.cxx
                  LIBRARIES c4)
-
-add_covered_test(NAME test-c4rt CATCH
-                 SOURCES
-                 c4rt/datum.cxx
-                 LIBRARIES c4rt-static)

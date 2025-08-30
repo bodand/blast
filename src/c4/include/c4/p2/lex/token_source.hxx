@@ -50,8 +50,8 @@ namespace c4::p2 {
             : file(std::filesystem::path{}) { }
 
         explicit
-        token_source(std::filesystem::path file)
-            : file{std::move(file)}
+        token_source(std::filesystem::path file_)
+            : file{std::move(file_)}
             , _file_string{this->file.string()} { }
 
         template<class T, class... Args>

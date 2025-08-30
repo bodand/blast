@@ -48,6 +48,12 @@
 namespace c4::ast2 {
     struct expression;
 
+    struct dynamic_call_pseudo_let_attribute final : ast2::tags::typed_attribute<bool> {
+        explicit
+        dynamic_call_pseudo_let_attribute()
+            : typed_attribute{true} { }
+    };
+
     struct let_expression final : tags::referable
                                   , ast_node
                                   , tags::visitable
@@ -97,6 +103,9 @@ namespace c4::ast2 {
 
         bool
         closure() const noexcept override;
+
+        [[nodiscard]] bool
+        pseudo_let() const noexcept;
 
     private:
         struct symbol _symbol;

@@ -202,12 +202,12 @@ c4::ffm::ffm_context::build_unpack(value_expression* const expr) {
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(const int32_t i32) {
+c4::ffm::ffm_context::build_literal(const std::int32_t i32) {
     return build_insert<literal>(_nodes, i32);
 }
 
 c4::ffm::literal*
-c4::ffm::ffm_context::build_literal(const int64_t i64) {
+c4::ffm::ffm_context::build_literal(const std::int64_t i64) {
     return build_insert<literal>(_nodes, i64);
 }
 

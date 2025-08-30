@@ -74,30 +74,6 @@ namespace {
 
         return *attr;
     }
-
-    llvm::Value*
-    try_get_value_attribute(const c4::ast2::tags::attributable* ref) {
-        const auto attr = ref->attribute_value<llvm::Value*>("value");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
-
-    c4::ffm::local*
-    try_get_local_attribute(const c4::ast2::tags::attributable* ref) {
-        const auto attr = ref->attribute_value<c4::ffm::local*>("local");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
-
-    c4::ffm::block_argument*
-    try_get_arg_attribute(const c4::ast2::tags::attributable* ref) {
-        const auto attr = ref->attribute_value<c4::ffm::block_argument*>("argument");
-        if (!attr) return nullptr;
-
-        return *attr;
-    }
 }
 
 c4c::ffm_ir_emitter::ffm_ir_emitter(llvm::LLVMContext& context,
@@ -124,23 +100,6 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::context_type& obj) {
 
     const auto ctx_type = llvm::StructType::create(_context, types, obj.name());
     obj.emplace_attribute<llvm_type_attribute>("type", ctx_type);
-}
-
-namespace {
-    llvm::Value*
-    retrieve_value(const c4::ast2::tags::referable* const ref) {
-        if (const auto direct_value = try_get_value_attribute(ref)) return direct_value;
-
-        if (const auto local = try_get_local_attribute(ref))
-            if (const auto local_val = try_get_value_attribute(local))
-                return local_val;
-
-        if (const auto arg = try_get_arg_attribute(ref))
-            if (const auto arg_val = try_get_value_attribute(arg))
-                return arg_val;
-
-        return nullptr;
-    }
 }
 
 void
@@ -207,11 +166,24 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_call& obj) {
     ASSERT(llvm_decl, "function must be declared in ffm before it is called");
 
     if (obj.packed()) {
-        const auto pkg = _rt_emitter.local_package();
-        _rt_emitter.emit_package_set_from_function(pkg, llvm_decl, _current_args);
+        if (obj.function()->closure()) {
+            const auto pkg = _rt_emitter.local_package();
+            const auto ctx = _current_args.front();
+            _rt_emitter.emit_package_init_from_closure(pkg,
+                                                       llvm_decl,
+                                                       ctx,
+                                                       std::span(std::next(_current_args.begin()),
+                                                                 _current_args.end()));
+            stack.pop();
+            push_value(pkg);
+        }
+        else {
+            const auto pkg = _rt_emitter.local_package();
+            _rt_emitter.emit_package_init_from_function(pkg, llvm_decl, _current_args);
 
-        stack.pop();
-        push_value(pkg);
+            stack.pop();
+            push_value(pkg);
+        }
     }
     else {
         const auto fn_type = llvm_decl->getFunctionType();
@@ -243,7 +215,7 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) {
     }
 
     const auto packaged = _rt_emitter.local_package();
-    _rt_emitter.emit_package_set_from_result(packaged, result_datum);
+    _rt_emitter.emit_package_init_from_result(packaged, result_datum);
     push_value(packaged);
 }
 
@@ -326,10 +298,21 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::literal& obj) {
 void
 c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_literal& obj) {
     const auto scope = call_stack(_active_call, _current_args);
-    if (const auto ctx = obj.context()) ctx->accept(*this);
+    llvm::Value* ctx_obj = nullptr;
+    llvm::Value* ctx_obj_sz = nullptr;
+    if (const auto ctx = obj.context()) {
+        ctx->accept(*this);
+        ctx_obj = _current_args.back();
+        _current_args.pop_back();
 
-    const auto eff_arity = obj.function()->effective_arity();
-    const auto arity_val = llvm::ConstantInt::get(_context, llvm::APInt(16, eff_arity));
+        const auto ctx_type = try_get_type_attribute(ctx->ctx_type());
+        DEBUG_ASSERT(ctx_type, "context type must have a type attribute", ctx->ctx_type()->name());
+        const auto ctx_sz = _module.getDataLayout().getTypeAllocSize(ctx_type);
+        ctx_obj_sz = llvm::ConstantInt::get(_context, llvm::APInt(64, ctx_sz));
+    }
+
+    const auto base_arity = obj.function()->base_arity();
+    const auto arity_val = llvm::ConstantInt::get(_context, llvm::APInt(16, base_arity));
 
     const auto fn = try_get_function_attribute(obj.function());
     ASSERT(fn, "block literal must have a function attribute",
@@ -357,12 +340,26 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::block_literal& obj) {
         }
     }
 
-    const auto datum = _rt_emitter.emit_datum_from_function(fn,
-                                                            arity_val,
-                                                            args,
-                                                            args_sz);
+    const auto datum = ctx_obj
+                       ? _rt_emitter.emit_datum_from_closure(fn,
+                                                             arity_val,
+                                                             ctx_obj,
+                                                             ctx_obj_sz,
+                                                             args,
+                                                             args_sz)
+                       : _rt_emitter.emit_datum_from_function(fn,
+                                                              arity_val,
+                                                              args,
+                                                              args_sz);
     scope.pop();
-    push_value(datum);
+    if (obj.packed()) {
+        const auto pkg = _rt_emitter.local_package();
+        _rt_emitter.emit_package_init_from_result(pkg, datum);
+        push_value(pkg);
+    }
+    else {
+        push_value(datum);
+    }
 }
 
 void
@@ -425,7 +422,7 @@ c4c::ffm_ir_emitter::build_literal(const c4::ffm::literal& lit) {
     if (!lit.packed()) return lit_val;
 
     const auto pkg = _rt_emitter.local_package();
-    _rt_emitter.emit_package_set_from_result(pkg, lit_val);
+    _rt_emitter.emit_package_init_from_result(pkg, lit_val);
     return pkg;
 }
 

@@ -41,7 +41,7 @@
 #include <c4c/global_constant_emitter.hxx>
 #include <c4c/llvm_value_attribute.hxx>
 
-#include <c4rt/datum.h>
+#include <c4rt2/datum.h>
 
 #include <libassert/assert.hpp>
 
@@ -73,9 +73,9 @@ c4c::global_constant_emitter::do_visit(const c4::ast2::float_literal& obj) {
 
 void
 c4c::global_constant_emitter::do_visit(const c4::ast2::integer_literal& obj) {
-    ASSERT(obj.value() < std::numeric_limits<int32_t>::max());
+    ASSERT(obj.value() < std::numeric_limits<std::int32_t>::max());
     _value_type_suffix = "_il";
-    create_global(c4rt_datum_from_int32(static_cast<int32_t>(obj.value())));
+    create_global(c4rt_datum_from_int32(static_cast<std::int32_t>(obj.value())));
     obj.emplace_attribute<llvm_value_attribute>("value", value);
 }
 

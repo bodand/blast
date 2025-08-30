@@ -37,6 +37,7 @@
 #define BLAST_FFM_DUMPER_HXX
 
 #include <ostream>
+#include <string_view>
 #include <span>
 
 #include <c4/visitor/visitor.hxx>

@@ -36,6 +36,12 @@
 #ifndef BLAST_C4RT_PACKAGE_1_H
 #define BLAST_C4RT_PACKAGE_1_H
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#  define ALIGNAS(x)
+#else
+#  define ALIGNAS(x) _Alignas(x)
+#endif
+
 /**
  * ABI stable package struct for v1.
  *
@@ -74,8 +80,9 @@
 struct c4_package_v1_t {
     /// Specifies the size of this package: used to differentiate the ABI
     /// version used.
-    uint16_t package_size;
-    /// The callee functions's arity.
+    uint16_t version;
+    /// The callee functions's base arity, including the optional closure
+    /// context parameter.
     uint16_t function_arity;
     /// Whether this package has been completed. If yes, data is contains a
     /// single datum, otherwise an encoded function payload.
@@ -102,7 +109,7 @@ struct c4_package_v1_t {
  */
 struct c4_package_v1_function_payload {
     c4rt_package_function_t* calc_fun;
-    char args_untyped[];
+    ALIGNAS(8) char args_untyped[];
 };
 
 /**
@@ -123,7 +130,7 @@ struct c4_package_v1_function_payload {
 C4RT_IMPL void
 c4rt_package_init_from_function_v1(struct c4_package_v1_t* pkg,
                                    c4rt_package_function_t* calc_fun,
-                                   const struct c4_package_t* fn_data,
+                                   const struct c4_package_v1_t* fn_data,
                                    uint16_t fn_data_sz_bytes);
 
 /**
@@ -152,8 +159,8 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* pkg,
                                   c4rt_package_function_t* calc_fun,
                                   const void* ctx,
                                   uint32_t ctx_sz_bytes,
-                                  const struct c4_package_t* fn_data,
-                                  uint16_t fn_data_sz_bytes);
+                                  const struct c4_package_v1_t* fn_data,
+                                  uint32_t fn_data_sz_bytes);
 
 /**
  * c4rt_package_init_from_result_v1(*pkg, datum) --

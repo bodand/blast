@@ -37,9 +37,9 @@
 #define BLAST_BLOCK_ARGUMENT_HXX
 
 #include <c4/tags/referable.hxx>
+#include <c4/tags/visitable.hxx>
 
 #include <c4/ffm/ffm_node.hxx>
-#include <c4/tags/visitable.hxx>
 
 namespace c4::ffm {
     struct block_argument
