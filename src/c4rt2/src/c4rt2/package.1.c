@@ -38,7 +38,8 @@
 #include <limits.h>
 #include <string.h>
 
-#include <c4rt2/c4rt.h>
+#include <c4rt2/package.h>
+#include <c4rt2/datum_type.h>
 #include <c4rt2/c4rt_package_versions.h>
 
 #include "package.1.h"

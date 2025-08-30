@@ -44,20 +44,20 @@
 TEST_CASE("comment is lexed with newline") {
     constexpr std::string_view buf{"#comment\ncode"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(lexer.next());
     CHECK(tok->value() == "#comment\n");
 }
 
 TEST_CASE("empty comment is lexed with newline") {
     constexpr std::string_view buf{"#\ncode"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(lexer.next());
     CHECK(tok->value() == "#\n");
 }
 
 TEST_CASE("comment does not lex continuous newlines") {
     constexpr std::string_view buf{"#\n\ncode"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto tok = token_finder<c4::p2::tokens::comment>{}(*lexer.next());
+    const auto tok = token_finder<c4::p2::tokens::comment>{}(lexer.next());
     CHECK(tok->value() == "#\n");
 }

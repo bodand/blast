@@ -44,13 +44,13 @@
 TEST_CASE("string matches single-line string") {
     constexpr std::string_view buf{"\"string\""};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto tok = token_finder<c4::p2::tokens::string_literal>{}(*lexer.next());
+    const auto tok = token_finder<c4::p2::tokens::string_literal>{}(lexer.next());
     CHECK(tok->value() == buf);
 }
 
 TEST_CASE("string matches multi-line string") {
     constexpr std::string_view buf{"\"str\ning\""};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto tok = token_finder<c4::p2::tokens::string_literal>{}(*lexer.next());
+    const auto tok = token_finder<c4::p2::tokens::string_literal>{}(lexer.next());
     CHECK(tok->value() == buf);
 }

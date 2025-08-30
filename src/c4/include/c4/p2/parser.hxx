@@ -60,25 +60,68 @@ namespace c4::p2 {
     };
 
     namespace aux {
-        struct token_info final {
+        struct mismatched_token_error final {
             std::string_view name;
-            std::string_view value;
+            std::string_view expected;
             position position;
+        };
+
+        struct eof_error final {
+            constexpr static std::string_view name = "end of file";
+            std::string_view expected;
+            position position;
+        };
+
+        template<class>
+        struct type_val_t { };
+
+        template<class T>
+        constexpr static auto type_val = type_val_t<T>{};
+
+        struct token_error final {
+            using value_type = std::variant<mismatched_token_error, eof_error>;
+
+            template<class T, class... Args>
+            explicit(false)
+            token_error(type_val_t<T>, Args&&... args)
+                : _value{std::in_place_type<T>, std::forward<Args>(args)...} { }
+
+            explicit
+            token_error(value_type value)
+                : _value{std::move(value)} { }
+
+            [[nodiscard]] std::string_view
+            name() const {
+                return std::visit([](const auto& tok) { return tok.name; }, _value);
+            }
+
+            [[nodiscard]] std::string_view
+            expected_token_name() const {
+                return std::visit([](const auto& tok) { return tok.expected; }, _value);
+            }
+
+            [[nodiscard]] position
+            position() const {
+                return std::visit([](const auto& tok) { return tok.position; }, _value);
+            }
+        private:
+            value_type _value;
         };
 
         template<class T>
         struct token_selector {
-            std::expected<T, source_diagnostic>
+            std::expected<T, token_error>
             operator()(const T& tok) const { return tok; }
 
             template<class Found>
-            std::expected<T, source_diagnostic>
+            std::expected<T, token_error>
             operator()(const Found& tok) const {
-                return std::unexpected(source_diagnostic::error(
-                    tok.token_position(),
-                    "expected `{}' but found `{}'",
-                    T::token_name, Found::token_name
-                ));
+                return std::unexpected<token_error>(
+                    std::in_place,
+                    type_val<mismatched_token_error>,
+                    Found::token_name,
+                    T::token_name,
+                    tok.token_position());
             }
         };
     }
@@ -87,13 +130,7 @@ namespace c4::p2 {
         explicit
         parser(ast2::ast_context& context,
                diagnostics_engine& diagnostics_engine,
-               lexer&& lexer)
-            : _lexer{std::move(lexer)}
-            , _diag{diagnostics_engine}
-            , _context{context} {
-            next_relevant();
-            enter_scope();
-        }
+               lexer&& lexer);
 
         ast2::integer_literal
         parse_integer_literal();
@@ -164,17 +201,17 @@ namespace c4::p2 {
             unsigned precedence; // Set only on operators
             bool right_assoc;    // Set only on operators
 
-            parser_symbol(const std::string_view& name,
-                          const unsigned arity,
-                          ast2::tags::referable* referee,
-                          const unsigned precedence = 0,
-                          const bool right_assoc = false)
+            parser_symbol(const std::string_view& name_,
+                          const unsigned arity_,
+                          ast2::tags::referable* referee_,
+                          const unsigned precedence_ = 0,
+                          const bool right_assoc_ = false)
                 noexcept(std::is_nothrow_copy_constructible_v<std::string_view>)
-                : name{name}
-                , referee{referee}
-                , arity{arity}
-                , precedence{precedence}
-                , right_assoc{right_assoc} { }
+                : name{name_}
+                , referee{referee_}
+                , arity{arity_}
+                , precedence{precedence_}
+                , right_assoc{right_assoc_} { }
 
             [[nodiscard]] bool
             is_operator() const noexcept { return precedence != 0; }
@@ -221,7 +258,7 @@ namespace c4::p2 {
             };
         }
 
-        bool
+        void
         next_relevant();
 
         void
@@ -238,15 +275,9 @@ namespace c4::p2 {
                                 bool right_assoc = false);
 
         template<class T>
-        std::expected<T, source_diagnostic>
+        std::expected<T, aux::token_error>
         expect_token() {
-            if (!_current) // todo make this make sense
-                return std::unexpected(source_diagnostic::error(
-                    position(new token_source("??")), // todo: this leaks
-                    "expected `{}' but found end-of-input",
-                    T::token_name
-                ));
-            return std::visit(aux::token_selector<T>{}, *_current);
+            return std::visit(aux::token_selector<T>{}, _current);
         }
 
         parser_symbol&
@@ -267,10 +298,10 @@ namespace c4::p2 {
         unsigned _dynamic_call_index{};
         std::list<std::string> _dynamic_call_buffers;
 
-        std::optional<tokens::token_type> _current{};
-        lexer _lexer;
         diagnostics_engine& _diag;
         ast2::ast_context& _context;
+        lexer _lexer;
+        tokens::token_type _current;
     };
 }
 

@@ -52,7 +52,6 @@ c4::p2::tokens::token_base::token_base(const position& position,
           , _source(position.source()) {
     DEBUG_ASSERT(_source != nullptr, "source cannot be specified as null");
     DEBUG_ASSERT(_begin <= _end, "token must start before it ends");
-    DEBUG_ASSERT(_begin != _end, "token must not be empty");
 }
 
 namespace {

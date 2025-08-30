@@ -62,8 +62,12 @@ function(generate_warnings _Interface)
         nullability-completeness unreachable-code-loop-increment redundant-decls
         suggest-attribute=pure suggest-attribute=const suggest-attribute=cold
         suggest-final-methods duplicated-branches placement-new=2 error=trampolines
+        covered-switch-default
         logical-op reorder
         no-unsafe-buffer-usage # todo
+        no-exit-time-destructors # todo
+        no-unknown-pragmas # really don't gaf
+        no-switch-default # clashes with covered-switch-default
         no-c++98-compat no-c++98-compat-pedantic no-c++20-compat
         # MSVC
         /w14062 /w14165 /w14191 /w14242 /we4263 /w14265 /w14287 /w14296 /we4350 /we4355

@@ -86,7 +86,7 @@ namespace {
     std::size_t
     utf8_strlen(std::string_view str) {
         auto str_view = str | una::views::utf8;
-        return std::distance(str_view.begin(), str_view.end());
+        return static_cast<std::size_t>(std::distance(str_view.begin(), str_view.end()));
     }
 }
 

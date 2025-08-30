@@ -36,6 +36,7 @@
 
 #include <c4/p2/lex/lexer.hxx>
 #include <c4/p2/lex/token_traits.hxx>
+#include <libassert/assert.hpp>
 
 namespace {
     template<class>
@@ -67,16 +68,19 @@ c4::p2::lexer::lexer(const std::string_view source,
     , _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
     const auto buffer = std::string_view(begin, end);
     const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
-    _current_position.line = buffer.substr(0, distance(std::begin(buffer), it) + 1);
-    _current_position.expanded_range = buffer.substr(0, distance(std::begin(buffer), it) + 1);
+    const auto head_line_sz = static_cast<std::size_t>(distance(std::begin(buffer), it));
+    _current_position.line = buffer.substr(0, head_line_sz + 1U);
+    _current_position.expanded_range = buffer.substr(0, head_line_sz + 1U);
 }
 
 namespace {
     struct matcher {
-        matcher(const char*& data, const char* end, c4::position& pos)
-            : data{data}
-            , end{end}
-            , pos{pos} { }
+        matcher(const char*& data_,
+                const char* end_,
+                c4::position& pos_)
+            : data{data_}
+            , end{end_}
+            , pos{pos_} { }
 
         template<class T>
         bool
@@ -92,14 +96,17 @@ namespace {
     };
 }
 
-std::optional<c4::p2::tokens::token_type>
+c4::p2::tokens::token_type
 c4::p2::lexer::next() {
-    if (_data == _end) return {};
+    if (_data == _end) return _token_source.build<tokens::eof>(_current_position, "");
 
     auto m = matcher(_data, _end, _current_position);
     std::ignore =
             [this, &m]<std::size_t... Is>(std::index_sequence<Is...>) {
                 return (m.do_match<std::tuple_element_t<Is, token_types>>(std::get<Is>(_rules)) || ...);
             }(std::make_index_sequence<std::tuple_size_v<decltype(_rules)>>{});
-    return m.ret;
+    ASSERT(m.ret,
+           "abysmal input: could not make sense of found input with given lexer rules. "
+           "Either fix input or fix the lexer.");
+    return *m.ret;
 }

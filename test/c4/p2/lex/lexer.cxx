@@ -38,12 +38,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("empty string does not return any tokens") {
-    constexpr std::string_view buf;
-    c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    CHECK_FALSE(lexer.next().has_value());
-}
-
 namespace {
     template<class T>
     struct token_finder {
@@ -68,8 +62,7 @@ namespace {
         constexpr std::string_view buf(str, sizeof(str) - 1); \
         c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size()); \
         const auto token = lexer.next(); \
-        REQUIRE(token.has_value()); \
-        CHECK(std::visit(token_finder<c4::p2::tokens::tok>{}, *token)); \
+        CHECK(std::visit(token_finder<c4::p2::tokens::tok>{}, token)); \
     }
 
 TEST_CASE("single known token is lexed") {
@@ -101,9 +94,8 @@ TEST_CASE("simple token lexed with initial starting position") {
     constexpr std::string_view buf("let x = 42");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 1);
     CHECK(pos.row_number == 1);
     CHECK(pos.col_number_end == 3);
@@ -115,9 +107,8 @@ TEST_CASE("simple token lexed with padded starting position") {
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 5);
     CHECK(pos.row_number == 1);
     CHECK(pos.col_number_end == 7);
@@ -129,9 +120,8 @@ TEST_CASE("simple token lexed with newline padded starting position") {
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 1);
     CHECK(pos.row_number == 3);
     CHECK(pos.col_number_end == 3);
@@ -144,9 +134,8 @@ multiline
 ")");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 1);
     CHECK(pos.row_number == 1);
     CHECK(pos.col_number_end == 1);
@@ -160,9 +149,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 5);
     CHECK(pos.row_number == 1);
     CHECK(pos.col_number_end == 1);
@@ -178,9 +166,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.col_number == 1);
     CHECK(pos.row_number == 3);
     CHECK(pos.col_number_end == 1);
@@ -191,9 +178,8 @@ TEST_CASE("simple token's expanded_range is single line with token") {
     constexpr std::string_view buf("let x = 42");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == buf);
 }
 
@@ -202,9 +188,8 @@ TEST_CASE("simple token's expanded_range is single line ith token if not on col0
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == buf);
 }
 
@@ -213,9 +198,8 @@ TEST_CASE("simple token's expanded_range is single line with token if not line0"
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == "let x = 42");
 }
 
@@ -226,9 +210,8 @@ TEST_CASE("second simple token's expanded_range is single line with token") {
     lexer.next(); // let
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == buf);
 }
 
@@ -238,9 +221,8 @@ multiline
 ")");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == buf);
 }
 
@@ -251,9 +233,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == buf);
 }
 
@@ -266,9 +247,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.expanded_range == R"( "
 multiline
 ")");
@@ -278,9 +258,8 @@ TEST_CASE("simple token's range is the token") {
     constexpr std::string_view buf("let x = 42");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == "let");
 }
 
@@ -289,9 +268,8 @@ TEST_CASE("simple token's range is the token if not on col0") {
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == "let");
 }
 
@@ -300,9 +278,8 @@ TEST_CASE("simple token's range is the token if not line0") {
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == "let");
 }
 
@@ -312,9 +289,8 @@ TEST_CASE("second simple token's range is the token") {
     lexer.next(); // let
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == "xyz");
 }
 
@@ -324,9 +300,8 @@ multiline
 ")");
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == buf);
 }
 
@@ -337,9 +312,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == R"("
 multiline
 ")");
@@ -354,9 +328,8 @@ multiline
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     lexer.next(); // whitespace
     const auto token = lexer.next();
-    REQUIRE(token.has_value());
 
-    const auto pos = std::visit(position_extractor{}, *token);
+    const auto pos = std::visit(position_extractor{}, token);
     CHECK(pos.range() == R"("
 multiline
 ")");

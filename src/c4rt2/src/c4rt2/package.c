@@ -36,8 +36,9 @@
 
 #include <assert.h>
 
-#include <c4rt2/c4rt.h>
+#include <c4rt2/api.h>
 #include <c4rt2/package.h>
+#include <c4rt2/datum_type.h>
 #include <c4rt2/c4rt_package_versions.h>
 
 #include "package.1.h"
@@ -122,6 +123,6 @@ c4rt_package_evaluate(struct c4_package_t* const pkg) {
         return c4rt_package_evaluate_v1((struct c4_package_v1_t*)pkg);
     default:
         assert(false && "invalid package version");
-        return gC4_Empty_Block;
+        C4_UNREACHABLE;
     }
 }

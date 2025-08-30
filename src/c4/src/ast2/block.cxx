@@ -66,7 +66,7 @@ c4::ast2::block::block(const c4::position& position,
     : source_positioned{position}
     , _args(args)
     , _expressions{std::move(expressions)} {
-    ASSERT(_args->size() < std::numeric_limits<unsigned>::max(),
+    ASSERT(!_args || _args->size() < std::numeric_limits<unsigned>::max(),
            "too many arguments in block");
 }
 
@@ -78,9 +78,9 @@ c4::ast2::block::requires_context() const noexcept {
 namespace {
     template<class It>
     struct defined_symbols_remover final : c4::ast2::visitor<c4::ast2::let_expression> {
-        defined_symbols_remover(It begin, It end)
-            : begin(std::move(begin))
-            , end(std::move(end)) { }
+        defined_symbols_remover(It begin_, It end_)
+            : begin(std::move(begin_))
+            , end(std::move(end_)) { }
 
         void
         do_visit(const c4::ast2::let_expression& obj) override {

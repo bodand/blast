@@ -41,8 +41,10 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include <c4rt2/datum.h>
 #include <dll-config.h>
+
+#include <c4rt2/api.h>
+#include <c4rt2/datum.h>
 #include <c4rt2/c4rt_package_versions.h>
 
 #define UNREACHABLE(msg, ...) \

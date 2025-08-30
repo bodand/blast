@@ -510,7 +510,7 @@ c4_dynamic_call_v1(const unsigned arity,
     c4_dynamic_cases(128)
     default: ;
     }
-    __builtin_unreachable();
+    C4_UNREACHABLE;
 }
 
 inline C4RT_IMPL c4_datum_t
@@ -523,7 +523,7 @@ c4_dynamic_call_v1_ctx(const unsigned arity,
     c4_dynamic_cases_ctx(128)
     default: ;
     }
-    __builtin_unreachable();
+    C4_UNREACHABLE;
 }
 
 #undef _Xcase_v1

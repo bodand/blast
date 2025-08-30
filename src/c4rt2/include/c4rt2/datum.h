@@ -38,8 +38,9 @@
 
 #include <c4rt2/api.h>
 #include <c4rt2/datum_type.h>
+#include <c4rt2/package_type.h>
 
-#include "package_type.h"
+C4RT_API const c4_datum_t gC4_Empty_Block;
 
 C4RT_API void
 c4rt_free(void* mem);

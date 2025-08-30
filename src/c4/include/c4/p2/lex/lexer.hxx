@@ -106,7 +106,7 @@ namespace c4::p2 {
               const char* begin,
               const char* end);
 
-        std::optional<tokens::token_type>
+        tokens::token_type
         next();
 
     private:

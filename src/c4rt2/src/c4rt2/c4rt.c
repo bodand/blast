@@ -41,5 +41,3 @@
 #if PVOID_SIZE > 8
 #  error "systems with pointer sizes up-to 64bit are supported"
 #endif
-
-#include <c4rt2/c4rt.h>

@@ -44,27 +44,27 @@
 TEST_CASE("simple closing paren <ws> slash number is taken as arity_marker") {
     constexpr std::string_view buf{") /1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(*lexer.next());
+    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(lexer.next());
     CHECK(lparen != nullptr);
 }
 
 TEST_CASE("simple closing paren slash <ws> number is taken as arity_marker") {
     constexpr std::string_view buf{")/ 1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(*lexer.next());
+    const auto lparen = token_finder<c4::p2::tokens::rparen>{}(lexer.next());
     CHECK(lparen != nullptr);
 }
 
 TEST_CASE("paren slash number without ws is taken as arity_marker") {
     constexpr std::string_view buf{")/1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(*lexer.next());
+    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(lexer.next());
     CHECK(marker != nullptr);
 }
 
 TEST_CASE("token arity_marker has same arity as in the lexed string") {
     constexpr std::string_view buf{")/42"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(*lexer.next());
+    const auto marker = token_finder<c4::p2::tokens::arity_marker>{}(lexer.next());
     CHECK(marker->arity() == 42);
 }

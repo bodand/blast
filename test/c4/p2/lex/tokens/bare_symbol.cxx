@@ -44,20 +44,20 @@
 TEST_CASE("utf-8 bare symbol is lexed") {
     constexpr std::string_view buf{"különben"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(*lexer.next());
+    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(lexer.next());
     CHECK(sym->value() == "különben");
 }
 
 TEST_CASE("bare symbol's name equals its value") {
     constexpr std::string_view buf{"különben"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(*lexer.next());
+    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(lexer.next());
     CHECK(sym->value() == sym->name());
 }
 
 TEST_CASE("bare symbol has arity 0") {
     constexpr std::string_view buf{"különben"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
-    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(*lexer.next());
+    const auto sym = token_finder<c4::p2::tokens::bare_symbol>{}(lexer.next());
     CHECK(sym->arity() == 0);
 }

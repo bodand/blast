@@ -47,6 +47,4 @@ enum c4_datum_type {
     C4_String = 0x4, /* 0100 */
 };
 
-C4RT_API const c4_datum_t gC4_Empty_Block;
-
 #endif

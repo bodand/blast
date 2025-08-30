@@ -64,14 +64,23 @@
 #  define C4_GCC_ALIGNMENT(n)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#  define C4_UNREACHABLE __builtin_unreachable()
+#elif defined(_MSC_VER)
+#  define C4_UNREACHABLE __assume(0)
+#else
+#  define C4_UNREACHABLE
+#endif
+
 #ifndef C4RT2_STATIC
 #  ifdef _WIN32
 #    define C4RT_IMPL
 #    ifdef C4RT2_EXPORTS
-#      define C4RT_API C4RT_EXTERN __declspec(dllexport)
+#      define C4RT_DLL __declspec(dllexport)
 #    else
-#      define C4RT_API C4RT_EXTERN __declspec(dllimport)
+#      define C4RT_DLL __declspec(dllimport)
 #    endif
+#    define C4RT_API C4RT_EXTERN C4RT_DLL
 #  elif defined(__GNUC__)
 #    define C4RT_IMPL __attribute__((visibility("hidden")))
 #    define C4RT_API C4RT_EXTERN __attribute__((visibility("default")))

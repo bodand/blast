@@ -45,10 +45,6 @@
 #include <libassert/assert.hpp>
 #include <fmt/format.h>
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "misc-no-recursion"
-#pragma ide diagnostic ignored "readability-static-accessed-through-instance"
-
 namespace {
     struct token_ignorer final {
         c4::diagnostics_engine& diag;
@@ -75,14 +71,48 @@ namespace {
         operator()(const auto&) const { return false; }
     };
 
-    template<class... Failures>
+    template<class E1, class... Es>
     [[noreturn]] void
-    report_failure(Failures&&... failures) {
-        DEBUG_ASSERT((!failures.has_value() && ...),
-                     "no failures to report");
-        (fmt::print("{}\n", failures.error()), ...);
+    report_failure(c4::diagnostics_engine& diag,
+                   E1&& error,
+                   Es&&... trailing) {
+        const auto& e1_error = error.error();
+        diag.error(e1_error.position(), "encountered unexpected {}", e1_error.name())
+            .when(sizeof...(trailing) > 0)
+            .note("expected one of: {}", fmt::join(std::make_tuple(trailing.error().expected_token_name()...), ", "));
         throw c4::p2::bad_token_error{};
     }
+
+    bool
+    is_eof(const c4::p2::tokens::token_type& tok) noexcept {
+        return std::holds_alternative<c4::p2::tokens::eof>(tok);
+    }
+
+    std::string_view
+    name_of(const c4::p2::tokens::token_type& token) {
+        return std::visit([](const auto& tok) {
+            return tok.token_name;
+        }, token);
+    }
+
+    c4::position
+    position_of(const c4::p2::tokens::token_type& token) {
+        return std::visit([](const auto& tok) {
+            return tok.token_position();
+        }, token);
+    }
+}
+
+c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
+    : _diag{diagnostics_engine}
+    , _context{context}
+    , _lexer{std::move(lexer)}
+    , _current{_lexer.next()} {
+    while (std::visit(token_ignorer{_diag}, _current)) {
+        _current = _lexer.next();
+        if (is_eof(_current)) break;
+    }
+    enter_scope();
 }
 
 c4::ast2::integer_literal
@@ -93,7 +123,7 @@ c4::p2::parser::parse_integer_literal() {
         return ast2::integer_literal::from_token(*literal);
     }
 
-    report_failure(literal);
+    report_failure(_diag, literal);
 }
 
 c4::ast2::float_literal
@@ -104,7 +134,7 @@ c4::p2::parser::parse_float_literal() {
         return ast2::float_literal::from_token(*literal);
     }
 
-    report_failure(literal);
+    report_failure(_diag, literal);
 }
 
 c4::ast2::string_literal
@@ -115,7 +145,7 @@ c4::p2::parser::parse_string_literal() {
         return ast2::string_literal::from_token(*literal);
     }
 
-    report_failure(literal);
+    report_failure(_diag, literal);
 }
 
 c4::ast2::symbol
@@ -132,7 +162,7 @@ c4::p2::parser::parse_symbol() {
         return ast2::symbol::from_token(*bare_symbol);
     }
 
-    report_failure(symbol, bare_symbol);
+    report_failure(_diag, symbol, bare_symbol);
 }
 
 c4::ast2::symbol
@@ -149,7 +179,7 @@ c4::p2::parser::parse_op_symbol() {
         return ast2::symbol::from_token(*bare_op);
     }
 
-    report_failure(op, bare_op);
+    report_failure(_diag, op, bare_op);
 }
 
 c4::ast2::symbol
@@ -160,7 +190,7 @@ c4::p2::parser::parse_bare_symbol() {
         return ast2::symbol::from_token(*bare_symbol);
     }
 
-    report_failure(bare_symbol);
+    report_failure(_diag, bare_symbol);
 }
 
 c4::ast2::expression*
@@ -176,7 +206,7 @@ c4::ast2::expression*
 c4::p2::parser::parse_let_expression() {
     if (const auto let = expect_token<tokens::let>();
         !let)
-        report_failure(let);
+        report_failure(_diag, let);
     next_relevant();
 
     // Symbol declaration happens immediately after parsing the symbol: this is
@@ -192,7 +222,7 @@ c4::p2::parser::parse_let_expression() {
             auto& sym = declare_symbol_internal(op.name(),
                                                 op.base_arity(),
                                                 nullptr,
-                                                -1);
+                                                static_cast<unsigned>(-1));
 
             enter_scope();
             auto expr = parse_expression();
@@ -292,7 +322,7 @@ c4::p2::parser::parse_final_expression() {
         // )
         if (const auto rpar = expect_token<tokens::rparen>();
             !rpar)
-            report_failure(rpar);
+            report_failure(_diag, rpar);
 
         next_relevant();
         return expr;
@@ -384,12 +414,13 @@ c4::p2::parser::parse_final_expression() {
 
         _dynamic_call_buffers.push_front(fmt::format("dyn@{}", ++_dynamic_call_index));
         auto pseudo_let = _context.build_let_expression(expr->position(),
-                                                        ast2::symbol(expr->position(), _dynamic_call_buffers.front(), 0),
+                                                        ast2::symbol(expr->position(), _dynamic_call_buffers.front(),
+                                                                     0),
                                                         expr);
         std::ignore = pseudo_let->emplace_attribute<ast2::dynamic_call_pseudo_let_attribute>("pseudo_let");
 
         const auto dyn_call_end = expect_token<tokens::arity_marker>();
-        if (!dyn_call_end) report_failure(dyn_call_end);
+        if (!dyn_call_end) report_failure(_diag, dyn_call_end);
         next_relevant();
 
         std::vector<ast2::expression*> args;
@@ -404,7 +435,7 @@ c4::p2::parser::parse_final_expression() {
         return _context.build_expression(dyn_call);
     }
 
-    report_failure(lpar, str, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
+    report_failure(_diag, lpar, str, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
 }
 
 c4::ast2::block*
@@ -455,7 +486,7 @@ c4::p2::parser::parse_block() {
         );
     }
 
-    report_failure(lbrace, bslash);
+    report_failure(_diag, lbrace, bslash);
 }
 
 
@@ -467,31 +498,15 @@ c4::p2::parser::promised_symbols() const {
     return undef_symbols;
 }
 
-namespace {
-    std::string_view
-    name_of(const c4::p2::tokens::token_type& token) {
-        return std::visit([](const auto& tok) {
-            return tok.token_name;
-        }, token);
-    }
-
-    c4::position
-    position_of(const c4::p2::tokens::token_type& token) {
-        return std::visit([](const auto& tok) {
-            return tok.token_position();
-        }, token);
-    }
-}
+namespace { }
 
 bool
 c4::p2::parser::parse_associativity_indicator(std::string_view op) {
     const auto bare_symbol = expect_token<tokens::bare_symbol>();
     if (!bare_symbol) {
-        if (!_current) report_failure(bare_symbol);
-
-        _diag.error(position_of(*_current),
+        _diag.error(position_of(_current),
                     "expected associativity indicator (`left' or `right') found `{}'",
-                    name_of(*_current))
+                    name_of(_current))
              .note("continuing to parse as if `{}' was left associative", op);
         return true; // left-assoc
     }
@@ -511,17 +526,15 @@ unsigned
 c4::p2::parser::parse_precedence(std::string_view op) {
     const auto int_lit = expect_token<tokens::integer_literal>();
     if (!int_lit) {
-        if (!_current) report_failure(int_lit);
-
-        _diag.error(position_of(*_current),
+        _diag.error(position_of(_current),
                     "expected precedence value (0..10) found `{}'",
-                    name_of(*_current))
+                    name_of(_current))
              .note("continuing to parse as if `{}' had precedence of 0", op);
         return 0;
     }
 
     const auto uint = ast2::integer_literal::from_token(*int_lit);
-    if (uint.value() <= 10) return uint.value();
+    if (uint.value() <= 10) return static_cast<unsigned>(uint.value());
 
     _diag.error(uint.position(),
                 "expected precedence value (0..10) found `{}'",
@@ -593,13 +606,12 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs, unsigned preced
     return ret;
 }
 
-bool
+void
 c4::p2::parser::next_relevant() {
     do {
         _current = _lexer.next();
-        if (!_current) return false;
-    } while (std::visit(token_ignorer{_diag}, *_current));
-    return true;
+        if (is_eof(_current)) return;
+    } while (std::visit(token_ignorer{_diag}, _current));
 }
 
 void
@@ -625,7 +637,7 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
          .when(find_infix_operator(sym.value()))
          .note("there exists an infix operator with name {}/2, did you mean to call that?", sym.value())
          .when(sym.size() > 1)
-         .suggest([&pos] -> c4::position&& {
+         .suggest([&pos] -> position&& {
                       auto& line = pos.attach(pos.expanded_range);
                       line.insert(pos.col_number + 2, 1, ' ');
                       pos.col_number_end = ++pos.col_number;
@@ -666,7 +678,7 @@ namespace {
     template<class It>
     auto
     find_any_operator(It begin, const It& end,
-                      unsigned arity, std::string_view name) -> typename std::iterator_traits<It>::value_type* {
+                      unsigned arity, std::string_view name) -> std::iterator_traits<It>::value_type* {
         const auto it = std::find_if(std::move(begin), end,
                                      [arity, &name](const auto& op) {
                                          return op.arity == arity
@@ -691,7 +703,7 @@ c4::p2::parser::find_prefix_operator(const std::string_view name) {
 c4::ast2::block_args*
 c4::p2::parser::parse_block_args() {
     const auto lead = expect_token<tokens::pipe>();
-    if (!lead) report_failure(lead);
+    if (!lead) report_failure(_diag, lead);
     next_relevant();
 
     std::vector<ast2::symbol> args{};
@@ -701,8 +713,8 @@ c4::p2::parser::parse_block_args() {
         sym = expect_token<tokens::bare_symbol>();
     }
 
-    const auto tail = expect_token<tokens::pipe>();
-    if (!tail) report_failure(tail);
+    if (const auto tail = expect_token<tokens::pipe>();
+        !tail) report_failure(_diag, tail);
     next_relevant();
 
     const auto block_args = _context.build_block_args(lead->token_position(),
@@ -718,15 +730,15 @@ c4::p2::parser::parse_block_args() {
 std::vector<c4::ast2::expression*>
 c4::p2::parser::parse_script() {
     std::vector<ast2::expression*> expressions{};
-    for (;;) {
-        if (!_current) return expressions;
+    while (!is_eof(_current)) {
         expressions.emplace_back(parse_expression());
     }
+    return expressions;
 }
 
 void
-c4::p2::parser::declare_symbol(std::string_view symbol,
-                               unsigned arity,
+c4::p2::parser::declare_symbol(const std::string_view symbol,
+                               const unsigned arity,
                                ast2::tags::referable* referee) {
     declare_symbol_internal(symbol, arity, referee);
 }
@@ -749,7 +761,5 @@ c4::p2::parser::declare_binop(const std::string_view symbol,
 
 void
 c4::p2::parser::declare_uniop(const std::string_view symbol) {
-    declare_symbol_internal(symbol, 1, nullptr, -1);
+    declare_symbol_internal(symbol, 1, nullptr, static_cast<unsigned>(-1));
 }
-
-#pragma clang diagnostic pop

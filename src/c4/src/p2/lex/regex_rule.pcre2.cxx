@@ -49,6 +49,11 @@
 
 #include "match_helper.hxx"
 
+#if defined(__clang__)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
+#endif
+
 c4::p2::regex_context::regex_context() {
     _impl = pcre2_compile_context_create(nullptr);
     const auto cc = static_cast<pcre2_compile_context*>(_impl);
@@ -94,7 +99,8 @@ c4::p2::regex_rule::regex_rule(token_source& token_source,
         PCRE2_UCHAR error_buf[128];
         const auto returned = pcre2_get_error_message(ec, error_buf, std::size(error_buf));
         const auto err_msg = returned > 0
-                             ? std::string_view(reinterpret_cast<const char*>(error_buf), returned)
+                             ? std::string_view(reinterpret_cast<const char*>(error_buf),
+                                                static_cast<std::string_view::size_type>(returned))
                              : std::string_view("unknown or too long error? (latter unlikely)");
         // This is sure to fail at this point, we just needed the above lines
         // to generate context
@@ -152,6 +158,7 @@ void
 c4::p2::regex_rule::offset_positions_no_newline(const std::string_view match,
                                                 const char*& begin, const char* end,
                                                 position& pos) {
+    std::ignore = end; // only dbg needs it
     DEBUG_ASSERT(match.find('\n') == match.npos,
                  "precondition: no_newline rule matched newline",
                  match);
@@ -174,11 +181,11 @@ c4::p2::regex_rule::match_into(const char*& data,
     const auto re = static_cast<pcre2_code*>(_impl_handle);
 
     const auto res = pcre2_jit_match(
-            re,
-            reinterpret_cast<PCRE2_SPTR>(data), end - data,
-            0, 0,
-            match_data,
-            nullptr
+        re,
+        reinterpret_cast<PCRE2_SPTR>(data), end - data,
+        0, 0,
+        match_data,
+        nullptr
     );
     if (res < 0) return {};
     ASSERT(res >= 0,
@@ -188,9 +195,13 @@ c4::p2::regex_rule::match_into(const char*& data,
     unsigned capture_idx = 0;
     for (std::ptrdiff_t i = 0; i < res; ++i) {
         matches[capture_idx++] = std::string_view(
-                data + ovector[2 * i],
+            data + ovector[2 * i],
             ovector[2 * i + 1] - ovector[2 * i]);
     }
 
     return pos.snapshot();
 }
+
+#if defined(__clang__)
+#  pragma clang diagnostic pop
+#endif

@@ -85,31 +85,31 @@ namespace c4 {
 
         void
         do_visit(const ast2::symbol& obj) override {
-            os << obj.name() << "/" << obj.base_arity();
+            _os << obj.name() << "/" << obj.base_arity();
         }
 
         void
         do_visit(const ast2::integer_literal& obj) override {
-            os << obj.value();
+            _os << obj.value();
         }
 
         void
         do_visit(const ast2::float_literal& obj) override {
-            os << obj.value();
+            _os << obj.value();
         }
 
         void
         do_visit(const ast2::string_literal& obj) override {
-            os << std::quoted(obj.value());
+            _os << std::quoted(obj.value());
         }
 
         explicit
         ast_dumper(std::ostream& os)
-            : os{os} { }
+            : _os{os} { }
 
     private:
-        std::ostream& os;
-        int depth = 0;
+        std::ostream& _os;
+        unsigned _depth = 0U;
     };
 }
 

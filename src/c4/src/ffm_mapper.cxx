@@ -49,7 +49,7 @@
 
 #include <c4/diagnostic.hxx>
 #include <c4/ffm_mapper.hxx>
-#include <c4rt2/datum_type.h>
+#include <c4rt2/datum.h>
 
 #include <c4/ffm/expression.hxx>
 #include <c4/ffm/ffm_context.hxx>

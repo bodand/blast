@@ -39,133 +39,133 @@
 
 void
 c4::ast_dumper::do_visit(const ast2::block_args& obj) {
-    os << "[";
+    _os << "[";
     auto args = obj.args();
     if (args.empty()) {
-        os << "]";
+        _os << "]";
         return;
     }
 
     size_t i = 0;
     for (const auto& expr : args | std::views::take(args.size() - 1)) {
         expr->accept(*this);
-        os << "#" << &obj.argument_reference(i++) << " ";
+        _os << "#" << &obj.argument_reference(i++) << " ";
     }
     args.back()->accept(*this);
-    os << "#" << &obj.argument_reference(i++) << "]";
+    _os << "#" << &obj.argument_reference(i++) << "]";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::block& obj) {
-    os << "(lambda ";
+    _os << "(lambda ";
     if (obj.args()) {
         obj.args()->accept(*this);
-        os << " ";
+        _os << " ";
     }
     auto expressions = obj.expressions();
     if (expressions.empty()) {
-        os << ")";
+        _os << ")";
         return;
     }
 
-    os << "\n" << std::string(2 * ++depth, ' ');
+    _os << "\n" << std::string(2U * ++_depth, ' ');
     for (const auto& expr : expressions | std::views::take(expressions.size() - 1)) {
         expr->accept(*this);
-        os << "\n" << std::string(2 * depth, ' ');
+        _os << "\n" << std::string(2U * _depth, ' ');
     }
     expressions.back()->accept(*this);
-    os << ")";
-    --depth;
+    _os << ")";
+    --_depth;
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
-    os << "(";
+    _os << "(";
     obj.callee()->accept(*this);
-    os << " ";
+    _os << " ";
     auto expressions = obj.args();
     if (expressions.empty()) {
-        os << ")";
+        _os << ")";
         return;
     }
 
     for (const auto& expr : expressions | std::views::take(expressions.size() - 1)) {
         expr->accept(*this);
-        os << " ";
+        _os << " ";
     }
     expressions.back()->accept(*this);
-    os << ")";
+    _os << ")";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::expression& obj) {
     if (!obj.closure()) return obj.accept_skip_self(*this);
-    os << "(scope [";
+    _os << "(scope [";
     auto syms = obj.closure_symbols();
     for (const auto& expr : syms | std::views::take(syms.size() - 1)) {
         expr.accept(*this);
-        os << "->";
-        if (expr.references() != nullptr) os << expr.references();
-        os << " ";
+        _os << "->";
+        if (expr.references() != nullptr) _os << expr.references();
+        _os << " ";
     }
     syms.back().accept(*this);
-    os << "->";
-    if (syms.back().references()) os << syms.back().references();
-    os << "] \n" << std::string(2 * ++depth, ' ');
+    _os << "->";
+    if (syms.back().references()) _os << syms.back().references();
+    _os << "] \n" << std::string(2U * ++_depth, ' ');
 
     obj.accept_skip_self(*this);
-    --depth;
-    os << ")";
+    --_depth;
+    _os << ")";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
-    os << "(";
+    _os << "(";
     obj.sym().accept(*this);
-    os << "->";
-    if (obj.sym().references()) os << obj.sym().references();
-    os << " ";
+    _os << "->";
+    if (obj.sym().references()) _os << obj.sym().references();
+    _os << " ";
 
     auto expressions = obj.args();
     if (expressions.empty()) {
-        os << ")";
+        _os << ")";
         return;
     }
 
     for (const auto& expr : expressions | std::views::take(expressions.size() - 1)) {
         expr->accept(*this);
-        os << " ";
+        _os << " ";
     }
     expressions.back()->accept(*this);
-    os << ")";
+    _os << ")";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
-    os << "(let ";
+    _os << "(let ";
     obj.symbol().accept(*this);
-    os << "@" << &obj << " \n" << std::string(2 * ++depth, ' ');
+    _os << "@" << &obj << " \n" << std::string(2U * ++_depth, ' ');
     obj.value().accept(*this);
-    --depth;
-    os << ")";
+    --_depth;
+    _os << ")";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::binary_op_call& obj) {
-    os << "(";
+    _os << "(";
     obj.op().accept(*this);
-    os << " ";
+    _os << " ";
     obj.left().accept(*this);
-    os << " ";
+    _os << " ";
     obj.right().accept(*this);
-    os << ")";
+    _os << ")";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::unary_op_call& obj) {
-    os << "(";
+    _os << "(";
     obj.op().accept(*this);
-    os << " ";
+    _os << " ";
     obj.operand().accept(*this);
-    os << ")";
+    _os << ")";
 }
