@@ -61,11 +61,17 @@ c4::ffm::try_get_referenced_local(const ast2::symbol& sym) {
 }
 
 c4::ffm::function_declaration*
-c4::ffm::try_get_declaration(const ast2::symbol& sym) {
+c4::ffm::try_get_declaration(const ast2::symbol& sym,
+                             const std::string_view name) {
     const auto ref = sym.references();
     if (!ref) return nullptr;
 
-    const auto attr = ref->attribute_value<function_declaration*>("declaration");
+    return try_get_declaration(*ref, name);
+}
+
+c4::ffm::function_declaration*
+c4::ffm::try_get_declaration(const ast2::tags::referable& ref, const std::string_view name) {
+    const auto attr = ref.attribute_value<function_declaration*>(name);
     if (!attr) return nullptr;
 
     return *attr;

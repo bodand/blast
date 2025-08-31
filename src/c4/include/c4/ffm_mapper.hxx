@@ -221,7 +221,7 @@ namespace c4 {
         push_local(ffm::literal* literal);
 
         ffm::unpack*
-        build_argument_unpack(ffm::block_argument* arg);
+        build_argument_unpack(ffm::block_argument* arg) const;
 
         ffm::root_expression*
         build_root_argument(ffm::block_argument* arg);
@@ -230,10 +230,10 @@ namespace c4 {
         build_value_argument(ffm::block_argument* arg) const;
 
         ffm::context_object*
-        build_context_object(const ffm::function_declaration* decl);
+        build_context_object(const ffm::function_declaration* decl) const;
 
         ffm::value_expression*
-        build_context_object(const ast2::symbol& sym);
+        build_context_object(const ast2::symbol& sym) const;
 
         void
         push_context_object(const ast2::symbol& sym);

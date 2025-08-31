@@ -38,7 +38,10 @@
 
 #include <c4/tags/attributable.hxx>
 
-namespace c4::ast2 {
+namespace c4::ast2 {namespace tags {
+        struct referable;
+    }
+
     struct symbol;
 }
 
@@ -72,7 +75,10 @@ namespace c4::ffm {
     try_get_referenced_local(const ast2::symbol& sym);
 
     function_declaration*
-    try_get_declaration(const ast2::symbol& sym);
+    try_get_declaration(const ast2::symbol& sym, std::string_view name = "declaration");
+
+    function_declaration*
+    try_get_declaration(const ast2::tags::referable& ref, std::string_view name = "declaration");
 }
 
 #endif

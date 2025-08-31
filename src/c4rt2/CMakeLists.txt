@@ -114,7 +114,7 @@ endfunction()
 
 check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
 
-set(C4RT2_USE_MIMALLOC YES)
+set(C4RT2_USE_MIMALLOC NO)
 configure_file(src/dll-config.in.h dll-config.h @ONLY)
 
 # Dynamic runtime library used by compiler through c4rt2c

@@ -130,13 +130,15 @@ c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum, const std::span<
     llvm::Value* pkg_args = llvm::ConstantPointerNull::get(ptr_t);
     if (!args.empty()) {
         const auto args_sz_val = llvm::ConstantInt::get(index_type, args.size());
-        pkg_args = _builder->CreateAlloca(_package_struct_type, args_sz_val);
-        const auto ptr = _builder->CreatePointerCast(pkg_args, _c4rt_package_type);
-        const auto size_val = llvm::ConstantInt::get(index_type, C4_PACKAGE_VERSION_1_SIZE);
+        pkg_args = _builder->CreateAlloca(_c4rt_package_type, args_sz_val);
+        const auto array_type = llvm::ArrayType::get(_c4rt_package_type, args.size());
         for (std::size_t i = 0; i < args.size(); ++i) {
-            const auto param_ptr = _builder->CreateInBoundsGEP(_package_struct_type, ptr,
-                                                               llvm::ConstantInt::get(index_type, i));
-            _builder->CreateMemCpyInline(param_ptr, llvm::Align(8), args[i], llvm::Align(8), size_val);
+            const auto param_ptr = _builder->CreateInBoundsGEP(array_type, pkg_args,
+                                                               {
+                                                                   llvm::ConstantInt::get(index_type, 0),
+                                                                   llvm::ConstantInt::get(index_type, i)
+                                                               });
+            _builder->CreateStore(args[i], param_ptr);
         }
     }
 
@@ -172,16 +174,18 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
     const auto int32_t = llvm::Type::getInt32Ty(_builder->getContext());
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
+
     const auto size_ty = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+    const auto ptr_sz = _module.getDataLayout().getTypeAllocSize(ptr_t);
 
     const auto args_array = local_package_ptr_array_uninit(vector.size());
     const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
-        const auto param_ptr = _builder->CreateInBoundsGEP(array_type, args_array,
-                                                           {
-                                                               llvm::ConstantInt::get(size_ty, 0),
-                                                               llvm::ConstantInt::get(size_ty, i),
-                                                           });
+        const auto param_ptr = _builder->CreateGEP(ptr_t, args_array,
+                                                   {
+                                                       // llvm::ConstantInt::get(size_ty, 0),
+                                                       llvm::ConstantInt::get(size_ty, i),
+                                                   });
         _builder->CreateStore(vector[i], param_ptr);
     }
 
@@ -189,8 +193,7 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
     get_rt_function(&fn, "c4rt_package_init_from_function", void_t, ptr_t, ptr_t, ptr_t, int32_t);
     _builder->CreateCall(fn, {
                              pkg, function, args_array,
-                             llvm::ConstantInt::get(
-                                 int32_t, static_cast<std::uint32_t>(vector.size() * C4_PACKAGE_VERSION_1_SIZE))
+                             llvm::ConstantInt::get(int32_t, vector.size() * ptr_sz)
                          });
 }
 
@@ -211,11 +214,11 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_closure(llvm::Value* pkg,
     const auto args_array = local_package_ptr_array_uninit(vector.size());
     const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
-        const auto param_ptr = _builder->CreateInBoundsGEP(array_type, args_array,
-                                                           {
-                                                               llvm::ConstantInt::get(size_ty, 0),
-                                                               llvm::ConstantInt::get(size_ty, i),
-                                                           });
+        const auto param_ptr = _builder->CreateGEP(ptr_t, args_array,
+                                                   {
+                                                       // llvm::ConstantInt::get(size_ty, 0),
+                                                       llvm::ConstantInt::get(size_ty, i),
+                                                   });
         _builder->CreateStore(vector[i], param_ptr);
     }
 

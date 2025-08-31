@@ -186,8 +186,8 @@ main(int argc, const char** argv) {
 
     parser.declare_symbol("print", 1, nullptr);
     parser.declare_symbol("println", 1, nullptr);
-    parser.declare_symbol("add", 2, nullptr);
     parser.declare_symbol("if", 3, nullptr);
+    parser.declare_symbol("int", 1, nullptr);
     parser.declare_symbol("str_empty", 1, nullptr);
     parser.declare_symbol("cat", 2, nullptr);
     parser.declare_symbol("readln", 0, nullptr);

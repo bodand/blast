@@ -555,10 +555,62 @@ _Cs9str_empty1E(struct c4_package_t* x) {
 }
 
 C4RT_API c4_datum_t
+_Cs3int1E(struct c4_package_t* x) {
+    const c4_datum_t datum = c4rt_package_evaluate(x);
+    const int64_t i = c4rt_datum_coerce_int64(datum);
+    return c4rt_datum_from_int(i);
+}
+
+C4RT_API c4_datum_t
+_Co2EE2E(struct c4_package_t* a, struct c4_package_t* b) {
+    const c4_datum_t a_val = c4rt_package_evaluate(a);
+    const c4_datum_t b_val = c4rt_package_evaluate(b);
+    const c4_datum_t ret = c4rt_datum_eq(a_val, b_val);
+    c4rt_datum_free(a_val);
+    c4rt_datum_free(b_val);
+    return ret;
+}
+
+C4RT_API c4_datum_t
+_Co1m2E(struct c4_package_t* a, struct c4_package_t* b) {
+    const c4_datum_t a_val = c4rt_package_evaluate(a);
+    const c4_datum_t b_val = c4rt_package_evaluate(b);
+    const int64_t a_i = c4rt_datum_coerce_int64(a_val);
+    const int64_t b_i = c4rt_datum_coerce_int64(b_val);
+    c4rt_datum_free(a_val);
+    c4rt_datum_free(b_val);
+    return c4rt_datum_from_int(a_i - b_i);
+}
+
+C4RT_API c4_datum_t
+_Cs3cat2E(struct c4_package_t* a, struct c4_package_t* b) {
+    const c4_datum_t a_val = c4rt_package_evaluate(a);
+    const c4_datum_t b_val = c4rt_package_evaluate(b);
+    const char* a_str = c4rt_datum_coerce_string(a_val);
+    const char* b_str = c4rt_datum_coerce_string(b_val);
+    const size_t a_str_sz = strlen(a_str);
+    const size_t b_str_sz = strlen(b_str);
+    const size_t total_sz = a_str_sz + b_str_sz + 1;
+    char* const buf = C4_NEW(char, total_sz);
+    memcpy(buf, a_str, a_str_sz);
+    memcpy(buf + a_str_sz, b_str, b_str_sz);
+    buf[total_sz - 1] = '\0';
+    const c4_datum_t ret = c4rt_datum_from_string(buf);
+    C4_FREE(buf);
+    C4_FREE(a_str);
+    C4_FREE(b_str);
+    c4rt_datum_free(a_val);
+    c4rt_datum_free(b_val);
+    return ret;
+}
+
+C4RT_API c4_datum_t
 _Cs6readln0E() {
     char* const buf = C4_NEW(char, 1024);
     gets_s(buf, 1024);
-    return c4rt_datum_from_string(buf);
+    const c4_datum_t ret = c4rt_datum_from_string(buf);
+    C4_FREE(buf);
+    return ret;
 }
 
 C4RT_API c4_datum_t
@@ -649,7 +701,7 @@ c4rt_datum_eq(c4_datum_t a, c4_datum_t b) {
 
 c4_datum_t
 c4rt_datum_evaluate(const c4_datum_t datum,
-                    const struct c4_package_t* const args) {
+                    struct c4_package_t** const args) {
     const enum c4_datum_type type = c4rt_datum_type_of(datum);
     if (type != C4_Block)
         return datum;
@@ -663,12 +715,13 @@ c4rt_datum_evaluate(const c4_datum_t datum,
     const size_t args_offset = (size_t)fn_data->context_sz_divided_bytes * 16u;
     char* const callee_args = fn_data->fn_data + args_offset;
 
-    const size_t package_size = c4rt_package_version_to_size(fn_data->package_version);
     const size_t missing_argument_sz = fn_data->base_arity - fn_data->preloaded_args_sz;
-    assert((missing_argument_sz == 0 || args) && "missing arguments require to be passed");
+    if (missing_argument_sz) {
+        assert((args && *args) && "missing arguments require to be passed");
 
-    char* const missing_arguments = callee_args + fn_data->preloaded_args_sz;
-    memcpy(missing_arguments, args, missing_argument_sz * package_size);
+        struct c4_package_t* const missing_arguments = (struct c4_package_t*)callee_args + fn_data->preloaded_args_sz;
+        memcpy(missing_arguments, args, missing_argument_sz * sizeof(struct c4_package_t*));
+    }
 
     void* const context = fn_data->context_sz_divided_bytes
                           ? fn_data->fn_data
@@ -676,7 +729,7 @@ c4rt_datum_evaluate(const c4_datum_t datum,
 
     // if args are empty it does not matter which version we use as there are
     // no packages involved in the call
-    const uint16_t version = args ? args->version : C4_PACKAGE_VERSION_1;
+    const uint16_t version = (args && *args) ? (*args)->version : C4_PACKAGE_VERSION_1;
 
     switch (version) {
     case C4_PACKAGE_VERSION_1:
@@ -685,11 +738,11 @@ c4rt_datum_evaluate(const c4_datum_t datum,
             return c4_dynamic_call_v1_ctx(fn_data->base_arity,
                                           fn_data->calc_fun,
                                           context,
-                                          (void*)fn_data->fn_data);
+                                          (void*)callee_args);
         }
         return c4_dynamic_call_v1(fn_data->base_arity,
                                   fn_data->calc_fun,
-                                  (void*)fn_data->fn_data);
+                                  (void*)callee_args);
     }
     assert(false);
 }

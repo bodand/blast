@@ -38,6 +38,8 @@
 
 #include <fmt/base.h>
 
+#include "attributes.hxx"
+
 c4::ffm::function_declaration::function_declaration(const symbol& symbol,
                                                     context_type* ctx,
                                                     const bool known,
@@ -48,4 +50,5 @@ c4::ffm::function_declaration::function_declaration(const symbol& symbol,
     , _known{known}
     , _arguments{std::move(args)} {
     if (_ctx_type) _ctx_type->name(fmt::format("ctx@{}", symbol.name()));
+    for (const auto& arg : _arguments) arg->emplace_attribute<declaration_attribute>("arg_of_function", this);
 }

@@ -288,7 +288,7 @@ c4::ffm_mapper::build_packed_function_call(const position& position,
 }
 
 c4::ffm::unpack*
-c4::ffm_mapper::build_argument_unpack(ffm::block_argument* arg) {
+c4::ffm_mapper::build_argument_unpack(ffm::block_argument* arg) const {
     DEBUG_ASSERT(arg, "argument must not be null");
     const auto value = _ffm_context.build_value_expression(arg);
     return _ffm_context.build_unpack(value);
@@ -306,7 +306,7 @@ c4::ffm_mapper::build_value_argument(ffm::block_argument* arg) const {
 }
 
 c4::ffm::context_object*
-c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl) {
+c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl) const {
     DEBUG_ASSERT(decl, "declaration must not be null");
 
     const auto ctx_type = decl->ctx_type();
@@ -317,18 +317,18 @@ c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl
         DEBUG_ASSERT(field, "field is null");
         const auto field_name = field->name();
 
-        if (const auto attr = field->attribute_value<ffm::block_argument*>("argument")) {
-            DEBUG_ASSERT(*attr, "field has argument but is null", field_name);
-            const auto expr = _ffm_context.build_value_expression(*attr);
-            ctx_obj->push_argument(expr);
-            continue;
-        }
         if (_current_function->is_closure_over(field)) {
             const auto args = _current_function->decl()->arguments();
             const auto ctx_arg = args.front();
             const auto fn_ctx = _current_function->decl()->ctx_type();
             const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, fn_ctx, field_name);
             const auto expr = _ffm_context.build_value_expression(ctx_expr);
+            ctx_obj->push_argument(expr);
+            continue;
+        }
+        if (const auto attr = field->attribute_value<ffm::block_argument*>("argument")) {
+            DEBUG_ASSERT(*attr, "field has argument but is null", field_name);
+            const auto expr = _ffm_context.build_value_expression(*attr);
             ctx_obj->push_argument(expr);
             continue;
         }
@@ -349,7 +349,7 @@ c4::ffm_mapper::build_context_object(const ffm::function_declaration* const decl
 }
 
 c4::ffm::value_expression*
-c4::ffm_mapper::build_context_object(const ast2::symbol& sym) {
+c4::ffm_mapper::build_context_object(const ast2::symbol& sym) const {
     const auto decl = ffm::try_get_declaration(sym);
     if (!decl) return nullptr;
 
@@ -582,6 +582,15 @@ c4::ffm_mapper::do_visit(const ast2::dynamic_call& obj) {
         const auto dyn_expr = _ffm_context.build_value_expression(dyn_call);
         return push_value_expression(dyn_expr);
     }
+    if (const auto arg = ffm::try_get_referenced_argument(let->symbol())) {
+        const auto callee_expr = _ffm_context.build_value_expression(arg);
+        const auto dyn_call = _ffm_context.build_dynamic_call(obj.position(), callee_expr, _current_call != nullptr);
+
+        process_call_arguments(let->symbol(), obj.args(), dyn_call);
+
+        const auto dyn_expr = _ffm_context.build_value_expression(dyn_call);
+        return push_value_expression(dyn_expr);
+    }
     if (const auto decl = ffm::try_get_declaration(let->symbol())) {
         if (const auto callee_arity = decl->arguments().size();
             callee_arity != obj.args().size()) {
@@ -629,8 +638,19 @@ c4::ffm::value_expression*
 c4::ffm_mapper::build_pack_value_expression(const position& position,
                                             const ast2::symbol& sym,
                                             const std::span<const ast2::expression* const> args) {
-    if (const auto arg = ffm::try_get_referenced_argument(sym))
+    if (const auto arg = ffm::try_get_referenced_argument(sym)) {
+        const auto of_fn = ffm::try_get_declaration(*arg, "arg_of_function");
+        ASSERT(of_fn, "arg_of_function is null", sym.name(), sym.base_arity());
+
+        if (_current_function->decl() != of_fn) {
+            const auto ctx_type = _current_function->decl()->ctx_type();
+            const auto ctx_arg = _current_function->decl()->arguments().front();
+            const auto ctx_expr = _ffm_context.build_context_reference(ctx_arg, ctx_type, sym.name());
+            const auto arg_expr = _ffm_context.build_value_expression(ctx_expr);
+            return arg_expr;
+        }
         return build_value_argument(arg);
+    }
     if (const auto local = ffm::try_get_referenced_local(sym)) {
         const auto lref = _ffm_context.build_local_reference(local);
         return _ffm_context.build_value_expression(lref);
