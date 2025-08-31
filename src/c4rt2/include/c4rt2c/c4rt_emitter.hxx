@@ -103,7 +103,7 @@ namespace c4rt2c {
         local_package_array(size_t n) const;
 
         [[nodiscard]] llvm::Value*
-        local_package_array_uninit(size_t n) const;
+        local_package_ptr_array_uninit(size_t n) const;
 
         [[nodiscard]] llvm::Value*
         encode_datum(double d) const;

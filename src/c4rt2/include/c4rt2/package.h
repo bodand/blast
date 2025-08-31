@@ -53,7 +53,7 @@
 C4RT_API void
 c4rt_package_init_from_function(struct c4_package_t* pkg,
                                 c4rt_package_function_t* calc_fun,
-                                const struct c4_package_t* fn_data,
+                                const struct c4_package_t** fn_data,
                                 uint32_t fn_data_sz);
 
 /// c4rt_package_init_from_closure(*pkg, *calc_fun,
@@ -79,7 +79,7 @@ c4rt_package_init_from_closure(struct c4_package_t* pkg,
                                c4rt_package_function_t* calc_fun,
                                const void* ctx,
                                uint32_t ctx_sz,
-                               const struct c4_package_t* fn_data,
+                               const struct c4_package_t** fn_data,
                                uint32_t fn_data_sz);
 
 /// c4rt_package_set_from_result(*pkg, datum) --

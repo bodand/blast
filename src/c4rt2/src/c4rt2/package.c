@@ -35,6 +35,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 
 #include <c4rt2/api.h>
 #include <c4rt2/package.h>
@@ -57,7 +58,7 @@ c4rt_package_version_to_size(const uint16_t version) {
 C4RT_API void
 c4rt_package_init_from_function(struct c4_package_t* pkg,
                                 c4rt_package_function_t* calc_fun,
-                                const struct c4_package_t* fn_data,
+                                const struct c4_package_t** fn_data,
                                 const uint32_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
@@ -67,7 +68,7 @@ c4rt_package_init_from_function(struct c4_package_t* pkg,
     case C4_PACKAGE_VERSION_1://
         c4rt_package_init_from_function_v1((struct c4_package_v1_t*)pkg,
                                            calc_fun,
-                                           (const struct c4_package_v1_t*)fn_data,
+                                           (const struct c4_package_v1_t**)fn_data,
                                            fn_data_sz);
         assert(pkg->version == C4_PACKAGE_VERSION_1);
         break;
@@ -82,7 +83,7 @@ c4rt_package_init_from_closure(struct c4_package_t* const pkg,
                                c4rt_package_function_t* const calc_fun,
                                const void* const ctx,
                                const uint32_t ctx_sz,
-                               const struct c4_package_t* fn_data,
+                               const struct c4_package_t** fn_data,
                                const uint32_t fn_data_sz) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
@@ -96,7 +97,7 @@ c4rt_package_init_from_closure(struct c4_package_t* const pkg,
                                           calc_fun,
                                           ctx,
                                           ctx_sz,
-                                          (const struct c4_package_v1_t*)fn_data,
+                                          (const struct c4_package_v1_t**)fn_data,
                                           fn_data_sz);
         assert(pkg->version == C4_PACKAGE_VERSION_1);
         break;

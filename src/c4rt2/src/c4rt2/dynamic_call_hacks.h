@@ -313,14 +313,14 @@
 
 #define c4_dynamic_call_fn(v, cnt) \
     inline C4RT_IMPL c4_datum_t \
-    c4_dynamic_call_##v##_##cnt(c4rt_package_function_t* fn, struct c4_package_v1_t* args) { \
+    c4_dynamic_call_##v##_##cnt(c4rt_package_function_t* fn, struct c4_package_v1_t** args) { \
         c4_dynamic_call_var(v, cnt) = fn;\
         return callee(c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_ctx(v, cnt) \
     inline C4RT_IMPL c4_datum_t \
-    c4_dynamic_call_##v##_ctx_##cnt(c4rt_package_function_t* fn, void* ctx, struct c4_package_v1_t* args) { \
+    c4_dynamic_call_##v##_ctx_##cnt(c4rt_package_function_t* fn, void* ctx, struct c4_package_v1_t** args) { \
         c4_dynamic_call_var_ctx(v, cnt) = fn;\
         return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
     }
@@ -344,7 +344,7 @@
 #define CAT_I(x, ...) x ## __VA_ARGS__
 
 #define _Xtype_v1(x,y,...) struct c4_package_v1_t* IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
-#define _Xarg(x,y,...) &args[y-128+x] IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
+#define _Xarg(x,y,...) args[y-128+x] IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
 
 #define _Xcase_v1(x,y,...) case (y-128+x): return c4_dynamic_call_v1_##x(fn, args);
 #define _Xcase_v1_ctx(x,y,...) case (y-128+x): return c4_dynamic_call_v1_ctx_##x(fn, ctx, args);
@@ -504,7 +504,7 @@ c4_dynamic_call_fn_all(v1, 128)
 inline C4RT_IMPL c4_datum_t
 c4_dynamic_call_v1(const unsigned arity,
                    c4rt_package_function_t* fn,
-                   struct c4_package_v1_t* args) {
+                   struct c4_package_v1_t** args) {
     assert(arity <= 128);
     switch (arity) {
     c4_dynamic_cases(128)
@@ -517,7 +517,7 @@ inline C4RT_IMPL c4_datum_t
 c4_dynamic_call_v1_ctx(const unsigned arity,
                        c4rt_package_function_t* fn,
                        void* ctx,
-                       struct c4_package_v1_t* args) {
+                       struct c4_package_v1_t** args) {
     assert(arity <= 128);
     switch (arity) {
     c4_dynamic_cases_ctx(128)

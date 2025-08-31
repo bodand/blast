@@ -46,6 +46,7 @@
 #include "package.1.h"
 
 #include <dll-config.h>
+#include <stdio.h>
 
 static c4_ptr64_t
 pad_pointer_1(void* const ptr) {
@@ -60,14 +61,14 @@ unpad_pointer_1(const c4_ptr64_t ptr) {
 void
 c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
                                    c4rt_package_function_t* const calc_fun,
-                                   const struct c4_package_v1_t* fn_data,
+                                   const struct c4_package_v1_t** fn_data,
                                    const uint16_t fn_data_sz_bytes) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
     assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
-    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t);
+    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t*);
 
     // Note: this function does not handle closures.
     pkg->context_sz_divided_bytes = 0;
@@ -85,7 +86,7 @@ c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
                 fn_data_sz_bytes);
     assert(payload && "alloc failed");
     payload->calc_fun = calc_fun;
-    memcpy(payload->args_untyped, fn_data, fn_data_sz_bytes);
+    memcpy(payload->args_untyped, (const void*)fn_data, fn_data_sz_bytes);
 
     pkg->data = pad_pointer_1(payload);
 }
@@ -100,7 +101,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
                                   c4rt_package_function_t* const calc_fun,
                                   const void* const ctx,
                                   const uint32_t ctx_sz_bytes,
-                                  const struct c4_package_v1_t* const fn_data,
+                                  const struct c4_package_v1_t** const fn_data,
                                   const uint32_t fn_data_sz_bytes) {
     assert(pkg && "pkg must not be null");
     assert(calc_fun && "calc_fun must not be null");
@@ -109,9 +110,9 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
     assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
-    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t) + 1u;
 
-    const size_t pkg_sz = sizeof(struct c4_package_v1_t);
+    const size_t pkg_sz = sizeof(struct c4_package_v1_t*);
+    pkg->function_arity = fn_data_sz_bytes / pkg_sz + 1u;
 
     const uint32_t ctx_size_as_pkg_multiple = round_up(ctx_sz_bytes, pkg_sz);
     const uint32_t ctx_size_as_pkg_multiple_divided_bytes =
@@ -121,7 +122,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
     pkg->context_sz_divided_bytes = (uint16_t)ctx_size_as_pkg_multiple_divided_bytes;
 
     const uint32_t ctx_offset = 0u;
-    const uint32_t proper_args_offset = max(_Alignof(struct c4_package_v1_t), ctx_size_as_pkg_multiple);
+    const uint32_t proper_args_offset = max(_Alignof(struct c4_package_v1_t*), ctx_size_as_pkg_multiple);
     const uint32_t args_padding = ctx_size_as_pkg_multiple - proper_args_offset;
     assert(proper_args_offset >= ctx_offset + ctx_sz_bytes
         && "internal error: args offset overlaps context");
@@ -135,7 +136,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
     assert(payload && "alloc failed");
     payload->calc_fun = calc_fun;
     memcpy(payload->args_untyped + ctx_offset, ctx, ctx_sz_bytes);
-    memcpy(payload->args_untyped + proper_args_offset, fn_data, fn_data_sz_bytes);
+    memcpy(payload->args_untyped + proper_args_offset, (const void*)fn_data, fn_data_sz_bytes);
 
     pkg->data = pad_pointer_1(payload);
 }
@@ -172,7 +173,7 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
     c4rt_package_function_t* const calc_fun = payload->calc_fun;
 
     if (pkg->context_sz_divided_bytes == 0) {
-        struct c4_package_v1_t* args = (void*)payload->args_untyped;
+        struct c4_package_v1_t** args = (void*)payload->args_untyped;
         const c4_datum_t datum = c4_dynamic_call_v1(pkg->function_arity,
                                                     calc_fun,
                                                     args);
@@ -182,7 +183,7 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
         const size_t pkg_sz = sizeof(struct c4_package_v1_t);
 
         void* ctx = payload->args_untyped;
-        struct c4_package_v1_t* args = (void*)(payload->args_untyped
+        struct c4_package_v1_t** args = (void*)(payload->args_untyped
                                                + (ptrdiff_t)pkg->context_sz_divided_bytes
                                                /*        */ * pkg_sz);
         const c4_datum_t datum = c4_dynamic_call_v1_ctx(pkg->function_arity - 1, calc_fun, ctx, args);

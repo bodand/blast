@@ -88,7 +88,7 @@ struct c4_package_v1_t {
     /// single datum, otherwise an encoded function payload.
     uint16_t completed;
     /// The size of the first parameter in bytes rounded up to the next multiple
-    /// of package_size, then divided by package_size.
+    /// of 8, then divided by 8.
     /// This is used to specify the special context parameters of closures.
     /// If not holding a closure, it is zero, see struct's documentation for
     /// richer explanation of possible states.
@@ -130,7 +130,7 @@ struct c4_package_v1_function_payload {
 C4RT_IMPL void
 c4rt_package_init_from_function_v1(struct c4_package_v1_t* pkg,
                                    c4rt_package_function_t* calc_fun,
-                                   const struct c4_package_v1_t* fn_data,
+                                   const struct c4_package_v1_t** fn_data,
                                    uint16_t fn_data_sz_bytes);
 
 /**
@@ -159,7 +159,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* pkg,
                                   c4rt_package_function_t* calc_fun,
                                   const void* ctx,
                                   uint32_t ctx_sz_bytes,
-                                  const struct c4_package_v1_t* fn_data,
+                                  const struct c4_package_v1_t** fn_data,
                                   uint32_t fn_data_sz_bytes);
 
 /**

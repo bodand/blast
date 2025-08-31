@@ -46,6 +46,7 @@
 #include <c4rt2/api.h>
 #include <c4rt2/datum.h>
 #include <c4rt2/c4rt_package_versions.h>
+#include <c4rt2/package.h>
 
 #define UNREACHABLE(msg, ...) \
     do { \
@@ -74,11 +75,13 @@ get_pointer_value(const c4_datum_t datum) {
 }
 
 static c4_datum_t
-put_pointer_value(void* const ptr, bool dynamic) {
+put_pointer_value(void* const ptr, const bool dynamic) {
     c4_datum_t ptr_payload = (uintptr_t)ptr & payload_mask;
     assert(ptr_payload == (uintptr_t)ptr
         && "Pointer contains more bits that 48. This is a fatal problem, because c4rt does bit fiddling.");
 
+    assert((ptr_payload & 1) == 0
+        && "Pointer is not aligned to at least 2 bytes. This is a fatal problem, because c4rt does bit fiddling.");
     ptr_payload |= (dynamic ? 1 : 0);
 
     return ptr_payload;
@@ -149,10 +152,11 @@ c4rt_datum_from_double(const double d) {
 static c4_datum_t
 datum_from_sso_string(const char* const s, const size_t s_sz) {
     assert(s_sz < 6 && "larger than 5 characters cannot be sso optimized");
-    const c4_datum_t ret = nan_mask | shifted_type(C4_String);
-    ALIGNAS(c4_datum_t) char buf[8];
+    c4_datum_t ret = nan_mask | shifted_type(C4_String);
+    ALIGNAS(c4_datum_t) char buf[8] = {0};
     memcpy(buf, s, s_sz);
-    return ret | *(c4_datum_t*)buf;
+    ret |= *(c4_datum_t*)buf;
+    return ret;
 }
 
 static c4_datum_t
@@ -173,6 +177,7 @@ datum_from_sized_string(const char* const s, const size_t s_sz) {
 
 c4_datum_t
 c4rt_datum_from_string(const char* const s) {
+    assert(s && "s must not be null");
     const size_t s_sz = strlen(s);
     return datum_from_sized_string(s, s_sz);
 }
@@ -349,7 +354,8 @@ datum_get_cstr_unck(c4_datum_t* const d) {
 
 static char*
 datum_get_cstr_unck_remote(const c4_datum_t d) {
-    return get_pointer_value(d);
+    char* pointer_value = get_pointer_value(d);
+    return pointer_value;
 }
 
 static size_t
@@ -518,6 +524,56 @@ from_int32(const int32_t i) {
     char* const buf = C4_NEW(char, 12);
     snprintf(buf, 12u, "%lld", (long long)i);
     return buf;
+}
+
+C4RT_API c4_datum_t
+_Cs7println1E(struct c4_package_t* x) {
+    const c4_datum_t datum = c4rt_package_evaluate(x);
+    char* const str = c4rt_datum_coerce_string(datum);
+    printf("%s\n", str);
+    C4_FREE(str);
+    return datum;
+}
+
+C4RT_API c4_datum_t
+_Cs5print1E(struct c4_package_t* x) {
+    const c4_datum_t datum = c4rt_package_evaluate(x);
+    char* const str = c4rt_datum_coerce_string(datum);
+    printf("%s", str);
+    C4_FREE(str);
+    return datum;
+}
+
+C4RT_API c4_datum_t
+_Cs9str_empty1E(struct c4_package_t* x) {
+    const c4_datum_t datum = c4rt_package_evaluate(x);
+    char* const str = c4rt_datum_coerce_string(datum);
+    const bool empty = str[0] == '\0';
+    const c4_datum_t ret = c4rt_datum_from_boolean(empty);
+    C4_FREE(str);
+    return ret;
+}
+
+C4RT_API c4_datum_t
+_Cs6readln0E() {
+    char* const buf = C4_NEW(char, 1024);
+    gets_s(buf, 1024);
+    return c4rt_datum_from_string(buf);
+}
+
+C4RT_API c4_datum_t
+_Cs2if3E(struct c4_package_t* cond, struct c4_package_t* t, struct c4_package_t* f) {
+    const c4_datum_t cond_val = c4rt_package_evaluate(cond);
+    if (cond_val == gC4_Empty_Block) {
+        const c4_datum_t f_code = c4rt_package_evaluate(f);
+        const c4_datum_t ret = c4rt_datum_evaluate(f_code, NULL);
+        c4rt_datum_free(cond_val);
+        return ret;
+    }
+    const c4_datum_t t_code = c4rt_package_evaluate(t);
+    const c4_datum_t ret = c4rt_datum_evaluate(t_code, NULL);
+    c4rt_datum_free(cond_val);
+    return ret;
 }
 
 char*

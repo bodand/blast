@@ -132,10 +132,11 @@ c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum, const std::span<
         const auto args_sz_val = llvm::ConstantInt::get(index_type, args.size());
         pkg_args = _builder->CreateAlloca(_package_struct_type, args_sz_val);
         const auto ptr = _builder->CreatePointerCast(pkg_args, _c4rt_package_type);
+        const auto size_val = llvm::ConstantInt::get(index_type, C4_PACKAGE_VERSION_1_SIZE);
         for (std::size_t i = 0; i < args.size(); ++i) {
             const auto param_ptr = _builder->CreateInBoundsGEP(_package_struct_type, ptr,
                                                                llvm::ConstantInt::get(index_type, i));
-            _builder->CreateMemCpy(param_ptr, llvm::Align(8), args[i], llvm::Align(8), C4_PACKAGE_VERSION_1_SIZE);
+            _builder->CreateMemCpyInline(param_ptr, llvm::Align(8), args[i], llvm::Align(8), size_val);
         }
     }
 
@@ -173,15 +174,15 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
     const auto size_ty = _module.getDataLayout().getIndexType(_module.getContext(), 0);
 
-    const auto args_array = local_package_array_uninit(vector.size());
-    const auto array_type = llvm::ArrayType::get(_package_struct_type, vector.size());
+    const auto args_array = local_package_ptr_array_uninit(vector.size());
+    const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
         const auto param_ptr = _builder->CreateInBoundsGEP(array_type, args_array,
                                                            {
                                                                llvm::ConstantInt::get(size_ty, 0),
                                                                llvm::ConstantInt::get(size_ty, i),
                                                            });
-        _builder->CreateMemCpy(param_ptr, llvm::Align(8), vector[i], llvm::Align(8), C4_PACKAGE_VERSION_1_SIZE);
+        _builder->CreateStore(vector[i], param_ptr);
     }
 
     llvm::FunctionCallee fn;
@@ -207,12 +208,15 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_closure(llvm::Value* pkg,
     const auto ctx_size = data_layout.getTypeAllocSize(ctx->getType());
 
     // normal args
-    const auto args_array = local_package_array_uninit(vector.size());
-    const auto array_type = llvm::ArrayType::get(_package_struct_type, vector.size());
+    const auto args_array = local_package_ptr_array_uninit(vector.size());
+    const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
         const auto param_ptr = _builder->CreateInBoundsGEP(array_type, args_array,
-                                                           llvm::ConstantInt::get(size_ty, i));
-        _builder->CreateMemCpy(param_ptr, llvm::Align(8), vector[i], llvm::Align(8), C4_PACKAGE_VERSION_1_SIZE);
+                                                           {
+                                                               llvm::ConstantInt::get(size_ty, 0),
+                                                               llvm::ConstantInt::get(size_ty, i),
+                                                           });
+        _builder->CreateStore(vector[i], param_ptr);
     }
 
     llvm::FunctionCallee fn;
@@ -247,7 +251,7 @@ c4rt2c::c4_rt2_emitter::local_package() const {
 
 llvm::Value*
 c4rt2c::c4_rt2_emitter::local_package_array(const size_t n) const {
-    const auto local = local_package_array_uninit(n);
+    const auto local = local_package_ptr_array_uninit(n);
     if (n == 0) return local;
 
     const auto array_type = llvm::ArrayType::get(_package_struct_type, n);
@@ -261,12 +265,12 @@ c4rt2c::c4_rt2_emitter::local_package_array(const size_t n) const {
 }
 
 llvm::Value*
-c4rt2c::c4_rt2_emitter::local_package_array_uninit(const size_t n) const {
+c4rt2c::c4_rt2_emitter::local_package_ptr_array_uninit(const size_t n) const {
     const auto ptr_t = llvm::PointerType::get(_module.getContext(), 0);
     if (n == 0) return llvm::ConstantPointerNull::get(ptr_t);
 
     const auto local = _builder->CreateAlloca(
-        _package_struct_type,
+        _c4rt_package_type,
         llvm::ConstantInt::get(_module.getContext(), llvm::APInt(64, n)),
         "args");
     local->setAlignment(llvm::Align(8));
@@ -295,6 +299,7 @@ c4rt2c::c4_rt2_emitter::encode_datum_int64(std::int64_t i) const {
                                                      int64_type,
                                                      true, llvm::GlobalValue::PrivateLinkage,
                                                      llvm::ConstantInt::get(int64_type, i));
+    int_global->setAlignment(llvm::Align(2));
     const auto const_int64_datum_type = llvm::ConstantInt::get(int32_type, C4_Integer);
 
     return emit_datum_from_static_ptr(const_int64_datum_type, int_global);
@@ -312,10 +317,11 @@ c4rt2c::c4_rt2_emitter::encode_datum_string(const std::string_view i) const {
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
 
     const auto str = _builder->CreateGlobalString(i, "", 0, &_module);
+    str->setAlignment(llvm::Align(8));
     const auto str_ptr = _builder->CreatePointerCast(str, ptr_t);
-    const auto const_int64_datum_type = llvm::ConstantInt::get(int32_type, C4_String);
+    const auto const_str_datum_type = llvm::ConstantInt::get(int32_type, C4_String);
 
-    return emit_datum_from_static_ptr(const_int64_datum_type, str_ptr);
+    return emit_datum_from_static_ptr(const_str_datum_type, str_ptr);
 }
 
 void
