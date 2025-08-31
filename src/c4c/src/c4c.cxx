@@ -40,36 +40,30 @@
 #include <fstream>
 #include <ranges>
 #include <utility>
-#include <unordered_set>
 
 #include <c4/ast_dumper.hxx>
 
-#include <c4/p2/parser.hxx>
-#include <c4/p2/lex/lexer.hxx>
 #include <c4/ffm.hxx>
 #include <c4/ffm_dumper.hxx>
 #include <c4/ffm_mapper.hxx>
+#include <c4/p2/parser.hxx>
+#include <c4/p2/lex/lexer.hxx>
 
-#include <c4rt2/datum.h>
-
-#include <c4c/source_file.hxx>
 #include <c4c/ffm_ir_emitter.hxx>
+#include <c4c/source_file.hxx>
 
 #include <libassert/assert.hpp>
 
-#include <llvm/ADT/APFloat.h>
-#include <llvm/ADT/STLExtras.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IRReader/IRReader.h>
+#include <llvm/IR/PassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Passes/StandardInstrumentations.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/SourceMgr.h>
@@ -77,15 +71,8 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
-#include <llvm/IR/LegacyPassManager.h>
 
 #include <lyra/lyra.hpp>
-
-#ifdef _WIN32
-
-#  include <windows.h>
-
-#endif
 
 using namespace std::literals;
 
@@ -255,7 +242,21 @@ main(int argc, const char** argv) {
         module.setDataLayout(machine->createDataLayout());
         module.setTargetTriple(target_triple);
 
-        c4c::ffm_ir_emitter ir(context, module, builder);
+        llvm::FunctionPassManager fn_pm;
+        llvm::LoopAnalysisManager loop_am;
+        llvm::FunctionAnalysisManager fn_am;
+        llvm::ModuleAnalysisManager mod_am;
+        llvm::CGSCCAnalysisManager cgscc_am;
+        llvm::PassInstrumentationCallbacks pass_ic;
+        llvm::StandardInstrumentations si(context, false);
+        si.registerCallbacks(pass_ic, &mod_am);
+
+        llvm::PassBuilder pass_builder;
+        pass_builder.registerModuleAnalyses(mod_am);
+        pass_builder.registerFunctionAnalyses(fn_am);
+        pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
+
+        c4c::ffm_ir_emitter ir(context, module, builder, fn_pm, fn_am);
         for (const auto& ffm_entry : roots) {
             ffm_entry->accept(ir);
         }

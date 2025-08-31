@@ -38,9 +38,11 @@
 
 #include <string_view>
 
+#include <c4/ffm/fwd.hxx>
+
 #include <c4rt2c/c4rt_emitter.hxx>
 
-#include <c4/ffm/fwd.hxx>
+#include <llvm/IR/PassManager.h>
 
 namespace llvm {
     class Module;
@@ -60,7 +62,9 @@ namespace c4c {
     struct ffm_ir_emitter final : c4::ffm::ffm_visitor {
         ffm_ir_emitter(llvm::LLVMContext& context,
                        llvm::Module& module,
-                       llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder);
+                       llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
+                       llvm::FunctionPassManager& pass_manager,
+                       llvm::FunctionAnalysisManager& fna_manager);
 
         void do_visit(const c4::ffm::block_argument& obj) override;
 
@@ -134,7 +138,7 @@ namespace c4c {
         build_literal(const c4::ffm::literal& lit);
 
         llvm::FunctionType*
-        build_type_for(const c4::ffm::function_declaration& decl);
+        build_type_for(const c4::ffm::function_declaration& decl) const;
 
         llvm::FunctionType*
         build_type_with_arity(unsigned arity) const;
@@ -142,6 +146,8 @@ namespace c4c {
         [[nodiscard]] llvm::BasicBlock*
         build_bblock(std::string_view name) const;
 
+        llvm::FunctionPassManager& _pass_manager;
+        llvm::FunctionAnalysisManager& _fna_manager;
         llvm::Function* _current_function{};
 
         bool _in_unpack{false};

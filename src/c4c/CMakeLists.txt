@@ -39,9 +39,6 @@ add_executable(c4c
                include/c4c/source_file.hxx
                src/source_file.cxx
 
-               include/c4c/global_constant_emitter.hxx
-               src/global_constant_emitter.cxx
-
                include/c4c/llvm_value_attribute.hxx
                src/llvm_value_attribute.cxx
 

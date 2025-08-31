@@ -76,10 +76,13 @@ namespace {
     }
 }
 
-c4c::ffm_ir_emitter::ffm_ir_emitter(llvm::LLVMContext& context,
-                                    llvm::Module& module,
-                                    llvm::IRBuilder<>& builder)
+c4c::ffm_ir_emitter::ffm_ir_emitter(llvm::LLVMContext& context, llvm::Module& module,
+                                    llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
+                                    llvm::FunctionPassManager& pass_manager,
+                                    llvm::FunctionAnalysisManager& fna_manager)
     : entry{nullptr}
+    , _pass_manager{pass_manager}
+    , _fna_manager{fna_manager}
     , _context{context}
     , _module{module}
     , _builder{builder}
@@ -259,6 +262,7 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::function_definition& obj) {
         ++i;
     }
     _returned_value = false;
+    _pass_manager.run(*_current_function, _fna_manager);
 
     _builder.restoreIP(ip);
 }
@@ -427,7 +431,7 @@ c4c::ffm_ir_emitter::build_literal(const c4::ffm::literal& lit) {
 }
 
 llvm::FunctionType*
-c4c::ffm_ir_emitter::build_type_for(const c4::ffm::function_declaration& decl) {
+c4c::ffm_ir_emitter::build_type_for(const c4::ffm::function_declaration& decl) const {
     return build_type_with_arity(decl.effective_arity());
 }
 
