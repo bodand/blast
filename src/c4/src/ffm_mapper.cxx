@@ -789,7 +789,12 @@ c4::ffm_mapper::push_context_access(ffm::context_access* ctx_expr) const {
 
 c4::ffm::function_declaration*
 c4::ffm_mapper::declare_function(const ffm::symbol& sym, std::vector<ffm::block_argument*>&& args) {
-    if (const auto fn = find_function_declaration(sym)) return fn;
+    if (const auto fn = find_function_declaration(sym)) {
+        if (fn->known()) return fn;
+
+        fn->make_known(std::move(args));
+        return fn;
+    }
 
     const auto declaration = _ffm_context.build_function_declaration(sym, _closure, true, std::move(args));
     const auto fun = _ffm_context.build_function(declaration);

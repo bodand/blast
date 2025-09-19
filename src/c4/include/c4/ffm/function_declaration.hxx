@@ -71,6 +71,9 @@ namespace c4::ffm {
         [[nodiscard]] bool
         known() const { return _known; }
 
+        void
+        make_known(std::vector<block_argument*>&& args);
+
         [[nodiscard]] std::span<block_argument* const>
         arguments() const { return _arguments; }
 

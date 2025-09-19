@@ -58,15 +58,25 @@
  *      The package awaits evaluation using a nullary function. In this state:
  *      - \c completed is \c false
  *      - \c function_arity is \c 0
+ *      - \c dynamic_chain is \c false
  *      - \c data is a single embedded pointer pointing to the callee
+ * 3. Incomplete nullary datum:
+ *      The package awaits evaluation using a nullary datum object embedded. In
+ *      this state:
+ *      - \c completed is \c false
+ *      - \c function_arity is \c 0
+ *      - \c dynamic_chain is \c true
+ *      - \c data is a single embedded datum object pointing to the callee
  * 3. Incomplete non-closure:
  *      The package awaits evaluation using a non-closure function that takes
  *      normal parameters. In this state:
  *      - \c completed is \c false
  *      - \c function_arity is some N > 0
  *      - \c context_sz_divided_bytes is \c 0
+ *      - \c dynamic_chain is \c false
  *      - \c data is a pointer to a c4_package_v1_function_payload object
  *          of size sizeof(void(*)()) + \c function_arity * \c package_size
+ *
  * 4. Incomplete closure:
  *      The package awaits evaluation using a closure that may or may not take
  *      other parameters. In this state:
@@ -86,7 +96,10 @@ struct c4_package_v1_t {
     uint16_t function_arity;
     /// Whether this package has been completed. If yes, data is contains a
     /// single datum, otherwise an encoded function payload.
-    uint16_t completed;
+    uint8_t completed;
+    /// Whether this package packages a datum object to be evaluated with
+    /// c4rt_datum_evaluate instead of a proper function.
+    uint8_t dynamic_chain;
     /// The size of the first parameter in bytes rounded up to the next multiple
     /// of 8, then divided by 8.
     /// This is used to specify the special context parameters of closures.
@@ -161,6 +174,21 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* pkg,
                                   uint32_t ctx_sz_bytes,
                                   const struct c4_package_v1_t** fn_data,
                                   uint32_t fn_data_sz_bytes);
+
+/**
+ * c4rt_package_init_from_dynamic_v1(*pkg, datum, *fn_data, fn_data_sz_bytes) --
+ *   Creates a package from a completed calculation's datum. Does not allocate
+ *   if fn_data_sz_bytes is zero.
+ *
+ *   Preconditions:
+ *   - The pkg value must not be NULL.
+ *   - If fn_data is NULL, fn_data_sz must be zero.
+ */
+C4RT_IMPL void
+c4rt_package_init_from_dynamic_v1(struct c4_package_v1_t* pkg,
+                                  c4_datum_t datum,
+                                  const struct c4_package_v1_t** fn_data,
+                                  uint16_t fn_data_sz_bytes);
 
 /**
  * c4rt_package_init_from_result_v1(*pkg, datum) --

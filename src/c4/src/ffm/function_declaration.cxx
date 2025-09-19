@@ -37,6 +37,7 @@
 #include <c4/ffm/function_declaration.hxx>
 
 #include <fmt/base.h>
+#include <libassert/assert.hpp>
 
 #include "attributes.hxx"
 
@@ -50,5 +51,14 @@ c4::ffm::function_declaration::function_declaration(const symbol& symbol,
     , _known{known}
     , _arguments{std::move(args)} {
     if (_ctx_type) _ctx_type->name(fmt::format("ctx@{}", symbol.name()));
+    for (const auto& arg : _arguments) arg->emplace_attribute<declaration_attribute>("arg_of_function", this);
+}
+
+void
+c4::ffm::function_declaration::make_known(std::vector<block_argument*>&& args) {
+    ASSERT(!_ctx_type, "function declaration must not have a context type", _symbol.name());
+    ASSERT(!_known, "function declaration must be known only once", _symbol.name());
+    _arguments = std::move(args);
+    _known = true;
     for (const auto& arg : _arguments) arg->emplace_attribute<declaration_attribute>("arg_of_function", this);
 }

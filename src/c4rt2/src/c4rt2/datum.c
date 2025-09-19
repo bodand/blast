@@ -555,6 +555,17 @@ _Cs9str_empty1E(struct c4_package_t* x) {
 }
 
 C4RT_API c4_datum_t
+_Cs9blk_empty1E(struct c4_package_t* x) {
+    const c4_datum_t datum = c4rt_package_evaluate(x);
+    return c4rt_datum_from_boolean(datum == gC4_Empty_Block);
+}
+
+C4RT_API c4_datum_t
+_Cs9nil_block0E() {
+    return gC4_Empty_Block;
+}
+
+C4RT_API c4_datum_t
 _Cs3int1E(struct c4_package_t* x) {
     const c4_datum_t datum = c4rt_package_evaluate(x);
     const int64_t i = c4rt_datum_coerce_int64(datum);
