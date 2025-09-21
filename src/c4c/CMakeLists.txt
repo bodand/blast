@@ -38,12 +38,6 @@ add_executable(c4c
 
                include/c4c/source_file.hxx
                src/source_file.cxx
-
-               include/c4c/llvm_value_attribute.hxx
-               src/llvm_value_attribute.cxx
-
-               include/c4c/ffm_ir_emitter.hxx
-               src/ffm_ir_emitter.cxx
                )
 
 target_link_libraries(c4c PRIVATE

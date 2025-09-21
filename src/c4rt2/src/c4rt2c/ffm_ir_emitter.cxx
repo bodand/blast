@@ -42,7 +42,7 @@
 #include <span>
 
 #include <c4/ffm.hxx>
-#include <c4c/llvm_value_attribute.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
 
 #include <llvm/Support/Casting.h>
 
@@ -56,7 +56,7 @@
 
 #include <libassert/assert.hpp>
 
-#include <c4c/ffm_ir_emitter.hxx>
+#include <c4rt2c/ffm_ir_emitter.hxx>
 
 namespace {
     llvm::Function*

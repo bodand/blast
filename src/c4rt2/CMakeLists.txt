@@ -155,7 +155,13 @@ compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 add_library(c4rt2c STATIC
             include/c4rt2c/c4rt_emitter.hxx
             src/c4rt2c/c4rt_emitter.cxx
+
+            include/c4rt2c/ffm_ir_emitter.hxx
+            src/c4rt2c/ffm_ir_emitter.cxx
+
+            include/c4rt2c/llvm_value_attribute.hxx
+            src/c4rt2c/llvm_value_attribute.cxx
             )
-target_link_libraries(c4rt2c PUBLIC c4rt2-internal PRIVATE c4_llvm libassert::assert)
+target_link_libraries(c4rt2c PUBLIC c4rt2-internal PRIVATE c4 c4_llvm libassert::assert)
 target_include_directories(c4rt2c
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

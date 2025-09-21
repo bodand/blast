@@ -49,7 +49,7 @@
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
 
-#include <c4c/ffm_ir_emitter.hxx>
+#include <c4rt2c/ffm_ir_emitter.hxx>
 #include <c4c/source_file.hxx>
 
 #include <libassert/assert.hpp>

@@ -208,11 +208,9 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
     const auto ptr_sz = _module.getDataLayout().getTypeAllocSize(ptr_t);
 
     const auto args_array = local_package_ptr_array_uninit(vector.size());
-    const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
         const auto param_ptr = _builder->CreateGEP(ptr_t, args_array,
                                                    {
-                                                       // llvm::ConstantInt::get(size_ty, 0),
                                                        llvm::ConstantInt::get(size_ty, i),
                                                    });
         _builder->CreateStore(vector[i], param_ptr);
@@ -269,11 +267,9 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_closure(llvm::Value* pkg,
 
     // normal args
     const auto args_array = local_package_ptr_array_uninit(vector.size());
-    const auto array_type = llvm::ArrayType::get(_c4rt_package_type, vector.size());
     for (std::size_t i = 0; i < vector.size(); ++i) {
         const auto param_ptr = _builder->CreateGEP(ptr_t, args_array,
                                                    {
-                                                       // llvm::ConstantInt::get(size_ty, 0),
                                                        llvm::ConstantInt::get(size_ty, i),
                                                    });
         _builder->CreateStore(vector[i], param_ptr);
