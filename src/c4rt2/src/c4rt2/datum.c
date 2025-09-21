@@ -594,6 +594,17 @@ _Co1m2E(struct c4_package_t* a, struct c4_package_t* b) {
 }
 
 C4RT_API c4_datum_t
+_Co1p2E(struct c4_package_t* a, struct c4_package_t* b) {
+    const c4_datum_t a_val = c4rt_package_evaluate(a);
+    const c4_datum_t b_val = c4rt_package_evaluate(b);
+    const int64_t a_i = c4rt_datum_coerce_int64(a_val);
+    const int64_t b_i = c4rt_datum_coerce_int64(b_val);
+    c4rt_datum_free(a_val);
+    c4rt_datum_free(b_val);
+    return c4rt_datum_from_int(a_i + b_i);
+}
+
+C4RT_API c4_datum_t
 _Co1e1E(struct c4_package_t* a) {
     const c4_datum_t a_val = c4rt_package_evaluate(a);
     const bool bool_val = a_val != gC4_Empty_Block;

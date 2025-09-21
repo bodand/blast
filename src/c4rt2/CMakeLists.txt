@@ -161,7 +161,17 @@ add_library(c4rt2c STATIC
 
             include/c4rt2c/llvm_value_attribute.hxx
             src/c4rt2c/llvm_value_attribute.cxx
+
+            include/c4rt2c/source_file.hxx
+            src/c4rt2c/source_file.cxx
             )
-target_link_libraries(c4rt2c PUBLIC c4rt2-internal PRIVATE c4 c4_llvm libassert::assert)
+target_link_libraries(c4rt2c
+                      PUBLIC
+                      c4rt2-internal
+                      mio::mio_min_winapi
+                      PRIVATE
+                      c4
+                      c4_llvm
+                      libassert::assert)
 target_include_directories(c4rt2c
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

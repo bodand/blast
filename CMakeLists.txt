@@ -146,7 +146,7 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(HandleLLVMOptions)
 
 # Find the libraries that correspond to the LLVM components that we wish to use
-llvm_map_components_to_libnames(llvm_libs Support Core Target Passes IRPrinter CodeGen CodeGenTypes BitWriter
+llvm_map_components_to_libnames(llvm_libs Support Core Target Passes IRPrinter CodeGen CodeGenTypes BitWriter OrcJIT
                                 AArch64Info AArch64CodeGen
                                 RISCVInfo RISCVCodeGen
                                 SparcInfo SparcCodeGen
@@ -172,5 +172,6 @@ target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
 add_subdirectory(src/c4rt2)
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
+add_subdirectory(src/c4i)
 
 add_subdirectory(test)

@@ -33,24 +33,25 @@
 # src/c4c/CMakeLists.txt --
 #   CMake project for the C4 Compiler (c4c)s
 
-add_executable(c4c src/c4c.cxx)
+add_executable(c4i src/c4i.cxx)
 
-target_link_libraries(c4c PRIVATE
+target_link_libraries(c4i PRIVATE
                       c4
                       c4rt2c
                       c4_llvm
                       bfg::lyra
                       libassert::assert
                       )
-target_include_directories(c4c PRIVATE
+target_include_directories(c4i PRIVATE
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if (WIN32)
     add_custom_command(
-            TARGET c4c POST_BUILD
+            TARGET c4i POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE_DIR:c4c>
+            $<TARGET_FILE:BDWgc::gc>
+            $<TARGET_FILE_DIR:c4i>
             )
 endif ()
 if (MSVC AND BLAST_ENABLE_SANITIZERS)
@@ -62,6 +63,6 @@ if (MSVC AND BLAST_ENABLE_SANITIZERS)
             "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
             "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
             "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:c4c>
+            $<TARGET_FILE_DIR:c4i>
             )
 endif ()
