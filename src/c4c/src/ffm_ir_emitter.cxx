@@ -209,16 +209,20 @@ c4c::ffm_ir_emitter::do_visit(const c4::ffm::dynamic_call& obj) {
     _current_args.pop_back();
 
     const auto callee_datum = _rt_emitter.emit_unpack(callee_value);
-    const auto result_datum = _rt_emitter.emit_datum_evaluate(callee_datum, _current_args);
-    stack.pop();
-
     if (_in_unpack) {
+        // in unpack, call is directly evaluated in root block call eagerly
         _in_unpack = false;
+
+        const auto result_datum = _rt_emitter.emit_datum_evaluate(callee_datum, _current_args);
+        stack.pop();
+
         return push_value(result_datum);
     }
 
     const auto packaged = _rt_emitter.local_package();
-    _rt_emitter.emit_package_init_from_result(packaged, result_datum);
+    _rt_emitter.emit_package_init_from_dynamic(packaged, callee_datum, _current_args);
+    stack.pop();
+
     push_value(packaged);
 }
 

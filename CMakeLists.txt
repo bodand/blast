@@ -137,7 +137,8 @@ find_package(fmt CONFIG REQUIRED)
 find_package(libassert CONFIG REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
 find_package(lyra CONFIG REQUIRED)
-find_package(mimalloc CONFIG REQUIRED)
+#find_package(mimalloc CONFIG REQUIRED)
+find_package(BDWgc CONFIG REQUIRED)
 
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED)

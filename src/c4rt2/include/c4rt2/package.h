@@ -82,6 +82,21 @@ c4rt_package_init_from_closure(struct c4_package_t* pkg,
                                const struct c4_package_t** fn_data,
                                uint32_t fn_data_sz);
 
+/// c4rt_package_init_from_dynamic(*pkg, datum, *fn_data, fn_data_sz) --
+///     Initializes a new C4 package at pkg. The callee entity is a valid datum
+///     object that has exactly fn_data_sz amount of space for arguments. When
+///     the package gets evaluated, the datum object is evaluated with the
+///     arguments preloaded at construction (now).
+///
+///     If fn_data is null, fn_data_sz must be zero.
+///
+///     Behavior is undefined if either pkg is null.
+C4RT_API void
+c4rt_package_init_from_dynamic(struct c4_package_t* pkg,
+                               c4_datum_t datum,
+                               const struct c4_package_t** fn_data,
+                               uint32_t fn_data_sz);
+
 /// c4rt_package_set_from_result(*pkg, datum) --
 ///     Packages a given datum as a successfully calculated result into pkg.
 ///

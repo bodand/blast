@@ -108,6 +108,28 @@ c4rt_package_init_from_closure(struct c4_package_t* const pkg,
 }
 
 void
+c4rt_package_init_from_dynamic(struct c4_package_t* const pkg,
+                               const c4_datum_t datum,
+                               const struct c4_package_t** fn_data,
+                               const uint32_t fn_data_sz) {
+    assert(pkg && "pkg must not be null");
+    assert((fn_data_sz == 0 || fn_data) && "fn_data must be null or valid");
+
+    switch (pkg->version) {
+    case C4_PACKAGE_VERSION_1://
+        c4rt_package_init_from_dynamic_v1((struct c4_package_v1_t*)pkg,
+                                          datum,
+                                          (const struct c4_package_v1_t**)fn_data,
+                                          fn_data_sz);
+        assert(pkg->version == C4_PACKAGE_VERSION_1);
+        break;
+    default:
+        assert(false && "invalid package version");
+        C4_UNREACHABLE;
+    }
+}
+
+void
 c4rt_package_init_from_result(struct c4_package_t* const pkg,
                               const c4_datum_t datum) {
     assert(pkg && "pkg must not be null");

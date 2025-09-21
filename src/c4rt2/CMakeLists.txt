@@ -117,8 +117,7 @@ check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
 set(C4RT2_USE_MIMALLOC NO)
 configure_file(src/dll-config.in.h dll-config.h @ONLY)
 
-# Dynamic runtime library used by compiler through c4rt2c
-add_library(c4rt2 SHARED
+add_library(c4rt2-core OBJECT
             src/c4rt2/DllMain.c
             src/c4rt2/c4rt_check.cxx
             include/c4rt2/c4rt.h
@@ -134,12 +133,18 @@ add_library(c4rt2 SHARED
             include/c4rt2/package_type.h
             src/c4rt2/dynamic_call_hacks.h
             )
-target_include_directories(c4rt2
+
+target_include_directories(c4rt2-core
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_link_libraries(c4rt2 PRIVATE mimalloc-static)
-target_compile_definitions(c4rt2 PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
+target_compile_definitions(c4rt2-core PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
+
+add_library(c4rt2 SHARED)
+target_link_libraries(c4rt2 PUBLIC c4rt2-core BDWgc::gc)
+
+add_library(c4rt2-internal STATIC)
+target_link_libraries(c4rt2-internal PUBLIC c4rt2-core)
 
 # Static compile into LLVM bitcode used by both c4c and c4j for generated C4 code
 compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}" ${INC_MIMALLOC})
@@ -147,18 +152,10 @@ compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 
-link_bitcode(src/c4rt2/rt.bc
-             src/c4rt2/datum.c.bc.opt
-             src/c4rt2/package.c.bc.opt
-             src/c4rt2/package.1.c.bc.opt
-             src/c4rt2/c4rt.c.bc.opt)
-add_custom_target(c4rt2-bitcode ALL
-                  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/src/c4rt2/rt.bc")
-
 add_library(c4rt2c STATIC
             include/c4rt2c/c4rt_emitter.hxx
             src/c4rt2c/c4rt_emitter.cxx
             )
-target_link_libraries(c4rt2c PUBLIC c4rt2 PRIVATE c4_llvm libassert::assert)
+target_link_libraries(c4rt2c PUBLIC c4rt2-internal PRIVATE c4_llvm libassert::assert)
 target_include_directories(c4rt2c
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

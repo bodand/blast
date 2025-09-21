@@ -188,7 +188,7 @@ C4RT_IMPL void
 c4rt_package_init_from_dynamic_v1(struct c4_package_v1_t* pkg,
                                   c4_datum_t datum,
                                   const struct c4_package_v1_t** fn_data,
-                                  uint16_t fn_data_sz_bytes);
+                                  uint32_t fn_data_sz_bytes);
 
 /**
  * c4rt_package_init_from_result_v1(*pkg, datum) --

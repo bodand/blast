@@ -57,7 +57,8 @@ namespace llvm {
 
 namespace c4rt2c {
     struct c4_rt2_emitter final {
-        c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>* builder);
+        c4_rt2_emitter(llvm::Module& module,
+                       llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>* builder);
 
         [[nodiscard]] llvm::Value*
         emit_datum_from_static_ptr(llvm::Value* type, llvm::Value* ptr) const;
@@ -76,6 +77,9 @@ namespace c4rt2c {
         [[nodiscard]] llvm::Value*
         emit_datum_evaluate(llvm::Value* datum, std::span<llvm::Value*> args) const;
 
+        [[nodiscard]] llvm::Value*
+        emit_datum_preload_arguments(llvm::Value* datum, std::span<llvm::Value*> args) const;
+
         void
         emit_package_init(llvm::Value* ptr) const;
 
@@ -86,6 +90,11 @@ namespace c4rt2c {
         emit_package_init_from_function(llvm::Value* pkg,
                                         llvm::Function* function,
                                         const std::vector<llvm::Value*>& vector) const;
+
+        void
+        emit_package_init_from_dynamic(llvm::Value* pkg,
+                                       llvm::Value* function,
+                                       const std::vector<llvm::Value*>& vector) const;
 
         void
         emit_package_init_from_closure(llvm::Value* pkg,
@@ -118,6 +127,12 @@ namespace c4rt2c {
         encode_datum_string(std::string_view i) const;
 
     private:
+        [[nodiscard]] llvm::Value*
+        emit_allocate(std::size_t obj_sz, std::size_t obj_cnt, std::string_view name = "") const;
+
+        [[nodiscard]] llvm::Value*
+        emit_allocate(llvm::Value* obj_sz, llvm::Value* obj_cnt, std::string_view name = "") const;
+
         void
         set_package_version(llvm::Value* pkg) const;
 

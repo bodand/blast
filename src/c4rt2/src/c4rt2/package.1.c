@@ -38,15 +38,16 @@
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <c4rt2/package.h>
+#include <c4rt2/datum.h>
 #include <c4rt2/datum_type.h>
 #include <c4rt2/c4rt_package_versions.h>
 
 #include "package.1.h"
 
 #include <dll-config.h>
-#include <stdio.h>
 
 static c4_ptr64_t
 pad_pointer_1(void* const ptr) {
@@ -68,6 +69,7 @@ c4rt_package_init_from_function_v1(struct c4_package_v1_t* const pkg,
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
     assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
+    pkg->dynamic_chain = false;
     pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t*);
 
     // Note: this function does not handle closures.
@@ -110,6 +112,7 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
     assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
     assert(pkg->version == C4_PACKAGE_VERSION_1);
     pkg->completed = false;
+    pkg->dynamic_chain = false;
 
     const size_t pkg_sz = sizeof(struct c4_package_v1_t*);
     pkg->function_arity = fn_data_sz_bytes / pkg_sz + 1u;
@@ -142,6 +145,30 @@ c4rt_package_init_from_closure_v1(struct c4_package_v1_t* const pkg,
 }
 
 void
+c4rt_package_init_from_dynamic_v1(struct c4_package_v1_t* pkg,
+                                  c4_datum_t datum,
+                                  const struct c4_package_v1_t** fn_data,
+                                  const uint32_t fn_data_sz_bytes) {
+    assert(pkg && "pkg must not be null");
+    assert(pkg->version == C4_PACKAGE_VERSION_1);
+    assert((fn_data_sz_bytes == 0 || fn_data) && "fn_data must be null or valid");
+    pkg->completed = false;
+    pkg->dynamic_chain = true;
+    pkg->function_arity = fn_data_sz_bytes / sizeof(struct c4_package_v1_t*);
+
+    // Note: this function does not handle closures.
+    pkg->context_sz_divided_bytes = 0;
+
+    // We can save an allocation if we embed the new parameters into the
+    // existing datum object's memory area which already has enough memory.
+    // Zero sized preloads are a nop, no need to pre-check it.
+    datum = c4rt_datum_preload_arguments(datum,
+                                         (const struct c4_package_t**)fn_data,
+                                         fn_data_sz_bytes / sizeof(struct c4_package_v1_t*));
+    pkg->data = datum;
+}
+
+void
 c4rt_package_init_from_result_v1(struct c4_package_v1_t* const pkg,
                                  const c4_datum_t datum) {
     assert(pkg && "pkg must not be null");
@@ -157,6 +184,17 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
     assert(pkg && "pkg must not be null");
     assert(pkg->version == C4_PACKAGE_VERSION_1);
     if (pkg->completed) return pkg->data;
+
+    if (pkg->dynamic_chain) {
+        // arity/context does not matter for dynamic_chains, as the actual
+        // data is encoded into the datum object. When evaluating we just need
+        // to call datum_evaluate and hope that it has been properly preloaded
+        // with the correct arguments. (Otherwise the runtime crashes.)
+        const c4_datum_t datum = c4rt_datum_evaluate(pkg->data, NULL);
+        pkg->completed = true;
+        pkg->data = datum;
+        return datum;
+    }
 
     void* const ptr = unpad_pointer_1(pkg->data);
     assert(ptr && "invalid pointer");
@@ -184,8 +222,8 @@ c4rt_package_evaluate_v1(struct c4_package_v1_t* pkg) {
 
         void* ctx = payload->args_untyped;
         struct c4_package_v1_t** args = (void*)(payload->args_untyped
-                                               + (ptrdiff_t)pkg->context_sz_divided_bytes
-                                               /*        */ * pkg_sz);
+                                                + (ptrdiff_t)pkg->context_sz_divided_bytes
+                                                /*        */ * pkg_sz);
         const c4_datum_t datum = c4_dynamic_call_v1_ctx(pkg->function_arity - 1, calc_fun, ctx, args);
         pkg->data = datum;
     }

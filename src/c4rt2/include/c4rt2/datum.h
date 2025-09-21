@@ -130,6 +130,10 @@ C4RT_API c4_datum_t
 c4rt_datum_eq(c4_datum_t a, c4_datum_t b);
 
 C4RT_API c4_datum_t
+c4rt_datum_preload_arguments(c4_datum_t datum,
+                             const struct c4_package_t** args, size_t args_sz);
+
+C4RT_API c4_datum_t
 c4rt_datum_evaluate(c4_datum_t datum, struct c4_package_t** args);
 
 #endif

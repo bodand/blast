@@ -594,6 +594,13 @@ _Co1m2E(struct c4_package_t* a, struct c4_package_t* b) {
 }
 
 C4RT_API c4_datum_t
+_Co1e1E(struct c4_package_t* a) {
+    const c4_datum_t a_val = c4rt_package_evaluate(a);
+    const bool bool_val = a_val != gC4_Empty_Block;
+    return c4rt_datum_from_boolean(!bool_val);
+}
+
+C4RT_API c4_datum_t
 _Cs3cat2E(struct c4_package_t* a, struct c4_package_t* b) {
     const c4_datum_t a_val = c4rt_package_evaluate(a);
     const c4_datum_t b_val = c4rt_package_evaluate(b);
@@ -711,11 +718,51 @@ c4rt_datum_eq(c4_datum_t a, c4_datum_t b) {
 #include "dynamic_call_hacks.h"
 
 c4_datum_t
+c4rt_datum_preload_arguments(const c4_datum_t datum,
+                             const struct c4_package_t** const args,
+                             const size_t args_sz) {
+    assert((args_sz == 0 || args) && "args must be null or valid");
+    if (args_sz == 0) return datum;
+
+    const enum c4_datum_type type = c4rt_datum_type_of(datum);
+    assert(type == C4_Block && "preloading arguments only supported for blocks");
+    if (datum == gC4_Empty_Block) return gC4_Empty_Block;
+
+    assert(datum_is_ptr_dynamic(datum) &&
+        "preloading non-null argument set to nullary datum object");
+
+    const struct datum_function* const fn_data_old = get_pointer_value(datum);
+    const size_t fn_data_sz = (size_t)fn_data_old->context_sz_divided_bytes * 16u
+                              + (size_t)fn_data_old->base_arity * sizeof(struct c4_package_t*);
+    struct datum_function* const fn_data = C4_ALLOCATE(sizeof(struct datum_function) + fn_data_sz);
+    memcpy(fn_data, fn_data_old, sizeof(struct datum_function) + fn_data_sz);
+
+    const size_t args_offset = (size_t)fn_data->context_sz_divided_bytes * 16u;
+    char* const callee_args = fn_data->fn_data + args_offset;
+
+    const size_t missing_argument_sz = fn_data->base_arity - fn_data->preloaded_args_sz;
+    assert(missing_argument_sz >= args_sz && "too many arguments to preload");
+    assert((args && *args) && "missing arguments require to be passed");
+    // above assert is always required because we early return in the second line
+    // thusly args_sz > 0 by here, so 1) there is no early return check for
+    // missing_argument_sz == 0 here, since missing_argument_sz >= args_sz > 0.
+    // and 2) args_sz > 0 means at least one object must be present in args, so
+    // (args && *args) must be true, hence the assert.
+
+    struct c4_package_t* const missing_arguments = (struct c4_package_t*)callee_args + fn_data->preloaded_args_sz;
+    memcpy(missing_arguments, args, args_sz * sizeof(struct c4_package_t*));
+    fn_data->preloaded_args_sz += args_sz;
+
+    assert(fn_data->base_arity >= fn_data->preloaded_args_sz && "block datum invariant broken");
+    return remoteness_mask | nan_mask | shifted_type(C4_Block)
+           | put_pointer_value(fn_data, true);
+}
+
+c4_datum_t
 c4rt_datum_evaluate(const c4_datum_t datum,
                     struct c4_package_t** const args) {
     const enum c4_datum_type type = c4rt_datum_type_of(datum);
-    if (type != C4_Block)
-        return datum;
+    if (type != C4_Block) return datum;
     if (datum == gC4_Empty_Block) return gC4_Empty_Block;
 
     void* ptr = get_pointer_value(datum);
@@ -728,6 +775,7 @@ c4rt_datum_evaluate(const c4_datum_t datum,
 
     const size_t missing_argument_sz = fn_data->base_arity - fn_data->preloaded_args_sz;
     if (missing_argument_sz) {
+        // fprintf(stderr, "missing: %zu, passed: %p (->%p)\n", missing_argument_sz, args, args ? *args : NULL);
         assert((args && *args) && "missing arguments require to be passed");
 
         struct c4_package_t* const missing_arguments = (struct c4_package_t*)callee_args + fn_data->preloaded_args_sz;

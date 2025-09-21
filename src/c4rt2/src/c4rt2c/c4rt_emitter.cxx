@@ -66,12 +66,16 @@ c4_rt2_emitter(llvm::Module& module, llvm::IRBuilder<>* builder)
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
     const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
 
+    declare_rt_function("GC_malloc", ptr_t, int64_t);
+
     declare_rt_function("c4rt_datum_from_static_ptr", _c4rt_datum_type, type_t, ptr_t);
     declare_rt_function("c4rt_datum_from_function", _c4rt_datum_type, ptr_t, int16_t, ptr_t, int64_t);
     declare_rt_function("c4rt_datum_from_closure", _c4rt_datum_type, ptr_t, int16_t, ptr_t, int64_t, ptr_t, int64_t);
     declare_rt_function("c4rt_datum_evaluate", _c4rt_datum_type, _c4rt_datum_type, ptr_t);
+    declare_rt_function("c4rt_datum_preload_arguments", _c4rt_datum_type, _c4rt_datum_type, ptr_t);
     declare_rt_function("c4rt_package_init_from_result", void_t, ptr_t, _c4rt_datum_type);
     declare_rt_function("c4rt_package_init_from_function", void_t, ptr_t, ptr_t, ptr_t, int32_t);
+    declare_rt_function("c4rt_package_init_from_dynamic", void_t, ptr_t, _c4rt_datum_type, ptr_t, int32_t);
     declare_rt_function("c4rt_package_init_from_closure", void_t,
                         ptr_t, /*pkg*/
                         ptr_t, /*fn*/
@@ -147,6 +151,31 @@ c4rt2c::c4_rt2_emitter::emit_datum_evaluate(llvm::Value* datum, const std::span<
     return _builder->CreateCall(fn, {datum, pkg_args});
 }
 
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_datum_preload_arguments(llvm::Value* datum, std::span<llvm::Value*> args) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+
+    llvm::Value* pkg_args = llvm::ConstantPointerNull::get(ptr_t);
+    if (!args.empty()) {
+        const auto args_sz_val = llvm::ConstantInt::get(index_type, args.size());
+        pkg_args = _builder->CreateAlloca(_c4rt_package_type, args_sz_val);
+        const auto array_type = llvm::ArrayType::get(_c4rt_package_type, args.size());
+        for (std::size_t i = 0; i < args.size(); ++i) {
+            const auto param_ptr = _builder->CreateInBoundsGEP(array_type, pkg_args,
+                                                               {
+                                                                   llvm::ConstantInt::get(index_type, 0),
+                                                                   llvm::ConstantInt::get(index_type, i)
+                                                               });
+            _builder->CreateStore(args[i], param_ptr);
+        }
+    }
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_datum_preload_arguments", _c4rt_datum_type, _c4rt_datum_type, ptr_t);
+    return _builder->CreateCall(fn, {datum, pkg_args});
+}
+
 void
 c4rt2c::c4_rt2_emitter::emit_package_init(llvm::Value* ptr) const {
     const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
@@ -191,6 +220,34 @@ c4rt2c::c4_rt2_emitter::emit_package_init_from_function(llvm::Value* pkg,
 
     llvm::FunctionCallee fn;
     get_rt_function(&fn, "c4rt_package_init_from_function", void_t, ptr_t, ptr_t, ptr_t, int32_t);
+    _builder->CreateCall(fn, {
+                             pkg, function, args_array,
+                             llvm::ConstantInt::get(int32_t, vector.size() * ptr_sz)
+                         });
+}
+
+void
+c4rt2c::c4_rt2_emitter::emit_package_init_from_dynamic(llvm::Value* pkg,
+                                                       llvm::Value* function,
+                                                       const std::vector<llvm::Value*>& vector) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto int32_t = llvm::Type::getInt32Ty(_builder->getContext());
+    const auto void_t = llvm::Type::getVoidTy(_builder->getContext());
+
+    const auto size_ty = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+    const auto ptr_sz = _module.getDataLayout().getTypeAllocSize(ptr_t);
+
+    const auto args_array = local_package_ptr_array_uninit(vector.size());
+    for (std::size_t i = 0; i < vector.size(); ++i) {
+        const auto param_ptr = _builder->CreateGEP(ptr_t, args_array,
+                                                   {
+                                                       llvm::ConstantInt::get(size_ty, i),
+                                                   });
+        _builder->CreateStore(vector[i], param_ptr);
+    }
+
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "c4rt_package_init_from_dynamic", void_t, ptr_t, _c4rt_datum_type, ptr_t, int32_t);
     _builder->CreateCall(fn, {
                              pkg, function, args_array,
                              llvm::ConstantInt::get(int32_t, vector.size() * ptr_sz)
@@ -246,8 +303,11 @@ c4rt2c::c4_rt2_emitter::emit_unpack(llvm::Value* value) const {
 
 llvm::Value*
 c4rt2c::c4_rt2_emitter::local_package() const {
-    const auto local = _builder->CreateAlloca(_package_struct_type, nullptr, "pkg");
-    local->setAlignment(llvm::Align(8));
+    const size_t pkg_size = _module.getDataLayout().getTypeAllocSize(_package_struct_type);
+
+    // const auto local = _builder->CreateAlloca(_package_struct_type, nullptr, "pkg");
+    // local->setAlignment(llvm::Align(8));
+    const auto local = emit_allocate(pkg_size, 1, "pkg");
     set_package_version(local);
     return local;
 }
@@ -325,6 +385,27 @@ c4rt2c::c4_rt2_emitter::encode_datum_string(const std::string_view i) const {
     const auto const_str_datum_type = llvm::ConstantInt::get(int32_type, C4_String);
 
     return emit_datum_from_static_ptr(const_str_datum_type, str_ptr);
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_allocate(const std::size_t obj_sz,
+                                      const std::size_t obj_cnt,
+                                      const std::string_view name) const {
+    const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+    const auto obj_sz_val = llvm::ConstantInt::get(index_type, obj_sz);
+    const auto obj_cnt_val = llvm::ConstantInt::get(index_type, obj_cnt);
+    return emit_allocate(obj_sz_val, obj_cnt_val, name);
+}
+
+llvm::Value*
+c4rt2c::c4_rt2_emitter::emit_allocate(llvm::Value* obj_sz, llvm::Value* obj_cnt, std::string_view name) const {
+    const auto ptr_t = llvm::PointerType::get(_builder->getContext(), 0);
+    const auto index_type = _module.getDataLayout().getIndexType(_module.getContext(), 0);
+
+    const auto alloc_sz = _builder->CreateMul(obj_sz, obj_cnt, {name, ".sz"}, true, true);
+    llvm::FunctionCallee fn;
+    get_rt_function(&fn, "GC_malloc", ptr_t, index_type);
+    return _builder->CreateCall(fn, {alloc_sz});
 }
 
 void
