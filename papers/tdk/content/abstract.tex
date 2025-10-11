@@ -1,0 +1,54 @@
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\selecthungarian
+
+%----------------------------------------------------------------------------
+% Abstract in Hungarian
+%----------------------------------------------------------------------------
+\chapter*{Kivonat}\addcontentsline{toc}{chapter}{Kivonat}
+
+A szakterület-specifikus nyelvek (DSL) az informatika számos részén jól
+használható és kényelmes lehetőséget nyújtanak egy-egy speciális feladatkör
+megoldására. Manapság számos olyan eszköz elérhető, amely DSL-ek fejlesztésére
+alkalmas, de kevés olyan programnyelv létezik, amelybe a DSL-ek kényelmesen
+beágyazhatók.
+
+A dolgozatban egy általam kifejlesztett általános célú programnyelvet mutatok
+be, amelyben – a nyelv kialakításának köszönhetően – könnyedén lehet DSL-eket
+definiálni és futtatni. A nyelv fordítója LLVM technológiára épít, így akár JIT
+segítségével, akár teljes natív fordítással lehetővé teszi a megvalósított
+DSL-ben írt programok futtatását.
+
+A dolgozatban demó jelleggel bemutatok néhány gyakorlatban is használható
+DSL-t, valamint egy nagyobb léptékű jövőbeli bővítési tervet.
+
+\vfill
+\selectenglish
+
+
+%----------------------------------------------------------------------------
+% Abstract in English
+%----------------------------------------------------------------------------
+\chapter*{Abstract}\addcontentsline{toc}{chapter}{Abstract}
+
+Domain-specific languages (DSLs) are useful in numerous fields of computer
+science and provide a convenient way to solve a specific set of tasks. Today
+there are many tools available for developing DSLs, but few programming
+languages exist into which DSLs can be easily embedded.
+
+In this paper, I present a general-purpose programming language that I
+developed, in which DSLs can be easily defined and executed thanks to the way
+the language is designed. The language's compiler is based on LLVM technology,
+so it allows programs written in the implemented DSL to be executed either with
+JIT or with full native compilation.
+
+As a demonstration, I present a few DSLs that can be used in practice, as well
+as a larger-scale plan for future expansion.
+
+\vfill
+\selectthesislanguage
+
+\newcounter{romanPage}
+\setcounter{romanPage}{\value{page}}
+\stepcounter{romanPage}
