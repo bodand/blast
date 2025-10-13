@@ -1,0 +1,50 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{Paraméter-kötött függvények}\label{sec:ftr:argfun}
+%----------------------------------------------------------------------------
+
+A C4 nyelv által biztosított DSL leírási lehetőség a megfelelő függvények definiálásával történik.
+Ez az általános megoldás majdnem teljesen szabadon formálhatóvá teszik a nyelvet a DSL írója számára, aki a saját feladatára személyre tudja szabni, hogy a DSL számára megfelelő legyen a szintaktika.
+
+Egy kiemelkedően jól működő struktúra a beágyazott DSL-ek megvalósítására olyan függvények bevezetése, amelyek megfelelő módon hívják egymást, és a szintaktikai elemek megadó külső függvények csak ezeket állítják elő valamilyen closure formájában.
+Ezeknek a függvényeknek pedig van egy kezdő függvénye, amelyik bevezeti az éppen használt DSL-t.
+Ez a módszer látható az előző fejezetben adott példák C4 kódjában, alább pedig kiemelve az állapotgép leíró példából a {\tt state} függvény megvalósítása.
+
+\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-fn,caption={Az állapotgép DSL {\tt state} függvénye}]
+	let state/2 { |name exec| 
+		{ |stm str err fin|
+			let stm2 add_state stm name str err fin
+			&(exec)/4 stm2 0 0 0
+		}
+	}
+\end{lstlisting}
+
+Ennek a struktúrának előnye, hogy egy-egy DSL használata teljesen egy függvényhívásba limitálódik, hiszen maga a DSL csak ezen a függvényen belül fog megfelelően működni.
+
+Ezt a gondolatot megerősíteni egyik fejlesztési terv olyan függvények bevezetése, amelyek csak más függvények paramétereként értelmesek.
+Ezzel megoldódik az esetleges DSL-ek közötti névütközés, hiszen egy-egy kulcsszó csak a megfelelő DSL-en belül kerül feloldásra, így minden DSL a saját verzióját fogja megkapni.
+Ezeket a függvényeket nevezem paraméter-kötött (parameter-bound) függvényeknek, mert kötve van, hogy melyik másik függvény paraméterében kerülhetnek meghívásra.
+
+\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép DSL lehetséges paraméter-kötöt {\tt state} függvénye}]
+	let (state/2 fsm/2) { |name exec| 
+		{ |stm str err fin|
+			let stm2 add_state stm name str err fin
+			&(exec)/4 stm2 0 0 0
+		}
+	}
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+
+
