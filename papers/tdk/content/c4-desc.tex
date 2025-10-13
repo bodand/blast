@@ -15,7 +15,7 @@ A tulajdonságok számozása egy gyenge fontossági sorrendet valósít meg köz
     Erős beágyazott DSL támogatás
 
     A beágyazott DSL-ek létrehozásának lehetősége az egyik alapkoncepció a nyelv tervezése során.
-    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitáltak a beágyazható DSL-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
+    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitálódik azon DSL-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
     Ennek megfelelően az egyik legfontosabb tulajdonsága a nyelvnek, hogy a lehető legrugalmasabb szintaktikát megválasztva, a DSL-eket legkevésbé korlátozva azok létrehozását megfelelő módon támogassa.
 \end{property}
 
@@ -25,37 +25,89 @@ A tulajdonságok számozása egy gyenge fontossági sorrendet valósít meg köz
     A gazdanyelvbe sokféle DSL beágyazásának a lehetősége adott.
     Ezek a DSL-ek viszont magukban is rendelkezhetnek különböző tulajdonságokkal, amelyek számukra előnyösebbé teszik a direkt kiértékelést (interpretálást) vagy fordítást a velük végzett munka során.
     Például a fordítás előnyös lehet, ha olyan végterméket állítunk elő, amelyet a végfelhasználó számára csomagolt binárisként szállítunk le így nem kell a teljes interpreter eszköztárát is telepíteni, de interpretálással rövid, egyszer használatos programokat könnyebb készíteni és használni.
-    Egy-egy DSL-nek mind két esetben is használhatónak kell maradnia, így a nyelv maga is támogassa alapból mind kettő lehetőséget.
+    Egy-egy DSL-nek mind két esetben is használhatónak kell maradnia, így a nyelvi szintű támogatás fontos, hogy megjelenjen mind kettő lehetőséghez.
 \end{property}
 
 \begin{property}\label{prop:dynamic}
     Dinamikusan típusos
 
-    Erős érvek szólnak mind a statikus és dinamikus típusos nyelvek mellett, emellett egyes programozóknak vannak személyes preferenciái, hogy melyikkel szeretnek jobban dolgozni.
-    Azért a dinamikusan típusos megoldásra esett a választás, mert így a megfelelő metamodell készítése egy DSL-hez egyszerűbb, mert nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát meg tud spórolni.
-    Emellett, az egyszerűbb (típusok nélküli) szintaktika egyszerűsíti a DSL-ek használatát is, hiszen a DSL-en belül sem kell típusokkal foglalatoskodni, csak a szakterület dolgaival.
+    Számos érv szól mind a statikus és dinamikus típusos nyelvek mellett, emellett egyes programozóknak vannak személyes preferenciái, hogy melyikkel szeretnek jobban dolgozni; nem lehet egy egyértelműen kiválasztani ,,a jó'' opciót a kettő közül.
+    Azért a dinamikusan típusos megoldásra esett a választásom, mert így a DSL-ek használata közben nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát eltölteni.
+    Elegendő, csak a szakterület által is érdekesnek ítélt elemekkel foglalkozni.
 \end{property}
 
 \begin{property}\label{prop:easy}
     Érthető egy átlagos C, C++, Java, stb. fejlesztő számára.
 
-    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott DSL-t.
+    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy elterjedt másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával sok időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott DSL-t.
 \end{property}
 
-\subsection{A}
+\subsection{A C4 nyelv ismertetése}\label{subsec:c4:desc:c4}
 
+Az előző tulajdonságok alapján megalkotott nyelv leírása következik.
+Magas szinten, egy olyan nyelvet definiálok, amelyik funkcionális, immutábilis, dinamikusan típusos, és szintaktikáját tekintve nagyon megengedő és rugalmas.
 
+Ezeknek a tulajdonságoknak nagy része egyenesen megfeleltethető vagy direkt következménye az előző részben definiált elvárásoknak.
+A funkcionális, immutábilis nyelv választása azonban nem egyértelmű: a klasszikus könnyen futtatható, dinamikus nyelvek nagy többségben egyszerű procedurális paradigma szerint működnek, ld.~Tcl és a különböző (UNIX) shell nyelvek, esetleg utólagosan különféle módon objektum--orientált támogatást kaptak; ilyen pl.~a Perl.
 
+Az immutábilis entitásokkal végzett programozás biztosít egy extra réteg fordítási időbeli védelmet nyújt az esetleges elírások, vagy imperatív kódban ejthető logikai hibákkal szemben.
+Ez a megközelítés a dinamikus típusozás által hozott extra hibalehetőségeket hivatott csökkenteni, amellett, hogy több előnye is származik a kódnak a tisztaságából (purity): egyszerűbb értelmezés, és meglepő mellékhatások nélkül könnyebben olvashatóvá válhatnak kódrészletek.
 
+A funkcionális paradigma pedig jobban illeszkedik egy ilyen teljesen immutábilis rendszerre, mint a procedurális vagy objektum-orientált; a funkcionális nyelvek nagy része teljesen immutábilis, és semmiféle értékmódosítást nem engedélyez.
+Emiatt jobbnak vélem, ha egy kevésbé ismert paradigmát választok, amelyik cserébe sok olyan mintát és idiómát tud más nyelvekből, hozni, amelyek alapból hasonló koncepciók mellett működnek.
 
+A logikai paradigmát még meg lehet említeni, mint egy paradigma, amelyik az immutábilis elemekkel jól komponálható.
+Azonban ez sok programozó számára idegen, és akár még kényelmetlen is tud lenni a Prolog jellegű kódolási stílus, ha az adott felhasználó nem rendelkezik megfelelő gyakorlattal.
+Ez direkt módon szegi \aref{prop:easy}.~tulajdonságot, amelyiket teljesíteni kell a nyelvnek.
 
+A nyelv rugalmasságát viszont még az eddig elmondottak nem garantálják.
+Meg kell tehát még valósítani azt a nyelvi szintaktikát, amelyikben a lehető legkevesebb konkrét elem található, és minél több minden ezekből felépíthető.
+Ez a rugalmasság LISP nyelvcsaládban\cite{mccarthy_recursive_1960} kiemelkedően jól látszik: a zárójeleket leszámítva, makrók felhasználásával a Scheme implementációkban  akár teljesen új nyelvi elemeket lehet\cite{gnu_project_syntax_nodate} létrehozni.
+A zárójelek azonban egy idegen, elriasztó kinézetet kölcsönöznek a LISP alapú nyelveknek, így nem feltételen ideálisak \aref{prop:easy}.~tulajdonság miatt.
+Ennek ellenére viszont a LISP alapkoncepciója hasznos tud lenni: az ún.~szimbolikus kifejezés (\\gls{sexpr}; innentől \\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
+Ebben láthatóan mindent függvények vagy makrók definiálásával és azok hívásával lehetséges megadni, és kiemelkedően egyszerű feldolgozni, mert minden teljesen uniform módon néz ki.
 
+De vegyük el a zárójeleket: ha előre ismert, hogy mennyi paramétert vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
+Ez egy C jellegű sorrendet követel meg a függvények definiálásánál: ez azonban nem okoz véleményem szerint nagy gondot, sok másik nyelv rendelkezik ezzel a megkötéssel: C, C++ (részei), Perl, stb.
 
+Ezzel viszont egy olyan opcionálisan zárójelezhető LISP-et kapunk, amelyik kísértetiesen hasonlít egy megszokott C-szerű programozási nyelvre.
+Erről szól \aref{fig:lisp-c4-c}.~ábra.
 
-
-
-
-
+\begin{figure}[htb]
+    \begin{subfigure}[]{.28\linewidth}
+        \vskip-.172cm
+        \begin{lstlisting}[gobble=12,language=lisp]
+            (if (> a 2)
+              (display "nagyobb")
+              (display "kisebb"))
+        \end{lstlisting}
+        \caption{Scheme kód if függvénnyel}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[]{.28\linewidth}
+        \begin{lstlisting}[gobble=12]
+            if a > 2 {
+                println "nagyobb"
+            } else {
+                println "kisebb"
+            }
+        \end{lstlisting}
+        \caption{C4 kód if függvénnyel}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[]{.28\linewidth}
+        \begin{lstlisting}[gobble=12,language=c]
+            if (a > 2) {
+                puts("nagyobb");
+            } else {
+                puts("kisebb");
+            }
+        \end{lstlisting}
+        \caption{C kód if konstrukcióval}
+    \end{subfigure}
+    \caption{Különböző nyelvek if szintaktikája}
+    \label{fig:lisp-c4-c}
+\end{figure}
 
 
 

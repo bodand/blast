@@ -98,10 +98,10 @@
 	author = {{Christopher Peter Wadsworth}},
 	year = {1971},
 	note = {Catalog Number: 102720343
-	Category: Technical Paper or Note
-	Collection Title: Herbert Stoyan collection on LISP programming
-	Series Title: Manuals, manuscripts, and subject files; Assorted subjects
-	Credit: Gift of Herbert Stoyan},
+Category: Technical Paper or Note
+Collection Title: Herbert Stoyan collection on LISP programming
+Series Title: Manuals, manuscripts, and subject files; Assorted subjects
+Credit: Gift of Herbert Stoyan},
 	file = {102720343-05-001-acc.pdf:C\:\\Users\\bodand\\Zotero\\storage\\7HMBBCEU\\1971 - Semantics and Pragmatics of the Lambda-Calculus.pdf:application/pdf},
 }
 
@@ -127,4 +127,45 @@
 	month = jan,
 	year = {2014},
 	file = {Modular, higher-order cardinality analysis in theory and practice | Proceedings of the 41st ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages:C\:\\Users\\bodand\\Zotero\\storage\\SYRM8L6D\\2535838.html:text/html},
+}
+
+@misc{gnu_project_syntax_nodate,
+	title = {Syntax {Rules} ({Guile} {Reference} {Manual})},
+	url = {https://www.gnu.org/software/guile/manual/html_node/Syntax-Rules.html},
+	urldate = {2025-10-13},
+	author = {{GNU Project}},
+	file = {Syntax Rules (Guile Reference Manual):C\:\\Users\\bodand\\Zotero\\storage\\U2QB6FQU\\Syntax-Rules.html:text/html},
+}
+
+@article{boehm_space_2004,
+	title = {Space efficient conservative garbage collection},
+	volume = {39},
+	issn = {0362-1340},
+	url = {https://dl.acm.org/doi/10.1145/989393.989442},
+	doi = {10.1145/989393.989442},
+	abstract = {Both type-accurate and conservative garbage collectors have gained in importance since the original paper was written. Managing unnecessary retention by conservative collectors continues to be an important problem. There appear to be few reimplementations of the techniques we described, but significantly refined descendents of the original implementation are alive and well inside a large number of applications.There has been later work both on quantifying space retention by conservative collectors, and on theoretical bounds for such retention.We call a garbage collector conservative if it has only partial information about the location of pointers, and is thus forced to treat arbitrary bit patterns as though they might be pointers, in at least some cases. We show that some very inexpensive, but previously unused techniques can have dramatic impact on the effectiveness of conservative garbage collectors in reclaiming memory. Our most significant observation is that static data that appears to point to the heap should not result in misidentified references to the heap. The garbage collector has enough information to allocate around such references. We also observe that programming style has a significant impact on the amount of spuriously retained storage, typically even if the collector is not terribly conservative. Some fairly common C and C++ programming styles significantly decrease the effectiveness of any garbage collector. These observations suffice to explain some of the different assessments of conservative collection that have appeared in the literature.},
+	number = {4},
+	urldate = {2025-10-13},
+	journal = {SIGPLAN Not.},
+	author = {Boehm, Hans J.},
+	month = apr,
+	year = {2004},
+	pages = {490--501},
+	file = {Full Text PDF:C\:\\Users\\bodand\\Zotero\\storage\\55THATIT\\Boehm - 2004 - Space efficient conservative garbage collection.pdf:application/pdf},
+}
+
+@misc{boehm_garbage_nodate,
+	title = {A garbage collector for {C} and {C}++},
+	url = {https://www.hboehm.info/gc/},
+	urldate = {2025-10-13},
+	author = {Boehm, Hans-J. and Demers, Alan and Weiser, Mark D.},
+	file = {A garbage collector for C and C++:C\:\\Users\\bodand\\Zotero\\storage\\ZF9L9VGZ\\gc.html:text/html},
+}
+
+@misc{llvm_project_llvm_nodate,
+	title = {The {LLVM} {Compiler} {Infrastructure} {Project}},
+	url = {https://llvm.org/},
+	urldate = {2025-10-13},
+	author = {{LLVM Project}},
+	file = {The LLVM Compiler Infrastructure Project:C\:\\Users\\bodand\\Zotero\\storage\\74MJJA9T\\llvm.org.html:text/html},
 }

@@ -5,6 +5,8 @@
 \subsection{Átfogó architektúra}\label{subsec:c4:impl:arch}
 %----------------------------------------------------------------------------
 
+A C4 fordító és értelmező programok a kód nagy részében azonosak: a különbség, hogy a folyamat végén található program az LLVM által biztosított bináris kimenetet generál vagy az LLVM JIT lehetőségeit kihasználva direkt módon kezdi el kiértékelni a C4 kódnak megfelelő memóriabeli reprezentációt.
+
 \begin{figure}[htb]
     \includegraphics[width=\linewidth]{content/c4-comp.eps}
     \caption{A C4 projekt átfogó ábrája}
