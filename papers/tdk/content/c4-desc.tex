@@ -1,0 +1,62 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{A C4 nyelv leírása}\label{sec:c4:desc}
+%----------------------------------------------------------------------------
+
+\subsection{Az elvárt tulajdonságok}\label{subsec:c4:desc:prop}
+
+Az alábbi tulajdonságok azok, amelyet a nyelvvel kapcsolatban felállítottam a tervezés előtt.
+Ezek egy általános vázat adnak a végső nyelv viselkedésével kapcsolatban, és garantálják az elvárt módon való használhatóságot a nyelvtől.
+A tulajdonságok számozása egy gyenge fontossági sorrendet valósít meg köztük: bár mindegyik fontos, de az első nem teljesítése sokkal nagyobb probléma, mint a 4.-el szemben tapasztalt esetleges problémák.
+
+\begin{property}\label{prop:dsl-friendly}
+    Erős beágyazott DSL támogatás
+
+    A beágyazott DSL-ek létrehozásának lehetősége az egyik alapkoncepció a nyelv tervezése során.
+    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitáltak a beágyazható DSL-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
+    Ennek megfelelően az egyik legfontosabb tulajdonsága a nyelvnek, hogy a lehető legrugalmasabb szintaktikát megválasztva, a DSL-eket legkevésbé korlátozva azok létrehozását megfelelő módon támogassa.
+\end{property}
+
+\begin{property}\label{prop:uncompiled}
+    Fordítás nélkül és fordítással is futtatható.
+
+    A gazdanyelvbe sokféle DSL beágyazásának a lehetősége adott.
+    Ezek a DSL-ek viszont magukban is rendelkezhetnek különböző tulajdonságokkal, amelyek számukra előnyösebbé teszik a direkt kiértékelést (interpretálást) vagy fordítást a velük végzett munka során.
+    Például a fordítás előnyös lehet, ha olyan végterméket állítunk elő, amelyet a végfelhasználó számára csomagolt binárisként szállítunk le így nem kell a teljes interpreter eszköztárát is telepíteni, de interpretálással rövid, egyszer használatos programokat könnyebb készíteni és használni.
+    Egy-egy DSL-nek mind két esetben is használhatónak kell maradnia, így a nyelv maga is támogassa alapból mind kettő lehetőséget.
+\end{property}
+
+\begin{property}\label{prop:dynamic}
+    Dinamikusan típusos
+
+    Erős érvek szólnak mind a statikus és dinamikus típusos nyelvek mellett, emellett egyes programozóknak vannak személyes preferenciái, hogy melyikkel szeretnek jobban dolgozni.
+    Azért a dinamikusan típusos megoldásra esett a választás, mert így a megfelelő metamodell készítése egy DSL-hez egyszerűbb, mert nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát meg tud spórolni.
+    Emellett, az egyszerűbb (típusok nélküli) szintaktika egyszerűsíti a DSL-ek használatát is, hiszen a DSL-en belül sem kell típusokkal foglalatoskodni, csak a szakterület dolgaival.
+\end{property}
+
+\begin{property}\label{prop:easy}
+    Érthető egy átlagos C, C++, Java, stb. fejlesztő számára.
+
+    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott DSL-t.
+\end{property}
+
+\subsection{A}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
