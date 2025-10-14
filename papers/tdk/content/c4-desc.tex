@@ -50,11 +50,12 @@ Magas szinten, egy olyan nyelvet definiálok, amelyik funkcionális, immutábili
 Ezeknek a tulajdonságoknak nagy része egyenesen megfeleltethető vagy direkt következménye az előző részben definiált elvárásoknak.
 A funkcionális, immutábilis nyelv választása azonban nem egyértelmű: a klasszikus könnyen futtatható, dinamikus nyelvek nagy többségben egyszerű procedurális paradigma szerint működnek, ld.~Tcl és a különböző (UNIX) shell nyelvek, esetleg utólagosan különféle módon objektum--orientált támogatást kaptak; ilyen pl.~a Perl.
 
-Az immutábilis entitásokkal végzett programozás biztosít egy extra réteg fordítási időbeli védelmet nyújt az esetleges elírások, vagy imperatív kódban ejthető logikai hibákkal szemben.
+Az immutábilis entitásokkal végzett programozás biztosít egy extra réteg fordítási időbeli védelmet az esetleges elírások, vagy ...
 Ez a megközelítés a dinamikus típusozás által hozott extra hibalehetőségeket hivatott csökkenteni, amellett, hogy több előnye is származik a kódnak a tisztaságából (purity): egyszerűbb értelmezés, és meglepő mellékhatások nélkül könnyebben olvashatóvá válhatnak kódrészletek.
+Illetve a jövőben párhuzamosítási előnyök is megjelenhetnek, bár ez jelenleg nem került megvalósítása.
 
 A funkcionális paradigma pedig jobban illeszkedik egy ilyen teljesen immutábilis rendszerre, mint a procedurális vagy objektum-orientált; a funkcionális nyelvek nagy része teljesen immutábilis, és semmiféle értékmódosítást nem engedélyez.
-Emiatt jobbnak vélem, ha egy kevésbé ismert paradigmát választok, amelyik cserébe sok olyan mintát és idiómát tud más nyelvekből, hozni, amelyek alapból hasonló koncepciók mellett működnek.
+Emiatt jobbnak vélem, ha egy kevésbé ismert, de egyáltalán nem ismeretlen, paradigmát választok, amelyik cserébe sok olyan mintát és idiómát tud más nyelvekből hozni, amelyek alapból hasonló koncepciók mellett működnek.
 
 A logikai paradigmát még meg lehet említeni, mint egy paradigma, amelyik az immutábilis elemekkel jól komponálható.
 Azonban ez sok programozó számára idegen, és akár még kényelmetlen is tud lenni a Prolog jellegű kódolási stílus, ha az adott felhasználó nem rendelkezik megfelelő gyakorlattal.
@@ -62,46 +63,46 @@ Ez direkt módon szegi \aref{prop:easy}.~tulajdonságot, amelyiket teljesíteni 
 
 A nyelv rugalmasságát viszont még az eddig elmondottak nem garantálják.
 Meg kell tehát még valósítani azt a nyelvi szintaktikát, amelyikben a lehető legkevesebb konkrét elem található, és minél több minden ezekből felépíthető.
-Ez a rugalmasság LISP nyelvcsaládban\cite{mccarthy_recursive_1960} kiemelkedően jól látszik: a zárójeleket leszámítva, makrók felhasználásával a Scheme implementációkban  akár teljesen új nyelvi elemeket lehet\cite{gnu_project_syntax_nodate} létrehozni.
+Ez a rugalmasság LISP nyelvcsaládban \cite{mccarthy_recursive_1960} kiemelkedően jól látszik: a zárójeleket leszámítva, makrók felhasználásával a Scheme implementációkban  akár teljesen új nyelvi elemeket lehet \cite{gnu_project_syntax_nodate} létrehozni.
 A zárójelek azonban egy idegen, elriasztó kinézetet kölcsönöznek a LISP alapú nyelveknek, így nem feltételen ideálisak \aref{prop:easy}.~tulajdonság miatt.
-Ennek ellenére viszont a LISP alapkoncepciója hasznos tud lenni: az ún.~szimbolikus kifejezés (\\gls{sexpr}; innentől \\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
+Ennek ellenére a LISP alapkoncepciója hasznos tud lenni: az ún.~szimbolikus kifejezés (\\gls{sexpr}; innentől \\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
 Ebben láthatóan mindent függvények vagy makrók definiálásával és azok hívásával lehetséges megadni, és kiemelkedően egyszerű feldolgozni, mert minden teljesen uniform módon néz ki.
 
 De vegyük el a zárójeleket: ha előre ismert, hogy mennyi paramétert vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
-Ez egy C jellegű sorrendet követel meg a függvények definiálásánál: ez azonban nem okoz véleményem szerint nagy gondot, sok másik nyelv rendelkezik ezzel a megkötéssel: C, C++ (részei), Perl, stb.
+Ez egy C jellegű sorrendet követel meg a függvények definiálásánál: minden függvényt hívása előtt ismerni kell.
+Ez azonban nem okoz véleményem szerint nagy gondot, sok másik nyelv rendelkezik ezzel a megkötéssel: C, C++ (részei), Perl, stb.
 
 Ezzel viszont egy olyan opcionálisan zárójelezhető LISP-et kapunk, amelyik kísértetiesen hasonlít egy megszokott C-szerű programozási nyelvre.
-Erről szól \aref{fig:lisp-c4-c}.~ábra.
+Erről szól \aref{fig:lisp-c4-c}.~ábra, amelyikben látszik, hogy ha elhagyjuk a zárójeleket, akkor egy sokkal inkább C-re hasonlító megoldást kapunk -- csak hiányoznak a pontosvesszők.
 
 \begin{figure}[htb]
     \begin{subfigure}[]{.28\linewidth}
-        \vskip-.172cm
+		\vskip.136cm
         \begin{lstlisting}[gobble=12,language=lisp]
             (if (> a 2)
               (display "nagyobb")
               (display "kisebb"))
         \end{lstlisting}
         \caption{Scheme kód if függvénnyel}
+        \label{fig:lisp-c4-c:lisp}
     \end{subfigure}
     \hfill
     \begin{subfigure}[]{.28\linewidth}
         \begin{lstlisting}[gobble=12]
-            if a > 2 {
+            if a > 2
                 println "nagyobb"
-            } else {
+            else
                 println "kisebb"
-            }
         \end{lstlisting}
         \caption{C4 kód if függvénnyel}
     \end{subfigure}
     \hfill
     \begin{subfigure}[]{.28\linewidth}
         \begin{lstlisting}[gobble=12,language=c]
-            if (a > 2) {
+            if (a > 2)
                 puts("nagyobb");
-            } else {
+            else
                 puts("kisebb");
-            }
         \end{lstlisting}
         \caption{C kód if konstrukcióval}
     \end{subfigure}
@@ -109,6 +110,13 @@ Erről szól \aref{fig:lisp-c4-c}.~ábra.
     \label{fig:lisp-c4-c}
 \end{figure}
 
+Egy feltűnő különbség van azonban a \aref{fig:lisp-c4-c}.~ábrán, amit még nem említettem: az operátorok.
+
+C-ben és a hasonló szintaktikájú nyelvekben az operátorok halmaza előre meghatározott.
+Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan nem lehet létrehozni operátorokat.
+Ellenben a funkcionális nyelvekben gyakori, hogy ezt meg lehet csinálni.
+A LISP családban ez egyértelmű, nincs megkülönböztetés az egyszerű függvény és operátor között, ez látható \aref{fig:lisp-c4-c:lisp}.~ábrán is.
+Azonban olyan nyelvekben, mint a Haskell is van erre lehetőség.
 
 
 
