@@ -2,21 +2,21 @@
 % !TeX encoding = UTF-8
 % !TeX program = xelatex
 %----------------------------------------------------------------------------
-\section{Scriptelhető statikus analízis eszköz}\label{sec:ftr:blast}
+\section{Kódolható statikus analízis eszköz}\label{sec:ftr:blast}
 %----------------------------------------------------------------------------
 
-Az egyik alapvető motiváció a nyelv megvalósítás mögött egy olyan eszköz alapjának létrehozása volt, amelyik lehetővé teszi a felhasználója számára, hogy saját kódrészleteket tudjon futtatni egy C vagy C++ projektben való különböző absztrakt nyelvi elemek keresése és megtalálása esetén.
+Az egyik alapvető motiváció a nyelv megvalósítás mögött egy olyan eszköz alapjának létrehozása volt, amelyik lehetővé teszi a felhasználója számára, hogy saját maga által írt kódrészleteket tudjon futtatni egy C vagy C++ projektben való különböző absztrakt nyelvi elemek keresése és megtalálása esetén.
+Ennek eleme, hogy ezeknek a nyelveknek az \gls{AST}-jében való kereséshez egy kényelmesen használható \gls{DSL}-t lehessen megvalósítani, de a találat esetén futó kód ne legyen limitálva ezen \gls{DSL} elvárásai szerint.
 
-Példának egy AWK jellegű eszközt lehetséges és érdemes elképzelni, amelyik egy alacsonyabb szinten -- a szimpla és egyszerű fájlok szöveges tartalma felett -- biztosít futtatható kódrészleteket, amikor egy-egy reguláris kifejezést sikeresen megtalál a bemenetén.
+Példának egy AWK jellegű eszközt lehetséges elképzelni, amelyik egy alacsonyabb szinten -- a szimpla és egyszerű fájlok szöveges tartalma felett -- biztosít futtatható kódrészleteket, amikor egy-egy reguláris kifejezést sikeresen megtalál a bemenetén.
 Ennek vitathatatlan előnye, hogy általános és minden szöveges fájlon működőképes.
-Azonban emiatt nem rendelkezik megfelelő mennyiségű szemantikus információval az esetlegesen strukturált bemenetéről, így csak a legáltalánosabb, egyszerű szöveg módján tud keresni.
+Azonban emiatt nem rendelkezik megfelelő mennyiségű szemantikus információval az esetlegesen strukturált bemenetéről, így csak a legáltalánosabb egyszerű szöveg alapján tud keresni.
 
 Ez olyan esetekben, ahol a szövegnek szigorúan meghatározott formátuma van kiemelkedően zavaró tud lenni, főleg ha esetlegesen szóköz és egyéb tagoló karakterekre viszont érzéketlen a szöveg formátuma.
-Ilyen például a programozási nyelvek nagy része (pl.\ C, C++, Java, stb.) de a kevés nyelv, amelyik tagolásra érzékeny (pl.\ Python, Haskell) sincs kifejezetten nagy előnyben általánosan.
+Ilyen például a programozási nyelvek nagy része (\pl C, C++, Java, stb.) de a kevés nyelv, amelyik tagolásra érzékeny (\pl Python, Haskell) sincs kifejezetten nagy előnyben általánosan.
 Mivel a nyelvet a konkrét szintaxisával leírva tároljuk a forrásfájlokban, így sok extra zavaró szintaktikai elemet kell tudni megfelelő módon kezelni.
 Ha szimplán reguláris kifejezésekkel próbálkozunk legjobb esetben nagyságrendileg elbonyolítják a kifejezést, de még az is lehet, hogy teljesen megvalósíthatatlan egy megfelelő kifejezés -- például amit szeretnénk az nem egy reguláris nyelvtanra illeszkedő szöveg.
 A C és C++ nyelvek például szintaktikailag nem különböztetik meg a globális és egy függvényen belüli lokális változókat, sőt C++-ban, még az osztályok tagváltozói is sok esetben azonos formátumúak.
 Emiatt, ha például azt az egyszerű feladatot szeretnénk megvalósítani, hogy megkeressük, hogy hol és milyen globális változók vannak egy adott projekten belül, akkor nem fogjuk tudni extra szemantikus információ nélkül: tehát az AWK-nál erősebb eszközre van szükség.
 
 
- 

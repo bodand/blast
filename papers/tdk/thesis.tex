@@ -37,6 +37,9 @@
 
 \input{include/preamble}
 
+\def\pl{pl.~}
+\def\un{ún.~}
+
 %--------------------------------------------------------------------------------------
 % Table of contents and the main text
 %--------------------------------------------------------------------------------------
@@ -86,6 +89,12 @@
 %\listoffigures\addcontentsline{toc}{chapter}{\listfigurename}
 %\listoftables\addcontentsline{toc}{chapter}{\listtablename}
 
+% Glossary
+\printglossary[type=\acronymtype,title=Rövidítésjegyzék]
+\addcontentsline{toc}{chapter}{Rövidítésjegyzék}
+
+\printglossary
+\addcontentsline{toc}{chapter}{\glossaryname}
 
 % Bibliography
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

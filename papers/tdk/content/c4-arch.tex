@@ -5,9 +5,59 @@
 \subsection{Átfogó architektúra}\label{subsec:c4:impl:arch}
 %----------------------------------------------------------------------------
 
-A C4 fordító és értelmező programok a kód nagy részében azonosak: a különbség, hogy a folyamat végén található program az LLVM által biztosított bináris kimenetet generál vagy az LLVM JIT lehetőségeit kihasználva direkt módon kezdi el kiértékelni a C4 kódnak megfelelő memóriabeli reprezentációt.
+A C4 fordító és értelmező programok a kód nagy részében azonosak: a különbség, hogy a folyamat végén található program az LLVM által fordított bináris kimenetet generál vagy az LLVM \gls{JIT} lehetőségeit kihasználva direkt módon kezdi el kiértékelni a C4 kódnak megfelelő memóriabeli reprezentációt.
 
 \begin{figure}[htb]
     \includegraphics[width=\linewidth]{content/c4-comp.eps}
-    \caption{A C4 projekt átfogó ábrája}
+    \caption{A C4 projekt átfogó ábrája}\label{fig:c4-comp}
 \end{figure}
+
+A feldolgozás az általános fordítói lépéseket tartalmazza: megjelenik a lexikális elemző (lexer), amelyik előállítja a bemenet tokenekké formált változatát és az elemző (parser), amelyik egy absztrakt szintaxis fát (\gls{AST}) állít elő.\footnote{A C4 fordítás közben nem készül külön elemzési fának (parse tree) nevezett szerkezet, amelyik minden szintaktikai elemet tárolna; a fölösleges tokenek azonnal eldobásra kerülnek.}
+
+Az elemző lépés után azonban van egy sajátos lépés, mielőtt LLVM belső reprezentáció (\gls{IR}) készülne belőle.
+Ez egy alacsony szintű, de számítógép architektúra független leírás, amelyet az LLVM biztosít.
+Az említett extra lépés látszik \aref{fig:c4-comp}.~ábrán is: ez az a réteg, amelyiket egyszintű függvény-hozzárendelésnek (\gls{FFM}) hívok.
+Az LLVM \gls{IR}-nak és a saját \gls{FFM}-nek részletesebb tárgyalása megtalálható \aref{sinsubsec:c4:impl:steps:ffm}.~szekcióban.
+
+Az előző bekezdések tartalma mind a {\tt c4} könyvtáron belül történik meg, aminek így kimenete egy forrásfájl feldolgozásakor az előbb említett \gls{FFM} struktúrájú leírása a bemenetnek.
+Ez lehetővé teszi, hogy a legbelső, általánosan csak a bementi szöveg feldolgozásával foglalkozó könyvtár az LLVM könyvtáraitól független maradjon és könnyebben és gyorsabban fordítható legyen.
+
+A következő lépésben a {\tt c4crt} (C4 fordító futtató környezet, C4 Compiler Runtime) könyvtár felhasználja a {\tt c4} által előállított \gls{FFM} formátumú leírást, és az LLVM számára feldolgozható LLVM \gls{IR}-t elkészíti belőle.
+
+A folyamat végén pedig vagy a {\tt c4c} vagy {\tt c4i} bináris áll, a felhasználó végcéljától függően.
+Ezek az előző lépésben előállított LLVM \gls{IR}-t a megfelelő LLVM alkönyvtár számára továbbítják: a fordító binárist generál belőle, amelyet natívan lehetséges futtatni, az értelmező pedig helyben végrehajtja azt igény szerinti fordítással (\gls{JIT}).
+Az optimalizálás lépése is ezekben a lépésekben történik meg, már az LLVM \gls{IR}-on.
+
+\subsection{A C4 fordító lépései}\label{subsec:c4:impl:steps}
+
+\subsubsection*{Lexikális elemző (lexer)}
+
+A lexikális elemző elég általános, és nem tartalmaz kifejezetten érdekes megvalósításokat.
+Minden token egy külön osztályba kerül, amelyik fordítási idejű konstans kifejezések (constexpr) formájában tárolják, hogy milyen literális szöveget vagy PCRE2 kompatibilis reguláris kifejezést kell hozzá illeszteni.
+A megadott érték alapján dönti el a rendszer fordításkor, hogy melyiket használja hozzá.
+A token által hivatkozott szöveg mindig a memóriába lapozott forrásfájl egy részére mutat, így a tokenek soha nem foglalnak extra memóriát.
+A lexikai elemző osztály kérésenként egyesével egy összegtípusban (sum type, {\tt std::variant<...>}) adja vissza a mindenkori következő tokent.
+
+\subsubsection*{Elemző (parser)}
+
+Az elemző egy kézzel írt megvalósítása a rekurzív leereszkedő elemző (recursive descent parser) algoritmusnak; kód a legtöbb helyen így ezzel megfelelően pár függvény, amelyik rekurzívan hívják egymást.
+Két dolog azonban figyelmet érdemel: a függvényhívások és a felhasználó által bevezetett operátorok kezelése.
+
+Az következők előtt megjegyzésre méltó, hogy a névfeloldás elemzés közben megtörténik, nem kell külön lépést bevezetni rá.
+Ez a nyelv felépítésének következménye: minden függvény paraméterezését (paramétereinek számát, mivel dinamikus típusozás van) ismerni kell hívása előtt.
+Emiatt azonban minden függvény be van jegyezve a fordító által ismert függvények közé, így mire meghívódik egyből fel is lehet oldani a megfelelő belső függvény leíró adatszerkezetre való mutatóval.
+
+Mivel a C4 nyelv szintaxisában gyakorlatilag a szóköz a függvényhívás szintaktikája, így a függvények hívásakor egy speciális esetet kezelni kell: a hívott függvény alapján meg kell keresni, hogy mennyi paraméter tartozik hozzá és annyi darab kifejezést kell a paramétereként keresni, vagy hibát jelezni ennek hiányáról.
+
+Az elemzőkben az operátorokat extra figyelemmel kel kezelni: a különböző precedencia szinteket és asszociativitást vagy már az elemzés közben figyelembe kell venni, vagy egy külön utófeldolgozási lépésben kell helyreállítani a megfelelő hívási sorrendet.
+Emiatt elemző generátorok eszközök használatánál a különböző precedenciákat a rekurzió különböző szintjeire való elhelyezésével szokás megoldani a szabályok megadása során.
+Kézzel fejlesztett megvalósítások esetén azonban egy hatékonyabb lehetőségünk is van, az \un precedencia mászó algoritmus (precedence climbing algorithm) formájában.
+Az eredeti algoritmust a BCPL-ről írt könyvben definiálták \cite{richards_basic_1984}, BCPL-ben és szöveges formában, de egy hatékonyabb verziója elérhető példakóddal az ANTLR3 eszközhöz \cite{sam_harwell_operator_2008}.
+Ennek a manuális megvalósításával hatékonyan lehetséges általánosan infix formájú operatorokat elemezni.
+Annyi módosításra van szükség, hogy a konstans halmazt, amelyik a lehetséges operátorokat definiálják, egy elemzési időben változó halmazra kell cserélni.
+Ezzel általános, felahasználó által definiált asszociativitású és precedenciájú operátorokat lehetséges helyesen \gls{AST}-be konvertálni.
+
+\subsubsection*{Egyszintű függvény-hozzárendelő (flat function mapper)}\label{sinsubsec:c4:impl:steps:ffm}
+
+\subsubsection*{\gls{IR} előállítása és kimenet generálása}
+

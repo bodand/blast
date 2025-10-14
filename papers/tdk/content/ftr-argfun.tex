@@ -5,15 +5,15 @@
 \section{Paraméter-kötött függvények}\label{sec:ftr:argfun}
 %----------------------------------------------------------------------------
 
-A C4 nyelv által biztosított DSL leírási lehetőség a megfelelő függvények definiálásával történik.
-Ez az általános megoldás majdnem teljesen szabadon formálhatóvá teszik a nyelvet a DSL írója számára, aki a saját feladatára személyre tudja szabni, hogy a DSL számára megfelelő legyen a szintaktika.
+A C4 nyelv által biztosított \gls{DSL} leírási lehetőség a megfelelő függvények definiálásával történik.
+Ez az általános megoldás majdnem teljesen szabadon formálhatóvá teszik a nyelvet a \gls{DSL} írója számára, aki a saját feladatára személyre tudja szabni, hogy a \gls{DSL} számára megfelelő legyen a szintaktika.
 
-Egy kiemelkedően jól működő struktúra a beágyazott DSL-ek megvalósítására olyan függvények bevezetése, amelyek megfelelő módon hívják egymást, és a szintaktikai elemek megadó külső függvények csak ezeket állítják elő valamilyen closure formájában.
-Ezeknek a függvényeknek pedig van egy kezdő függvénye, amelyik bevezeti az éppen használt DSL-t.
+Egy kiemelkedően jól működő struktúra a beágyazott \gls{DSL}-ek megvalósítására olyan függvények bevezetése, amelyek megfelelő módon hívják egymást, és a szintaktikai elemek megadó külső függvények csak ezeket állítják elő valamilyen closure formájában.
+Ezeknek a függvényeknek pedig van egy kezdő függvénye, amelyik bevezeti az éppen használt \gls{DSL}-t.
 Ez a módszer látható az előző fejezetben adott példák C4 kódjában, alább pedig kiemelve az állapotgép leíró példából a {\tt state} függvény megvalósítása.
 
-\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-fn,caption={Az állapotgép DSL {\tt state} függvénye}]
-	let state/2 { |name exec| 
+\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-fn,caption={Az állapotgép \gls{DSL} {\tt state} függvénye}]
+	let state/2 { |name exec|
 		{ |stm str err fin|
 			let stm2 add_state stm name str err fin
 			&(exec)/4 stm2 0 0 0
@@ -21,20 +21,25 @@ Ez a módszer látható az előző fejezetben adott példák C4 kódjában, alá
 	}
 \end{lstlisting}
 
-Ennek a struktúrának előnye, hogy egy-egy DSL használata teljesen egy függvényhívásba limitálódik, hiszen maga a DSL csak ezen a függvényen belül fog megfelelően működni.
+Ennek a struktúrának előnye, hogy egy-egy \gls{DSL} használata teljesen egy függvényhívásba limitálódik, hiszen maga a \gls{DSL} csak ezen a függvényen belül fog megfelelően működni.
 
 Ezt a gondolatot megerősíteni egyik fejlesztési terv olyan függvények bevezetése, amelyek csak más függvények paramétereként értelmesek.
-Ezzel megoldódik az esetleges DSL-ek közötti névütközés, hiszen egy-egy kulcsszó csak a megfelelő DSL-en belül kerül feloldásra, így minden DSL a saját verzióját fogja megkapni.
+Ezzel megoldódik az esetleges \gls{DSL}-ek közötti névütközés, hiszen egy-egy kulcsszó csak a megfelelő \gls{DSL}-en belül kerül feloldásra, így minden \gls{DSL} a saját verzióját fogja megkapni.
 Ezeket a függvényeket nevezem paraméter-kötött (parameter-bound) függvényeknek, mert kötve van, hogy melyik másik függvény paraméterében kerülhetnek meghívásra.
 
-\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép DSL lehetséges paraméter-kötöt {\tt state} függvénye}]
-	let (state/2 fsm/2) { |name exec| 
-		{ |stm str err fin|
-			let stm2 add_state stm name str err fin
-			&(exec)/4 stm2 0 0 0
-		}
-	}
+\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép \gls{DSL} lehetséges paraméter-kötöt {\tt state} függvénye}]
+    let [fsm/2 state/2] { |name exec|
+        { |stm str err fin|
+            let stm2 add_state stm name str err fin
+            &(exec)/4 stm2 0 0 0
+        }
+    }
 \end{lstlisting}
+
+Fontos, hogy a tartalmazás a jelenlegi koncepció szerint rekurzívan van értelmezve, miszerint a hívott függvények sorában valahol egyszer meg kell jelennie a várt függvénynek.
+Ennek speciális eseteit, ahol például szigorúan a hívott függvényben kell lennie is érdemes lesz megfontolni.
+
+
 
 
 

@@ -12,34 +12,34 @@ Ezek egy általános vázat adnak a végső nyelv viselkedésével kapcsolatban,
 A tulajdonságok számozása egy gyenge fontossági sorrendet valósít meg köztük: bár mindegyik fontos, de az első nem teljesítése sokkal nagyobb probléma, mint a 4.-el szemben tapasztalt esetleges problémák.
 
 \begin{property}\label{prop:dsl-friendly}
-    Erős beágyazott DSL támogatás
+    Erős beágyazott \gls{DSL} támogatás
 
-    A beágyazott DSL-ek létrehozásának lehetősége az egyik alapkoncepció a nyelv tervezése során.
-    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitálódik azon DSL-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
-    Ennek megfelelően az egyik legfontosabb tulajdonsága a nyelvnek, hogy a lehető legrugalmasabb szintaktikát megválasztva, a DSL-eket legkevésbé korlátozva azok létrehozását megfelelő módon támogassa.
+    A beágyazott \gls{DSL}-ek létrehozásának lehetősége az egyik alapkoncepció a nyelv tervezése során.
+    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitálódik azon \gls{DSL}-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
+    Ennek megfelelően az egyik legfontosabb tulajdonsága a nyelvnek, hogy a lehető legrugalmasabb szintaktikát megválasztva, a \gls{DSL}-eket legkevésbé korlátozva azok létrehozását megfelelő módon támogassa.
 \end{property}
 
 \begin{property}\label{prop:uncompiled}
     Fordítás nélkül és fordítással is futtatható.
 
-    A gazdanyelvbe sokféle DSL beágyazásának a lehetősége adott.
-    Ezek a DSL-ek viszont magukban is rendelkezhetnek különböző tulajdonságokkal, amelyek számukra előnyösebbé teszik a direkt kiértékelést (interpretálást) vagy fordítást a velük végzett munka során.
+    A gazdanyelvbe sokféle \gls{DSL} beágyazásának a lehetősége adott.
+    Ezek a \gls{DSL}-ek viszont magukban is rendelkezhetnek különböző tulajdonságokkal, amelyek számukra előnyösebbé teszik a direkt kiértékelést (interpretálást) vagy fordítást a velük végzett munka során.
     Például a fordítás előnyös lehet, ha olyan végterméket állítunk elő, amelyet a végfelhasználó számára csomagolt binárisként szállítunk le így nem kell a teljes interpreter eszköztárát is telepíteni, de interpretálással rövid, egyszer használatos programokat könnyebb készíteni és használni.
-    Egy-egy DSL-nek mind két esetben is használhatónak kell maradnia, így a nyelvi szintű támogatás fontos, hogy megjelenjen mind kettő lehetőséghez.
+    Egy-egy \gls{DSL}-nek mind két esetben is használhatónak kell maradnia, így a nyelvi szintű támogatás fontos, hogy megjelenjen mind kettő lehetőséghez.
 \end{property}
 
 \begin{property}\label{prop:dynamic}
     Dinamikusan típusos
 
     Számos érv szól mind a statikus és dinamikus típusos nyelvek mellett, emellett egyes programozóknak vannak személyes preferenciái, hogy melyikkel szeretnek jobban dolgozni; nem lehet egy egyértelműen kiválasztani ,,a jó'' opciót a kettő közül.
-    Azért a dinamikusan típusos megoldásra esett a választásom, mert így a DSL-ek használata közben nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát eltölteni.
+    Azért a dinamikusan típusos megoldásra esett a választásom, mert így a \gls{DSL}-ek használata közben nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát eltölteni.
     Elegendő, csak a szakterület által is érdekesnek ítélt elemekkel foglalkozni.
 \end{property}
 
 \begin{property}\label{prop:easy}
     Érthető egy átlagos C, C++, Java, stb. fejlesztő számára.
 
-    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy elterjedt másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával sok időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott DSL-t.
+    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy elterjedt másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával sok időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott \gls{DSL}-t.
 \end{property}
 
 \subsection{A C4 nyelv ismertetése}\label{subsec:c4:desc:c4}
@@ -48,7 +48,7 @@ Az előző tulajdonságok alapján megalkotott nyelv leírása következik.
 Magas szinten, egy olyan nyelvet definiálok, amelyik funkcionális, immutábilis, dinamikusan típusos, és szintaktikáját tekintve nagyon megengedő és rugalmas.
 
 Ezeknek a tulajdonságoknak nagy része egyenesen megfeleltethető vagy direkt következménye az előző részben definiált elvárásoknak.
-A funkcionális, immutábilis nyelv választása azonban nem egyértelmű: a klasszikus könnyen futtatható, dinamikus nyelvek nagy többségben egyszerű procedurális paradigma szerint működnek, ld.~Tcl és a különböző (UNIX) shell nyelvek, esetleg utólagosan különféle módon objektum--orientált támogatást kaptak; ilyen pl.~a Perl.
+A funkcionális, immutábilis nyelv választása azonban nem egyértelmű: a klasszikus könnyen futtatható, dinamikus nyelvek nagy többségben egyszerű procedurális paradigma szerint működnek, ld.~Tcl és a különböző (UNIX) shell nyelvek, esetleg utólagosan különféle módon objektum--orientált támogatást kaptak; ilyen \pl a Perl.
 
 Az immutábilis entitásokkal végzett programozás biztosít egy extra réteg fordítási időbeli védelmet az esetleges elírások, vagy ...
 Ez a megközelítés a dinamikus típusozás által hozott extra hibalehetőségeket hivatott csökkenteni, amellett, hogy több előnye is származik a kódnak a tisztaságából (purity): egyszerűbb értelmezés, és meglepő mellékhatások nélkül könnyebben olvashatóvá válhatnak kódrészletek.
@@ -65,7 +65,7 @@ A nyelv rugalmasságát viszont még az eddig elmondottak nem garantálják.
 Meg kell tehát még valósítani azt a nyelvi szintaktikát, amelyikben a lehető legkevesebb konkrét elem található, és minél több minden ezekből felépíthető.
 Ez a rugalmasság LISP nyelvcsaládban \cite{mccarthy_recursive_1960} kiemelkedően jól látszik: a zárójeleket leszámítva, makrók felhasználásával a Scheme implementációkban  akár teljesen új nyelvi elemeket lehet \cite{gnu_project_syntax_nodate} létrehozni.
 A zárójelek azonban egy idegen, elriasztó kinézetet kölcsönöznek a LISP alapú nyelveknek, így nem feltételen ideálisak \aref{prop:easy}.~tulajdonság miatt.
-Ennek ellenére a LISP alapkoncepciója hasznos tud lenni: az ún.~szimbolikus kifejezés (\\gls{sexpr}; innentől \\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
+Ennek ellenére a LISP alapkoncepciója hasznos tud lenni: a szimbolikus kifejezések (\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
 Ebben láthatóan mindent függvények vagy makrók definiálásával és azok hívásával lehetséges megadni, és kiemelkedően egyszerű feldolgozni, mert minden teljesen uniform módon néz ki.
 
 De vegyük el a zárójeleket: ha előre ismert, hogy mennyi paramétert vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
@@ -117,6 +117,19 @@ Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan
 Ellenben a funkcionális nyelvekben gyakori, hogy ezt meg lehet csinálni.
 A LISP családban ez egyértelmű, nincs megkülönböztetés az egyszerű függvény és operátor között, ez látható \aref{fig:lisp-c4-c:lisp}.~ábrán is.
 Azonban olyan nyelvekben, mint a Haskell is van erre lehetőség.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

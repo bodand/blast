@@ -6,13 +6,12 @@
 %----------------------------------------------------------------------------
 
 Az informatika széles körben alkalmaz különféle nyelveket ahhoz, hogy valamilyen feladatra tudjon megoldást adni:
-gyakran ez egy program fejlesztése, ahol egy megfelelően választott  programozási nyelvet (pl.~C++, C\#, Java, Rust, Haskell, Erlang, stb.) szokás használni -- a megfelelő választás pedig függ a feladat jellegétől, a projekttel szemben támasztott követelményektől és magától a fejlesztő csapat előképzettségétől és képességeitől is.
+gyakran ez egy program fejlesztése, ahol egy megfelelően választott  programozási nyelvet (\pl C++, C\#, Java, Rust, Haskell, Erlang, stb.) szokás használni -- a megfelelő választás pedig függ a feladat jellegétől, a projekttel szemben támasztott követelményektől és magától a fejlesztő csapat előképzettségétől és képességeitől is.
 
 Egy nagyszerűen a problémára illeszkedő programozási nyelv választásakor is előfordul azonban, hogy előkerülnek olyan részfeladatok, amelyekhez nincs szükség az előbb felsorolt programnyelvek teljes eszközkészletére, hogy megoldjuk ezeket.
 Ilyenkor az is lehetséges, hogy ez az eszköztár akár még meg is nehezítheti a konkrét eset megoldását és karbantarthatóságát, mert túl sok lehetőséget nyújtanak a fejlesztőknek, így egy olyan megoldás áll elő amelyik túlságosan komplex, pedig lett volna lehetőség egy letisztultabb megoldásra is -- ez egyszerűen nem jutott a fejlesztők eszébe a túlságosan tág megoldási lehetőségek halmazából.
 
-Ez az egész problémakör azért merül fel, mert ezek a nyelvek ún.~általános célú programozási nyelvek (General-purpose Programming Language, GPL), %todo abbrev
-amelyek célja és tervezésükkor kitűzött alapvető elvárás, hogy minden feladatra és problémára amivel szembe találkozhat egy fejlesztő, arra legyen valamilyen lehetősége azt a nyelven belül megoldani.
+Ez az egész problémakör azért merül fel, mert ezek a nyelvek \un általános célú programozási nyelvek (\gls{GPL}), amelyek célja és tervezésükkor kitűzött alapvető elvárás, hogy minden feladatra és problémára amivel szembe találkozhat egy fejlesztő, arra legyen valamilyen lehetősége azt a nyelven belül megoldani.
 Így minden esetben minden probléma megoldásához szükséges minden lehetőséget biztosítanak, akkor is, ha például egy állapotgép leírásához nincs feltétlenül szükségünk arra, hogy tudjunk osztálysablonokat definiálni.
 
 Ez egy gyakran előforduló helyzet, hiszen sok esetben a nagy célprobléma részekre bontása során előállnak olyan részproblémák, amelyek az előző paragrafusban tárgyalt túlságosan gazdag leírási lehetőségek szerint a nem annyira komplex és kevésbé általános nyelvi keretek könnyítenék a fejlesztést.
@@ -20,9 +19,9 @@ Ezzel összhangban, sok olyan speciális nyelv alakult ki, amelyik az általáno
 Ezekért cserébe a megcélzott szakterület igényeit elégíti ki a lehető legjobban.
 Egy kifejezetten gyakran előkerülő család a leíró nyelvek (XML dialektusok, HTML, Markdown), de igen nagy számban fordulnak elő különböző egyéb példák: ábrák készítésére készült nyelvek (Pikchr, PlantUML), fordítást kezelő rendszerek (Make, Ninja), de még az adatmanipulációs SQL és QUEL nyelvek és tipográfiai nyelvek, mint a \TeX\ és roff is ebbe a kategóriába tartoznak.
 %Vegyük például a HTML-t: egy (általában weboldalon) megjelenítendő grafikus ablakot leírására nyújt egy széles választékát, de minden részlete ezt a célt szolgálja, és másra nem ad lehetőséget.
-%Nyilvánvalóan, egy grafikus ablak leírását meg lehetne adni egy általános nyelvben, sorról sorra haladva és elhelyezve az egyes megjelenítendő elemeket; léteznek is ilyen könyvtárak, pl.~egy asztali környezetbeli ablak megadása Swing grafikus könyvtár Java alatt.
+%Nyilvánvalóan, egy grafikus ablak leírását meg lehetne adni egy általános nyelvben, sorról sorra haladva és elhelyezve az egyes megjelenítendő elemeket; léteznek is ilyen könyvtárak, \pl egy asztali környezetbeli ablak megadása Swing grafikus könyvtár Java alatt.
 
-Az előző bekezdésben tárgyalt nyelveket, amelyek egy-egy részprobléma megoldására adnak specializált -- és pusztán arra limitált -- eszközkészletet hívjuk szakterület-specifikus nyelveknek (Domain Specific Languages, DSL). % todo abbrev
+Az előző bekezdésben tárgyalt nyelveket, amelyek egy-egy részprobléma megoldására adnak specializált -- és pusztán arra limitált -- eszközkészletet hívjuk szakterület-specifikus nyelveknek (\gls{DSL}).
 Ezek részletesebb tárgyalásáról szól \aref{chr:dsl}.~fejezet.
 
 Az általam fejlesztett általános célú programozási nyelvet és annak általam adott megvalósítását mutatja be \aref{chr:c4}.~fejezet.

@@ -5,44 +5,44 @@
 \section{Állapotgép leíró nyelv}\label{sec:uses:fsm}
 %----------------------------------------------------------------------------
 
-A sokak által ismert és egyszerű véges állapotgépek (Finite State Machine (FSM))  leírására adott szakterület-specifikus nyelv jó példa tud lenni egy DSL készítésére képes eszköz számára.
+A sokak által ismert és egyszerű véges állapotgépek \gls{FSM} leírására adott szakterület-specifikus nyelv jó példa tud lenni egy \gls{DSL} készítésére képes eszköz számára.
 Ez többek között azért van, mert ezeket a matematikai jellegű struktúrákat egy deklaratív, letisztult, egyszerű nyelvben is le lehet írni szépen és elegánsan.
-Ez kifejezetten egy előnye egy DSL-nek, míg egy általános célú nyelvben ezt gyakran jóval bonyolultabban lehet megvalósítani.
-Ebben a szekcióban, az előzőeknek megfelelően, én is megadok egy FSM megvalósítást, amelyikkel egyszerű véges automatákat lehetséges megvalósítani.
+Ez kifejezetten egy előnye egy \gls{DSL}-nek, míg egy általános célú nyelvben ezt gyakran jóval bonyolultabban lehet megvalósítani.
+Ebben a szekcióban, az előzőeknek megfelelően, én is megadok egy \gls{FSM} megvalósítást, amelyikkel egyszerű véges automatákat lehetséges megvalósítani.
 A konkrét megvalósító C4 kód % todo ref
-függelékben, egy példaként megvalósított állapotgép látható \aref{fig:ex-stm}.~ábrán. A DSL-ben írt kód a pedig alább következik \aref{lst:ex-fsm}.~listázásban.
+függelékben, egy példaként megvalósított állapotgép látható \aref{fig:ex-stm}.~ábrán. A \gls{DSL}-ben írt kód a pedig alább következik \aref{lst:ex-fsm}.~listázásban.
 
 \begin{figure}[hbt]
 	\includegraphics[width=\linewidth]{content/ex-stm.eps}
 	\caption{A megvalósított állapotgép}\label{fig:ex-stm}
 \end{figure}
 
-\begin{lstlisting}[gobble=2,numbers=left,caption={C4 állapotgép DSL használati példa},label=lst:ex-fsm]
+\begin{lstlisting}[gobble=2,numbers=left,caption={C4 állapotgép \gls{DSL} használati példa},label=lst:ex-fsm]
 	let myfsm fsm
 		start state "start"
 			leave { println "starting..." }
-			
+
 		final state "done"
-		
+
 		error state "bad"
 			enter { println "invalid" }
-			
+
 		state "think1"
 			enter { println "hmm" }
-			
+
 		state "think2"
-		
+
 		state "end"
 			enter { println "done?" }
-		
+
 		on "n" from "start" to "bad"
 		on "y" from "start" to "think1"
-		
+
 		on "e" from "think1" to "think2"
-		
+
 		on "e" from "think2" to "think1"
 		on "s" from "think2" to "end"
-		
+
 		on "y" from "end" to "think1"
 			do { println "!?" }
 		on "!" from "end" to "done"
@@ -61,8 +61,14 @@ Ezeket ismerve az alábbi kódrészlettel futtathatóvá válik a {\tt myfsm} v�
 	step_until_empty myfsm
 \end{lstlisting}
 
+\todo[inline]{Szar az egész}
 
-Láthatólag ez egy rövid kódrészlet, az alapvetően egyszerű trükkök mind el vannak rejtve a DSL megvalósítása mögé, így az állapotgépet használónak csak azzal kell foglalkoznia, amivel szeretne.
+Láthatólag ez egy rövid kódrészlet, az alapvetően egyszerű trükkök mind el vannak rejtve a \gls{DSL} megvalósítása mögé, így az állapotgépet használónak csak azzal kell foglalkoznia, amivel szeretne.
+
+
+
+
+
 
 
 

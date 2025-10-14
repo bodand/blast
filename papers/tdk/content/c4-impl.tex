@@ -5,7 +5,7 @@
 \section{A {\tt c4c} és {\tt c4i} megvalósítása}\label{sec:c4:impl}
 %----------------------------------------------------------------------------
 
-Ebben az alfejezetben az előzőekben megadott C4 nyelvhez készített megvalósításomat, a {\tt c4c} fordítóprogramot és {\tt c4i} JIT alapú interpretert mutatom be.
+Ebben az alfejezetben az előzőekben megadott C4 nyelvhez készített megvalósításomat, a {\tt c4c} fordítóprogramot és {\tt c4i} igény szerinti fordítás (\gls{JIT}) alapú interpretert mutatom be.
 Elsőként a felhasznált eszközökről esik röviden szó, majd a az általános architektúra utána az érdekesebb megoldásokra térek ki.
 
 \subsection{Felhasznált eszközök}\label{subsec:c4:impl:tools}
@@ -16,14 +16,14 @@ Az alábbi felsorolásban a fontosabb, nyelv megvalósításához használt eszk
 Ez egy közismert, natív kódra forduló, rendszerprogramozási nyelv.
 
 \paragraph{PCRE2 \cite{philip_hazel_pcre_2015}} A lexerben használt reguláris kifejezéseket a PCRE2  könyvtár segítségével futtatom a bementi szövegen.
-Ennek érdekessége, hogy támogat a reguláris kifejezések értelmezéséhez egy JIT alapú megvalósítást, amelyikkel gyorsabban tudja futtatni a lefordított kifejezéseket, mint egyszerű naiv kiértékeléssel.
+Ennek érdekessége, hogy támogat a reguláris kifejezések értelmezéséhez egy \gls{JIT} alapú megvalósítást, amelyikkel gyorsabban tudja futtatni a lefordított kifejezéseket, mint egyszerű naiv kiértékeléssel.
 
 \paragraph{LLVM \cite{llvm_project_llvm_nodate}} Egy széles körben natív nyelvek megvalósítására használt eszközkészlet.
 A projekt saját fejlesztésű C, C++ és Fortran fordítója mellett a Rust és Swift programozási nyelvek is ezt használják a natív kód generálás megvalósítására.
-A C4 rendszer számára biztosítja a bináris kimenet generálását, optimalizálást és a JIT támogatást.
+A C4 rendszer számára biztosítja a bináris kimenet generálását, optimalizálást és a \gls{JIT} támogatást.
 
 \paragraph{Boehm-Demers-Weiser GC \cite{boehm_garbage_nodate}} Egy hatékony\cite{boehm_space_2004} C könyvtárként megvalósított konzervatív szemétgyűjtő (garbage collector) algoritmus.
-Ez biztosítja, hogy a C4 feldolgozása során generált futtatható kód (akár külön binárisként, vagy interpretált módban) érvényes memóriára mutat.
-A különböző nyelvi elemek (closure) nehézzé teszik az egyértelmű memória foglalást manuálisan megvalósítani, így a szemétgyűjtő algoritmus jelentősen megkönnyíti a megvalósítást.
+Ez biztosítja, hogy a C4 feldolgozása során generált futtatható kód (akár külön binárisként, akár interpretált módban) érvényes memóriára mutató mutatókat használ, amiket nem kell helyesen generált felszabadító függvényekkel explicit felszabadítani.
+A különböző nyelvi elemek, mint a lezárás (closure), nehézzé teszik az egyértelmű memória foglalást manuálisan kezelni, így a szemétgyűjtő algoritmus jelentősen megkönnyíti a megvalósítást.
 
 \input{content/c4-arch}
