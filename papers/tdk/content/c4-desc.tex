@@ -113,10 +113,11 @@ Erről szól \aref{fig:lisp-c4-c}.~ábra, amelyikben látszik, hogy ha elhagyjuk
 Egy feltűnő különbség van azonban a \aref{fig:lisp-c4-c}.~ábrán, amit még nem említettem: az operátorok.
 
 C-ben és a hasonló szintaktikájú nyelvekben az operátorok halmaza előre meghatározott.
-Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan nem lehet létrehozni operátorokat.
-Ellenben a funkcionális nyelvekben gyakori, hogy ezt meg lehet csinálni.
+Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan nem lehet létrehozni új operátorokat.
+Ellenben, a funkcionális nyelvekben gyakori, hogy ezt meg lehet csinálni, és ezt a lehetőséget megfelelően ki is használják.
 A LISP családban ez egyértelmű, nincs megkülönböztetés az egyszerű függvény és operátor között, ez látható \aref{fig:lisp-c4-c:lisp}.~ábrán is.
-Azonban olyan nyelvekben, mint a Haskell is van erre lehetőség.
+Azonban olyan nyelvekben, mint a Haskell is van erre lehetőség, és például az egyik legalapvetőbb és hírhedt típus-osztály (type class), a {\tt Monad} is rendesen kihasznál: a három függvényből, amelyiket előír, kettő operátor ({\tt >>=} és {\tt >>}).
+
 
 
 
