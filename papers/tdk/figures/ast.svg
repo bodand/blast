@@ -1,0 +1,20 @@
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="pikchr" viewBox="0 0 772.134 182.696">
+<path d="M19.44,110.274L270.646,110.274L270.646,17.1279L19.44,17.1279Z"  style="fill:rgb(211,211,211);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="108.288" y="31.5279" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">let add/2 { |a b|</text>
+<text x="72.16" y="51.5279" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">a + b</text>
+<text x="36.864" y="71.5279" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">}</text>
+<text x="63.216" y="91.5279" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">add 1 2</text>
+<path d="M361.51,180.536L730.751,180.536L730.751,2.52L361.51,2.52Z"  style="fill:rgb(211,211,211);stroke-width:2.16;stroke:rgb(0,0,0);" />
+<text x="435.526" y="19.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(scope [+/2-&gt;]</text>
+<text x="447.062" y="39.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(let add/2@60</text>
+<text x="467.526" y="59.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(scope [+/2-&gt;]</text>
+<text x="523.558" y="79.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(lambda [a/0#B0 b/0#18]</text>
+<text x="499.526" y="99.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(scope [+/2-&gt;]</text>
+<text x="587.094" y="119.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(+/2 (a/0-&gt;B0) (b/0-&gt;18)))))))</text>
+<text x="453.094" y="139.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(scope [add/2-&gt;60]</text>
+<text x="460.598" y="159.8" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">(add/2-&gt;60 1 2))</text>
+<path d="M536.326,170.8L369.862,170.8L95.904,101.968L30.528,101.968"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(198,49,49);" />
+<path d="M122.688,43.4079L187.488,43.4079L410.806,91.68L631.99,91.68"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(24,165,43);" />
+<path d="M48.4,60.5279L97.36,60.5279L447.414,131.68L676.374,131.68"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(70,116,252);" />
+</svg>
+

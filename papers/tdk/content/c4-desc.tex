@@ -68,7 +68,7 @@ A zárójelek azonban egy idegen, elriasztó kinézetet kölcsönöznek a LISP a
 Ennek ellenére a LISP alapkoncepciója hasznos tud lenni: a szimbolikus kifejezések (\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
 Ebben láthatóan mindent függvények vagy makrók definiálásával és azok hívásával lehetséges megadni, és kiemelkedően egyszerű feldolgozni, mert minden teljesen uniform módon néz ki.
 
-De vegyük el a zárójeleket: ha előre ismert, hogy mennyi paramétert vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
+De vegyük el a zárójeleket: ha előre ismert, hogy mennyi argumentumot vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
 Ez egy C jellegű sorrendet követel meg a függvények definiálásánál: minden függvényt hívása előtt ismerni kell.
 Ez azonban nem okoz véleményem szerint nagy gondot, sok másik nyelv rendelkezik ezzel a megkötéssel: C, C++ (részei), Perl, stb.
 
@@ -104,7 +104,7 @@ Erről szól \aref{fig:lisp-c4-c}.~ábra, amelyikben látszik, hogy ha elhagyjuk
             else
                 puts("kisebb");
         \end{lstlisting}
-        \caption{C kód if konstrukcióval}
+        \caption{C kód if szerkezettel}
     \end{subfigure}
     \caption{Különböző nyelvek if szintaktikája}
     \label{fig:lisp-c4-c}

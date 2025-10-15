@@ -1,0 +1,65 @@
+ind = 8pt
+ln = 10pt
+
+B1:   box fill 0xf2f2f2 ht 4.3*ind wid 4.759cm
+B1_0: text with .w at B1.nw - (.042 - 0*ind, .1 + 0*ln) "a.0 = 1" bold big monospace
+B1_1: text with .w at B1.nw - (.11  - 0*ind, .1 + 1*ln) "c.gt.0 = c > 0" bold big monospace
+B1_2: text with .w at B1.nw - (.25  - 0*ind, .1 + 2*ln) "br c.gt.0, if.true, if.after" bold big monospace
+
+move down .65
+move right until even with B1.se
+move right .2
+
+B2:   box fill 0xf2f2f2 ht 3.2*ind wid 2.07cm
+B2_0: text with .w at B2.nw - (.042 - 0*ind, .1 + 0*ln) "a.1 = 2" bold big monospace
+B2_2: text with .w at B2.nw - (.08  - 0*ind, .1 + 1*ln) "br if.after" bold big monospace
+
+move down .5
+move left until even with B1.w
+move right .2
+
+B3:   box fill 0xf2f2f2 ht 3.2*ind wid 3.58cm
+B3_0: text with .w at B3.nw - (.19 - 0*ind, .1 + 0*ln) "a.after = φ(a.0, a.1)" bold big monospace
+B3_2: text with .w at B3.nw - (.112 - 0*ind, .1 + 1*ln) "print a.after" bold big monospace
+
+B1_l: box with .sw at B1.nw wid 1cm ht .4cm
+      text with .c at B1_l.c "root" bold
+
+B2_l: box with .sw at B2.nw wid 1.1cm ht .4cm
+      text with .c at B2_l.c "if.true" bold
+B2_t: dot invisible at B2_l.w - (.2, 0)
+
+B3_l: box with .sw at B3.nw wid 1.2cm ht .4cm
+      text with .c at B3_l.c "if.after" bold
+B3_t0:dot invisible at B3_l.e + (.2, 0.035)
+B3_t1:dot invisible at B3_l.e + (.2, -.035)
+
+line -> color red from B1.se - (1.14, -.03) \
+  to B1.se - (.67, -.03) \
+  then to B2_t\ 
+  then to B2_l.w
+
+line -> color blue from B1.se - (.06, -.03) \
+  to B1.se - (.55, -.03) \
+  then to B3_t0 \
+  then left until even with B3_l.e
+
+line -> color green from B2.se - (.06, -.03) \
+  to B2.se - (.55, -.03) \
+  then to B3_t1 \
+  then left until even with B3_l.e
+
+spline -> dotted color green from B2.nw - (-.1, .105) \
+  go left .412 \
+  then heading -135 \ 
+  then go .2 heading 180 
+
+spline -> dotted color blue from B1.nw - (-.1, .105) \
+  go .34 heading -115 \
+  then go .44 heading 180 \
+  then right until even with B3.c \ 
+  then go .272 heading 135 \
+  then go .24 heading 180 \
+  then down until even with B3.n \
+  then go down .1
+
