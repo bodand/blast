@@ -1,0 +1,88 @@
+ind = 8pt
+ln = 10pt
+
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
+
+Base0: dot invis
+
+Lbl0:  text "byte sorozat" bold fit with .e at Base0.c
+Data0: text "XXAASHCCDDDDDDDD" monospace big fit with .w at Base0.c - (.205, 0)
+
+peght = .11
+
+Start0: dot invis at (Base0.c.x, Data0.sw.y)
+End0: dot invis at (Data0.sw.x + .323, Start0.c.y)
+Mid0: dot invis at ((Start0.c.x + End0.c.x)/2, Start0.c.y)
+
+line color gray from Start0 to End0
+line color gray up peght from Start0 - (0, peght/2)
+line color gray up peght from End0 - (0, peght/2)
+#text "0x02" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start1: dot invis at End0
+End1: dot invis at Start1 + (.123, 0)
+Mid1: dot invis at ((Start1.c.x + End1.c.x)/2, Start1.c.y)
+
+line color gray from Start1 to End1
+line color gray up peght from Start1 - (0, peght/2)
+line color gray up peght from End1 - (0, peght/2)
+#text "0x04" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start2: dot invis at End1
+End2: dot invis at Start2 + (.123/2, 0)
+Mid2: dot invis at ((Start2.c.x + End2.c.x)/2, Start2.c.y)
+
+line color gray from Start2 to End2
+line color gray up peght from Start2 - (0, peght/2)
+line color gray up peght from End2 - (0, peght/2)
+#text "0x05" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start3: dot invis at End2
+End3: dot invis at Start3 + (.123/2, 0)
+Mid3: dot invis at ((Start3.c.x + End3.c.x)/2, Start3.c.y)
+
+line color gray from Start3 to End3
+line color gray up peght from Start3 - (0, peght/2)
+line color gray up peght from End3 - (0, peght/2)
+#text "0x0E" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start4: dot invis at End3
+End4: dot invis at Start4 + (.123, 0)
+Mid4: dot invis at ((Start4.c.x + End4.c.x)/2, Start4.c.y)
+
+line color gray from Start4 to End4
+line color gray up peght from Start4 - (0, peght/2)
+line color gray up peght*2.3 from End4 - (0, peght/2)
+text "0x08" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start5: dot invis at End4
+End5: dot invis at Start5 + (.498, 0)
+Mid5: dot invis at ((Start5.c.x + End5.c.x)/2, Start5.c.y)
+text "adatok" with .n at Mid5.s
+
+line <-> color gray from Start5 to End5
+line color gray up peght from Start5 - (0, peght/2)
+line color gray up peght from End5 - (0, peght/2)
+
+
+## lines ##
+
+line color gray from Mid0 down .15 then .78 heading -135
+line color gray from 3rd vertex of last line to 2nd vertex of last line "nem használt" aligned above
+
+line color gray from Mid1 down .25 then .4 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "aritás" aligned above
+
+line color gray from Mid2 down .35 then .4 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "státusz" aligned above
+
+line color gray from Mid3 down .48 then .53 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "híváslánc" aligned above
+
+line color gray from Mid4 down .58 then .53 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "ctx méret" aligned above
+
+

@@ -27,7 +27,7 @@ Ezt a gondolatot megerősíteni egyik fejlesztési terv olyan függvények bevez
 Ezzel megoldódik az esetleges \gls{DSL}-ek közötti névütközés, hiszen egy-egy kulcsszó csak a megfelelő \gls{DSL}-en belül kerül feloldásra, így minden \gls{DSL} a saját verzióját fogja megkapni.
 Ezeket a függvényeket nevezem argumentum-kötött (argument-bound) függvényeknek, mert kötve van, hogy melyik másik függvény argumentumában kerülhetnek meghívásra.
 
-\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép \gls{DSL} lehetséges argumentum-kötöt {\tt state} függvénye}]
+\begin{lstlisting}[gobble=4,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép \gls{DSL} lehetséges argumentum-kötöt {\tt state} függvénye}]
     let [fsm/2 state/2] { |name exec|
         { |stm str err fin|
             let stm2 add_state stm name str err fin
@@ -36,8 +36,8 @@ Ezeket a függvényeket nevezem argumentum-kötött (argument-bound) függvénye
     }
 \end{lstlisting}
 
-Fontos, hogy a tartalmazás a jelenlegi koncepció szerint rekurzívan van értelmezve, miszerint a hívott függvények sorában valahol egyszer meg kell jelennie a várt függvénynek.
-Ennek speciális eseteit, ahol például szigorúan a hívott függvényben kell lennie is érdemes lesz megfontolni.
+Fontos megjegyezni, hogy a tartalmazás a jelenlegi koncepció szerint rekurzívan van értelmezve, miszerint a hívott függvények sorában valahol egyszer meg kell jelennie a várt függvénynek.
+Ennek speciális esetét, ahol szigorúan a hívott függvényben kell lennie is érdemes mérlegelni, hogy a szigorúság, amit az alapból nagyon megengedő nyelvbe bevezet megéri-e.
 
 
 

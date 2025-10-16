@@ -1,0 +1,67 @@
+ind = 8pt
+ln = 10pt
+
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
+
+Mem: box thin fill xbg ht 3cm wid 11.2cm
+Mtx: text "memória" big with .nw at Mem.nw
+
+line thin fill white from Mem.nw \ 
+  go right until even with Mtx.ne + (.1, 0) \
+  then to Mtx.se \
+  then to Mtx.sw \
+  close 
+Mtx: text "memória" big with .nw at Mem.nw
+MT0: dot invisible at Mtx.sw
+
+MS0: dot invisible at (Mem.w.x, (2*Mem.sw.y+MT0.y)/3)
+
+DDD0: dot at MS0.e + (.1, 0)
+DDD1: dot at last + (.07, 0)
+DDD1: dot at last + (.07, 0)
+move .15
+
+V64_0: box color xblue ht 1cm "64-bit érték" big wid 120%
+V8_0:  box color xgreen ht 1cm "8" big wid V64_0.wid/8
+P56_0: box color xred ht 1cm "56 kitöltő" big wid V8_0.wid*7
+
+V64_1: box color xblue ht 1cm "64-bit érték" big wid 120%
+V8_1:  box color xgreen ht 1cm "8" big wid V64_1.wid/8
+P56_1: box color xred ht 1cm "56 kitöltő" big wid V8_1.wid*7
+
+DDD0: dot at P56_1.e + (.15, 0)
+DDD1: dot at last + (.07, 0)
+DDD1: dot at last + (.07, 0)
+
+$8bitht = .07
+
+B8_0: line up $8bitht from V64_0.nw
+B8_1: line up $8bitht from V8_0.nw
+B8_2: line up $8bitht from V64_1.nw
+B8_3: line up $8bitht from V8_1.nw
+B8_4: line up $8bitht from P56_1.ne
+
+text with .s at B8_0.n "0x..08" big monospace
+text with .s at B8_1.n "0x..10" big monospace
+text with .s at B8_2.n "0x..18" big monospace
+text with .s at B8_3.n "0x..20" big monospace
+text with .s at B8_4.n "0x..28" big monospace
+
+BrC: dot invisible at V64_0.sw + ((V64_0.wid + V8_0.wid)/2, 0)
+
+BrR: spline from V64_0.sw go .12 heading 135 \
+  then go right until even with BrC.c - (.07, 0) \
+  then go .11 heading 135
+BrL: spline from V8_0.se go .12 heading -135 \
+  then go left until even with BrC.c + (.07, 0) \
+  then go .11 heading -135
+
+BrRe: dot invisible at 4th vertex of BrR
+BrLe: dot invisible at 4th vertex of BrL
+BrE:  dot invisible at ((BrRe.c.x + BrLe.c.x)/2, BrRe.c.y)
+
+text with .n at BrE.s + (0, .03) "72 bit hasznos adat" "128 bit tárhelyen" "56,25% kihasználtság" big
+

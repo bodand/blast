@@ -9,11 +9,11 @@ A sokak által ismert és egyszerű véges állapotgépek \gls{FSM} leírására
 Ez többek között azért van, mert ezeket a matematikai jellegű struktúrákat egy deklaratív, letisztult, egyszerű nyelvben is le lehet írni szépen és elegánsan.
 Ez kifejezetten egy előnye egy \gls{DSL}-nek, míg egy általános célú nyelvben ezt gyakran jóval bonyolultabban lehet megvalósítani.
 Ebben a szekcióban, az előzőeknek megfelelően, én is megadok egy \gls{FSM} megvalósítást, amelyikkel egyszerű véges automatákat lehetséges megvalósítani.
-A konkrét megvalósító C4 kód % todo ref
-függelékben, egy példaként megvalósított állapotgép látható \aref{fig:ex-stm}.~ábrán. A \gls{DSL}-ben írt kód a pedig alább következik \aref{lst:ex-fsm}.~listázásban.
+A konkrét megvalósító C4 kód \aref{sec:app:fsm}.~függelékben, egy példaként megvalósított állapotgép pedig látható \aref{fig:ex-stm}.~ábrán.
+A \gls{DSL}-ben írt kód a bemutatott állapotgépre alább következik \aref{lst:ex-fsm}.~listázásban.
 
 \begin{figure}[hbt]
-	\includegraphics[width=\linewidth]{content/ex-stm.eps}
+	\centerline{\includegraphics[width=.8\linewidth]{content/ex-stm.eps}}
 	\caption{A megvalósított állapotgép}\label{fig:ex-stm}
 \end{figure}
 
@@ -49,8 +49,8 @@ függelékben, egy példaként megvalósított állapotgép látható \aref{fig:
 	done
 \end{lstlisting}
 
-Ami a C4 előnye ebben az esetben, más nyelvleíró eszközökkel szemben, hogy a megvalósítás során a megfelelő szemantikát is tudjuk, ugyanabban a nyelvben definiálni.
-Ezzel ennek az állapotgépnek a futtatása, amelyik a {\tt myfsm} változóban található, egy olyan léptető függvény definiálásával megvalósítható egy lépése, amelyik átveszi a jelenlegi állapotgép állapotot, lépteti egy bemenetnek megfelelően, majd visszaadja az új állapotot -- a közben szükséges akciókat végrehajtva.
+Ami a C4 előnye ebben az esetben, más nyelvleíró eszközökkel szemben, hogy a megvalósítás során a megfelelő szemantikát is tudjuk pontosan ugyanabban a nyelvben definiálni.
+Ezzel ennek az állapotgépnek, amelyik teljességében a {\tt myfsm} változóban található, a futtatása egy olyan léptető függvény definiálásával megvalósítható, hogy megadunk azt a függvényt, amelyik átveszi a jelenlegi állapotgép állapotot, lépteti egy bemenetnek megfelelően, majd visszaadja az új állapotot -- a közben szükséges akciókat végrehajtva.
 Ennek a lépés függvénynek ismételt hívásával pedig tetszőleges sok lépést lehetséges léptetni a rendszer állapotán.
 
 A léptető függvény megvalósítása erősen függ az állapotgép leíró belső megvalósításától, az általam adott szintén megtalálható a függelékben {\tt fsm\_step} néven, míg az üres sorig olvasó ciklikusan léptető függvény a {\tt step\_until\_empty}.
@@ -61,9 +61,8 @@ Ezeket ismerve az alábbi kódrészlettel futtathatóvá válik a {\tt myfsm} v�
 	step_until_empty myfsm
 \end{lstlisting}
 
-\todo[inline]{Szar az egész}
+Ezen a kódrészleten látszik, hogy egy erős, könnyen átlátható \gls{DSL} megvalósítható C4 nyelven, amelyikhez még operációs szemantika is társítható olyan módon, hogy egy megfelelő módon értelmezett függvényt kell csak definiálni, ugyan azon nyelvnek a felhasználásával.
 
-Láthatólag ez egy rövid kódrészlet, az alapvetően egyszerű trükkök mind el vannak rejtve a \gls{DSL} megvalósítása mögé, így az állapotgépet használónak csak azzal kell foglalkoznia, amivel szeretne.
 
 
 

@@ -1,3 +1,4 @@
+% !TeX spellcheck = hu_HU
 %----------------------------------------------------------------------------
 \appendix
 %----------------------------------------------------------------------------
@@ -9,24 +10,204 @@
 \numberwithin{lstlisting}{section}
 %\numberwithin{tabular}{section}
 
-%----------------------------------------------------------------------------
-\section{A TeXstudio felülete}
-%----------------------------------------------------------------------------
-\begin{figure}[!ht]
-\centering
-\includegraphics[width=150mm, keepaspectratio]{figures/TeXstudio.png}
-\caption{A TeXstudio \LaTeX-szerkesztő.} 
-\end{figure}
+\section{Állapotgép leíró nyelv}\label{sec:app:fsm}
+\begin{lstlisting}[gobble=4,numbers=left]
+    let fsm/1 { |builder|
+        &(builder)/5 set_value nil_block "active" nil_block
+            nil_block
+            nil_block
+            nil_block
+            nil_block
+    }
 
-%----------------------------------------------------------------------------
-\clearpage\section{Válasz az ,,Élet, a világmindenség, meg minden'' kérdésére}
-%----------------------------------------------------------------------------
-A Pitagorasz-tételből levezetve
-\begin{align}
-c^2=a^2+b^2=42.
-\end{align}
-A Faraday-indukciós törvényből levezetve
-\begin{align}
-\rot E=-\frac{dB}{dt}\hspace{1cm}\longrightarrow \hspace{1cm}
-U_i=\oint\limits_\mathbf{L}{\mathbf{E}\mathbf{dl}}=-\frac{d}{dt}\int\limits_A{\mathbf{B}\mathbf{da}}=42.
-\end{align}
+    let make_state_internal/3 { |start error final|
+        set_value set_value set_value nil_block
+            "start" start
+            "error" error
+            "final" final
+    }
+
+    let add_state/5 { |sm name start error final|
+        let st make_state_internal start error final
+        if start {
+            set_value set_value sm
+                name { st }
+                "active" name
+        }
+        {
+            set_value sm name { st }
+        }
+    }
+
+    let add_action/4 { |sm state type action|
+        let newstate
+            set_value
+                &(sm.state)/0
+                type action
+        set_value sm
+            state { newstate }
+    }
+
+    let add_transition/4 { |sm ev st1 st2|
+        let tr set_value nil_block "to" st2
+        let new_trtbl
+            set_value
+                &(sm.st1!."trtbl")/0
+                ev { tr }
+        let new_state
+            set_value
+                &(sm.st1)/0
+                "trtbl" { new_trtbl }
+        set_value sm st1 { new_state }
+    }
+
+    let add_tr_action/4 { |sm state ev action|
+        let to sm.state!."trtbl"!.ev!."to"
+        let new_tr
+            set_value set_value nil_block
+                "to" to
+                "action" action
+        let new_trtbl
+            set_value
+                &(sm.state!."trtbl")/0
+                ev { new_tr }
+        let new_state
+            set_value
+                &(sm.state)/0
+                "trtbl" { new_trtbl }
+
+        set_value sm state { new_state }
+    }
+
+    let start/1 { |state|
+        { |sm last str err fin|
+            &(state)/5 sm last 1 err fin
+        }
+    }
+
+    let error/1 { |state|
+        { |sm last str err fin|
+            &(state)/5 sm last str 1 fin
+        }
+    }
+
+    let final/1 { |state|
+        { |sm last str err fin|
+            &(state)/5 sm last str err 1
+        }
+    }
+
+    let state/2 { |name exec|
+        { |sm last str err fin|
+            let sm2 add_state sm name str err fin
+            &(exec)/5 sm2 name nil_block nil_block nil_block
+        }
+    }
+
+    let enter/2 { |action exec|
+        { |sm last str err fin|
+            let sm2 add_action sm last "enter" action
+            &(exec)/5 sm2 last str err fin
+        }
+    }
+
+    let leave/2 { |action exec|
+        { |sm last str err fin|
+            let sm2 add_action sm last "leave" action
+            &(exec)/5 sm2 last str err fin
+        }
+    }
+
+    let on/2 { |ev exec|
+        { |sm i0 i1 i2 i3|
+            # todo check
+            &(exec)/5 sm ev nil_block nil_block nil_block
+        }
+    }
+
+    let to/1 { |x| x }
+
+    let from/3 { |st1 st2 exec|
+        { |sm ev i1 i2 i3|
+            let sm2 add_transition sm ev st1 st2
+            &(exec)/5 sm2 ev st1 nil_block nil_block
+        }
+    }
+
+    let do/2 { |action exec|
+        { |sm ev st i2 i3|
+            let sm2 add_tr_action sm st ev action
+            &(exec)/5 sm2 ev nil_block nil_block nil_block
+        }
+    }
+
+    let done/0 {
+        { |sm i1 i2 i3 i4|
+            sm
+        }
+    }
+
+    let step/2 { |sm inp|
+        let curr sm."active"
+        &(sm.curr!."leave")/0
+        &(sm.curr!."trtbl"!.inp!."action")/0
+        let new sm.curr!."trtbl"!.inp!."to"
+        &(sm.new!."enter")/0
+        set_value sm "active" new
+    }
+\end{lstlisting}
+
+\section{Primitív feladat ütemező}\label{sec:app:make}
+\begin{lstlisting}[gobble=4,numbers=left]
+    let split_args/1 { |list|
+        let hd car list
+        if blk_empty hd { nil_block }
+        {
+            let rec split_args cdr list
+            let prereq cons hd rec."prereq"
+            if blk_empty rec
+            { set_value nil_block "recipe" hd }
+            { set_value rec "prereq" prereq }
+        }
+    }
+
+    let add_rule/3 { |rs r def|
+        set_value rs r def
+    }
+
+    let make/1 { |builder|
+        &(builder)/1 nil_block
+    }
+
+    let rule/2 { |args exec|
+        { |rs|
+            let r car args
+            let def split_args cdr args
+            let rs2 add_rule rs r def
+            &(exec)/1 rs2
+        }
+    }
+
+    let (:)/2 right 3 { |pre recipe| cons pre cons { recipe } nil }
+    let (<:)/2 right 2 { |a b| cons a b }
+
+    let done_make/0 { { |rs| rs } }
+
+    let run/2 { |ruleset target|
+        let tgt ruleset.target
+        for_each tgt."prereq" { |dep| run ruleset dep }
+        &(tgt."recipe")/0
+    }
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,21 +2,109 @@
 % !TeX encoding = UTF-8
 % !TeX program = xelatex
 %----------------------------------------------------------------------------
-\section{Kódolható statikus analízis eszköz}\label{sec:ftr:blast}
+\section{Programozható statikus analízis eszköz}\label{sec:ftr:blast}
 %----------------------------------------------------------------------------
 
-Az egyik alapvető motiváció a nyelv megvalósítás mögött egy olyan eszköz alapjának létrehozása volt, amelyik lehetővé teszi a felhasználója számára, hogy saját maga által írt kódrészleteket tudjon futtatni egy C vagy C++ projektben való különböző absztrakt nyelvi elemek keresése és megtalálása esetén.
+Az egyik alapvető motiváció a nyelv megvalósítás mögött egy olyan eszköz alapjának létrehozása volt, amelyik lehetővé teszi a felhasználója számára, hogy saját maga által írt kódrészleteket tudjon futtatni egy C vagy C++ projektben való különböző absztrakt nyelvi elemek megtalálása esetén.
 Ennek eleme, hogy ezeknek a nyelveknek az \gls{AST}-jében való kereséshez egy kényelmesen használható \gls{DSL}-t lehessen megvalósítani, de a találat esetén futó kód ne legyen limitálva ezen \gls{DSL} elvárásai szerint.
 
-Példának egy AWK jellegű eszközt lehetséges elképzelni, amelyik egy alacsonyabb szinten -- a szimpla és egyszerű fájlok szöveges tartalma felett -- biztosít futtatható kódrészleteket, amikor egy-egy reguláris kifejezést sikeresen megtalál a bemenetén.
-Ennek vitathatatlan előnye, hogy általános és minden szöveges fájlon működőképes.
+Példának egy AWK jellegű eszközt lehetséges elképzelni, amelyik egy alacsonyabb absztrakciós szinten -- a szimpla fájlok primitív szöveges tartalma felett -- biztosít futtatható kódrészleteket, amikor egy-egy reguláris kifejezést sikeresen megtalál a bemenetén.
+Ennek vitathatatlan előnye, hogy a lehető legáltalánosabb és így gyakorlatilag minden szöveges fájlon működőképes.
 Azonban emiatt nem rendelkezik megfelelő mennyiségű szemantikus információval az esetlegesen strukturált bemenetéről, így csak a legáltalánosabb egyszerű szöveg alapján tud keresni.
 
 Ez olyan esetekben, ahol a szövegnek szigorúan meghatározott formátuma van kiemelkedően zavaró tud lenni, főleg ha esetlegesen szóköz és egyéb tagoló karakterekre viszont érzéketlen a szöveg formátuma.
-Ilyen például a programozási nyelvek nagy része (\pl C, C++, Java, stb.) de a kevés nyelv, amelyik tagolásra érzékeny (\pl Python, Haskell) sincs kifejezetten nagy előnyben általánosan.
-Mivel a nyelvet a konkrét szintaxisával leírva tároljuk a forrásfájlokban, így sok extra zavaró szintaktikai elemet kell tudni megfelelő módon kezelni.
-Ha szimplán reguláris kifejezésekkel próbálkozunk legjobb esetben nagyságrendileg elbonyolítják a kifejezést, de még az is lehet, hogy teljesen megvalósíthatatlan egy megfelelő kifejezés -- például amit szeretnénk az nem egy reguláris nyelvtanra illeszkedő szöveg.
-A C és C++ nyelvek például szintaktikailag nem különböztetik meg a globális és egy függvényen belüli lokális változókat, sőt C++-ban, még az osztályok tagváltozói is sok esetben azonos formátumúak.
-Emiatt, ha például azt az egyszerű feladatot szeretnénk megvalósítani, hogy megkeressük, hogy hol és milyen globális változók vannak egy adott projekten belül, akkor nem fogjuk tudni extra szemantikus információ nélkül: tehát az AWK-nál erősebb eszközre van szükség.
+Ilyen például a \gls{GPL}-ek nagy része (\pl C, C++, Java, C4, stb.) de azon kevés nyelv (programozási vagy egyéb), amelyik legalább részlegesen tagolásra érzékeny (\pl Python, Haskell) is ugyanebben a problémába ütközik.
+Kiemelkedő, hogy olyan szemi-strukturált adattároló formátumok, mint az egyes \gls{XML} dialektusok, de még a \gls{HTML} sem kezelhető megfelelően általános módon reguláris kifejezésekkel még elméletileg sem egyszerűen a nyelvek nemregularitása miatt.
+
+Az előző paragrafus által felvázolt problémának az alapja, hogy a különféle nyelvekkel leírt programokat (vagy szemi-strukturált adatokat) a használt nyelv konkrét szintaxisával leírva tároljuk a forrásfájlokban, így sok extra, az emberi felhasználói akár hasznos, szintaktikai elemet kell tudni megfelelő módon kezelni, amitől a feldolgozás csak nehezebbé változik.
+Ebben rejlik egy nagy erőssége, a már említett módon, a LISP nyelvek által \gls{sexpr} szintaktika, hiszen nem tartalmaz gyakorlatilag semmilyen olyan extra szintaktikát, ami a feldolgozáshoz nem direkt módon tartozik.
+
+A nyelvek nagy többségének azonban az absztrakt szintaxisa nem ilyen egyszerűen kezelhető. A C és C++ nyelvek például szintaktikailag kifejezetten nehezen kezelhetőek.
+Egyik példa az egyszerű szöveges feldolgozás által tapasztalt nehézségekre, hogy nem különböztetik meg a globális és egy függvényen belüli lokális változókat, sőt C++-ban, még az osztályok tagváltozói is sok esetben azonos formátumúak.
+Emiatt, ha például azt az egyszerű feladatot szeretnénk megvalósítani, hogy megkeressük, hogy hol és milyen globális változók vannak egy adott projekten belül, akkor nem fogjuk tudni extra szemantikus információ nélkül.
+Összefoglalva, ha valamilyen szemantikai alapú leírással szeretnénk megkülönböztetni elemeket valamilyen nyelvben megadott szövegben, akkor az AWK-nál erősebb eszközre van szükség.
+Egy olyan eszköz kell, amelyik képes az absztrakt szintaxisban végrehajtani a keresést.
+
+A statikus analízis eszközök emiatt sokszor maguk is ilyen eszközökre építenek.
+Valamilyen könyvtár vagy program segítéségével feldolgozzák a konkrét szintaxist, és az így kapott \gls{AST}-ben, mint gráfban, keresnek olyan mintázatokat, amelyikről azt gondolják, hogy nem megfelelő viselkedést fog okozni futás közben.
+Egy C és C++ nyelveket támogató nyílt forráskódú eszköz az a {\tt clang-tidy}, az LLVM projekt gondozásában, de létezik számos kommersz eszköz is amelyik ilyen célt szolgál.
+
+Ezek az eszközök azonban egy zárt, előre lefejlesztett, és a binárisba -- vagy szolgáltatásba -- csomagolt ellenőrzések listáját tartalmazzák.
+A felhasználói oldalon ezeket csak ki- és bekapcsolni tudjuk, esetlegesen pár ellenőrzés által használt konstansokat van lehetőségünk felülírni valamilyen projekt szintű konfigurációs fájlban.
+
+Létezhetnek azonban olyan statikusan ellenőrizhető elvárások, amelyek egy-egy projekt sajátosságai, és így annak fejlesztőinek és csak nekik, hasznos lenne, ha ezeket az elvárásokat lehetséges lenne automatikusan ellenőriztetni.
+Három példát ismertetek erre az eshetőségre.
+
+Egy dinamikus könyvtárat valósít meg egy projekt C vagy C++ nyelven.
+Ilyenkor a dinamikusan betöltődő könyvtár (operációs rendszer függő kiterjesztéssel), kell hogy rendelkezzen egy publikusan hívható függvényekből álló interfésszel.
+Ezeket ilyenkor kiemelkedően körültekintő módon kell elkészíteni: a megfelelő hívási konvencióval, konzisztens nevekkel, és kikapcsolt névátalakítással (mangling) C++-ban.
+Ennek egyik része lehet, hogy a projekt rövidítésével kell, hogy kezdődjön, minden publikus függvény neve.
+Utóbbira nem fognak a projekt fejlesztői tudni egyből elérhető ellenőrzést találni, hiszen a projektjük neve egyedi a projektjük számára.
+Így valahogyan nekik szükséges megvalósítani a megfelelő ellenőrzést.
+
+A másik példa egy nagyobb projekt esetén érvényes, amelyiknek fontos, hogy platform független módon, operációs rendszerek között forduljon és fusson.
+Emiatt rendelkeznek egy saját absztrakciós réteggel a számukra szükséges funkcionalitással, és ennek különböző platformokra írt megvalósításokkal.
+Ilyenkor fontos lehet ellenőrizni, hogy az absztrakciós réteg által nyújtott funkcionalitást nem kerüli ki véletlenül az üzleti logikát megvalósító réteg.
+Ehhez a ismerni kell a projekt által fejlesztett absztrakciós réteget, illetve a projekt struktúrát, ami alapján lehetségessé válik eldönteni, hogy mely kódrészletek tartoznak az absztrakciós rétegbe, és melyikek az üzleti logika.
+Emiatt ebben az esetben is saját kezűleg kell a projekt fejlesztőinek megvalósítani az ellenőrzéseiket.
+
+Az utolsó egy még jobban szakterület-specifikus működést feltételez: ez oktatási környezetben jelenik meg.
+Tegyük fel, hogy valamilyen tárgy keretein belül szükség van a diákoknak/hallgatóknak egy vagy több házi feladatot elkészíteni C vagy C++ programozási nyelven, a tárgy által megadott extra követelményeket és elvárásokat betartva.
+Ez lehet akár még feladatonként eltérő is: például egy programozást bevezető tárgyban a rekurziót gyakoroltató háziban nem megengedett a különböző ciklusok használata.
+Bár ennek lehetséges szöveges ellenőrzést megvalósítani egyes nyelvek esetén ezt könnyű kijátszani, \ld \aref{lst:cpp-tricks}.~listázás.
+De egyszerűbb esetekben, a csalni próbáló megoldókat nem számolva, is hasznos lehet az egyes tárgykövetelmények automatikus ellenőrzése.
+Egy ilyen jellegű példa lehet, ha a tárgy biztosít egy szivárgás ellenőrző eszközt, amelyiken keresztül kell a dinamikus memóriát kezelni, akkor lehet keresni olyan {\tt malloc} hívásokat, amelyek nem ezen keresztül történnek.
+
+Az utolsó példánál kiemelkedően látszik, hogy létezhetnek olyan ellenőrzések, amelyek egy projekt számára elengedhetetlenül hasznosak, mindazonáltal más projekteben semmi értelme nem lenne futtatni azokat: ,,Egy komplex üzleti logikával rendelkező, C++-ban írt, több platformot támogató natív grafikus ablakban futó rendszer, amelyik fejlesztésében nem megengedettek a ciklusok.''
+
+\begin{lstlisting}[gobble=4,numbers=left,label=lst:cpp-tricks,caption={Szöveges ellenőrzést kijátszó ,,for'' ciklus},language=c]
+    #include <cstdio>
+    #define PRIMITVE_CAT(a, b) a##b
+
+    int main() {
+        PRIMITVE_CAT(fo,r) (int i = 0; i < 10; ++i)
+            printf("i: %d\n", i);
+    }
+\end{lstlisting}
+
+Ezekben az esetekben, érthető módon, nem lehetséges a kész termékként elérhető eszközökbe belefejleszteni minden egyes projekt saját elvárásait, mert egy kezelhetetlenül nagy ellenőrzés halmaz keletkezne belőle, úgy hogy az így elérhető ellenőrzések nagy részét csak az az egy-két projekt használna, amelyik kérvényezte annak lefejlesztését.
+Ez kiemelkedően igaz az ingyenes és nyílt fejlesztésűekkel, hiszen nem lesz sok ember, aki ezt számunkra karban fogja tartani, ha ezt nem tesszük meg magunk.
+Összességében ebben a helyzetben is azok lennének nagyobb mértékben használva, amelyek a konkrét projekt elvárásoktól függetlenül biztosítanak hasznos ellenőrzéseket: nem bezárt fájl, biztosan elszivárgott memória, tautologikus elágazás feltételek, stb.
+
+Még az általam tervezett megoldást bemutatom, előtte megemlítendő, hogy egyes nyílt forráskódú eszközök esetében lehetséges saját ellenőrzésekkel kibővíteni az ellenőrző eszközt.
+
+Ilyen az előzőekben már említett {\tt clang-tidy} program, amelyik egy C++-ba beépített \gls{eDSL}-en keresztül teszi lehetővé, hogy ellenőrzéseket lehessen definiálni.
+A folyamat elég részletesen dokumentált \cite{llvm_project_getting_nodate}.
+A C++-ban megvalósított \gls{eDSL} az Clang \gls{AST}-n való keresést biztosító \gls{AST}Matchers interfész, ami rendelkezik saját dokumentációval \cite{llvm_project_ast_nodate}.
+Mivel ez az \gls{eDSL} C++ osztályokat és függvényhívás operátorokat használ, így ha egyes képességekkel nem rendelkezik, a felhasználó számára lehetséges bővíteni.
+Ez után, amint beépítésre került az új ellenőrzés, a {\tt clang-tidy} programot újra kell fordítani.
+Innentől szabadon használható, a feladat csupán a folyamatosan fejlődő LLVM verziókkal lépést tartva karban tartani.
+
+Egy másik opcióként a {\tt clang-tidy} eszközben lehetővé teszi az előbb említett C++ \gls{eDSL} kódját felhasználni, úgy hogy azt egy szöveges mezőbe a konfigurációs fájlba beírjuk, majd definiáljuk a megfelelő kulcs-érték párokat a generálni kívánt diagnosztikai üzenetekhez \cite{llvm_project_query_nodate}.
+Ez a megközelítés jóval dinamikusabb, mint az előbb említett, de jelentősen gyengébb is: az \gls{eDSL} már nem rendelkezik a C++ által biztosított kifejezőerővel, és így komplexebb ellenőrzéseket (\pl egy sztring tartalmának része-e egy adott rész-sztring) nem lehetséges megvalósítani benne.
+A fejlesztői élmény is rosszabb, hiszen a kódot egy konfigurációs fájlban egy szövegben írjuk, egy tényleges forrásfájl helyett.
+Egyéb nehézség, hogy ez a lehetőség jelenleg kísérleti állapotban van a következő LLVM/clang verzió forrásában, így a fejlesztők jelenleg nem garantálnak kompatibilitást a következő verziókkal a konfigurációban használt formátummal kapcsolatban.
+
+Ezekre a problémák kiküszöbölésére tervezek megoldás adni, egy olyan C4-et használó \gls{DSL} alapú eszközt fejlesztésével, amelyik a különböző projekt szintű elvárások ellenőrzését teszi lehetővé.
+Fontos elvárás, hogy az ellenőrzések megvalósításához ne legyen szükség a vizsgálatokat ne legyen szükséges egy közös statikus analízis eszköz forráskódjába beépíteni, és ne konfigurációs fájlokba rejtett szöveges mezőkbe kelljen kódot írni.
+\Aref{lst:blast-ex}.~listázásban bemutatom a jelenlegi tervek szerinti \gls{DSL} használatát, amelyik a C4 gazdanyelvben kerül megvalósításra.
+
+\begin{lstlisting}[gobble=4,numbers=left,label=lst:blast-ex,caption={Példa lehetséges \gls{DSL}-re egy statikus analízis eszköz számára}]
+    let my_checks checks
+        match variable definition where { |def| is_global def }
+            do { |def|
+                println strcat "globális változó: "
+                                name_of def
+            }
+
+        match function call named "malloc" where { |call| file_of call != "leak_tracer.h" }
+            do { |call|
+                println strfmt "nem felügyelt malloc: {}:{}" file_of call, line_of call
+            }
+    done
+    perform my_checks in "projekt/mappa"
+\end{lstlisting}
+
+
 
 

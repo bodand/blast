@@ -1,7 +1,12 @@
 ind = 8pt
 ln = 10pt
 
-C4:   box fill lightgray ht 1.643cm wid 4.431cm
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
+
+C4:   box fill xbg ht 1.643cm wid 4.431cm
 Let0: text with .w at C4.nw - (.12  - 0*ind, .1 + 0*ln) "let add/2 { |a b|" big monospace 
 Let1: text with .w at C4.nw - (-.01 - 1*ind, .1 + 1*ln) "a + b"             big monospace 
 Let2: text with .w at C4.nw - (-.04 - 0*ind, .1 + 2*ln)  "}"                big monospace
@@ -10,7 +15,7 @@ Call: text with .w at C4.nw - (.023 - 0*ind, .1 + 3*ln) "add 1 2"           big 
 move 4.431cm
 
 
-AST: box fill lightgray ht 3.44cm wid 6.513cm
+AST: box fill xbg ht 3.44cm wid 6.513cm
      text with .w at AST.nw - (.17   - 0*ind, .12 + 0*ln) "decl _Cs3add2E( a b )"                 big monospace
      text with .w at AST.nw - (.228  - 0*ind, .12 + 1*ln) "decl _Co1p2E( arg@0 arg@1 )"                  big monospace
      text with .w at AST.nw - (.11   - 0*ind, .12 + 2*ln) "decl _C@main( )"                 big monospace
@@ -21,19 +26,19 @@ L0:  text with .w at AST.nw - (.188  - 0*ind, .12 + 6*ln) "defn _Cs3add2E( a b )
 P0:  text with .w at AST.nw - (.234  - 1*ind, .12 + 7*ln) "call _Co1p2E( arg a arg b )" big monospace
      text with .w at AST.nw - (-.024 - 0*ind, .12 + 8*ln) "}" big monospace
 
-line color 0xc63131 \
+line color xred \
   from Call.sw + (.1, .07) \
     to Call.se + (-.07, .07) \
   then to C1.sw + (.16, .06) \
   then to C1.se + (-.33, .06)
 
-line color 0x18a52b \
+line color xgreen \
   from Let0.s + (.1, .04) \
     to Let0.s + (.55, .04) \
   then to L0.sw + (.25, .04) \
   then to L0.se + (-.23, .04)
 
-line color 0x4674fc \
+line color xblue \
   from Let1.sw + (.08, .06) \
     to Let1.sw + (.42, .06) \
   then to P0.sw + (.3, .04) \

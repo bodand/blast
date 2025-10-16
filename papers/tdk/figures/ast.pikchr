@@ -1,7 +1,11 @@
 ind = 8pt
 ln = 10pt
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
 
-C4:   box fill lightgray ht 1.643cm wid 4.431cm
+C4:   box fill xbg ht 1.643cm wid 4.431cm
 Let0: text with .w at C4.nw - (.12  - 0*ind, .1 + 0*ln) "let add/2 { |a b|" big monospace 
 Let1: text with .w at C4.nw - (-.01 - 1*ind, .1 + 1*ln) "a + b"             big monospace 
 Let2: text with .w at C4.nw - (-.04 - 0*ind, .1 + 2*ln)  "}"                big monospace
@@ -10,7 +14,7 @@ Call: text with .w at C4.nw - (.023 - 0*ind, .1 + 3*ln) "add 1 2"           big 
 move 4.431cm
 
 
-AST: box fill lightgray ht 3.14cm wid 6.513cm
+AST: box fill xbg ht 3.14cm wid 6.513cm
      text with .w at AST.nw - (.1   - 0*ind, .12 + 0*ln) "(scope [+/2->]"                 big monospace
      text with .w at AST.nw - (.09  - 1*ind, .12 + 1*ln) "(let add/2@60"                  big monospace
      text with .w at AST.nw - (.1   - 2*ind, .12 + 2*ln) "(scope [+/2->]"                 big monospace
@@ -31,19 +35,19 @@ S0: line invisible \
     then right until even with Call.nw - (-.1, .07) \
     close
 
-line color 0xc63131 \
+line color xred \
   from 5st vertex of S0 \
   to 6nd vertex of S0 \
   then to 7rd vertex of S0 \
   then to 8th vertex of S0
 
-line color 0x18a52b \
+line color xgreen \
   from Let0.s + (.1, .04) \
     to Let0.s + (.55, .04) \
   then to L0.sw + (.2, .04) \
   then to L0.se + (-.23, .04)
 
-line color 0x4674fc \
+line color xblue \
   from Let1.sw + (.08, .06) \
     to Let1.sw + (.42, .06) \
   then to P0.sw + (.3, .04) \

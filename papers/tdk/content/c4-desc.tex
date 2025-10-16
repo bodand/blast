@@ -114,15 +114,136 @@ Egy feltűnő különbség van azonban a \aref{fig:lisp-c4-c}.~ábrán, amit mé
 
 C-ben és a hasonló szintaktikájú nyelvekben az operátorok halmaza előre meghatározott.
 Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan nem lehet létrehozni új operátorokat.
-Ellenben, a funkcionális nyelvekben gyakori, hogy ezt meg lehet csinálni, és ezt a lehetőséget megfelelően ki is használják.
-A LISP családban ez egyértelmű, nincs megkülönböztetés az egyszerű függvény és operátor között, ez látható \aref{fig:lisp-c4-c:lisp}.~ábrán is.
-Azonban olyan nyelvekben, mint a Haskell is van erre lehetőség, és például az egyik legalapvetőbb és hírhedt típus-osztály (type class), a {\tt Monad} is rendesen kihasznál: a három függvényből, amelyiket előír, kettő operátor ({\tt >>=} és {\tt >>}).
+Ellenben, a funkcionális nyelvekben gyakori, amellett, hogy ezt egyáltalán meg lehet csinálni, hogy ezt a lehetőséget megfelelően ki is használják a mind a nyelv szabványos könyvtárának definiálásánál a fejlesztők, mind a felhasználók.
+Míg a LISP családban ez egyértelmű, hiszen nincs érdemben megkülönböztetés az egyszerű függvény és operátor között, ahogy ez látszik \aref{fig:lisp-c4-c:lisp}.~ábrán is.
+Azonban olyan nyelvekben mint a Haskell is van erre lehetőség, és például az egyik leghírhedtebb típus-osztály (type class), a {\tt Monad} is nagy mértékben kihasznál: a három függvényből amelyiket előír, kettő operátor ({\tt >>=} és {\tt >>}).
 
+Ezzel a gondolatmenetnek megfelelő módon a C4 is támogatja a felhasználó által definiált operátorok létrehozását.
+Ez lehetővé teszi ezeknek a felhasználását az általuk még jobban testre szabható \gls{DSL}-ek fejlesztése közben.
+Az így létrehozott kifejezések között álló (infix) operátorok 10 precedencia szinten lehetnek, amelyből az alacsonyabb kerül hamarabb kiértékelésre, ha egy kifejezésben állnak.
+Ezt a szintet egy egész szám határozza meg 1-től 10-ig.
+A precedenciához hasonlóan az asszociativitást is meg kell adni, ami jobb vagy bal asszociativitást jelent.
+Ez a tulajdonság az azonos precedencia szintű operátorok kiértékelési sorrendjét határozza meg egy kifejezésen belül: ha jobb, akkor a jobb-szélső kerül elsőként kiértékelésre, majd a kimenettel hívódik egyesével az egyel balra lévő elemekkel, amíg véget nem ér a kifejezés ezen precedencia szintje.
+Bal esetén értelemszerűen a kiértékelés ennek pont fordítottja.
 
+\subsection{A C4 nyelv konkrét szintaktikája}
 
+Az előzőekben definiált nyelv szintaktikáját mutatom be ebben a szekcióban.
+Alapvetően egy egyszerű, a nem szükséges elemek sokaságát elhagyó szintaktikával rendelkezik a C4.
 
+A C4 egyetlen kulcsszóval rendelkezik: {\tt let}, ezt csak a különböző nyelvi elemek definiálására szabad használni, és nem lehetséges felüldefiniálni mással.
+Ezen kívül pár kontextus függő kulcsszó létezik, de ezek a kód többi részén szabadon használhatóak.
+Ezeket bemutatom, ahol a kontextust amiben érvényesek definiálom.
 
+A kommentek kezdetüket jelző kettős kereszt karaktertől ({\tt \#}) a sor végéig tartanak.
+Egy komment szóköznek számít a feldolgozás szempontjából, így bárhol szerepelhet, ahol a kódban szóköz állhat.
 
+A nyelv öt érdemi szintaktikai elemből áll: literálisok, amelyek a programozó által a forráskódban megadott értékek. Ilyenek például a számok és szövegek.
+Függvények és operátorok definiálása, ezek vezetnek be függvényeket, amelyeket az elkövetkező sorokban lehetséges felhasználni, illetve ezeknek a különböző meghívásához tartozó szintaktikák.
+Végül az indirekt függvényhívás, amelyikkel kifejezésekből előállítót adatokat lehet meghívni, mintha függvények lennének.
+Ezeknek adom meg a konkrét szintaktikáját az alábbi paragrafusokban.
+
+\paragraph{Literálisok} A nyelvben használható literálisok az egész és lebegőpontos számok, szövegek és blokkok.
+
+A számok a legtöbb nyelvvel megszokott módon történik, egyszerűen a számjegyek sorozatával megadva, külön elő- vagy utótag nélkül.
+A lebegőpontos számoknál a tizedes elválasztónak a pont ({\tt .}) használandó és se az egész se a tört részt nem lehet elhagyni, akkor se ha az nulla.
+
+A szöveg is máshonnan megszokott szintaktikával rendelkeznek, idézőjelek ({\tt "}) között megadható karakterek sorozata, amelyiket egy másik idézőjel zár.
+Az idézőjelek között vissza-per felvezetve lehetséges köztes időzőjeleket beilleszteni.
+UTF-8 kódolású Unicode karakterek használhatóak.
+
+Egy blokk kapcsos zárójelek ({\tt \{\}}) közötti függvényhívások sorozataként adható meg.
+Ha egy függvény definiálásánál értékként áll, akkor a nevesített függvény törzse, különben egy anonim függvény, vagy lambda, kifejezés, amelyiknek értéke a blokkot tároló adat.
+Ha a definiáláskor a befoglaló blokkban definiált vagy a megelőző globális függvények  közül hivatkozik a törzs, akkor egy lezárást (closure) definiál.
+Ilyenkor a hivatkozott függvények értékeit az adat objektumban eltárolja a további hívásoknál való felhasználásra.
+
+Ha egy blokk paramétereket vesz át, azok a nyitó kapcsos zárójel után kerülnek megadásra függőleges vonalak között ({\tt |}), szóközzel elválasztva.
+
+\begin{lstlisting}[numbers=left]
+42        # egész
+3.14      # lebegőpontos szám
+"szöveg"  # szöveg
+{ 1 + 1 } # blokk
+{ |a| a } # blokk egy paraméterrel
+\end{lstlisting}
+
+\paragraph{Függvény definíció} Egy függvény definícióját a {\tt let} kulcsszóval lehet bevezetni. A {\tt let} után áll a létrehozandó függvény neve, majd annak értéke.
+Ha a függvény paramétereinek száma több, mint 0, akkor a neve után perjellel elválasztva kell megadni az aritást.
+A név, a perjel és az aritást leíró szám közé sehova sem lehetséges szóközt rakni.
+A nulla aritás is kiírható, de nem szükséges.
+
+\begin{lstlisting}[numbers=left]
+let foo1 1
+let foo2/0 1
+let bar/2 { |a b| ... }
+\end{lstlisting}
+
+\paragraph{Operátor definíció} Egy operátor a függvény formájával (function form) definiálható, ugyan úgy, mint egy függvény a {\tt let} kulcsszóval.
+Egy operátor függvény formája az operátor zárójelekkel körbefogott és aritásával megadott verziója. (\pl az infix plusz {\tt +} operátor függvény formája {\tt (+)/2})
+
+Egy operátor prefix vagy infix voltát annak aritása adja meg.
+Ha egy paramétert vár, és ennek megfelelően {\tt (...)/1} a definiáláshoz használt függvény forma, akkor a definiált operátor prefix, ha kettőt (és {\tt (...)/2} alakú), akkor infix módon használható.
+
+At infix operátorok definiáláskor meg kell adni az operátor asszociativitását és precedencia szintjét.
+Előbbinek a ,,right'' és a ,,left'' érvényes értékei, utóbbinak egy 1-től 10-ig terjedő zárt intervallumba eső egész szám.
+A {\tt right} és a {\tt left} ebben a kontextusban kulcsszavak, más erre kiértékelődő kifejezés nem használható helyettük.
+
+Az értéke lehet bármilyen megfelelő aritású kifejezés, mint egy függvény definiálásánál.
+
+\begin{lstlisting}[numbers=left]
+let (~~)/1 { |x| ... }
+let (~=)/2 left 5 { |a b| }
+\end{lstlisting}
+
+\paragraph{Függvény hívás} Egy függvényt a nevével, majd a megfelelő számú argumentum megadásával -- szóközökkel elválasztva -- lehet meghívni.
+A függvény paramétere lehet másik függvényhívás, ilyenkor a belső függvény aritásának megfelelő darab argumentumot kap az argumentumok listájából a belső függvény, majd a következő argumentum, ha még van visszamaradó paramétere a külső függvénynek, a külső függvény argumentumaként kerül értelmezésre.
+
+\begin{lstlisting}[numbers=left]
+foo         # 0 paraméter
+bar a       # 2 paraméter: a, bar...
+    bar b   # 2 paraméter: b, foo
+        foo
+(bar a (bar b (foo)) # azonos, LISP-típusú zárójelezéssel
+\end{lstlisting}
+
+\paragraph{Operátor hívás} Egy operátort fajtájától függ, hogy milyen módon lehetséges meghívni.
+
+Ha prefix, akkor szóközökkel elkülönített formában, azon kifejezés elé kell írni, amelyikre alkalmazandó.
+Olyan karakterektől nem kötelező elkülöníteni, amelyek nem képezhetnek operátort, mint például függvények nevei vagy literálisok.
+
+Ha infix, akkor kétféle módon lehetséges meghívni.
+Elsőként két kifejezés között megadva, esetlegesen elkülönítve a második paramétere alkalmazott prefix operátoroktól.
+Ilyenkor definiáláskor a precedenciaszint és asszociativitás határozzák meg a teljes kifejezésben kapott kiértékelés sorrendjét.
+
+A másik lehetőség pedig a függvény formában, a szükséges paraméterei elé írva.
+Ilyenkor az operátor tulajdonságai (precedencia, asszociativitás) nem számítanak, és úgy kerül értelmezésre, mintha egy megfelelő nevű egyszerű függvény lenne.
+
+\begin{lstlisting}[numbers=left]
+~~a          # 'a'-ra alkalmazza a (~~)/1 operátort
+~ ~a         # 'a'-ra alkalmazza kétszer a (~)/1 operátort
+~(~a)        # 'a'-ra alkalmazza kétszer a (~)/1 operátort
+a =~ b       # 'a' és 'b' paraméterrel hívja az (=~)/2 operátort
+a =~~b       # 'a' és 'b' paraméterrel hívja az (=~~)/2 operátort
+a =~ ~b      # 'a' és '~b' paraméterrel hívja az (=~)/2 operátort
+(=~)/2 a ~b  # azonos, mint az 'a =~ ~b' sor
+\end{lstlisting}
+
+\paragraph{Indirekt függvény hívás} Egy kifejezés értékeként előálló blokk meghívására az és-jellel ({\tt \&}) kezdett, és bezárójelezett formába kell állítani a kifejezést, majd a zárójel után, a meghíváshoz használandó aritást, a definiáláshoz hasonló módon, perjellel megadni.
+Ez után kell a megadott darabszámú argumentumot szóközzel elválasztva megadni.
+A nyitó zárójel és az és-jel közé, illetve a záró zárójel, az azt követő perjel és az aritást megadó szám közé nem szabad szóközt írni.
+
+Megjegyzendő, hogy minden kifejezést lehetséges indirekt módon meghívni, amennyiben megfelelő argumentummal tesszük azt.
+A blokkot tároló objektumok kivételével, ez mindig nulla argumentumot jelent, a kiértékelés eredménye pedig a meghívott objektum.
+
+\begin{lstlisting}[numbers=left]
+let mk_returner/1 { |a| { a } }
+let mk_adder/1 { |a| { |b| a + b } }
+
+mk_returner 1        # -> (0x123456) (nem determinisztikus mutató érték)
+&(mk_returner 42)/0  # -> 42
+&(mk_adder 40)/1 2   # -> 42
+&(42)/0              # -> 42
+\end{lstlisting}
 
 
 

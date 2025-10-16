@@ -1,4 +1,5 @@
-PICS := ast.pikchr ffm.pikchr ssa.pikchr
+PICS := ast.pikchr ffm.pikchr ssa.pikchr bad-memory.pikchr bits.pikchr \
+				fn-mem.pikchr package-mem.pikchr
 SVGS := 
 PDFS := $(PICS:.pikchr=.pdf) $(SVGS:.svg=.pdf)
 

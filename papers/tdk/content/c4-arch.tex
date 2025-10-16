@@ -8,7 +8,7 @@
 A C4 fordító és értelmező programok a kód nagy részében azonosak: a különbség, hogy a folyamat végén található program az LLVM által fordított bináris kimenetet generál vagy az LLVM \gls{JIT} lehetőségeit kihasználva direkt módon kezdi el kiértékelni a C4 kódnak megfelelő memóriabeli reprezentációt.
 
 \begin{figure}[htb]
-    \includegraphics[width=\linewidth]{content/c4-comp.eps}
+    \centerline{\includegraphics[width=.8\linewidth]{content/c4-comp.eps}}
     \caption{A C4 projekt átfogó ábrája}\label{fig:c4-comp}
 \end{figure}
 
@@ -52,7 +52,7 @@ Mivel a C4 nyelv szintaxisában gyakorlatilag a szóköz a függvényhívás szi
 Az elemzőkben az operátorokat extra figyelemmel kel kezelni: a különböző precedencia szinteket és asszociativitást vagy már az elemzés közben figyelembe kell venni, vagy egy külön utófeldolgozási lépésben kell helyreállítani a megfelelő hívási sorrendet.
 Emiatt elemző generátorok eszközök használatánál a különböző precedenciákat a rekurzió különböző szintjeire való elhelyezésével szokás megoldani a szabályok megadása során.
 Kézzel fejlesztett megvalósítások esetén azonban egy hatékonyabb lehetőségünk is van, az \un precedencia mászó algoritmus (precedence climbing algorithm) formájában.
-Az eredeti algoritmust a BCPL-ről írt könyvben definiálták BCPL-ben és szöveges formában \cite{richards_basic_1984}, de egy verziója elérhető példakóddal az ANTLR3 eszközhöz is \cite{sam_harwell_operator_2008}.
+Az eredeti algoritmust a BCPL-ről írt könyvben definiálták BCPL-ben és szöveges formában \cite{richards_basic_1984}, de egy verziója elérhető példakóddal az ANTLR3 eszközhöz is \cite{harwell_operator_2008}.
 Ennek a manuális megvalósításával hatékonyan lehetséges általánosan infix formájú operatorokat elemezni.
 Annyi módosításra van szükség, hogy a konstans halmazt, amelyik a lehetséges operátorokat definiálják, egy elemzési időben változó halmazra kell cserélni.
 Ezzel általános, felahasználó által definiált asszociativitású és precedenciájú operátorokat lehetséges helyesen \gls{AST}-be konvertálni.
@@ -60,7 +60,7 @@ Ennek a folyamatnak a ki és bemenetét mutatja be \aref{fig:c4-ast}.~ábra.
 Ezen az ábrán a {\tt ->}, {\tt @} és {\tt \#} után álló mutatók értékei egyszerűsítve lettek a {\tt c4c} \gls{AST}-t lekérdező kimenetében, hogy könnyebben olvasható legyen az ábra.
 
 \begin{figure}
-    \includegraphics[width=\linewidth]{figures/ast.pdf}
+    \centerline{\includegraphics[width=.7\linewidth]{figures/ast.pdf}}
     \caption{A C4 forrásból készített AST (mutató értékek egyszerűsítve)}\label{fig:c4-ast}
 \end{figure}
 
@@ -121,22 +121,24 @@ Ennek a transzformáció eredménye \aref{fig:c4-ffm}.~ábrán látható.
 Ezen az ábrán nagyszerűen látszik az is, hogy a C4 a függvényeket és operátorokat teljesen egyformán kezeli a elemzési lépés után.
 
 \begin{figure}[htb]
-    \includegraphics[width=\linewidth]{figures/ffm.pdf}
+    \centerline{\includegraphics[width=.7\linewidth]{figures/ffm.pdf}}
     \caption{A C4 forrásból készített FFM}\label{fig:c4-ffm}
 \end{figure}
 
 \subsubsection{\gls{IR} előállítása és kimenet generálása}\label{sinsubsec:c4:impl:steps:ir}
 
-Az utolsó lépésben kerül előállításra az előzőekben már említett LLVM \gls{IR}.
+Az utolsó lépésben kerül előállításra az előzőekben már említett LLVM \gls{IR} leírása az eredeti C4 kódnak.
 Ez egy olyan formátuma az LLVM rendszernek, amelyiket bemenetként várnak a különböző alrendszerek.
-Ez szolgál egy olyan rétegként, amelyik elég általános ahhoz, hogy ne kötődjön egy konkrét hardverhez, de elég alacsony szintű ahhoz, hogy a lehető legtöbb olyan koncepciót, amivel egy-egy platform assembly nyelve rendelkezik képes kifejezni.
+Ez szolgál egy olyan rétegként, amelyik elég általános ahhoz, hogy ne kötődjön egy konkrét hardverhez sem túlságosan, de elég alacsony szintű ahhoz, hogy a lehető legtöbb olyan koncepciót, amivel egy-egy platform assembly nyelve rendelkezik képes kifejezni.
 
 Az LLVM \gls{IR} egy úgy nevezett statikus egyszeri értékadás (\gls{SSA}) formát használ, amelyikben minden regiszter pontosan egyszer állhat értékadás bal oldalán.
-Az ennek a feltételnek megfelelő utasítások sorát pedig atomi módon lefutó egyszerű blokkokba (basic block) kell rendezni, amelyek között ugrásokkal lehet váltani a blokk végén.
-Ez lehet feltételes ugrás.
+(A regiszterek száma nem korlátozott.)
+Az ennek a feltételnek megfelelő utasítások sorát pedig egy-egy felbonthatatlan egységként\footnote{Félreértéseket elkerülendő, a párhuzamosítási kontextusban is használt ,,atomi'' kifejezés használatát kerülöm. Párhuzamos kiértékelés esetén egy egyszerű blokk lefutása nem garantáltan atomi, de az még akkor is garantált, hogy ha belépünk egybe, akkor annak minden utasítását végrehajtjuk.} lefutó egyszerű blokkba (basic block) kell rendezni, amelyek között (feltételes) ugrásokkal lehet váltani a blokk végén.
+Ha ezeket a blokkokat felrajzoljuk egy gráf csúcsainak, majd az ugrások irányával azonos irányba behúzunk éleket, akkor egy \un vezérlésfolyamgráfot (\gls{CFG}) kapunk, amivel a függvények teljes törzsét írjuk le.
+Egy ilyen \gls{SSA} transzformációra látható egy egyszerű példa \aref{fig:ssa-tr}.~ábrán.
 
 \begin{figure}[htb]
-    \hfil
+    \centering
     \begin{subfigure}{.2\linewidth}
         \begin{lstlisting}[gobble=12,numbers=left]
             a = 1
@@ -146,29 +148,35 @@ Ez lehet feltételes ugrás.
         \end{lstlisting}
         \caption{Pszeudokód}
     \end{subfigure}
-    \begin{subfigure}{.7\linewidth}
-        \includegraphics[width=\linewidth]{figures/ssa.pdf}
-        \caption{\gls{SSA} átírás}
+    \begin{subfigure}{.6\linewidth}
+        \centerline{\includegraphics[width=.95\linewidth]{figures/ssa.pdf}}
+        \caption{\gls{SSA} átírás egyszerű blokkokkal egy \gls{CFG}-be}
     \end{subfigure}
-    \hfil
-    \caption{Pszeudokód példa átírása \gls{SSA} formába}
+    \caption{Pszeudokód példa átírása \gls{SSA} formába}\label{fig:ssa-tr}
 \end{figure}
 
-Ennek a sémának az előnye az optimalizáló megvalósításában jelenik meg, amelyiket -- és a hozzá fejlesztett egyes optimalizációs lépéseket -- így jelentősen egyszerűbb megvalósítani, mert ...
-\todo[inline]{Ide meg kéne magyaráznom, hogy miért, de igazából nem tudok értelmes érvet rá azon kívül, hogy hát látszik.}
+Ennek a sémának az előnye az fordításkor használt optimalizáló és a hozzá fejlesztett egyes optimalizációs lépések megvalósításában jelenik meg, ami miatt ezek sokkal könnyebben kivitelezhetőek, mert minden regiszter értéke egyértelműen ismert az egyetlen értékadásból, amelyikben bal oldalt szerepel.
+Ez alapján pedig könnyebben lehet különféle következtetéseket levonni, információt gyűjteni a kód viselkedéséről, ami alapján pedig a kód formáját átírni, hogy az jobban közelítse az optimálisat.
+Mivel ez a séma nagyon elterjedt a fordító backendekben, az optimalizációs lépésekből létezik számos akadémiai -- például a $\phi$ függvények hatékonyabb elhelyezésével foglalkozók \cite{boissinot_revisiting_2008} -- de a gyakorlatban megvalósítottból is megannyi implementáció létezik például az LLVM kódbázisában a saját \gls{IR} formátumán készen futtatható módon.
 
-A kódgenerálás szempontjából ennek két következménye van.
-Első, hogy ha egy változó többször kap értéket egy program folyama során, akkor azt olyan módon kell \gls{SSA} formába hozni, hogy minden értékadásnál egy új verziót kell hozzá bevezetni.
-Az egyszerű blokkok szerint jelenleg megfelelő verziót mindig számon kell tartani, és a változóra vonatkozó hivatkozásokat a erre a példányra kell feloldani.
-Ez a C4 megvalósításban nem játszik szerepet, hiszen minden immutábilis a gazdanyelvben is, így nem kell ezzel külön foglalkozni, automatikusan megfelel az elvárásoknak.
+Összességében, az LLVM használatához át kell alakítani a bemeneti forrásnyelv leírását \gls{SSA} formába.
+Erre a feladatra már a kilencvenes éveke eleje óta létezik algoritmus \cite{cytron_efficiently_1991} és annak különféle javításai \cite{briggs_practical_1998}.
+Röviden kifejtve azonban az \gls{IR} generálásának szempontjából két nagy következménye van.
+Első, hogy ha egy forrásnyelvi változó többször kap értéket egy program folyama során, akkor azt olyan módon kell \gls{SSA} formába hozni, hogy minden értékadásnál egy új verziót kell hozzá bevezetni egy regiszter formájában.
+A \gls{CFG} és érintett $\phi$ függvények szerinti jelenleg megfelelő verziót pedig számon kell tartani, és a változóra vonatkozó hivatkozásokat erre a legutolsó regiszter példányként kell generálni.
+A másik, hogy az elágazó \gls{CFG} esetén a $\phi$ függvényeket megfelelő paraméterezéssel le kell generálni minden blokk elejére, amelyikbe több beérkező él is van.
 
-A másik, hogy az elágazó \gls{CFG} esetén a $\varphi$ függvény megfelelő paraméterezését le kell generálni a blokkok elejére, ahol több beérkező él is van.
-A C4 megvalósításakor ezzel sem kell foglalkozni, mert nincs külön elágazás vagy ciklus eleme a nyelvnek, ami nehézségeket okzna az {\tt if/3} például is csak egy olyan függvény, mint \aref{fig:c4-ffm}.~ábrán definiált {\tt add/2}.
+A teljes problémakört azért fejtettem ki, mert a C4 megvalósításban az általános algoritmusnál egyszerűbb megoldást lehetséges adni.
+Az első következmény nem játszik szerepet, hiszen minden immutábilis a forrásnyelvben is, így nem kell ezzel külön foglalkozni, automatikusan megfelel az \gls{SSA} elvárásainak.
+De ami érdekesebb, hogy a másodikkal sem kell foglalkozni, mert nincs külön elágazás vagy ciklus eleme a nyelvnek, ami nehézségeket okozna az {\tt if/3} például is csak egy olyan függvény, mint \aref{fig:c4-ffm}.~ábrán definiált {\tt add/2}.
 Meghívása pedig emiatt teljesen azonos, és így nincs elágazás.
+Ezeknek megfelelően az \gls{IR} generálásánál csak az egyes struktúrákba való indexelést (lusta paraméterátadás struktúráinál) és a lusta függvényhívást kell legenerálni a primitívebb ekvivalenseikbe.
+Ezek már nem kifejezetten nehéz feladatok, mivel segédfüggvényként lehetséges bevonni olyan kódrészleteket, amelyeket már előre és egyszer megvalósítottam, kézzel.
+A segédfüggvények feladatköre \aref{sec:c4:rt}.~szekcióban tárgyalt viselkedések megvalósítása.
 
-Kérdés lehet, hogy ha egyáltalán nincs elágazás, akkor hogyan lehetséges megvalósítani azt, hogy a nyelvben mégis elérhető és használható az {\tt if/3} függvény.
+Kérdéses lehet az előző bekezdésben adott azon állítás, hogy nincs elágazás generálása szükség: ha egyáltalán nincs elágazás, akkor hogyan lehetséges megvalósítani azt, hogy a nyelvben mégis elérhető és használható az {\tt if/3} függvény?
 A C4 képes arra, hogy olyan módon definiáljon igaz és hamis értékeket, majd ezek felett egy elágazás szerkezetet, hogy az a más nyelvekből megszokott szintaktikájú és szemantikájú {\tt if} szerkezetre hasonlítson.
-Ez a megadása az értékeknek megfelel a $\lambda$-kalkulusban definiált Church-boolean \cite{kemp_theoretical_2007} koncepciónak, amivel a logikai értékeket és olyan logikai függvényeket, mint az ÉS és a VAGY lehet megvalósítani $\lambda$-kalkulusban.
+Ez a megadása az értékeknek megfelel a $\lambda$-kalkulusban definiált Church-boolean \cite[2.4.2.~szekció]{kemp_theoretical_2007} koncepciónak, amivel a logikai értékeket és olyan logikai függvényeket, mint az ÉS és a VAGY lehet megvalósítani $\lambda$-kalkulusban.
 Az így megadható függvények közé tartozik egy olyan elágazás is, amelyik az első bemenetének értéke alapján vagy második vagy a harmadik bementét adja vissza értékül.
 Ez pontosan az az if konstrukció, amelyiket függvényként lehet használni, többek között C4-ben is.
 Ennek a megadása látható \aref{fig:churh-bools}.~ábrán, ahol az ekvivalens C4 kóddal együtt szerepel.
@@ -184,8 +192,8 @@ Ennek a megadása látható \aref{fig:churh-bools}.~ábrán, ahol az ekvivalens 
     \end{subfigure}
     \begin{subfigure}{.45\linewidth}
         \begin{lstlisting}[gobble=12,numbers=left]
-            # A beépített függvényekkel való névütközést
-            # megelőzendő
+            # Hogy elkerüljem a beépített függvényekkel
+            # való névütközést c-vel vannak prefixelve
             let ctrue { { |t f| &(t)/0 } }
             let cfalse { { |t f| &(f)/0 } }
             let cif/3 { |c t f| &(c)/2 t f }
@@ -202,8 +210,7 @@ A tényleges megvalósítás azonban mégsem ezt a megoldást használja, mivel 
 Egyet, amikor a beérkező feltétel paraméterben lévő blokkot értékeljük ki, majd amikor ez a blokk továbbugrik a szintén paraméterében kapott igaz vagy hamis blokkot reprezentáló értékre.
 Ellenben, ha ezt direkt módon LLVM \gls{IR}-ben adom meg, akkor egy indirekt függvény címére kell csak ugrani: a megfelelő igaz vagy hamis blokkéra.
 A logikai érték kiértékelését egy egyszerű szám összehasonlítással meg lehet valósítani.
-Erről x\todo{link}
-részben leírtak alapján van könnyedén lehetőség.
+Erről \aref{ssubsec:c4:rt:types:nan}.~részben leírtak alapján van könnyedén lehetőség.
 
 
 

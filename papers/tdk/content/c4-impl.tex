@@ -6,7 +6,7 @@
 %----------------------------------------------------------------------------
 
 Ebben az alfejezetben az előzőekben megadott C4 nyelvhez készített megvalósításomat, a {\tt c4c} fordítóprogramot és {\tt c4i} igény szerinti fordítás (\gls{JIT}) alapú interpretert mutatom be.
-Elsőként a felhasznált eszközökről esik röviden szó, majd a az általános architektúra utána az érdekesebb megoldásokra térek ki.
+Elsőként a felhasznált eszközökről esik röviden szó, majd a az általános architektúra után az érdekesebb, nem teljesen szokványos megoldásokra térek ki.
 
 \subsection{Felhasznált eszközök}\label{subsec:c4:impl:tools}
 
@@ -15,7 +15,7 @@ Az alábbi felsorolásban a fontosabb, nyelv megvalósításához használt eszk
 \paragraph{C++} A C4 nyelv megvalósítását a C++ nyelv C++23-as verziójában valósítottam meg.
 Ez egy közismert, natív kódra forduló, rendszerprogramozási nyelv.
 
-\paragraph{PCRE2 \cite{philip_hazel_pcre_2015}} A lexerben használt reguláris kifejezéseket a PCRE2  könyvtár segítségével futtatom a bementi szövegen.
+\paragraph{\glslink{PCRE}{PCRE}2 \cite{hazel_pcre_2015}} A lexerben használt reguláris kifejezéseket a \gls{PCRE} könyvtár segítségével futtatom a bementi szövegen.
 Ennek érdekessége, hogy támogat a reguláris kifejezések értelmezéséhez egy \gls{JIT} alapú megvalósítást, amelyikkel gyorsabban tudja futtatni a lefordított kifejezéseket, mint egyszerű naiv kiértékeléssel.
 
 \paragraph{LLVM \cite{llvm_project_llvm_nodate}} Egy széles körben natív nyelvek megvalósítására használt eszközkészlet.
