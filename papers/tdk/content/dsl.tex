@@ -5,57 +5,65 @@
 \chapter{Szakterület-specifikus nyelvek}\label{chr:dsl}
 %----------------------------------------------------------------------------
 
-Ahogy a bevetetésben is ismertetve lettek a szakterület-specifikus nyelvek -- angol rövidítésükből \gls{DSL}-ek -- olyan nyelvek, amelyek specializált eszközkészletet biztosítanak egy-egy problémakörhöz tartozó problémák megoldására, és csak arra.
+Ahogy a bevetetésben is ismertetve lettek, a szakterület-specifikus nyelvek -- angol rövidítésükből \gls{DSL}-ek -- olyan nyelvek, amelyek specializált eszközkészletet biztosítanak egy-egy problémakörhöz tartozó problémák megoldására, amellett, hogy a lehető legtöbb nem erre használatos lehetőséget elhagyják a nyelvből.
 Ez szemben áll az általános célú programozási nyelvek céljaival, amelyekben általános eszközöket kapnak a fejlesztők, a problémák lehető legszélesebb körének megoldására.
 
-Ebből a felfogásból több előnye származik a \gls{DSL}-eknek, ezekről adok meg alább egy rövid felsorolást.
+Ebből a felfogásból több előnye származik a \gls{DSL}-eknek, amelyről adok alább egy rövid felsorolást.
 
-Ezeket a nyelveket gyakran deklaratív módon lehetséges használni, mert ahogy a redukált számítási lehetőségek miatt, azok a feladatok, amelyeket lehetséges megadni bennük már nem igényelnek alacsony szintű, imperatív kódot: ezt a megvalósító rendszer elrejti a nyelvet használók elől.
+Ezeket a nyelveket gyakran deklaratív módon lehetséges használni.
+A már sokszor említett redukált számítási lehetőségek miatt, azok a feladatok, amelyeket lehetséges megoldani már nem igényelnek alacsony szintű, imperatív kódot: ezt a megvalósító rendszer nemhogy el tudja, szinte biztosan el is rejti a nyelvet használók elől.
+Ezt azért tehetik meg, mert a szűkített problémahalmazból adódóan a megoldáshoz használt lépések nagy mértékben azonosak, így a \gls{DSL}-t megvalósító ezeket előre elkészíti. 
+A végfelhasználónak így már csak a konkrét probléma leírásával kell foglalkoznia.
 
 Mivel a \gls{DSL} már csak a szükséges elemeket támogatja, így a megtanulása és használata sokkal egyszerűbb, mint egy \gls{GPL} esetében.
 Ez, amellett, hogy új fejlesztők esetén gyorsabb betanulást és hasznos részvételt tud jelenteni, a megvalósított kód egyszerűségét is segít garantálni.
-Mivel maga a nyelv nem ad, akkora lehetőséget a megvalósításban való cseles kód írására, így a végső eredmény jobban olvasható marad.
+Mivel maga a nyelv nem ad akkora lehetőséget a megvalósításban való cseles kód írására, így a végső eredmény jobban olvasható marad.
 
 A szakterület által előírt elvárások ellenőrzése beépíthető magába a nyelvbe, így hamarabb lehet felismerni olyan logikai hibákat, amelyek a szakterület logikája szerint nem érvényesek.
 Egy megfelelően erős \gls{DSL} akár már a forráskód statikus szintaktikájába is képes lehet egyes elvárásokat beleszőni, így akár már szerkesztés közben lehetséges ezeket észlelni.
 
 Rendelkeznek azonban pár hátránnyal is a \gls{DSL} alapú rendszerek.
 
-A legszembetűnőbb, hogy magát a \gls{DSL}-t szüksége megvalósítani, még mielőtt bármilyen módon lehetséges lenne magát a probléma megoldását elkezdeni.
-Emellett a \gls{DSL}-t készítők képességeitől erősen függ, az egész projekt megvalósításának hatékonysága: ha egy rosszul használható \gls{DSL}-t sikerül előállítani, akkor az előzőekben említett előnyök helyett, a nyelv limitációinak az ügyes kijátszásával kell tölteni az időt a fejlesztőknek, ami nehezebb és lassabb lesz, mintha alapból csak egy \gls{GPL}-t használtak volna.
+A legszembetűnőbb, hogy magát a \gls{DSL}-t szükséges megvalósítani, még mielőtt bármilyen módon lehetséges lenne magát a probléma megoldását elkezdeni.
+Emellett a \gls{DSL}-t készítők képességeitől erősen függ az egész projekt megvalósításának hatékonysága: ha egy rosszul használható \gls{DSL}-t sikerül előállítani, akkor az előzőekben említett előnyök helyett, a nyelv limitációinak az ügyes kijátszásával kell tölteni az időt a fejlesztőknek, ami nehezebb és lassabb lesz, mintha alapból csak egy \gls{GPL}-t használtak volna.
+Megjegyzendő azonban, hogy sok azonos jellegű projekt esetén, az egyszer megvalósított \gls{DSL} nyilván újrafelhasználható, esetleg kis mértékű módosítással átvihető az új projektbe. Így ez a hátrány csak a teljesen újszerű problémák megoldásánál játszik szerepet, bár akkor kiemelkedően nagyot.
+Erősen mérlegelendő az is, hogy a jövőben lesz-e lehetősége újrafelhasználni a tervezett \gls{DSL}-t, így a jövőbeli projekteket is lehet egyszerűsíteni.
 
-A fejlesztőeszközök is problémásak tudnak lenni, hiszen nagyobb projektek esetén egy szimpla szintaxis színezés megléte nélkül nehezen átláthatóvá válhatnak teljes fájlok, nem említve az egyéb fejlesztést támogató műveleteket, amelyeket a modern fejlesztőkörnyezetektől elvárunk.
+A fejlesztőeszközök is problémásak tudnak lenni, hiszen nagyobb projektek esetén még egy szimpla szintaxis színezés megléte nélkül is nehezen átláthatóvá válhatnak teljes fájlok, nem említve az egyéb fejlesztést támogató műveleteket, amelyeket a modern fejlesztőkörnyezetektől elvárunk.
 Ehhez egy teljesen saját nyelv támogatását kell lefejleszteni egy választott szövegszerkesztőhöz, ami megint az előre befektetett munkához társul, ami a nyelv elkészítését már tartalmazza.
 
 És ha egy megfelelő fejlesztői környezettel rendelkező nyelv felállításra került, akkor is még szükséges megoldani, hogy valamilyen módon a projekt elsődleges nyelvéhez kell tudni csatlakoznia.
-Ez olyan nyelveknél, amelyik natív binárisra fordulnak, mint a C és C++ még egy kiemelkedően nehéz probléma tud lenni, mert nem sok támogatással rendelkeznek a futtató platform felőle az ilyen dinamikus interakciók megvalósításához, csak egy teljes kommunikációs protokollon keresztül lesz lehetséges megbízhatóan megoldani: ha ez szöveges, akkor meg kell valósítani, ha a platform dinamikusan betölthető binárisat használja, akkor az új nyelvhez olyan fordítót kell írni, amelyik ezt megfelelő módon tudja generálni.
+Ez olyan nyelveknél, amelyik natív binárisra fordulnak, mint a C és C++ még egy kiemelkedően nehéz probléma tud lenni, mert nem sok támogatással rendelkeznek a futtató platform felől az ilyen dinamikus interakciók megvalósításához.
+Gyakran csak egy teljes kommunikációs protokollon keresztül lesz ezt lehetséges megbízhatóan megoldani: ha ez egy saját szöveges formátumú, akkor meg kell valósítani, ez tekinthető magában is egy külön \gls{DSL}-nek.
+Ha a platform dinamikusan betölthető binárisait (\gls{SO}, \gls{DLL}) használja, akkor az új nyelvhez olyan fordítót kell írni, amelyik ezt megfelelő módon tudja generálni -- vélhetőleg egy C által használt bináris interfésszel kompatibilis kimenetet kell biztosítani.
 
-Végül, milyen eszközök állnak rendelkezésre ilyen \gls{DSL}-ek megvalósításához?
-Pontosan ugyan azok a programok és könyvtárak, amelyekkel teljes értékű is \gls{GPL}-eket lehet megvalósítani.
+Mivel a hátrányok nagy része a megvalósításból eredő akadályok valamilyen formája, felmerül a kérdés: milyen eszközök állnak rendelkezésre ilyen \gls{DSL}-ek megvalósításához?
+
+A legtöbb esetben ugyan azok a programok és könyvtárak, amelyekkel teljes értékű is \gls{GPL}-eket lehet megvalósítani.
 A teljes fordító kézzel való megírása egy lehetséges lépés: ez akkor lassabb tud lenni, amikor az alább említett eszközökre illeszkedő nyelvet valósítunk meg, viszont egyes esetekben gyorsabb lehet, mint olyanra használni eszközöket, amire nem valók.
 Ezt elsőként a \gls{DSL} megvalósítás elején mérlegelni kell.
-A szövegfeldolgozásához a {\tt yacc} vagy {\tt bison} \cite{free_software_foundation_inc_bison_1988} elterjedtek natív eszközöknél, de ezek mind elég alacsony szintű eszközök.
-Az SQLite fejlesztők saját fejlesztésű eszközt használnak \cite{hipp_wyrick__company_inc_lemon_nodate}, ami kicsit jobb fejlesztői élménnyel rendelkezik, de még mindig egy nagyon alacsony szintű megvalósítás.
-Magasabb absztrakciós szintű eszközöknél elérhető az Eclipse fejlesztőkörnyezetéhez tartozó Xtext \cite{eclise_foundation_xtext_nodate}, ami jó integrációt biztosít a fejlesztőkörnyezettel, így az előző paragrafusban tárgyalt fejlesztőkörnyezetet is tudja biztosítani.
+A szövegfeldolgozásához a {\tt yacc} vagy {\tt bison} \cite{freesoftwarefoundationinc.BisonGNUProject1988} elterjedtek natív eszközöknél, de ezek mind elég alacsony szintű eszközök.
+Az SQLite fejlesztők saját fejlesztésű eszközt használnak \cite{hippwyrick&companyinc.LEMONParserGenerator2025}, ami kicsit jobb fejlesztői élménnyel rendelkezik, de még mindig egy nagyon alacsony szintű megvalósítás.
+Magasabb absztrakciós szintű eszközöknél elérhető az Eclipse fejlesztőkörnyezetéhez tartozó Xtext \cite{eclisefoundationXtextLanguageEngineering2025}, ami jó integrációt biztosít a fejlesztőkörnyezettel, így az előző paragrafusban tárgyalt fejlesztőkörnyezetet is tudja biztosítani.
 
 Összegzésben az átlagos \gls{DSL}-ek nagy kezdeti befektetést és elkészítésükhöz hozzáértő fejlesztőket igényelnek, de amint elkészülnek sok jó tulajdonságot tudnak magukkal bevezetni egy-egy projekt megvalósításába.
-A kérdés felmerül, hogy lehet-e ezt a kezdeti idő- és energiabefektetést csökkenteni?
+Így megfogalmazódik a kérdés, hogy lehet-e ezt a kezdeti idő- és energiabefektetést csökkenteni, és mégis élvezni a \gls{DSL}-ek által nyújtott előnyöket?
 
 \section{Beágyazott szakterület-specifikus nyelvek}\label{chr:dsl:edsl}
 
 Egyes általános nyelvek rendelkeznek olyan rugalmas szintaktikával, amelyik lehetővé teszi, hogy a nyelven belüli eszközök felhasználásával lehessen olyan függvényeket/objektumokat/osztályokat létrehozni, hogy a konkrét probléma megoldására olyan, mintha egy külön erre specializált nyelvet használnánk.
-Ezek gyakran dinamikusan típusos, rugalmas nyelvek, mint a Ruby, vagy a LISP család.
+Ezek gyakran dinamikusan típusos, rugalmas nyelvek, mint a Ruby vagy a LISP család.
 
-Ezeket a \gls{DSL}-eket hívjuk beágyazott szakterület-specifikus nyelveknek (\gls{eDSL}, vagy internal \gls{DSL} \cite{fowler_bliki_2006}).
-Erősségük, hogy nem egy teljesen új nyelvként kell őket beépíteni egy-egy másik nyelvet használó projektbe, ami a fordítási, fejlesztési és egyéb karbantartási feladatokat nehezítheti, egyszerűen a gazdanyelvben megadott könyvtár felhasználásával beépíthetőek, egyéb nehézségek nélkül.
+Ezeket a \gls{DSL}-eket hívjuk beágyazott szakterület-specifikus nyelveknek (\gls{eDSL}, vagy internal \gls{DSL} \cite{fowlerBlikiInternalDsl2006}).
+Erősségük, hogy nem egy teljesen új nyelvként kell őket beépíteni egy-egy másik nyelvet használó projektbe, ami a fordítási, fejlesztési és egyéb karbantartási feladatokat nehezíti, hanem egyszerűen a gazdanyelvben megadott könyvtár felhasználásával beépíthetőek, minden egyéb külső eszközből származó komplexitás nélkül.
 
-Ebből eredően sok \gls{DSL} nyelvi hátrányt enyhítenek, vagy megszüntetnek: az elkészítésükhöz nem kell a lexikális elemzőtől megírni az egész fordítóhoz szükséges részeket, hanem a gazdanyelvet kihasználva a megfelelő nyelvi elemeket kell definiálni.
-A fejlesztőeszközök problémája is megoldódik, amennyiben a gazdanyelvhez már létezik valamilyen fejlesztést támogató eszköz.
+Ebből eredően sok \gls{DSL} nyelvi hátrányt enyhítenek vagy akár teljesen megszüntetnek: az elkészítésükhöz nem kell a lexikális elemzőtől megírni az egész fordítóhoz szükséges összes komponenst, elegendő a gazdanyelvet kihasználva a megfelelő nyelvi elemeket definiálni.
+A fejlesztőeszközök problémája gyakran implicit módon megoldódik: a legtöbb esetben a gazdanyelvhez már létezik valamilyen kifejlett, modern fejlesztést támogató eszköz, ami így a saját fejlesztésű \gls{eDSL}-t is támogatni fogja.
 
 Az előzőekben említett rugalmas, dinamikus, értelmezett nyelvekben ezek eléggé elterjedtek, mert egy-egy részproblémára meglehetősen kifinomult megoldást tudnak nyújtani.
 Egy gyakori példa a Ruby on Rails webkeretrendszer, és az általa nyújtott könyvtárak: az egyes modellek érvényességének ellenőrzésére adott {\tt validates\_*} ActiveModel függvények, vagy a HTTP útvonalak definiáláshoz használt ActionDispatch által biztosított {\tt get}, {\tt post}, {\tt delete}, stb. metódusok.
 
-Az alábbiakban bemutatott nyelvben a célom az volt, hogy ezeknek a beágyazott \gls{DSL}-eknek a támogatása a gazdanyelvi szinten a lehető legjobb legyen, és minél könnyebben lehessen kifejező és szép megoldásokat adó nyelveket definiálni, amik a gazdanyelv által nyújtott vékony rétegen keresztül tudnak kooperatívan előállítani akár nagyobb méretű programokat is.
+Az alábbiakban bemutatott nyelvben a célom az volt, hogy ezeknek a beágyazott \gls{DSL}-eknek a támogatása a gazdanyelvi szinten a lehető legjobb legyen, és minél könnyebben lehessen kifejező és szép megoldásokat adó nyelveket definiálni, amelyek a gazdanyelv által nyújtott vékony rétegen keresztül tudnak kooperatívan előállítani akár nagyobb méretű programokat is.
 
 
 

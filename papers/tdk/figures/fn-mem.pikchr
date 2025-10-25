@@ -8,7 +8,6 @@ xgreen = 0x18a52b
 
 Base0: dot invis
 
-Lbl0:  text "byte sorozat" bold fit with .e at Base0.c
 Data0: text "FFFFFFFFAAaaCCXXKKKKK...KKRRRRRRRRR...RR" monospace big fit with .w at Base0.c - (.44, 0)
 
 peght = .11
@@ -89,6 +88,6 @@ line color gray from Mid3 down .55 then .64 heading -135
 line invis from 3rd vertex of last line to 2nd vertex of last line "ctx. mérete" aligned above
 
 line color gray from Mid4 down .65 then .78 heading -135
-line color gray from 3rd vertex of last line to 2nd vertex of last line "nem használt" aligned above
+line invis color gray from 3rd vertex of last line to 2nd vertex of last line "nem használt" aligned above
 
 

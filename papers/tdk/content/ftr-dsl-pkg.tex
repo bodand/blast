@@ -9,7 +9,7 @@ Mivel a C4 nyelv nagy előnye, hogy könnyedén lehetséges benne \gls{DSL}-ek m
 Ha például \aref{sec:uses:fsm}.~fejezetben definiált állapotgép leírást nézzük, lehetséges, hogy valakinek hasznos lenne egy külön {\tt c4fsm} bináris előállítása, amelyik előre rendelkezik az összes \gls{DSL} által igényelt definícióval, akár előre optimalizált \gls{IR} formájában beágyazva, hogy az eszköz már azonnal képes legyen értelmezni az állapotgép leírásokat.
 
 Az architektúrában bemutatott \ref{fig:c4-comp}.~ábrán is látszik, hogy a nyelv alapjainak a feldolgozása teljesen el van különítve a végül futtatást végrehajtó egységektől.
-Ezt kihasználva lehetséges megcsinálni, hogy egy olyan {\tt c4cc} (C4 Compiler Compiler) eszközt hozok létre, amelyik képes az előre \gls{IR} formára hozott \gls{DSL} leírást becsomagolni a {\tt c4i} bináris alapvető kódjába beilleszteni, és a fordítás során elérhetővé tenni ezeket.
+Ezt kihasználva lehetséges elérni, hogy egy olyan {\tt c4cc} (C4 Compiler Compiler) eszközt lehessen megvalósítani, amelyik képes az előre \gls{IR} formára hozott \gls{DSL} leírást becsomagolni a {\tt c4i} bináris alapvető kódjába beilleszteni, és a fordítás során elérhetővé tenni ezeket.
 Az így kapott rendszer komponens diagramja látható \aref{fig:c4-comp-ex}.~ábrán.
 
 \begin{figure}[htb]
