@@ -39,8 +39,10 @@
 
 #ifdef __cplusplus
 #  include <cstdint>
+#  include <cstddef>
 #else
 #  include <stdint.h>
+#  include <stddef.h>
 #  include <stdbool.h>
 #endif
 

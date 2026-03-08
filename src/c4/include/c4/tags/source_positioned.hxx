@@ -37,6 +37,9 @@
 #ifndef C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 #define C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
+
 #include <c4/diagnostic.hxx>
 
 namespace c4::ast2::tags {
@@ -56,5 +59,7 @@ namespace c4::ast2::tags {
         struct position _position;
     };
 }
+
+#pragma GCC diagnostic pop
 
 #endif

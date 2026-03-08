@@ -36,10 +36,12 @@
 #ifndef BLAST_C4RT_PACKAGE_1_H
 #define BLAST_C4RT_PACKAGE_1_H
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#  define ALIGNAS(x)
-#else
-#  define ALIGNAS(x) _Alignas(x)
+#ifndef ALIGNAS
+#  if defined(_MSC_VER) && !defined(__clang__)
+#    define ALIGNAS(x)
+#  else
+#    define ALIGNAS(x) __attribute__((aligned(x)))
+#  endif
 #endif
 
 /**

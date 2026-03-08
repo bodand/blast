@@ -36,6 +36,9 @@
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
+
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/evaluation_constness.hxx>
 #include <c4/tags/referable.hxx>
@@ -186,5 +189,7 @@ namespace c4::ast2 {
         std::vector<expression*> _expressions;
     };
 }
+
+#pragma GCC diagnostic pop
 
 #endif

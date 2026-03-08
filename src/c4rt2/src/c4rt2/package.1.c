@@ -49,6 +49,8 @@
 
 #include <dll-config.h>
 
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+
 static c4_ptr64_t
 pad_pointer_1(void* const ptr) {
     return ((uintptr_t)ptr) << (CHAR_BIT * (sizeof(c4_ptr64_t) - sizeof(void*)));

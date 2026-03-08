@@ -42,6 +42,7 @@
 #include <stdbool.h>
 
 #include <dll-config.h>
+#include <inttypes.h>
 
 #include <c4rt2/api.h>
 #include <c4rt2/datum.h>
@@ -58,15 +59,15 @@
 const c4_datum_t gC4_Empty_Block = 0x7ff1000000000000;
 
 // 0b1'00000000000'0000'000000000000000000000000000000000000000000000000
-const static c4_datum_t remoteness_mask = 0x8000000000000000;
+static const c4_datum_t remoteness_mask = 0x8000000000000000;
 // 0b0'11111111111'0000'000000000000000000000000000000000000000000000000
-const static c4_datum_t nan_mask = 0x7ff0000000000000;
+static const c4_datum_t nan_mask = 0x7ff0000000000000;
 // 0b0'00000000000'1111'000000000000000000000000000000000000000000000000
-const static c4_datum_t type_mask = 0xf000000000000;
+static const c4_datum_t type_mask = 0xf000000000000;
 // 0b0'00000000000'0000'111111111111111111111111111111111111111111111111
-const static c4_datum_t payload_mask = 0xffffffffffff;
+static const c4_datum_t payload_mask = 0xffffffffffff;
 // 0b0'00000000000'0000'111111111111111111111111111111111111111111111110
-const static c4_datum_t pointer_mask = 0xfffffffffffe;
+static const c4_datum_t pointer_mask = 0xfffffffffffe;
 
 static void*
 get_pointer_value(const c4_datum_t datum) {
@@ -431,7 +432,7 @@ to_double(const char* buf) {
 static int64_t
 to_int64(const char* buf) {
     int64_t ret = 0;
-    const int ret_sz = sscanf(buf, "%lld", &ret);
+    const int ret_sz = sscanf(buf, "%"PRId64, &ret);
     if (ret_sz != 1) return 0;
     return ret;
 }
@@ -439,7 +440,7 @@ to_int64(const char* buf) {
 static int32_t
 to_int32(const char* buf) {
     int32_t ret = 0;
-    const int ret_sz = sscanf(buf, "%d", &ret);
+    const int ret_sz = sscanf(buf, "%"PRId32, &ret);
     if (ret_sz != 1) return 0;
     return ret;
 }
@@ -508,21 +509,21 @@ from_double(const double d) {
 static char*
 from_int64(const int64_t i) {
     char* const buf = C4_NEW(char, 22);
-    snprintf(buf, 22u, "%lld", i);
+    snprintf(buf, 22u, "%"PRId64, i);
     return buf;
 }
 
 static char*
 from_int64x(const int64_t i) {
     char* const buf = C4_NEW(char, 22);
-    snprintf(buf, 22u, "(%#llx)", i);
+    snprintf(buf, 22u, "(%#"PRIx64")", i);
     return buf;
 }
 
 static char*
 from_int32(const int32_t i) {
     char* const buf = C4_NEW(char, 12);
-    snprintf(buf, 12u, "%lld", (long long)i);
+    snprintf(buf, 12u, "%"PRId32, i);
     return buf;
 }
 
@@ -615,8 +616,8 @@ C4RT_API c4_datum_t
 _Cs3cat2E(struct c4_package_t* a, struct c4_package_t* b) {
     const c4_datum_t a_val = c4rt_package_evaluate(a);
     const c4_datum_t b_val = c4rt_package_evaluate(b);
-    const char* a_str = c4rt_datum_coerce_string(a_val);
-    const char* b_str = c4rt_datum_coerce_string(b_val);
+    char* a_str = c4rt_datum_coerce_string(a_val);
+    char* b_str = c4rt_datum_coerce_string(b_val);
     const size_t a_str_sz = strlen(a_str);
     const size_t b_str_sz = strlen(b_str);
     const size_t total_sz = a_str_sz + b_str_sz + 1;
@@ -635,8 +636,12 @@ _Cs3cat2E(struct c4_package_t* a, struct c4_package_t* b) {
 
 C4RT_API c4_datum_t
 _Cs6readln0E() {
-    char* const buf = C4_NEW(char, 1024);
-    gets_s(buf, 1024);
+    const int buf_sz = 1024;
+    char* const buf = C4_NEW(char, buf_sz);
+
+    if (fgets(buf, buf_sz, stdin) != NULL)
+        buf[strcspn(buf, "\n")] = '\0';
+
     const c4_datum_t ret = c4rt_datum_from_string(buf);
     C4_FREE(buf);
     return ret;

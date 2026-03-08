@@ -97,13 +97,9 @@ namespace c4::p2::tokens {
 
     template<class T>
     struct literal_token : token_base {
-        template<class X>
+        template<std::same_as<T> X = T>
         [[nodiscard]] X
-        as_value() const noexcept = delete;
-
-        template<>
-        [[nodiscard]] T
-        as_value<T>() const noexcept { return _value; }
+        as_value() const noexcept { return _value; }
 
     protected:
         T _value;

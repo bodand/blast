@@ -64,6 +64,7 @@ function(generate_warnings _Interface)
         suggest-final-methods duplicated-branches placement-new=2 error=trampolines
         covered-switch-default
         logical-op reorder
+        no-changes-meaning # stfu
         no-unsafe-buffer-usage # todo
         no-exit-time-destructors # todo
         no-unknown-pragmas # really don't gaf

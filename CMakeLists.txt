@@ -140,6 +140,13 @@ find_package(lyra CONFIG REQUIRED)
 #find_package(mimalloc CONFIG REQUIRED)
 find_package(BDWgc CONFIG REQUIRED)
 
+## Mio wrap Win specific stuffs
+add_library(c4-mio INTERFACE)
+target_link_libraries(c4-mio INTERFACE
+                      $<$<PLATFORM_ID:Windows>:mio::mio_min_winapi>
+                      $<$<NOT:$<PLATFORM_ID:Windows>>:mio::mio>
+                      )
+
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")

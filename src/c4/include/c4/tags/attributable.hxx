@@ -41,6 +41,7 @@
 #include <memory>
 #include <expected>
 #include <optional>
+#include <utility>
 
 #include <c4/visitor/typeid.hxx>
 

@@ -37,6 +37,9 @@
 #ifndef C4_DIAGNOSTIC_HXX
 #define C4_DIAGNOSTIC_HXX
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
+
 #include <string_view>
 #include <cstdint>
 #include <string>
@@ -236,7 +239,7 @@ namespace c4 {
         friend struct diagnostics_engine;
 
         explicit
-        diagnostics_bundle(const diagnostics_engine& engine,
+        diagnostics_bundle(const struct diagnostics_engine& engine,
                            source_diagnostic&& head)
             : _engine(engine)
             , _head{std::move(head)} { }
@@ -305,5 +308,6 @@ namespace c4 {
     };
 }
 
+#pragma GCC diagnostic pop
 
 #endif

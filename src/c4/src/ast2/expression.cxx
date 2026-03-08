@@ -83,7 +83,7 @@ namespace {
 
         void
         do_visit(const c4::ast2::expression& obj) override {
-            _symbols.append_range(obj.closure_symbols());
+            _symbols.insert(_symbols.end(), obj.closure_symbols().cbegin(), obj.closure_symbols().cend());
         }
 
         void
@@ -94,7 +94,8 @@ namespace {
         void
         do_visit(const c4::ast2::block& obj) override {
             auto block_symbols = obj.effective_context_symbols();
-            _symbols.append_range(std::move(block_symbols));
+            _symbols.reserve(_symbols.size() + block_symbols.size());
+            std::ranges::move(std::move(block_symbols), std::back_inserter(_symbols));
         }
 
         void

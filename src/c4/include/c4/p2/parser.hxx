@@ -36,10 +36,14 @@
 #ifndef C4_P2_PARSER_HXX
 #define C4_P2_PARSER_HXX
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
+
 #include <stdexcept>
 #include <expected>
 #include <deque>
 #include <deque>
+#include <list>
 
 #include <c4/ast2/symbol.hxx>
 #include <c4/ast2/string_literal.hxx>
@@ -304,5 +308,7 @@ namespace c4::p2 {
         tokens::token_type _current;
     };
 }
+
+#pragma GCC diagnostic pop
 
 #endif

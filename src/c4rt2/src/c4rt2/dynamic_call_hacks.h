@@ -312,14 +312,14 @@
     c4_datum_t(*callee)(void* WHEN(cnt)(COMMA) c4_dynamic_args##cnt(type_ ## v, cnt, c4_underscores(cnt)))
 
 #define c4_dynamic_call_fn(v, cnt) \
-    inline C4RT_IMPL c4_datum_t \
+    static C4RT_IMPL c4_datum_t \
     c4_dynamic_call_##v##_##cnt(c4rt_package_function_t* fn, struct c4_package_v1_t** args) { \
         c4_dynamic_call_var(v, cnt) = fn;\
         return callee(c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_ctx(v, cnt) \
-    inline C4RT_IMPL c4_datum_t \
+    static C4RT_IMPL c4_datum_t \
     c4_dynamic_call_##v##_ctx_##cnt(c4rt_package_function_t* fn, void* ctx, struct c4_package_v1_t** args) { \
         c4_dynamic_call_var_ctx(v, cnt) = fn;\
         return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
@@ -501,7 +501,7 @@ c4_dynamic_call_fn_all(v1, 128)
 #define c4_dynamic_cases(max) c4_dynamic_args##max(case_v1, max, c4_underscores(max))
 #define c4_dynamic_cases_ctx(max) c4_dynamic_args##max(case_v1_ctx, max, c4_underscores(max))
 
-inline C4RT_IMPL c4_datum_t
+static C4RT_IMPL c4_datum_t
 c4_dynamic_call_v1(const unsigned arity,
                    c4rt_package_function_t* fn,
                    struct c4_package_v1_t** args) {
@@ -513,7 +513,7 @@ c4_dynamic_call_v1(const unsigned arity,
     C4_UNREACHABLE;
 }
 
-inline C4RT_IMPL c4_datum_t
+static C4RT_IMPL c4_datum_t
 c4_dynamic_call_v1_ctx(const unsigned arity,
                        c4rt_package_function_t* fn,
                        void* ctx,

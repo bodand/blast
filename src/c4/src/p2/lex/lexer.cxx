@@ -34,6 +34,9 @@
  *   
  */
 
+#include <algorithm>
+#include <ranges>
+
 #include <c4/p2/lex/lexer.hxx>
 #include <c4/p2/lex/token_traits.hxx>
 #include <libassert/assert.hpp>
@@ -68,7 +71,7 @@ c4::p2::lexer::lexer(const std::string_view source,
     , _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
     const auto buffer = std::string_view(begin, end);
     const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
-    const auto head_line_sz = static_cast<std::size_t>(distance(std::begin(buffer), it));
+    const auto head_line_sz = static_cast<std::size_t>(std::ranges::distance(std::begin(buffer), it));
     _current_position.line = buffer.substr(0, head_line_sz + 1U);
     _current_position.expanded_range = buffer.substr(0, head_line_sz + 1U);
 }

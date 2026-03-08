@@ -34,6 +34,8 @@
  *   
  */
 
+#include <list>
+
 #include <c4/ast2/ast_context.hxx>
 
 #include <c4/ast2/ast_node.hxx>

@@ -118,7 +118,7 @@ set(C4RT2_USE_MIMALLOC NO)
 configure_file(src/dll-config.in.h dll-config.h @ONLY)
 
 add_library(c4rt2-core OBJECT
-            src/c4rt2/DllMain.c
+            $<$<PLATFORM_ID:Windows>:src/c4rt2/DllMain.c>
             src/c4rt2/c4rt_check.cxx
             include/c4rt2/c4rt.h
             src/c4rt2/c4rt.c
@@ -168,7 +168,7 @@ add_library(c4rt2c STATIC
 target_link_libraries(c4rt2c
                       PUBLIC
                       c4rt2-internal
-                      mio::mio_min_winapi
+                      c4-mio
                       PRIVATE
                       c4
                       c4_llvm

@@ -36,6 +36,9 @@
 #ifndef C4_AST2_LET_EXPRESSION_HXX
 #define C4_AST2_LET_EXPRESSION_HXX
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wchanges-meaning"
+
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
 
@@ -112,5 +115,7 @@ namespace c4::ast2 {
         expression* _value;
     };
 }
+
+#pragma GCC diagnostic pop
 
 #endif

@@ -64,11 +64,15 @@
 #  define C4_SMALL_ALLOC_SIZE 0U
 #endif
 
+#if 0
 C4_EXTERNC inline void*
 C4_ALLOCATE(const size_t bytes) {
     if (bytes < C4_SMALL_ALLOC_SIZE) return C4_MALLOC_SMALL(bytes);
     return C4_MALLOC(bytes);
 }
+#else
+#  define C4_ALLOCATE(bytes) C4_MALLOC(bytes)
+#endif
 
 #define C4_NEW(type, count) C4_ALLOCATE(sizeof(type)*(count))
 

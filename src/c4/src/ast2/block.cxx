@@ -102,7 +102,10 @@ namespace {
     std::vector<c4::ast2::symbol>
     merge_child_contexts(const std::span<c4::ast2::expression* const> expressions) {
         std::vector<c4::ast2::symbol> result;
-        for (const auto& expr : expressions) result.append_range(expr->closure_symbols());
+        for (const auto& expr : expressions) {
+            auto symbols = expr->closure_symbols();
+            result.insert(result.end(), symbols.cbegin(), symbols.cend());
+        }
         return result;
     }
 

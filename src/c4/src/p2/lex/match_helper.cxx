@@ -65,7 +65,7 @@ namespace {
                                         std::string_view remaining_buffer,
                                         const std::size_t line_increment) {
         const auto line_end_it = std::ranges::find_first_of(remaining_buffer, line_end_marks);
-        const auto line_sz = static_cast<size_t>(distance(begin(remaining_buffer), line_end_it));
+        const auto line_sz = static_cast<size_t>(std::ranges::distance(begin(remaining_buffer), line_end_it));
 
         DEBUG_ASSERT(buffer_begin >= pos.line.data(), "negative length match");
 

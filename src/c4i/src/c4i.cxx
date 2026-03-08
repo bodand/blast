@@ -98,8 +98,8 @@ struct jit {
         , _main_jit_dylib{_execution_session->createBareJITDylib("<main>")} {
         _main_jit_dylib.addGenerator(
             llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(_data_layout.getGlobalPrefix())));
-        _main_jit_dylib.addGenerator(
-            llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::Load("gc.dll", _data_layout.getGlobalPrefix())));
+        // _main_jit_dylib.addGenerator(
+            // llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::Load("gc.dll", _data_layout.getGlobalPrefix())));
 
         if (jit_builder.getTargetTriple().isOSBinFormatCOFF()) {
             _linker.setOverrideObjectFlagsWithResponsibilityFlags(true);
