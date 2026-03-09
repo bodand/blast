@@ -33,7 +33,9 @@
 # src/c4c/CMakeLists.txt --
 #   CMake project for the C4 Compiler (c4c)s
 
-add_executable(c4i src/c4i.cxx)
+add_executable(c4i src/c4i.cxx
+               include/gc_registrar.hxx
+               src/gc_registrar.cxx)
 
 target_link_libraries(c4i PRIVATE
                       c4
@@ -41,6 +43,7 @@ target_link_libraries(c4i PRIVATE
                       c4_llvm
                       bfg::lyra
                       libassert::assert
+                      gc
                       )
 target_include_directories(c4i PRIVATE
                             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

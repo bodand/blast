@@ -240,7 +240,8 @@ main(int argc, const char** argv) {
             return 2;
         }
 
-        const auto machine = target->createTargetMachine(target_triple, "generic", "", {}, llvm::Reloc::PIC_);
+        const auto machine = std::unique_ptr<llvm::TargetMachine>(
+            target->createTargetMachine(target_triple, "generic", "", {}, llvm::Reloc::PIC_));
         module.setDataLayout(machine->createDataLayout());
         module.setTargetTriple(target_triple);
 

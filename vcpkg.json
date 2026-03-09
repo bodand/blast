@@ -29,6 +29,8 @@
         "clang",
         "enable-zlib",
         "enable-zstd",
+        "enable-rtti",
+        "enable-eh",
         "tools",
         "utils"
       ]

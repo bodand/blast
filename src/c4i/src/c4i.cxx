@@ -38,6 +38,7 @@
 #define NOMINMAX
 
 #include <filesystem>
+#include <gc_registrar.hxx>
 
 #include <c4/ffm.hxx>
 #include <c4/ffm_mapper.hxx>
@@ -49,7 +50,8 @@
 #include <c4rt2c/ffm_ir_emitter.hxx>
 
 #include <c4rt2c/source_file.hxx>
-#include <llvm/ExecutionEngine/RuntimeDyld.h>
+
+#include <gc/gc.h>
 
 #include <lyra/lyra.hpp>
 
@@ -72,6 +74,7 @@
 #include <llvm/TargetParser/Host.h>
 
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/ExecutionEngine/Orc/Core.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
 #include <llvm/ExecutionEngine/Orc/CompileUtils.h>
@@ -79,27 +82,32 @@
 #include <llvm/ExecutionEngine/Orc/IRCompileLayer.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
 
+/// XXX -- Absolute hot dogshit fuckery with in-memory binary symbols.
+extern "C" char _end;
+
 struct jit {
     jit(std::unique_ptr<llvm::orc::ExecutionSession> execution_session,
         llvm::orc::JITTargetMachineBuilder jit_builder,
-        llvm::DataLayout data_layout)
+        const llvm::DataLayout& data_layout)
         : _execution_session{std::move(execution_session)}
         , _data_layout{data_layout}
         , _mangle{*_execution_session, _data_layout}
         , _linker{
             *_execution_session,
-            [] {
-                return std::make_unique<llvm::SectionMemoryManager>();
-            }
+            _execution_session->getExecutorProcessControl().getMemMgr()
         }
         , _compiler{
-            *_execution_session, _linker, std::make_unique<llvm::orc::ConcurrentIRCompiler>(std::move(jit_builder))
+            *_execution_session,
+            _linker,
+            std::make_unique<llvm::orc::ConcurrentIRCompiler>(std::move(jit_builder))
         }
         , _main_jit_dylib{_execution_session->createBareJITDylib("<main>")} {
+        llvm::cantFail(load_gc());
         _main_jit_dylib.addGenerator(
-            llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(_data_layout.getGlobalPrefix())));
-        // _main_jit_dylib.addGenerator(
-            // llvm::cantFail(llvm::orc::DynamicLibrarySearchGenerator::Load("gc.dll", _data_layout.getGlobalPrefix())));
+            llvm::cantFail(
+                llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(_data_layout.getGlobalPrefix())
+            )
+        );
 
         if (jit_builder.getTargetTriple().isOSBinFormatCOFF()) {
             _linker.setOverrideObjectFlagsWithResponsibilityFlags(true);
@@ -141,10 +149,27 @@ struct jit {
     data_layout() const { return _data_layout; }
 
 private:
+    llvm::Error
+    load_gc() {
+        llvm::orc::SymbolMap ExtraSymbols;
+        ExtraSymbols[_execution_session->intern("atexit")] = {
+            llvm::orc::ExecutorAddr::fromPtr(reinterpret_cast<void*>(&atexit)),
+            llvm::JITSymbolFlags::Exported
+        };
+        ExtraSymbols[_execution_session->intern("_end")] = {
+            llvm::orc::ExecutorAddr::fromPtr(reinterpret_cast<void*>(&_end)),
+            llvm::JITSymbolFlags::Exported
+        };
+
+        _linker.addPlugin(std::make_unique<c4i::gc_registrar>());
+
+        return _main_jit_dylib.define(llvm::orc::absoluteSymbols(std::move(ExtraSymbols)));
+    }
+
     std::unique_ptr<llvm::orc::ExecutionSession> _execution_session;
     llvm::DataLayout _data_layout;
     llvm::orc::MangleAndInterner _mangle;
-    llvm::orc::RTDyldObjectLinkingLayer _linker;
+    llvm::orc::ObjectLinkingLayer _linker;
     llvm::orc::IRCompileLayer _compiler;
     llvm::orc::JITDylib& _main_jit_dylib;
 };
@@ -159,8 +184,10 @@ main(int argc, char** argv) {
 
     const auto cli = lyra::cli()
                      | lyra::help(show_help).description(
-                         "Run a C4 script using LLVM's ORC JIT.")(
-                         "Do not compile, print help and exit.")
+                         "Run a C4 script using LLVM's ORC JIT."
+                     )(
+                         "Do not compile, print help and exit."
+                     )
                      | lyra::arg(src_path, "source")("The C4 source file to JIT compile.").required()
             //
             ;
@@ -264,9 +291,7 @@ main(int argc, char** argv) {
 
         llvm::IRBuilder<> builder(*context);
         c4c::ffm_ir_emitter ir(*context, *module, builder, fn_pm, fn_am);
-        for (const auto& ffm_entry : roots) {
-            ffm_entry->accept(ir);
-        }
+        for (const auto& ffm_entry : roots) ffm_entry->accept(ir);
 
         llvm::orc::ThreadSafeModule ts_module(std::move(module), std::move(context));
         if (auto err = jit_ptr->addModule(std::move(ts_module));
