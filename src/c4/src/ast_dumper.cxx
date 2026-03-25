@@ -34,6 +34,9 @@
  *   
  */
 
+#include <algorithm>
+#include <ranges>
+
 #include <c4/ast_dumper.hxx>
 #include <uni_algo/ranges.h>
 

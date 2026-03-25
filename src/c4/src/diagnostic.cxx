@@ -35,11 +35,17 @@
  */
 
 #include <algorithm>
+#include <ranges>
 
 #include <c4/diagnostic.hxx>
 #include <c4/p2/lex/token_source.hxx>
 
 #include <fmt/format.h>
+#ifdef __clang__
+// There is some fuckery with clang and FMT_STRING - ignore it
+#undef FMT_STRING
+#define FMT_STRING(x) x
+#endif
 #include <fmt/color.h>
 
 #include <libassert/assert.hpp>

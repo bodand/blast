@@ -36,8 +36,10 @@
 #ifndef C4_AST2_LET_EXPRESSION_HXX
 #define C4_AST2_LET_EXPRESSION_HXX
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchanges-meaning"
+#endif
 
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
@@ -49,73 +51,84 @@
 #include <string_view>
 
 namespace c4::ast2 {
-    struct expression;
+struct expression;
 
-    struct dynamic_call_pseudo_let_attribute final : ast2::tags::typed_attribute<bool> {
-        explicit
-        dynamic_call_pseudo_let_attribute()
-            : typed_attribute{true} { }
-    };
+struct dynamic_call_pseudo_let_attribute final : ast2::tags::typed_attribute<bool> {
+    explicit
+    dynamic_call_pseudo_let_attribute()
+        : typed_attribute{true} { }
+};
 
-    struct let_expression final : tags::referable
-                                  , ast_node
-                                  , tags::visitable
-                                  , tags::evaluation_constness {
-        let_expression(const c4::position& position,
-                       symbol symbol,
-                       expression* expr);
+struct let_expression final : tags::referable
+                              , ast_node
+                              , tags::visitable
+                              , tags::evaluation_constness {
+    let_expression(const c4::position& position,
+                   symbol symbol,
+                   expression* expr);
 
-        let_expression(const let_expression& cp) = delete;
+    let_expression(const let_expression& cp) = delete;
 
-        let_expression&
-        operator=(const let_expression& cp) = delete;
+    let_expression&
+    operator=(const let_expression& cp) = delete;
 
-        let_expression(let_expression&&) noexcept = delete;
+    let_expression(let_expression&&) noexcept = delete;
 
-        let_expression&
-        operator=(let_expression&&) noexcept = delete;
+    let_expression&
+    operator=(let_expression&&) noexcept = delete;
 
-        [[nodiscard]] symbol
-        symbol() const { return _symbol; }
+    [[nodiscard]] symbol
+    symbol() const { return _symbol; }
 
-        [[nodiscard]] unsigned
-        symbol_arity() const { return _symbol.base_arity(); }
+    [[nodiscard]] unsigned
+    symbol_arity() const { return _symbol.base_arity(); }
 
-        [[nodiscard]] const expression&
-        value() const;
+    [[nodiscard]] const expression&
+    value() const;
 
-        [[nodiscard]] std::string
-        mangled_name() const { return _symbol.mangle(); }
+    [[nodiscard]] std::string
+    mangled_name() const { return _symbol.mangle(); }
 
-        [[nodiscard]] bool
-        is_constant_evaluable() const noexcept;
+    [[nodiscard]] bool
+    is_constant_evaluable() const noexcept;
 
-        std::string_view
-        name() const override { return _symbol.name(); }
+    std::string_view
+    name() const override { return _symbol.name(); }
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
+    [[nodiscard]] unsigned
+    unbound_parameters() const noexcept { return 0; }
 
-        unsigned
-        base_arity() const override {
-            return _symbol.base_arity();
-        }
+    unsigned
+    base_arity() const override {
+        return _symbol.base_arity();
+    }
 
-        unsigned
-        effective_arity() const override;
+    unsigned
+    effective_arity() const override;
 
-        bool
-        closure() const noexcept override;
+    bool
+    closure() const noexcept override;
 
-        [[nodiscard]] bool
-        pseudo_let() const noexcept;
+    [[nodiscard]] bool
+    pseudo_let() const noexcept;
 
-    private:
-        struct symbol _symbol;
-        expression* _value;
-    };
+private:
+    struct symbol _symbol;
+    expression* _value;
+};
+
+struct continuation_let_expression
+        : tags::referable
+          , ast_node
+          , tags::visitable {
+    continuation_let_expression(const c4::position& position,
+                                symbol symbol,
+                                expression* expr);
+};
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 #endif

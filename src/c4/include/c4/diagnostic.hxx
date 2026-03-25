@@ -37,8 +37,10 @@
 #ifndef C4_DIAGNOSTIC_HXX
 #define C4_DIAGNOSTIC_HXX
 
+#ifndef __clang__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wchanges-meaning"
+#pragma GCC diagnostic ignored "-Wchanges-meaning
+#endif
 
 #include <string_view>
 #include <cstdint>
@@ -267,7 +269,9 @@ namespace c4 {
         diagnostics_engine(std::FILE* const output = stderr,
                            const bool color = true) noexcept
             : _output{output}
-            , _color{color} { } // todo use color
+            , _color{color} {
+            std::ignore = _color; // todo use color
+        }
 
         ~diagnostics_engine() noexcept {
             if (_output == stderr || _output == stdout) return;
@@ -308,6 +312,8 @@ namespace c4 {
     };
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 #endif

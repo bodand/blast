@@ -312,17 +312,30 @@
     c4_datum_t(*callee)(void* WHEN(cnt)(COMMA) c4_dynamic_args##cnt(type_ ## v, cnt, c4_underscores(cnt)))
 
 #define c4_dynamic_call_fn(v, cnt) \
-    static C4RT_IMPL c4_datum_t \
-    c4_dynamic_call_##v##_##cnt(c4rt_package_function_t* fn, struct c4_package_v1_t** args) { \
-        c4_dynamic_call_var(v, cnt) = fn;\
-        return callee(c4_dynamic_args(v, cnt)); \
+    [[maybe_unused]] static C4RT_IMPL c4_datum_t \
+    c4_dynamic_call_##v##_##cnt(void* pkg_raw) { \
+        struct c4_package_v1_t* pkg = pkg_raw; \
+        struct c4_package_v1_function_payload* const payload = unpad_pointer_1(pkg->data); \
+        c4rt_package_function_t* const calc_fun = payload->calc_fun; \
+        struct c4_package_v1_t** args = (void*)payload->args_untyped; \
+        c4_dynamic_call_var(v, cnt) = calc_fun; \
+        [[clang::musttail]] return callee(c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_ctx(v, cnt) \
-    static C4RT_IMPL c4_datum_t \
-    c4_dynamic_call_##v##_ctx_##cnt(c4rt_package_function_t* fn, void* ctx, struct c4_package_v1_t** args) { \
-        c4_dynamic_call_var_ctx(v, cnt) = fn;\
-        return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
+    [[maybe_unused]] static C4RT_IMPL c4_datum_t \
+    c4_dynamic_call_##v##_ctx_##cnt(void* pkg_raw) { \
+        struct c4_package_v1_t* pkg = pkg_raw; \
+        struct c4_package_v1_function_payload* const payload = unpad_pointer_1(pkg->data); \
+        c4rt_package_function_t* const calc_fun = payload->calc_fun; \
+        const size_t pkg_sz = sizeof(struct c4_package_v1_t); \
+        void* ctx = payload->args_untyped; \
+        struct c4_package_v1_t** args = (void*)(payload->args_untyped \
+                                                + (ptrdiff_t)pkg->context_sz_divided_bytes \
+                                                /*        */ * pkg_sz); \
+        (void)args; /* w/o this may trigger warnings if v=0 */ \
+        c4_dynamic_call_var_ctx(v, cnt) = calc_fun; \
+        [[clang::musttail]] return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_all(v, cnt) \
@@ -346,8 +359,8 @@
 #define _Xtype_v1(x,y,...) struct c4_package_v1_t* IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
 #define _Xarg(x,y,...) args[y-128+x] IIF(IS_EMPTY(__VA_ARGS__))(NOTHING, COMMA)
 
-#define _Xcase_v1(x,y,...) case (y-128+x): return c4_dynamic_call_v1_##x(fn, args);
-#define _Xcase_v1_ctx(x,y,...) case (y-128+x): return c4_dynamic_call_v1_ctx_##x(fn, ctx, args);
+#define _Xcase_v1(x,y,...) case (y-128+x): [[clang::musttail]] return c4_dynamic_call_v1_##x(pkg_raw);
+#define _Xcase_v1_ctx(x,y,...) case (y-128+x): [[clang::musttail]] return c4_dynamic_call_v1_ctx_##x(pkg_raw);
 
 #define IIF(c) IIF_I(c)
 #define IIF_I(c) IIF_##c
@@ -502,10 +515,12 @@ c4_dynamic_call_fn_all(v1, 128)
 #define c4_dynamic_cases_ctx(max) c4_dynamic_args##max(case_v1_ctx, max, c4_underscores(max))
 
 static C4RT_IMPL c4_datum_t
-c4_dynamic_call_v1(const unsigned arity,
-                   c4rt_package_function_t* fn,
-                   struct c4_package_v1_t** args) {
-    assert(arity <= 128);
+c4_dynamic_call_v1(void* pkg_raw) {
+    const struct c4_package_v1_t* const pkg = pkg_raw;
+    const uint16_t arity = pkg->function_arity;
+    assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
+                            "with more than 128 arguments");
+
     switch (arity) {
     c4_dynamic_cases(128)
     default: ;
@@ -514,11 +529,12 @@ c4_dynamic_call_v1(const unsigned arity,
 }
 
 static C4RT_IMPL c4_datum_t
-c4_dynamic_call_v1_ctx(const unsigned arity,
-                       c4rt_package_function_t* fn,
-                       void* ctx,
-                       struct c4_package_v1_t** args) {
-    assert(arity <= 128);
+c4_dynamic_call_v1_ctx(void* pkg_raw) {
+    const struct c4_package_v1_t* const pkg = pkg_raw;
+    const uint16_t arity = pkg->function_arity;
+    assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
+                            "with more than 128 arguments");
+
     switch (arity) {
     c4_dynamic_cases_ctx(128)
     default: ;

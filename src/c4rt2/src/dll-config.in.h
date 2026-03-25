@@ -54,13 +54,13 @@
 #  define C4_FREE(...) mi_free(__VA_ARGS__)
 #  define C4_SMALL_ALLOC_SIZE MI_SMALL_SIZE_MAX
 #else
-#  include <stdlib.h>
-#  include <string.h>
+#  include <gc.h>
 
-#  define C4_MALLOC(...) malloc(__VA_ARGS__)
-#  define C4_MALLOC_SMALL(...) malloc(__VA_ARGS__)
-#  define C4_STRDUP(...) strdup(__VA_ARGS__)
-#  define C4_FREE(...) free(__VA_ARGS__)
+#  define C4_MALLOC(...) GC_malloc(__VA_ARGS__)
+#  define C4_MALLOC_SMALL(...) GC_malloc(__VA_ARGS__)
+#  define C4_STRDUP(...) GC_strdup(__VA_ARGS__)
+#  define C4_FREE(...) GC_free(__VA_ARGS__)
+// #  define C4_FREE(...) ((void)__VA_ARGS__)
 #  define C4_SMALL_ALLOC_SIZE 0U
 #endif
 

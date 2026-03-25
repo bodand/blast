@@ -117,7 +117,7 @@ namespace c4c {
                 if (popped) return;
                 popped = true;
                 _outer_call = active_call;
-                _outer_args = std::move(call_args);
+                _outer_args = call_args;
             }
 
             ~call_stack() { pop(); }
@@ -137,10 +137,10 @@ namespace c4c {
         llvm::Value*
         build_literal(const c4::ffm::literal& lit);
 
-        llvm::FunctionType*
+        [[nodiscard]] llvm::FunctionType*
         build_type_for(const c4::ffm::function_declaration& decl) const;
 
-        llvm::FunctionType*
+        [[nodiscard]] llvm::FunctionType*
         build_type_with_arity(unsigned arity) const;
 
         [[nodiscard]] llvm::BasicBlock*

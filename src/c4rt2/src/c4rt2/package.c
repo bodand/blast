@@ -38,9 +38,9 @@
 #include <stdio.h>
 
 #include <c4rt2/api.h>
-#include <c4rt2/package.h>
-#include <c4rt2/datum_type.h>
 #include <c4rt2/c4rt_package_versions.h>
+#include <c4rt2/datum_type.h>
+#include <c4rt2/package.h>
 
 #include "package.1.h"
 
@@ -146,14 +146,13 @@ c4rt_package_init_from_result(struct c4_package_t* const pkg,
 }
 
 C4RT_API c4_datum_t
-c4rt_package_evaluate(struct c4_package_t* const pkg) {
-    assert(pkg && "pkg must not be null");
+c4rt_package_evaluate(void* const pkg_raw) {
+    assert(pkg_raw && "pkg must not be null");
+    struct c4_package_t* pkg = pkg_raw;
 
     switch (pkg->version) {
     case C4_PACKAGE_VERSION_1: {
-        const c4_datum_t res = c4rt_package_evaluate_v1((struct c4_package_v1_t*)pkg);
-        assert(pkg->version == C4_PACKAGE_VERSION_1);
-        return res;
+        [[clang::musttail]] return c4rt_package_evaluate_v1(pkg);
     }
     default:
         assert(false && "invalid package version");

@@ -37,14 +37,13 @@
 #include <c4rt2c/source_file.hxx>
 #include <utility>
 #include <fmt/base.h>
-#include <fmt/std.h>
 
 c4c::source_file::source_file(std::filesystem::path path)
     : _file{std::move(path)}
     , _mmap{} {
     if (!exists(_file)) {
         fmt::print("fatal: could not open input file `{}': not found\n",
-                   _file);
+                   _file.c_str());
         throw std::runtime_error("could not find input file");
     }
 
@@ -52,7 +51,7 @@ c4c::source_file::source_file(std::filesystem::path path)
     _mmap.map(_file.c_str(), 0, mio::map_entire_file, ec);
     if (ec) {
         fmt::print("fatal: could not open input file `{}': {}\n",
-                   _file,
+                   _file.c_str(),
                    ec.message());
         throw std::runtime_error("could not find input file");
     }

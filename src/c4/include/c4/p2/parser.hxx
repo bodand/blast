@@ -36,8 +36,10 @@
 #ifndef C4_P2_PARSER_HXX
 #define C4_P2_PARSER_HXX
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchanges-meaning"
+#endif
 
 #include <stdexcept>
 #include <expected>
@@ -309,6 +311,8 @@ namespace c4::p2 {
     };
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 #endif

@@ -135,7 +135,7 @@ c4::ffm_mapper::finalize_block_body() const {
 
 void
 c4::ffm_mapper::do_visit(const ast2::block& obj) {
-    // _block_names needs to be able to refer to this after the if's scope
+    // _block_names needs to be able to refer to this after the "if"'s scope
     std::string name;
     ffm::function_declaration* decl;
 
@@ -196,13 +196,13 @@ c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) 
     std::vector<ast2::tags::referable*> closure_symbols;
     for (const auto& sym : obj.closure_symbols()) {
         if (const auto ref = sym.references()) {
-            // a referenced symbol means we are a proper closure, thus
+            // a referenced symbol means we are a proper closure; thus
             // it needs to be passed down to blocks if we happen to have
             // one nested...
 
             // ...except if the referenced symbol already has a fn. declaration
             // attached in which case it is a global function that is not a closure itself, meaning
-            // it does not need to be captured, nor declared (as it is already done)
+            // it does not need to be captured nor declared (as it is already done)
             if (const auto decl_attr = ref->attribute_value<ffm::function_declaration*>("declaration")) {
                 const auto decl = *decl_attr;
 
@@ -228,12 +228,12 @@ c4::ffm_mapper::build_closure_context_from_symbols(const ast2::expression& obj) 
             }
         }
         else {
-            // referenced symbols are defined in the source file, that is they
+            // referenced symbols are defined in the source file that is they
             // will be found in let expressions, where we can properly name them
-            // only global, extern functions need to be implicitly declared here
-            // because of this
-            // external functions cannot be closures, what could they be closed over
-            // if they happen before anything in the given script happens?
+            // only global extern functions need to be implicitly declared here
+            // because of this, external functions cannot be closures
+            // -- what could they even be closed over if they happen before
+            // anything in the given script happens?
             declare_extern_function(ffm::symbol::from_ast(sym, false));
         }
     }

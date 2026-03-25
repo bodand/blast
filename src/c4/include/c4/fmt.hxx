@@ -36,8 +36,10 @@
 #ifndef C4_FMT_HXX
 #define C4_FMT_HXX
 
-#if defined(__GNU__) || defined(__clang__) || _MSC_VER > 1900
+#if defined(__GNU__) || _MSC_VER > 1900
 #  pragma system_header
+#elifdef __clang__
+#  pragma GCC system_header
 #endif
 
 #include <fmt/base.h>

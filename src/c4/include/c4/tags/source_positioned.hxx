@@ -37,8 +37,10 @@
 #ifndef C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 #define C4_AST2_TAGS_SOURCE_POSITIONED_HXX
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchanges-meaning"
+#endif
 
 #include <c4/diagnostic.hxx>
 
@@ -60,6 +62,8 @@ namespace c4::ast2::tags {
     };
 }
 
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 #endif

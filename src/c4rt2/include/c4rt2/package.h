@@ -113,6 +113,6 @@ c4rt_package_init_from_result(struct c4_package_t* pkg,
 ///
 ///     Behavior is undefined if pkg is null.
 C4RT_API c4_datum_t
-c4rt_package_evaluate(struct c4_package_t* pkg);
+c4rt_package_evaluate(void* pkg);
 
 #endif

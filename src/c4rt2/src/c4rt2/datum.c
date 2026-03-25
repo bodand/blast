@@ -78,11 +78,15 @@ get_pointer_value(const c4_datum_t datum) {
 static c4_datum_t
 put_pointer_value(void* const ptr, const bool dynamic) {
     c4_datum_t ptr_payload = (uintptr_t)ptr & payload_mask;
-    assert(ptr_payload == (uintptr_t)ptr
-        && "Pointer contains more bits that 48. This is a fatal problem, because c4rt does bit fiddling.");
+    assert(
+        ptr_payload == (uintptr_t)ptr
+        && "Pointer contains more bits that 48. This is a fatal problem, because c4rt does bit fiddling."
+    );
 
-    assert((ptr_payload & 1) == 0
-        && "Pointer is not aligned to at least 2 bytes. This is a fatal problem, because c4rt does bit fiddling.");
+    assert(
+        (ptr_payload & 1) == 0
+        && "Pointer is not aligned to at least 2 bytes. This is a fatal problem, because c4rt does bit fiddling."
+    );
     ptr_payload |= (dynamic ? 1 : 0);
 
     return ptr_payload;
@@ -258,7 +262,7 @@ c4rt_datum_from_function(c4rt_package_function_t* const calc_fun,
     if (fn_data) {
         assert(fn_data->version != 0 && "package version must be initialized");
         switch (fn_data->version) {
-        case C4_PACKAGE_VERSION_1://
+        case C4_PACKAGE_VERSION_1: //
             package_version = C4_PACKAGE_VERSION_1;
             break;
         default: assert(false && "unsupported package version");
@@ -267,8 +271,8 @@ c4rt_datum_from_function(c4rt_package_function_t* const calc_fun,
     const uint16_t package_size = c4rt_package_version_to_size(package_version);
 
     struct datum_function* const data = C4_MALLOC(
-        sizeof(struct datum_function)       // header
-        + 0u                                // context
+        sizeof(struct datum_function) // header
+        + 0u // context
         + base_arity * (size_t)package_size // args
     );
 
@@ -307,8 +311,8 @@ c4rt_datum_from_closure(c4rt_package_function_t* const calc_fun,
     const uint16_t ctx_sz_divided_bytes = ctx_sz_16multiple / 16u;
 
     struct datum_function* const data = C4_MALLOC(
-        sizeof(struct datum_function)       // header
-        + ctx_sz_16multiple                 // context
+        sizeof(struct datum_function) // header
+        + ctx_sz_16multiple // context
         + base_arity * (size_t)package_size // args
     );
 
@@ -471,10 +475,10 @@ c4rt_datum_coerce_int64(c4_datum_t datum) {
     switch (type) {
     case C4_Float: return (int64_t)*(double*)&datum;
     case C4_Block: return datum != gC4_Empty_Block;
-    case C4_Integer://
+    case C4_Integer: //
         if (!remoteness) return datum_get_int32_unck(datum);
         return datum_get_int64_unck_remote(datum);
-    case C4_String://
+    case C4_String: //
         if (!remoteness) return to_int64(datum_get_cstr_unck(&datum));
         return to_int64(datum_get_cstr_unck_remote(datum));
     }
@@ -489,10 +493,10 @@ c4rt_datum_coerce_double(c4_datum_t datum) {
     switch (type) {
     case C4_Float: return *(double*)&datum;
     case C4_Block: return datum != gC4_Empty_Block;
-    case C4_Integer://
+    case C4_Integer: //
         if (!remoteness) return datum_get_int32_unck(datum);
         return (double)datum_get_int64_unck_remote(datum);
-    case C4_String://
+    case C4_String: //
         if (!remoteness) return to_double(datum_get_cstr_unck(&datum));
         return to_double(datum_get_cstr_unck_remote(datum));
     }
@@ -650,16 +654,13 @@ _Cs6readln0E() {
 C4RT_API c4_datum_t
 _Cs2if3E(struct c4_package_t* cond, struct c4_package_t* t, struct c4_package_t* f) {
     const c4_datum_t cond_val = c4rt_package_evaluate(cond);
-    if (cond_val == gC4_Empty_Block) {
-        const c4_datum_t f_code = c4rt_package_evaluate(f);
-        const c4_datum_t ret = c4rt_datum_evaluate(f_code, NULL);
-        c4rt_datum_free(cond_val);
-        return ret;
-    }
-    const c4_datum_t t_code = c4rt_package_evaluate(t);
-    const c4_datum_t ret = c4rt_datum_evaluate(t_code, NULL);
+
+    const int is_falsy = cond_val == gC4_Empty_Block;
     c4rt_datum_free(cond_val);
-    return ret;
+
+    if (is_falsy)
+        return c4rt_package_evaluate(f);
+    return c4rt_package_evaluate(t);
 }
 
 char*
@@ -701,7 +702,8 @@ c4rt_datum_dup(const c4_datum_t datum) {
         // todo: ref-counted CoW strings
         return datum_from_sized_string(
             datum_get_cstr_unck_remote(datum),
-            datum_get_cstr_size_unck_remote(datum));
+            datum_get_cstr_size_unck_remote(datum)
+        );
     }
     UNREACHABLE("invalid datum type %d", type);
 }
@@ -714,7 +716,7 @@ c4rt_datum_eq(c4_datum_t a, c4_datum_t b) {
 
     switch (a_type) {
     case C4_Float: return c4rt_datum_from_boolean(a == b);
-    case C4_Block://
+    case C4_Block: //
         if (a == gC4_Empty_Block) return c4rt_datum_from_boolean(b == gC4_Empty_Block);
         return gC4_Empty_Block;
     case C4_Integer: {
@@ -744,8 +746,10 @@ c4rt_datum_preload_arguments(const c4_datum_t datum,
     assert(type == C4_Block && "preloading arguments only supported for blocks");
     if (datum == gC4_Empty_Block) return gC4_Empty_Block;
 
-    assert(datum_is_ptr_dynamic(datum) &&
-        "preloading non-null argument set to nullary datum object");
+    assert(
+        datum_is_ptr_dynamic(datum) &&
+        "preloading non-null argument set to nullary datum object"
+    );
 
     const struct datum_function* const fn_data_old = get_pointer_value(datum);
     const size_t fn_data_sz = (size_t)fn_data_old->context_sz_divided_bytes * 16u
@@ -799,8 +803,8 @@ c4rt_datum_evaluate(const c4_datum_t datum,
     }
 
     void* const context = fn_data->context_sz_divided_bytes
-                          ? fn_data->fn_data
-                          : NULL;
+                              ? fn_data->fn_data
+                              : NULL;
 
     // if args are empty it does not matter which version we use as there are
     // no packages involved in the call
@@ -808,16 +812,20 @@ c4rt_datum_evaluate(const c4_datum_t datum,
 
     switch (version) {
     case C4_PACKAGE_VERSION_1:
-    default://
+    default: //
         if (context) {
-            return c4_dynamic_call_v1_ctx(fn_data->base_arity,
-                                          fn_data->calc_fun,
-                                          context,
-                                          (void*)callee_args);
+            return c4_dynamic_call_v1_ctx(
+                fn_data->base_arity,
+                fn_data->calc_fun,
+                context,
+                (void*)callee_args
+            );
         }
-        return c4_dynamic_call_v1(fn_data->base_arity,
-                                  fn_data->calc_fun,
-                                  (void*)callee_args);
+        return c4_dynamic_call_v1(
+            fn_data->base_arity,
+            fn_data->calc_fun,
+            (void*)callee_args
+        );
     }
     assert(false);
 }
