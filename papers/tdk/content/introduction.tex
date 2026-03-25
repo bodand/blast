@@ -1,0 +1,48 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\chapter{\bevezetes}
+%----------------------------------------------------------------------------
+
+Az informatika széles körben alkalmaz különféle nyelveket ahhoz, hogy valamilyen feladatra tudjon megoldást adni:
+gyakran ez egy program fejlesztése, ahol egy megfelelően választott  programozási nyelvet (\pl C++, C\#, Java, Rust, Haskell, Erlang, stb.) szokás használni -- a megfelelő választás pedig függ a feladat jellegétől, a projekttel szemben támasztott követelményektől, határidőkről és még magától a fejlesztő csapat előképzettségétől, képességeitől és preferenciájától is.
+
+A problémára nagyszerűen illeszkedő programozási nyelv választásakor is előfordul azonban, hogy előkerülnek olyan részfeladatok, amelyekhez nincs szükség az előbb felsorolt programnyelvek teljes eszközkészletére, hogy megoldjuk ezeket.
+Ilyenkor az is lehetséges, hogy ez az eszköztár akár még meg is nehezítheti a konkrét eset megoldását és karbantarthatóságát, mert túl sok lehetőséget nyújt a fejlesztőknek, így egy olyan megoldás áll elő amelyik túlságosan komplex, pedig lett volna lehetőség egy letisztultabb megoldásra is -- ez egyszerűen nem jutott a fejlesztők eszébe a túlságosan tág megoldási lehetőségek halmazából.
+
+Ez az egész problémakör azért merül fel, mert ezek a nyelvek \un általános célú programozási nyelvek (\gls{GPL}), amelyek célja és tervezésükkor kitűzött alapvető elvárás, hogy minden feladatra és problémára amivel szembe találkozhat egy fejlesztő, arra legyen valamilyen lehetősége azt a nyelven belül megoldani.
+Így minden esetben minden probléma megoldásához szükséges minden lehetőséget biztosítanak, akkor is, ha például egy állapotgép leírásához nincs feltétlenül szükségünk arra, hogy tudjunk osztálysablonokat definiálni.
+
+Ez egy gyakran előforduló helyzet, hiszen sok esetben a nagy célprobléma részekre bontása során előállnak olyan részproblémák, amelyek megoldásához -- az előző paragrafusban tárgyalt \gls{GPL}-ek túlságosan gazdag lehetőségei miatt -- a nem annyira komplex és kevésbé általános nyelvi keretek könnyítenék a fejlesztést.
+Ezzel összhangban, sok olyan speciális nyelv alakult ki, amelyik az általános programnyelvek teljes eszköztárát limitált formában, vagy egyáltalán nem biztosítják; cserébe a megcélzott szakterület igényeit elégíti ki a lehető legjobban.
+Egy kifejezetten gyakran előkerülő család a leíró nyelvek (\gls{XML} dialektusok, \gls{HTML}, Markdown), de igen nagy számban fordulnak elő különböző egyéb példák: ábrák készítésére készült nyelvek (Pikchr, PlantUML), fordítást kezelő rendszerek (Make, Ninja), de még az adatmanipulációs SQL és QUEL nyelvek és tipográfiai nyelvek, mint a \TeX\ és roff is ebbe a kategóriába tartoznak.
+
+Az előző bekezdésben tárgyalt nyelveket, amelyek egy-egy részprobléma megoldására adnak specializált -- és pusztán arra limitált -- eszközkészletet hívjuk szakterület-specifikus nyelveknek (\gls{DSL}).
+Ezek részletesebb tárgyalásáról szól \aref{chr:dsl}.~fejezet.
+
+Az általam fejlesztett általános célú programozási nyelvet és annak általam adott megvalósítását mutatja be \aref{chr:c4}.~fejezet.
+Itt ismertetem a tervezési elveket, és azokat az általános elvárásokat, amelyek figyelembe vételével készült a C4 nyelv.
+A használt eszközöket felvezetem, és bemutatom a megvalósítás általános struktúráját, kiemelve az érdekesebb, kevésbé elterjedt nyelvi elemekhez tartozó konkrét megvalósítási lépéseket.
+
+\Aref{chr:uses}.~fejezetben pedig a megvalósított nyelvhez mutatok a valóságban is használható felhasználási lehetőséget: megvalósított szakterület-specifikus nyelveket, amelyekben készített kódrészleteket egy az egyben futtatni is lehet a C4 nyelv fordítóját felhasználva.
+
+Ezek után \aref{chr:ftr}.~fejezetben ismertetem a jövőbeli továbbfejlesztési lehetőségeket, és egy olyan nagyobb lélegzetvételű C4 nyelvet felhasználó projektet, amelyik C és C++ forrásfájlok programozható statikus analízisét teszi lehetővé.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,104 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{Különböző nyelvek együttes használata}\label{sec:uses:mix}
+%----------------------------------------------------------------------------
+
+A C4 nyelvnek, amellett, hogy egy-egy \gls{DSL} megvalósítását egyszerű megadni benne, van egy másik kiemelkedő erőssége.
+Mivel a benne definiált nyelvek \gls{eDSL}-ek a C4 nyelven belül, így ezeket a nyelveket lehetséges olyan módon kombinálni, ahogy az a fejlesztő számára a legkényelmesebb megoldást tudja nyúltani az adott feladathoz.
+Ez igaz bármilyen két beágyazott nyelv esetén, amennyiben azok nem definiálnak olyan függvényeket, amelyek névütközést okoznak -- erre a problémára is nyújtana megoldást \aref{sec:ftr:argfun}.~részben bemutatott továbbfejlesztési lehetőség.
+
+Az alábbi példában egy parancssoros programot valósítok meg, amelyik a felhasználó által adott parancsok hatására egy állapotgépen belül vált állapotokat, majd a megfelelő lépések esetén a feladat ütemező által leírt részfeladatokat futtatja.
+A használt \gls{DSL}-ek kódja azonos az előzőekben definiáltakkal, mind kettő megtalálható függelékben.
+
+Az alkalmazás kódja megtalálható \aref{fig:ex-mix}.~ábrán.
+A cél egy demóként szolgálni egy olyan parancssoros rendszer felhasználói felületére, amelyikben az üzleti logikát -- adatok szűrése egy fájlban megadott kulcs-érték párok alapján, majd valamiféle riport előállítása -- egy feladatok hálójával lehetséges megadni.
+A tényleges adatok szűrése nincs megvalósítva, mert a demó megértését csak bonyolítaná: a jelenleg cél csupán az, hogy bemutassam, milyen egyszerűen lehetséges két \gls{DSL}-t együttesen használni egy C4 programon belül, nem egy teljes alkalmazás fejlesztése.
+
+Látszik a kódon, hogy a felhasználói felületnek az állapottartó jellegét jól meg lehet valósítani az állapotgépet felhasználva.
+Ezzel párhuzamosan a futtatni szánt ``üzlet logikához'' tartozó kódot részekre lehet bontani, amelyet az ütemezőn keresztül lehet kényelmesen megvalósítani a függőségeket felhasználva.
+A program ilyen módon való két részre bontásával a függőségek szétválasztása is automatikusan megtörténik.
+
+\begin{figure}[htb]
+    \begin{subfigure}{.46\linewidth}
+        \begin{lstlisting}[numbers=left,gobble=12]
+            let runtime make
+              rule "report" <: "run-filter": {
+                println "report from filtered.csv"
+              }
+              rule "run-filter": {
+                println "filter data.csv into filtered.csv"
+              }
+
+              rule "new-filter" <: "reset-filter"
+                                 , "add-filter"
+                                 : { }
+              rule "reset-filter": {
+                fprintln "filter.csv" "key;value"
+              }
+              rule "add-filter": {
+                let key { println "Key: " readln }
+                let value { println "Value: " readln }
+
+                fappendln "filter.csv" strcat key
+                                       strcat ";"
+                                              value
+              }
+            done_make
+        \end{lstlisting}
+        \caption{Az ,,üzleti logika'' feladatok hálózatára bontott utasításokkal}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{.46\linewidth}
+        \begin{lstlisting}[numbers=left,gobble=12]
+            let ui fsm
+              start state "main-menu"
+                enter { println "Welcome!" }
+              final state "exit"
+                enter { println "Bye!" }
+
+              state "filter"
+                enter { println "Entering filter edit mode" }
+                leave { println "Leaving filter edit mode" }
+
+              on "exit" from "main-menu" to "exit"
+
+              on "generate" from "main-menu" to "main-menu"
+                do { run runtime "report" }
+
+              on "filter" from "main-menu" to "filter"
+              on "exit" from "filter" to "main-menu"
+
+              on "reset" from "filter" to "filter"
+                do { run runtime "reset-filter" }
+              on "set" from "filter" to "filter"
+                do { run runtime "new-filter" }
+              on "add" from "filter" to "filter"
+                do { run runtime "add-filter" }
+            done
+        \end{lstlisting}
+        \caption{A felhasználói felület megvalósítása állapotgéppel}
+    \end{subfigure}
+    \caption{Példa a C4 nyelvben megvalósított \gls{eDSL}-ek együttes használatára}\label{fig:ex-mix}
+\end{figure}
+
+Amit \aref{fig:ex-mix}.~ábrán érdemes megfigyelni, hogy a felhasználói felületet megvalósító állapotgép éleire írt akciók milyen könnyedén képesek egy teljesen független \gls{DSL}-ben megadott részét felhasználni a programnak.
+Ahol az akciókban a {\tt run} függvény szerepel, ott a felhasználói felület belehív az üzleti logikába.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

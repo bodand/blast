@@ -1,0 +1,41 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\chapter*{Összegzés}
+\addcontentsline{toc}{chapter}{Összegzés}
+%----------------------------------------------------------------------------
+
+A dolgozatban röviden bemutattam a szakterület specifikus nyelveket és legfontosabb előnyeiket.
+Ezek a nyelvek képezik a motivációt a dolgozat további részeiben tárgyalt nyelvnek és a hozzá tartozó megvalósításnak, beleértve a továbbfejlesztési lehetőségeket.
+
+A nyelv definiáláshoz első lépésként bevezettem azt a négy fő követelményt, amelyek biztosítják, hogy az elkészült nyelv olyan módon fog tudni viselkedni, ahogy azt szeretném.
+Ezek mentén terveztem meg egy olyan \gls{GPL}-t, amelyik így kifejezetten az \gls{eDSL}-ek támogatására van összpontosítva.
+A céloknak megfelelően a különböző nyelvi elemek megválasztása mind úgy történt, hogy a \gls{DSL}-ek beágyazását a lehető legkönnyebbé tegyék.
+
+Az így előálló nyelvről -- a C4-et, amely szintaxisát minden elemével bemutattam -- állítom, hogy az általam vélt lehető legkevesebb megkötést bevezető konkrét szintaxissal rendelkező nyelvként definiáltam.
+A nyelv szintaktikai dinamikusságának köszönhetően akár még az elágazás szerkezetét is lehetséges lenne a nyelven belül egyfajta \gls{DSL} formájában megvalósítani.
+Ebből is látszik, hogy a nyelv nagyon sokféle nyelv beágyazására nyújt lehetőséget.
+Ezt az állítást, mint a nyelv legnagyobb előnyeként mutatok be, a dolgozat során több különböző kódrészlettel prezentáltam, hogy szemléltessem a széles körét azoknak a \gls{DSL}-eknek, amelyek a nyelv natív elemei felett megvalósíthatóak.
+
+A nyelv egyszerű megtervezése mellett, meg is valósítottam egy olyan környezetet, amelyik képes teljesen előre fordított és \gls{JIT}-el támogatottan értelmezett módban működni.
+Az ebből származó előny, hogy akár a végfelhasználónak leszállított binárisokat, akár gyors helyileg futtatott, egyszer használatos programokat lehetséges könnyedén megvalósítani a konkrét problémára illeszkedő \gls{DSL} felhasználásával C4-en belül.
+
+A fordításnál felmerülő komplexitásokat ismertettem, beleértve az általam megvalósított különböző fordítási lépéseket, amelyek során akár a bináris akár a \gls{JIT}-en keresztül futó rendszer biztosítja a futtatás feltételeit.
+Leírtam a futtatókörnyezetként szolgáló függvénykönyvtárat is, amelyik lehetővé teszi, hogy az ilyen szinten dinamikus nyelv megfelelő hatékonysággal tudjon natív kódként végrehajtódni -- mind processzoridőt, mind a futás közben használt memóriát figyelembe véve.
+
+A nyelv és implementációjának részletes tárgyalása után, bemutattam pár gyakorlatban is használható példát: egy állapotgép leíró nyelvet és egy primitív feladat-ütemezőt, amelyek teljesen saját \gls{eDSL}-ként megvalósíthatóak a C4-nyelven belül.
+Itt mutattam be a nagy másik erősségét a nyelvnek: mivel beágyazva vannak a különböző \gls{DSL}-ek egy gazdanyelvbe, így nincs akadálya annak, hogy ezeknek valamiféle kombinációját használjuk.
+
+A dolgozatot továbbfejlesztési lehetőségekkel zártam, amelyikben leírok olyan további nyelvi elemeket, amelyekkel még kifejezőbben lenne lehetséges megvalósítani a C4 nyelvbe beágyazott \gls{DSL}-eket.
+A végső szekció egy nagyobb jövőbe mutató projektről szól: egy olyan statikus analízis eszközre mutattam be igényt, amelyikben a felhasználók saját maguknak tudnak személyre szabott ellenőrzéséket definiálni, könnyen és kényelmesen.
+Ennek a megvalósítását tervezem a C4 nyelvre építve elkészíteni.
+
+
+
+
+
+
+
+
+

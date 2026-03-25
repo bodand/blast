@@ -1,0 +1,45 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{Primitív feladat ütemező}\label{sec:uses:make}
+%----------------------------------------------------------------------------
+
+A make rendszer egy elterjedt eszköz fordítási feladatok ütemezésére egy C vagy C++ projekt fordítása során.
+Ehhez a make rendelkezik egy saját deklaratív \gls{DSL}-el, amelyiken belül meg lehet adni a feladatok közötti függőségeket.
+Ezt szokásos a projekthez tartozó {\tt Makefile}-ba írni, esetleg generáltatni, ha komplexebb lépésekre van szüksége a projekt fordítása előtt, mint például a célplatform képességeinek ellenőrzése.
+
+Az előbb leírt felhasználási módra lett kitalálva a make.
+Azonban a tényleges lépéseket, amit egy-egy feladat megvalósításához kell végrehajtani a rendszerhéj (system shell) értelmezője számára továbbítja, így sok minden egyéb feladatra lehet felhasználni, ami nem projektek fordítása, de olyan alfeladatokból áll, amelyek között függőségi sorrendet kell felállítani.
+
+Ennek megfelelően, most bemutatok egy olyan primitív make jellegű \gls{DSL}-t, amelyik lehetővé teszi azt, hogy a egyes részfeladatok közötti függőségeket definiálva lehessen megvalósítani egy nagyobb feladatot.
+A \gls{DSL}-t megvalósító C4 kód megtalálható \aref{sec:app:make}.~függelékben, a használatra adott példa pedig megtekinthető \aref{lst:ex-make}.~listázásban.
+A példakódban az egyszerűség kedvéért csak egyszerű kiírások a feladatok, de ezek lehetnének komplexebb kódrészletek.
+
+\begin{lstlisting}[gobble=4,numbers=left,caption={C4 make jellegű \gls{DSL} használati példa},label=lst:ex-make]
+    let pipeline make
+        rule "lint": {
+            println "linting"
+        }
+        rule "compile": {
+            println "compile"
+        }
+        rule "test" <: "lint", "compile": {
+            println "test"
+        }
+        rule "package" <: "test": {
+            println "package"
+        }
+    done_make
+
+    run pipeline "package"
+\end{lstlisting}
+
+Hasonlóan az előző fejezetben tárgyalt állapotgép leírásához, a {\tt run} parancs az, amelyik a futtatáshoz tartozó szemantikát írja le a megadható feladatok számára.
+Fontos megemlíteni, hogy ez a demó jellegű \gls{DSL} csak a feladatok ütemezését valósítja meg, a fájl írási időpontok alapú késznek tekintettséget nem.
+Bár ezt alapvetően nem lenne kifejezetten nehéz megvalósítani, a C4 megvalósításom jelenleg még nem rendelkezik az operációs rendszerrel ilyen módú interakció végrehajtására szükséges elemekkel.
+
+
+
+
+

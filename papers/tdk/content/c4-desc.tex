@@ -1,0 +1,267 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{A C4 nyelv leírása}\label{sec:c4:desc}
+%----------------------------------------------------------------------------
+
+\subsection{Az elvárt tulajdonságok}\label{subsec:c4:desc:prop}
+
+Az alábbi tulajdonságok azok, amelyet a nyelvvel kapcsolatban felállítottam a tervezés előtt.
+Ezek egy általános vázat adnak a végső nyelv viselkedésével kapcsolatban, és garantálják az elvárt módon való használhatóságát a nyelvnek.
+A tulajdonságok számozása egy gyenge fontossági sorrendet valósít meg köztük: bár mindegyik fontos, de az első nem teljesítése sokkal nagyobb probléma, mint a 4.-el szemben tapasztalt esetleges problémák.
+
+\begin{property}\label{prop:dsl-friendly}
+    Erős beágyazott \gls{DSL} támogatás
+
+    A beágyazott \gls{DSL}-ek létrehozásának lehetősége az egyik alapkoncepció a nyelv tervezése során.
+    Egy erősen behatárolt, nem rugalmas vagy csak nem eléggé egységesített szintaxisú nyelv esetén limitálódik azon \gls{DSL}-ek szintaktikája is, amit a nyelvbe lehet beágyazni.
+    Ennek megfelelően az egyik legfontosabb tulajdonsága a nyelvnek, hogy a lehető legrugalmasabb szintaktikát megválasztva, a \gls{DSL}-eket legkevésbé korlátozva azok létrehozását megfelelő módon támogassa.
+\end{property}
+
+\begin{property}\label{prop:uncompiled}
+    Fordítás nélkül és fordítással is futtatható.
+
+    A gazdanyelvbe sokféle \gls{DSL} beágyazásának a lehetősége adott.
+    Ezek a \gls{DSL}-ek viszont magukban is rendelkezhetnek különböző tulajdonságokkal, amelyek számukra előnyösebbé teszik a direkt kiértékelést (interpretálást) vagy fordítást a velük végzett munka során.
+    Például a fordítás előnyös lehet, ha olyan végterméket állítunk elő, amelyet a végfelhasználó számára csomagolt binárisként szállítunk le így nem kell a teljes interpreter eszköztárát is telepíteni.
+    Ezzel szemben interpretálással rövid, egyszer használatos programokat könnyebb készíteni és használni.
+    Egy-egy \gls{DSL}-nek mind két esetben is használhatónak kell maradnia, így a nyelvi szintű támogatás fontos, hogy megjelenjen mind kettő lehetőséghez.
+\end{property}
+
+\begin{property}\label{prop:dynamic}
+    Dinamikusan típusos
+
+    Számos érv szól mind a statikus és dinamikus típusos nyelvek mellett, emellett egyes programozóknak vannak személyes preferenciái, hogy melyikkel szeretnek jobban dolgozni; nem lehet egyértelműen kiválasztani ,,a jó'' opciót a kettő közül.
+    Azért a dinamikusan típusos megoldásra esett a választásom, mert így a \gls{DSL}-ek használata közben nem kell a potenciálisan komplex típusok megadásával (fejlesztői oldalon), vagy kikövetkeztetésével (fordító oldalon, ahol egyáltalán egyértelműen lehet) sok időt és energiát eltölteni.
+    Elegendő, csak a szakterület által is érdekesnek ítélt elemekkel foglalkozni.
+\end{property}
+
+\begin{property}\label{prop:easy}
+    Érthető egy átlagos C, C++, Java, stb. fejlesztő számára.
+
+    A nyelv szintaktikájának lehetőleg a megszokott, közismert nyelvek szintaktikájához lenne előnyös illeszkednie, hogy egy olyan programozó, amelyik már egy elterjedt másik nyelvet ismer, ne kelljen a szintaktikának a tanulgatásával sok időt töltenie; legyen elég, ha a szemantikával megismerkedik, és utána szinte azonnal képes legyen használni a nyelvet, vagy egy benne megalkotott \gls{DSL}-t.
+\end{property}
+
+\subsection{A C4 nyelv ismertetése}\label{subsec:c4:desc:c4}
+
+Az előző tulajdonságok alapján megalkotott nyelv leírása következik.
+Magas szinten, egy olyan nyelvet definiálok, amelyik funkcionális, immutábilis, dinamikusan típusos, és szintaktikáját tekintve nagyon megengedő és rugalmas.
+
+Ezeknek a tulajdonságoknak nagy része egyenesen megfeleltethető vagy direkt következménye az előző részben definiált elvárásoknak.
+A funkcionális, immutábilis nyelv választása azonban nem egyértelmű: a klasszikus könnyen futtatható, dinamikus nyelvek nagy többségben egyszerű procedurális paradigma szerint működnek, ld.~Tcl és a különböző (UNIX) shell nyelvek, esetleg utólagosan különféle módon objektum--orientált támogatást kaptak; ilyen \pl a Perl.
+
+Általánosan az immutábilis entitásokkal végzett programozás biztosít egy extra réteg védelmet a fejlesztői hibák ellen: fordítási időben az esetleges elírásokból eredő hibák elkerülhetőek, de futás közben az időbeli csatolásból eredő meglepő viselkedés elkerülésével is átláthatóbb lehet a kód.
+A C4 esetében ez a megközelítés elsősorban a dinamikus típusozás által hozott extra hibalehetőségeket hivatott csökkenteni. 
+Azonban több előnye is származik a kódnak a tisztaságából (purity): egyszerűbb értelmezés, és meglepő mellékhatások nélkül könnyebben olvashatóvá válhatnak kódrészletek.
+Másképpen megfogalmazva, a lokálisan látott kód értelmezése könnyebbé válik, mert nem kell a különböző távoli függvények viselkedésével számolni.
+A jövőben párhuzamosítással kapcsolatos előnyök is megjelenhetnek, bár ez jelenleg nem került megvalósítása.
+
+A funkcionális paradigma pedig jobban illeszkedik egy ilyen teljesen immutábilis rendszerre, mint a procedurális vagy objektum-orientált; a funkcionális nyelvek nagy része teljesen immutábilis, és semmiféle értékmódosítást nem engedélyez.
+Emiatt jobbnak vélem, ha egy kevésbé ismert, de egyáltalán nem ismeretlen, paradigmát választok, amelyik cserébe sok olyan mintát és idiómát tud más nyelvekből hozni, amelyek alapból hasonló koncepciók mellett jól működnek.
+
+A logikai paradigmát még meg lehet említeni, mint egy paradigma, amelyik az immutábilis elemekkel jól komponálható.
+Azonban ez sok programozó számára még idegenebb, mint a funkcionális felfogás, és így akár még kényelmetlen is tud lenni a Prolog jellegű kódolási stílus, ha az adott felhasználó nem rendelkezik megfelelő gyakorlattal.
+Ez direkt módon szegi \aref{prop:easy}.~tulajdonságot, amelyiket teljesíteni kell a nyelvnek.
+
+A nyelv rugalmasságát viszont még az eddig elmondottak nem garantálják.
+Meg kell tehát még valósítani azt a nyelvi szintaktikát, amelyikben a lehető legkevesebb konkrét elem található, és minél több minden ezekből felépíthető.
+Ez a rugalmasság LISP nyelvcsaládban \cite{mccarthyRecursiveFunctionsSymbolic1960} kiemelkedően jól látszik: a zárójeleket leszámítva, makrók felhasználásával a Scheme\footnote{egy LISP variáns} implementációkban akár teljesen új nyelvi elemeket lehet létrehozni \cite{freesoftwarefoundationinc.SyntaxRulesGuile2025}.
+A zárójelek azonban egy idegen, elriasztó kinézetet kölcsönöznek a LISP alapú nyelveknek, így nem feltételen ideálisak \aref{prop:easy}.~tulajdonság miatt.
+Ennek ellenére a LISP alapkoncepciója hasznos tud lenni: a szimbolikus kifejezések (\gls{sexpr}), amelyik az elkülönülő zárójeles kinézetét adja.
+Ebben a koncepcióban láthatóan mindent függvények vagy makrók definiálásával és azok hívásával lehetséges megadni.
+Ráadásul kiemelkedően egyszerű számítógéppel feldolgozni, mert minden teljesen uniform módon néz ki.
+
+De vegyük el a zárójeleket: ha előre ismert, hogy mennyi argumentumot vár egy adott függvény, akkor a zárójelek halmozása nélkül is lehetséges, hogy egyszerűen és megfelelően adjunk meg egy zárójelezést minden kifejezéshez.
+Ez egy C jellegű sorrendet követel meg a függvények definiálásánál: minden függvényt hívása előtt ismerni kell.
+Ez azonban nem okoz véleményem szerint nagy gondot, sok másik nyelv rendelkezik ezzel a megkötéssel: C, C++ (részei), Perl, stb.
+
+Ezzel viszont egy olyan opcionálisan zárójelezhető LISP-et kapunk, amelyik kísértetiesen hasonlít egy megszokott C-szerű programozási nyelvre.
+Erről szól \aref{fig:lisp-c4-c}.~ábra, amelyikben látszik, hogy ha elhagyjuk a zárójeleket, akkor egy sokkal inkább C-re hasonlító megoldást kapunk -- csak hiányoznak a pontosvesszők.
+
+\begin{figure}[htb]
+    \begin{subfigure}[]{.28\linewidth}
+		\vskip.136cm
+        \begin{lstlisting}[gobble=12,language=lisp]
+            (if (> a 2)
+              (display "nagyobb")
+              (display "kisebb"))
+        \end{lstlisting}
+        \caption{Scheme kód if függvénnyel}
+        \label{fig:lisp-c4-c:lisp}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[]{.28\linewidth}
+        \begin{lstlisting}[gobble=12]
+            if a > 2
+                println "nagyobb"
+            else
+                println "kisebb"
+        \end{lstlisting}
+        \caption{C4 kód if függvénnyel}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[]{.28\linewidth}
+        \begin{lstlisting}[gobble=12,language=c]
+            if (a > 2)
+                puts("nagyobb");
+            else
+                puts("kisebb");
+        \end{lstlisting}
+        \caption{C kód if szerkezettel}
+    \end{subfigure}
+    \caption{Különböző nyelvek if szintaktikája}
+    \label{fig:lisp-c4-c}
+\end{figure}
+
+Egy feltűnő különbség van azonban a \aref{fig:lisp-c4-c}.~ábrán, amit még nem említettem: az operátorok.
+
+C-ben és a hasonló szintaktikájú nyelvekben az operátorok halmaza előre meghatározott.
+Esetleg ezek működése felüldefiniálható egyes nyelvekben, de általánosan nem lehet létrehozni új operátorokat.
+Ellenben, a funkcionális nyelvekben gyakori, amellett, hogy ezt egyáltalán meg lehet csinálni, hogy ezt a lehetőséget megfelelően ki is használják a mind a nyelv szabványos könyvtárának definiálásánál a fejlesztők, mind a felhasználók.
+Míg a LISP családban ez egyértelmű, hiszen nincs érdemben megkülönböztetés az egyszerű függvény és operátor között, ahogy ez látszik \aref{fig:lisp-c4-c:lisp}.~ábrán is.
+Azonban olyan nyelvekben mint a Haskell is van erre lehetőség, és például az egyik leghírhedtebb típus-osztály (type class), a {\tt Monad} is nagy mértékben kihasznál: a három függvényből amelyiket előír, kettő operátor ({\tt >>=} és {\tt >>}).
+
+Ezzel a gondolatmenetnek megfelelő módon a C4 is támogatja a felhasználó által definiált operátorok létrehozását.
+Ez lehetővé teszi ezeknek a felhasználását az általuk még jobban testre szabható \gls{DSL}-ek fejlesztése közben.
+Az így létrehozott kifejezések között álló (infix) operátorok 10 precedencia szinten lehetnek, amelyből az alacsonyabb kerül hamarabb kiértékelésre, ha egy kifejezésben állnak.
+Ezt a szintet egy egész szám határozza meg 1-től 10-ig.
+A precedenciához hasonlóan az asszociativitást is meg kell adni, ami jobb vagy bal asszociativitást jelent.
+Ez a tulajdonság az azonos precedencia szintű operátorok kiértékelési sorrendjét határozza meg egy kifejezésen belül: ha jobb, akkor a jobb-szélső kerül elsőként kiértékelésre, majd a kimenettel hívódik egyesével az egyel balra lévő elemekkel, amíg véget nem ér a kifejezés ezen precedencia szintje.
+Bal esetén értelemszerűen a kiértékelés ennek pont fordítottja.
+
+\todo[inline]{LAZY}
+
+\subsection{A C4 nyelv konkrét szintaktikája}
+
+Az előzőekben definiált nyelv szintaktikáját mutatom be ebben a szekcióban.
+Alapvetően egy egyszerű, a nem szükséges elemek sokaságát elhagyó szintaktikával rendelkezik.
+
+A C4 egyetlen kulcsszót tartalmaz: ez a {\tt let}, ezt csak a különböző nyelvi elemek definiálására szabad használni, és nem lehetséges felüldefiniálni mással.
+Ezen kívül pár kontextus függő kulcsszó létezik, de ezek a kód többi részén szabadon használhatóak.
+Ezeket bemutatom, ahol a kontextust amiben érvényesek definiálom.
+
+A kommentek kezdetüket jelző kettős kereszt karaktertől ({\tt \#}) a sor végéig tartanak.
+Egy komment szóköznek számít a feldolgozás szempontjából, így bárhol szerepelhet, ahol a kódban szóköz állhat.
+
+A nyelv öt érdemi szintaktikai elemből áll: literálisok, amelyek a programozó által a forráskódban megadott értékek. Ilyenek például a számok és szövegek.
+Függvények és operátorok definiálása, ezek vezetnek be függvényeket, amelyeket az elkövetkező sorokban lehetséges felhasználni, illetve ezeknek a különböző meghívásához tartozó szintaktikák.
+Végül az indirekt függvényhívás, amelyikkel kifejezésekből előállítót adatokat lehet meghívni, mintha függvények lennének.
+Ezeknek adom meg a konkrét szintaktikáját az alábbi paragrafusokban.
+
+\paragraph{Literálisok} A nyelv literálisai az egész és lebegőpontos számok és szövegek.
+
+A számok a legtöbb nyelvvel megszokott módon történik, egyszerűen a számjegyek sorozatával megadva, külön elő- vagy utótag nélkül.
+A lebegőpontos számoknál a tizedes elválasztónak a pont ({\tt .}) használandó és se az egész se a tört részt nem lehet elhagyni, akkor se ha az nulla.
+
+A szöveg is máshonnan megszokott szintaktikával rendelkezik: idézőjelek ({\tt "}) között megadható karakterek sorozata, amelyiket egy másik idézőjel zár.
+Az idézőjelek között vissza-perrel felvezetve lehetséges köztes időzőjeleket beilleszteni.
+UTF-8 kódolású Unicode karakterek használhatóak.
+
+\begin{lstlisting}[numbers=left]
+42        # egész
+3.14      # lebegőpontos szám
+"szöveg"  # szöveg
+\end{lstlisting}
+
+\paragraph{Blokkok} Egy blokk kapcsos zárójelek ({\tt \{\}}) közötti kifejezések sorozataként adható meg.
+
+Ha egy függvény definiálásánál értékként áll, akkor a nevesített függvény törzse, különben egy anonim függvény kifejezés (ezt lambdának is szokás hívni), amelyiknek értéke a blokkot tároló adat.
+Ha a definiáláskor a befoglaló blokkban definiált vagy a megelőző globális függvények közül valamelyikre hivatkozik a blokk törzse, akkor egy lezárást (closure) definiál.
+Ilyenkor a hivatkozott függvények értékeit az adat objektumban eltárolja a további hívásoknál való felhasználásra.
+
+Ha egy blokk paramétereket vesz át, azok a nyitó kapcsos zárójel után kerülnek megadásra függőleges vonalak között ({\tt |}), szóközzel elválasztva.
+
+\begin{lstlisting}[numbers=left]
+{ 1 + 1 } # blokk
+{ |a| a } # blokk egy paraméterrel
+\end{lstlisting}
+
+\paragraph{Függvény definíció} Egy függvény definícióját a {\tt let} kulcsszóval lehet bevezetni. A {\tt let} után áll a létrehozandó függvény neve, majd annak értéke.
+Ha a függvény paramétereinek száma több mint 0, akkor a neve után perjellel elválasztva kell megadni az aritást.
+A név, a perjel és az aritást leíró szám közé sehova sem lehetséges szóközt rakni.
+A nulla aritás is kiírható, de nem szükséges.
+
+\begin{lstlisting}[numbers=left]
+let foo1 1
+let foo2/0 1
+let bar/2 { |a b| ... }
+\end{lstlisting}
+
+\paragraph{Operátor definíció} Egy operátor a függvény formájával (function form) definiálható, ugyan úgy, mint egy függvény a {\tt let} kulcsszóval.
+Egy operátor függvény formája az operátor zárójelekkel körbefogott és aritásával megadott verziója. (\pl az infix plusz {\tt +} operátor függvény formája {\tt (+)/2})
+
+Egy operátor prefix vagy infix voltát annak aritása adja meg.
+Ha egy paramétert vár, és ennek megfelelően {\tt (...)/1} alakú a definiáláshoz használt függvény forma, akkor a definiált operátor prefix, ha kettőt (és {\tt (...)/2} alakú), akkor infix módon használható.
+
+Az infix operátorok definiáláskor meg kell adni az operátor asszociativitását és precedencia szintjét.
+Előbbinek a ,,right'' és a ,,left'' érvényes értékei, utóbbinak egy 1-től 10-ig terjedő zárt intervallumba eső egész szám.
+A {\tt right} és a {\tt left} ebben a kontextusban kulcsszavak, más erre kiértékelődő kifejezés nem használható helyettük.
+
+Az értéke lehet bármilyen megfelelő aritású kifejezés, mint egy függvény esetében.
+
+\begin{lstlisting}[numbers=left]
+let (~~)/1 { |x| ... }
+let (~=)/2 left 5 { |a b| }
+\end{lstlisting}
+
+\paragraph{Függvény hívás} Egy függvényt a nevével, majd a megfelelő számú argumentum szóközökkel elválasztott megadásával lehet meghívni.
+A függvény paramétere lehet másik függvényhívás, ilyenkor a belső függvény aritásának megfelelő darab argumentumot kap az argumentumok listájából a belső függvény, majd a következő argumentum -- ha még van visszamaradó paramétere a külső függvénynek -- a külső függvény argumentumaként kerül értelmezésre.
+
+\begin{lstlisting}[numbers=left]
+foo1         # 0 paraméter (foo1/0)
+bar a        # 2 paraméter (bar/2): a, bar...
+    bar b    # 2 paraméter (bar/2): b, foo1
+        foo1
+(bar a (bar b (foo)) # azonos, LISP-stílusú zárójelezéssel
+\end{lstlisting}
+
+\paragraph{Operátor hívás} Egy operátor fajtájától függ, hogy milyen módon lehetséges meghívni.
+
+Ha prefix, akkor szóközökkel elkülönített formában, azon kifejezés elé kell írni, amelyikre alkalmazandó.
+Olyan karakterektől nem kötelező elkülöníteni, amelyek nem képezhetnek operátort, mint például függvények nevei vagy literálisok.
+
+Ha infix, akkor kétféle módon lehetséges meghívni.
+Elsőként, két kifejezés között megadva és szükség szerit szóközzel elkülönítve a második paramétere alkalmazott prefix operátoroktól.
+Ilyenkor a definiáláskor megadott precedenciaszint és asszociativitás határozzák meg a teljes kifejezésben kapott kiértékelés sorrendjét.
+
+A másik lehetőség pedig a függvény formában, a szükséges paraméterei elé írva.
+Ilyenkor az operátor tulajdonságai (precedencia, asszociativitás) nem számítanak, és úgy kerül értelmezésre, mintha egy megfelelő nevű egyszerű függvény lenne.
+
+\begin{lstlisting}[numbers=left]
+~~a          # 'a'-ra alkalmazza a (~~)/1 operátort
+~ ~a         # 'a'-ra alkalmazza kétszer a (~)/1 operátort
+~(~a)        # 'a'-ra alkalmazza kétszer a (~)/1 operátort
+a =~ b       # 'a' és 'b' paraméterrel hívja az (=~)/2 operátort
+a =~~b       # 'a' és 'b' paraméterrel hívja az (=~~)/2 operátort
+a =~ ~b      # 'a' és '~b' paraméterrel hívja az (=~)/2 operátort
+(=~)/2 a ~b  # azonos, mint az 'a =~ ~b' sor
+\end{lstlisting}
+
+\paragraph{Indirekt függvény hívás} Egy kifejezés értékeként előálló blokk meghívására az és-jellel ({\tt \&}) kezdett, és bezárójelezett formába kell állítani a kifejezést, majd a zárójel után, a meghíváshoz használandó aritást, a definiáláshoz hasonló módon, perjellel megadni.
+Ez után kell a megadott darabszámú argumentumot szóközzel elválasztva megadni.
+A nyitó zárójel és az és-jel közé, illetve a záró zárójel, az azt követő perjel és az aritást megadó szám közé nem szabad szóközt írni.
+
+Megjegyzendő, hogy minden kifejezést lehetséges indirekt módon meghívni, amennyiben megfelelő argumentummal tesszük azt.
+A blokkot tároló objektumok kivételével, ez mindig nulla argumentumot jelent; a kiértékelés eredménye ilyenkor a meghívott érték.
+
+\begin{lstlisting}[numbers=left]
+let mk_returner/1 { |a| { a } }
+let mk_adder/1 { |a| { |b| a + b } }
+
+mk_returner 1        # -> (0x123456) (nem determinisztikus mutató érték)
+&(mk_returner 42)/0  # -> 42
+&(mk_adder 40)/1 2   # -> 42
+&(42)/0              # -> 42
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+

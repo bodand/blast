@@ -1,0 +1,55 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\section{Argumentum-kötött függvények}\label{sec:ftr:argfun}
+%----------------------------------------------------------------------------
+
+A C4 nyelv által biztosított \gls{DSL} leírási lehetőség a megfelelő függvények definiálásával történik.
+Ez az általános megoldás majdnem teljesen szabadon formálhatóvá teszik a nyelvet a \gls{DSL} írója számára, aki a saját feladatára személyre tudja szabni, hogy a \gls{DSL} számára megfelelő legyen a szintaktika.
+
+Egy kiemelkedően jól működő struktúra a beágyazott \gls{DSL}-ek megvalósítására olyan függvények bevezetése, amelyek megfelelő módon hívják egymást, és a szintaktikai elemek megadó külső függvények csak ezeket állítják elő valamilyen closure formájában.
+Ezeknek a függvényeknek pedig van egy kezdő függvénye, amelyik bevezeti az éppen használt \gls{DSL}-t.
+Ez a módszer látható az előző fejezetben adott példák C4 kódjában, alább pedig kiemelve az állapotgép leíró példából a {\tt state} függvény megvalósítása.
+
+\begin{lstlisting}[gobble=2,numbers=left,label=lst:fsm-state-fn,caption={Az állapotgép \gls{DSL} {\tt state} függvénye}]
+	let state/2 { |name exec|
+		{ |stm str err fin|
+			let stm2 add_state stm name str err fin
+			&(exec)/4 stm2 0 0 0
+		}
+	}
+\end{lstlisting}
+
+Ennek a struktúrának előnye, hogy egy-egy \gls{DSL} használata teljesen egy függvényhívásba limitálódik, hiszen maga a \gls{DSL}-t megalkotó függvények is csak ezen a függvényen belül fognak az elvárt módon viselkedni.
+
+Ezt a gondolatot megerősíteni egyik fejlesztési terv olyan függvények bevezetése, amelyek csak más függvények argumentumaként értelmesek.
+Ezzel megoldódik az esetleges \gls{DSL}-ek közötti névütközés, hiszen egy-egy kulcsszó csak a megfelelő \gls{DSL}-en belül kerül feloldásra, így minden \gls{DSL} a saját verzióját fogja megkapni.
+Ezeket a függvényeket nevezem argumentum-kötött (argument-bound) függvényeknek, mert meg van kötve, hogy melyik másik függvény argumentumában kerülhetnek meghívásra.
+
+\begin{lstlisting}[gobble=4,numbers=left,label=lst:fsm-state-boundfn,caption={Az állapotgép \gls{DSL} lehetséges argumentum-kötöt {\tt state} függvénye}]
+    let [fsm/2 state/2] { |name exec|
+        { |stm str err fin|
+            let stm2 add_state stm name str err fin
+            &(exec)/4 stm2 0 0 0
+        }
+    }
+\end{lstlisting}
+
+Fontos megjegyezni, hogy a tartalmazás a jelenlegi koncepció szerint rekurzívan van értelmezve, miszerint a hívott függvények sorában valahol egyszer meg kell jelennie a várt függvénynek.
+Ennek speciális esetét, ahol szigorúan a hívott függvény argumentumaként kell állnia is érdemes mérlegelni, hogy a szigorúság, amit bevezet  egy alapból nagyon megengedő nyelvbe megéri-e.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
