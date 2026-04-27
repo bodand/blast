@@ -299,7 +299,7 @@ namespace c4::p2 {
         find_prefix_operator(std::string_view name);
 
         std::vector<unsigned> _scope_symbol_size;
-        std::deque<parser_symbol> _scope_symbols;
+        std::vector<parser_symbol> _scope_symbols;
 
         unsigned _dynamic_call_index{};
         std::list<std::string> _dynamic_call_buffers;

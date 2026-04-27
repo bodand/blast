@@ -284,7 +284,12 @@ c4::p2::parser::parse_let_expression() {
     }
 
     const auto symbol = parse_symbol();
-    auto& sym = declare_symbol_internal(symbol.name(), symbol.base_arity());
+	const auto let = _context.build_let_expression(
+		 symbol.position(),
+		 symbol,
+		 nullptr
+	);
+	declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
 
     enter_scope();
     auto expr = parse_expression();
@@ -303,12 +308,7 @@ c4::p2::parser::parse_let_expression() {
                    symbol.base_arity());
     }
 
-    const auto let = _context.build_let_expression(
-        symbol.position(),
-        symbol,
-        expr
-    );
-    sym.referee = let;
+	let->expression(expr);
     return _context.build_expression(let);
 }
 

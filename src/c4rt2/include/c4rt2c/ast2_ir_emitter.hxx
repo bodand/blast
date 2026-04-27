@@ -88,6 +88,8 @@ namespace c4rt2c {
 		void full() { _let_only = false; }
 		bool _let_only{true};
 
+		void finalize() const;
+
 	private:
 		llvm::FunctionPassManager& _pass_manager;
 		llvm::FunctionAnalysisManager& _fna_manager;

@@ -275,7 +275,8 @@ main(int argc, const char** argv) {
 		c4rt2c::ast2_ir_emitter ir(context, module, builder, fn_pm, fn_am);
 		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
 		ir.full();
-		// std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
+		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
+		ir.finalize();
 
 		if (dump_type == "IR") {
 			std::string dump;

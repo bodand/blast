@@ -66,7 +66,9 @@
 namespace {
 	template<class... Args>
 	llvm::FunctionCallee
-	make_rt_function(std::string_view name, llvm::Type* ret, Args&&... args) {
+	make_rt_function(llvm::Module* module,
+	                 std::string_view name,
+	                 llvm::Type* ret, Args&&... args) {
 		const auto fn_type = llvm::FunctionType::get(
 			ret,
 			{std::forward<Args>(args)...},
@@ -75,14 +77,16 @@ namespace {
 		const auto fn = llvm::Function::Create(
 			fn_type,
 			llvm::Function::ExternalLinkage,
-			name
+			name,
+			module
 		);
 
 		return {fn_type, fn};
 	}
 }
 
-c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context, llvm::Module& module,
+c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
+                                         llvm::Module& module,
                                          llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
                                          llvm::FunctionPassManager& pass_manager,
                                          llvm::FunctionAnalysisManager& fna_manager)
@@ -102,6 +106,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context, llvm::Modul
 	}
 	, _rt_make_thunk{
 		make_rt_function(
+			&_module,
 			"_c4_make_thunk",
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0),
@@ -109,6 +114,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context, llvm::Modul
 	}
 	, _rt_set_thunk_args{
 		make_rt_function(
+			&_module,
 			"_c4_set_thunk_args",
 			llvm::Type::getVoidTy(_context),
 			llvm::PointerType::get(_context, 0),
@@ -116,6 +122,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context, llvm::Modul
 	}
 	, _rt_make_datum_str{
 		make_rt_function(
+			&_module,
 			"_c4_make_datum_str",
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0),
@@ -123,20 +130,24 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context, llvm::Modul
 	}
 	, _rt_make_datum_int64{
 		make_rt_function(
+			&_module,
 			"_c4_make_datum_int64",
 			llvm::PointerType::get(_context, 0),
 			llvm::IntegerType::get(_context, 64))
 	}
 	, _rt_make_datum_float64{
 		make_rt_function(
+			&_module,
 			"_c4_make_datum_float64",
 			llvm::PointerType::get(_context, 0),
 			_builder.getFloatTy())
 	}
 	, _rt_evaluate{
 		make_rt_function(
+			&_module,
 			"_c4_evaluate",
 			llvm::Type::getVoidTy(_context),
+			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	} {
 	const auto c4_main_ty = llvm::FunctionType::get(
@@ -188,6 +199,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 		const auto ref = sym.references();
 		if (!ref) continue;
 		if (ref->attribute_value<llvm::Value*>("value")) continue;
+		if (ref == scope.started_by()) continue; // don't be a closure over oneself
 
 		closure_symbols.emplace_back(ref);
 	}
@@ -273,7 +285,10 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	const auto eval_start = _last_callee_stack.back();
 	_last_callee_stack.pop_back();
 
-	const auto eval = _builder.CreateCall(_rt_evaluate, {eval_start});
+	const auto eval = _builder.CreateCall(_rt_evaluate, {
+		eval_start,
+		llvm::ConstantPointerNull::get(llvm::PointerType::get(_context, 0))
+	});
 	eval->setTailCallKind(llvm::CallInst::TCK_MustTail);
 	_builder.CreateRetVoid();
 }
@@ -331,6 +346,12 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::string_literal& obj) {
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::unary_op_call& obj) {
 	emit_function_call(obj.op(), obj.args());
+}
+
+void
+c4rt2c::ast2_ir_emitter::finalize() const {
+	const auto zero = llvm::ConstantInt::get(_context, llvm::APInt(32, 0));
+	_builder.CreateRet(zero);
 }
 
 namespace {

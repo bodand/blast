@@ -42,11 +42,17 @@
 
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          ast2::symbol symbol,
-                                         expression* expr)
+                                         struct expression* expr)
     : referable{position}
     , _symbol{std::move(symbol)}
     , _value{expr} {
     _symbol.references(this);
+}
+
+void
+c4::ast2::let_expression::expression(ast2::expression* expr) {
+	ASSERT(_value == nullptr, "let-expression's value is already set", _symbol);
+	_value = expr;
 }
 
 const c4::ast2::expression&

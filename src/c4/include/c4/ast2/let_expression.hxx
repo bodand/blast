@@ -72,6 +72,9 @@ struct let_expression final : tags::referable
     let_expression&
     operator=(const let_expression& cp) = delete;
 
+    void
+	expression(expression* expr);
+
     let_expression(let_expression&&) noexcept = delete;
 
     let_expression&
@@ -83,7 +86,7 @@ struct let_expression final : tags::referable
     [[nodiscard]] unsigned
     symbol_arity() const { return _symbol.base_arity(); }
 
-    [[nodiscard]] const expression&
+    [[nodiscard]] const struct expression&
     value() const;
 
     [[nodiscard]] std::string
@@ -114,7 +117,7 @@ struct let_expression final : tags::referable
 
 private:
     struct symbol _symbol;
-    expression* _value;
+    struct expression* _value;
 };
 
 struct continuation_let_expression
