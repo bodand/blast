@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,38 +28,46 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-03-03.
  *
- * src/c4/include/c4/visitor/vistor_base --
+ * src/c4/include/c4/ast3/ast_context --
  *   
  */
-#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
-#define C4_AST2_VISITOR_VISITOR_BASE_HXX
+#ifndef BLAST_AST_CONTEXT_HXX
+#define BLAST_AST_CONTEXT_HXX
 
-#include <c4/visitor/typeid.hxx>
+#include <list>
+#include <memory>
+#include <type_traits>
 
-namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        __attribute__((nodebug)) void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
+#include <c4/ast3/ast_node.hxx>
 
-        virtual ~visitor_base() = default;
+namespace c4::ast3 {
+struct primitive;
 
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
+struct ast_context {
+    [[nodiscard]] primitive*
+    build_primitive(double value);
 
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
+    [[nodiscard]] primitive*
+    build_primitive(std::int64_t value);
 
-        ~typed_visitor_base() override = default;
-    };
+    [[nodiscard]] primitive*
+    build_primitive(std::string_view value);
+
+    template <typename T, typename... Args>
+        requires std::is_base_of_v<ast_node, T>
+    T* build(Args&&... args) {
+        auto obj = std::unique_ptr<T>(new T{std::forward<Args>(args)...});
+        auto* ptr = obj.get();
+        _nodes.emplace_back(std::move(obj));
+        return ptr;
+    }
+
+private:
+    // TODO arena allocator
+    std::list<std::unique_ptr<ast_node>> _nodes{};
+};
 }
 
 #endif

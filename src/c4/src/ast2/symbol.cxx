@@ -72,7 +72,7 @@ namespace {
     std::string
     mangle_standard_function(const std::string_view name,
                              const unsigned arity) {
-        return fmt::format("s{}{}{}E",
+        return fmt::format("s{}N{}{}E",
                            name.size(),
                            name,
                            arity);
@@ -90,7 +90,7 @@ namespace {
                     const unsigned arity) {
         auto normalized = std::string(name);
         std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("o{}{}{}E",
+        return fmt::format("o{}N{}{}E",
                            normalized.size(),
                            normalized,
                            arity);
@@ -104,29 +104,29 @@ namespace {
     }
 }
 
+std::string
+c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
+
 c4::ast2::symbol
 c4::ast2::symbol::with_arity(const unsigned arity) const {
-    auto cpy = *this;
-    cpy._arity = arity;
-    return cpy;
+	auto cpy = *this;
+	cpy._arity = arity;
+	return cpy;
 }
 
 std::string
 c4::ast2::symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
-std::string
-c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
-
 void
 c4::ast2::symbol::references(tags::referable* ref) const noexcept {
-    if (ref == nullptr) {
-        _references = nullptr;
-        return;
-    }
+	if (ref == nullptr) {
+		_references = nullptr;
+		return;
+	}
 
-    DEBUG_ASSERT(ref->name() == _name,
-                 "referenced entity must have the same name");
-    DEBUG_ASSERT((!_references || _references == ref),
-                 "referenced value should not be overwritten");
-    _references = ref;
+	DEBUG_ASSERT(ref->name() == _name,
+	             "referenced entity must have the same name");
+	DEBUG_ASSERT((!_references || _references == ref),
+	             "referenced value should not be overwritten");
+	_references = ref;
 }

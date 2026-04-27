@@ -43,76 +43,83 @@
 #include <c4/tags/visitable.hxx>
 
 namespace c4::ast2 {
-    struct expression;
+struct expression;
 
-    struct binary_op_call final : ast_node
-                                  , tags::visitable
-                                  , tags::source_positioned
-                                  , tags::dynamic_node {
-        binary_op_call(const c4::position& position,
-                       const symbol& op,
-                       expression* left,
-                       expression* right);
+struct binary_op_call final : ast_node
+                              , tags::visitable
+                              , tags::source_positioned
+                              , tags::dynamic_node {
+	binary_op_call(const c4::position& position,
+	               const symbol& op,
+	               expression* left,
+	               expression* right);
 
-        binary_op_call(const binary_op_call& cp) = delete;
+	binary_op_call(const binary_op_call& cp) = delete;
 
-        binary_op_call&
-        operator=(const binary_op_call& cp) = delete;
+	binary_op_call&
+	operator=(const binary_op_call& cp) = delete;
 
-        binary_op_call(binary_op_call&& other) noexcept = delete;
+	std::span<const expression* const> args() const {
+		return _args;
+	}
 
-        binary_op_call&
-        operator=(binary_op_call&& other) noexcept = delete;
+	binary_op_call(binary_op_call&& other) noexcept = delete;
 
-        [[nodiscard]] symbol
-        op() const noexcept { return _op; }
+	binary_op_call&
+	operator=(binary_op_call&& other) noexcept = delete;
 
-        [[nodiscard]] const expression&
-        left() const noexcept;
+	[[nodiscard]] symbol
+	op() const noexcept { return _op; }
 
-        [[nodiscard]] const expression&
-        right() const noexcept;
+	[[nodiscard]] const expression&
+	left() const noexcept;
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
+	[[nodiscard]] const expression&
+	right() const noexcept;
 
-    private:
-        symbol _op;
-        expression* _left;
-        expression* _right;
-    };
+	[[nodiscard]] unsigned
+	unbound_parameters() const noexcept { return 0; }
 
-    struct unary_op_call final : ast_node
-                                 , tags::visitable
-                                 , tags::source_positioned
-                                 , tags::dynamic_node {
-        unary_op_call(const c4::position& position,
-                      const symbol& op,
-                      expression* operand);
+private:
+	symbol _op;
+	std::array<expression*, 2> _args;
+};
 
-        unary_op_call(const unary_op_call& cp) = delete;
+struct unary_op_call final : ast_node
+                             , tags::visitable
+                             , tags::source_positioned
+                             , tags::dynamic_node {
+	unary_op_call(const c4::position& position,
+	              const symbol& op,
+	              expression* operand);
 
-        unary_op_call&
-        operator=(const unary_op_call& cp) = delete;
+	unary_op_call(const unary_op_call& cp) = delete;
 
-        unary_op_call(unary_op_call&&) noexcept = delete;
+	unary_op_call&
+	operator=(const unary_op_call& cp) = delete;
 
-        unary_op_call&
-        operator=(unary_op_call&&) noexcept = delete;
+	std::span<const expression* const> args() const {
+		return std::span(&_operand, 1);
+	}
 
-        [[nodiscard]] symbol
-        op() const noexcept { return _op; }
+	unary_op_call(unary_op_call&&) noexcept = delete;
 
-        [[nodiscard]] const expression&
-        operand() const noexcept;
+	unary_op_call&
+	operator=(unary_op_call&&) noexcept = delete;
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
+	[[nodiscard]] symbol
+	op() const noexcept { return _op; }
 
-    private:
-        symbol _op;
-        expression* _operand;
-    };
+	[[nodiscard]] const expression&
+	operand() const noexcept;
+
+	[[nodiscard]] unsigned
+	unbound_parameters() const noexcept { return 0; }
+
+private:
+	symbol _op;
+	expression* _operand;
+};
 }
 
 #endif

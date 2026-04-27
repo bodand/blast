@@ -39,6 +39,9 @@
 
 #include "package.1.h"
 
+static void*
+unpad_pointer_1(const c4_ptr64_t ptr);
+
 #define c4_underscores_0(n)
 #define c4_underscores_1(n) n, c4_underscores_0(n)
 #define c4_underscores_2(n) n, c4_underscores_1(n)
@@ -319,7 +322,7 @@
         c4rt_package_function_t* const calc_fun = payload->calc_fun; \
         struct c4_package_v1_t** args = (void*)payload->args_untyped; \
         c4_dynamic_call_var(v, cnt) = calc_fun; \
-        [[clang::musttail]] return callee(c4_dynamic_args(v, cnt)); \
+        return callee(c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_ctx(v, cnt) \
@@ -335,7 +338,7 @@
                                                 /*        */ * pkg_sz); \
         (void)args; /* w/o this may trigger warnings if v=0 */ \
         c4_dynamic_call_var_ctx(v, cnt) = calc_fun; \
-        [[clang::musttail]] return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
+        return callee(ctx WHEN(cnt)(COMMA) c4_dynamic_args(v, cnt)); \
     }
 
 #define c4_dynamic_call_fn_all(v, cnt) \

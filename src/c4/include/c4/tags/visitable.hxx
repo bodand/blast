@@ -41,7 +41,7 @@
 namespace c4::ast2::tags {
     struct visitable {
         template<class V>
-        auto
+        __attribute__((nodebug)) auto
         accept(this auto&& self, V&& visitor) {
             return std::forward<V>(visitor).visit(std::forward<decltype(self)>(self));
         }

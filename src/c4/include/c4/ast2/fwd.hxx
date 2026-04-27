@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,38 +28,43 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-04-04.
  *
- * src/c4/include/c4/visitor/vistor_base --
+ * src/c4/include/c4/ast2/fwd --
  *   
  */
-#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
-#define C4_AST2_VISITOR_VISITOR_BASE_HXX
-
-#include <c4/visitor/typeid.hxx>
+#ifndef BLAST_FWD_HXX
+#define BLAST_FWD_HXX
+#include <c4/visitor/visitor.hxx>
 
 namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        __attribute__((nodebug)) void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
+struct ast_context;
+struct ast_node;
+struct binary_op_call;
+struct block;
+struct block_args;
+struct dynamic_call;
+struct expression;
+struct float_literal;
+struct fn_call;
+struct integer_literal;
+struct let_expression;
+struct string_literal;
+struct symbol;
+struct unary_op_call;
 
-        virtual ~visitor_base() = default;
-
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
-
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
-
-        ~typed_visitor_base() override = default;
-    };
+using ast2_visitor = visitor<
+	binary_op_call,
+	block,
+	dynamic_call,
+	expression,
+	float_literal,
+	let_expression,
+	string_literal,
+	integer_literal,
+	unary_op_call,
+	fn_call
+>;
 }
 
 #endif

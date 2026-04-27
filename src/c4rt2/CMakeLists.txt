@@ -164,6 +164,9 @@ add_library(c4rt2c STATIC
 
             include/c4rt2c/source_file.hxx
             src/c4rt2c/source_file.cxx
+
+            include/c4rt2c/ast2_ir_emitter.hxx
+            src/c4rt2c/ast2_ir_emitter.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

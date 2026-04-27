@@ -812,20 +812,8 @@ c4rt_datum_evaluate(const c4_datum_t datum,
 
     switch (version) {
     case C4_PACKAGE_VERSION_1:
-    default: //
-        if (context) {
-            return c4_dynamic_call_v1_ctx(
-                fn_data->base_arity,
-                fn_data->calc_fun,
-                context,
-                (void*)callee_args
-            );
-        }
-        return c4_dynamic_call_v1(
-            fn_data->base_arity,
-            fn_data->calc_fun,
-            (void*)callee_args
-        );
+    default: // TODO
+        return c4rt_datum_from_int32(42);
     }
     assert(false);
 }

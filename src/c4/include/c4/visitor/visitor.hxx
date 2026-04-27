@@ -44,14 +44,14 @@ namespace c4::ast2 {
         ~visitor() override = default;
     protected:
         template<class T>
-        bool
+        __attribute__((nodebug)) bool
         visit_one(const void* untyped, const visitor_aux::type_id tid) {
             if (visitor_aux::type_id::of<T>() != tid) return false;
             static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
             return true;
         }
 
-        void
+        __attribute__((nodebug)) void
         visit_impl(const void* raw, const visitor_aux::type_id tid) final {
             (visit_one<Ts>(raw, tid) || ...);
         }

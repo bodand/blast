@@ -33,8 +33,8 @@
  * src/c4/src/ffm/fwd --
  *   Set of forward declarations for FFM symbols.
  */
-#ifndef BLAST_FWD_HXX
-#define BLAST_FWD_HXX
+#ifndef BLAST_FFM_FWD_HXX
+#define BLAST_FFM_FWD_HXX
 
 #include <c4/visitor/visitor.hxx>
 

@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,38 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-03-03.
  *
- * src/c4/include/c4/visitor/vistor_base --
+ * src/c4/include/c4/ast3/ast_node --
  *   
  */
-#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
-#define C4_AST2_VISITOR_VISITOR_BASE_HXX
+#ifndef BLAST_AST_NODE_HXX
+#define BLAST_AST_NODE_HXX
 
-#include <c4/visitor/typeid.hxx>
+namespace c4::ast3 {
+struct ast_node {
+    ast_node(ast_node& cp) = delete;
 
-namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        __attribute__((nodebug)) void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
+    ast_node&
+    operator=(ast_node& cp) = delete;
 
-        virtual ~visitor_base() = default;
+    ast_node(const ast_node& mv) = delete;
 
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
+    ast_node&
+    operator=(const ast_node& mv) = delete;
 
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
+    virtual ~ast_node() = default;
 
-        ~typed_visitor_base() override = default;
-    };
+protected:
+    ast_node() = default;
+};
 }
 
 #endif

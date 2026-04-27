@@ -183,6 +183,14 @@ add_library(c4
             src/ast_dumper.cxx
             include/c4/ffm.hxx
             include/c4/fmt.hxx
+
+            include/c4/ast3/ast_node.hxx
+            include/c4/ast3/ast_context.hxx
+            include/c4/ast3/primitive.hxx
+            include/c4/ast3_mapper.hxx
+            src/ast3_mapper.cxx
+            src/ast3/ast3_context.cxx
+            include/c4/ast2/fwd.hxx
             )
 
 target_link_libraries(c4

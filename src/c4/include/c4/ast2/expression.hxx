@@ -53,92 +53,93 @@
 #include <c4/tags/source_positioned.hxx>
 
 namespace c4::ast2 {
-    struct expression final : ast_node
-                              , tags::visitable
-                              , tags::source_positioned
-                              , tags::evaluation_constness {
-        using value_type = std::variant<
-            float_literal,
-            integer_literal,
-            string_literal,
-            let_expression*,
-            symbol,
-            fn_call*,
-            dynamic_call*,
-            binary_op_call*,
-            unary_op_call*,
-            block*>;
+	struct expression final : ast_node
+	                          , tags::visitable
+	                          , tags::source_positioned
+	                          , tags::evaluation_constness
+	                          , tags::attributable {
+		using value_type = std::variant<
+			float_literal,
+			integer_literal,
+			string_literal,
+			let_expression*,
+			symbol,
+			fn_call*,
+			dynamic_call*,
+			binary_op_call*,
+			unary_op_call*,
+			block*>;
 
-        explicit
-        expression(value_type value,
-                   std::vector<symbol>&& closure_over = {});
+		explicit
+		expression(value_type value,
+		           std::vector<symbol>&& closure_over = {});
 
-        expression(const expression&) = delete;
+		expression(const expression&) = delete;
 
-        expression&
-        operator=(const expression&) = delete;
+		expression&
+		operator=(const expression&) = delete;
 
-        expression(expression&&) noexcept = delete;
+		expression(expression&&) noexcept = delete;
 
-        expression&
-        operator=(expression&&) noexcept = delete;
+		expression&
+		operator=(expression&&) noexcept = delete;
 
-        [[nodiscard]] const value_type&
-        value() const { return _value; }
+		[[nodiscard]] const value_type&
+		value() const { return _value; }
 
-        template<class V>
-        void
-        accept_skip_self(V&& visitor) const {
-            std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
-                if constexpr (std::is_pointer_v<std::remove_cvref_t<T>>) {
-                    std::forward<T>(val)->accept(v);
-                }
-                else if constexpr (!std::is_pointer_v<std::remove_cvref_t<T>>) {
-                    std::forward<T>(val).accept(v);
-                }
-            }, _value);
-        }
+		template<class V>
+		void
+		accept_skip_self(V&& visitor) const {
+			std::visit([&v = std::forward<V>(visitor)]<class T>(T&& val) mutable {
+				if constexpr (std::is_pointer_v<std::remove_cvref_t<T>>) {
+					std::forward<T>(val)->accept(v);
+				}
+				else if constexpr (!std::is_pointer_v<std::remove_cvref_t<T>>) {
+					std::forward<T>(val).accept(v);
+				}
+			}, _value);
+		}
 
-        [[nodiscard]] bool
-        closure() const noexcept { return !_closure_symbols.empty(); }
+		[[nodiscard]] bool
+		closure() const noexcept { return !_closure_symbols.empty(); }
 
-        [[nodiscard]] bool
-        loose_closure() const noexcept;
+		[[nodiscard]] bool
+		loose_closure() const noexcept;
 
-        [[nodiscard]] std::span<const symbol>
-        closure_symbols() const noexcept { return _closure_symbols; }
+		[[nodiscard]] std::span<const symbol>
+		closure_symbols() const noexcept { return _closure_symbols; }
 
-        [[nodiscard]] bool
-        is_constant_evaluable() const noexcept {
-            return std::visit([]<typename T>(const T& x) {
-                if constexpr (std::is_pointer_v<T>) {
-                    return x->const_evaluable();
-                }
-                else {
-                    return x.const_evaluable();
-                }
-            }, _value);
-        }
+		[[nodiscard]] bool
+		is_constant_evaluable() const noexcept {
+			return std::visit([]<typename T>(const T& x) {
+				if constexpr (std::is_pointer_v<T>) {
+					return x->const_evaluable();
+				}
+				else {
+					return x.const_evaluable();
+				}
+			}, _value);
+		}
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept {
-            return std::visit([]<typename T>(const T& x) {
-                if constexpr (std::is_pointer_v<T>) {
-                    return x->unbound_parameters();
-                }
-                else {
-                    return x.unbound_parameters();
-                }
-            }, _value);
-        }
+		[[nodiscard]] unsigned
+		unbound_parameters() const noexcept {
+			return std::visit([]<typename T>(const T& x) {
+				if constexpr (std::is_pointer_v<T>) {
+					return x->unbound_parameters();
+				}
+				else {
+					return x.unbound_parameters();
+				}
+			}, _value);
+		}
 
-        [[nodiscard]] std::string_view
-        containee_name() const noexcept;
+		[[nodiscard]] std::string_view
+		containee_name() const noexcept;
 
-    private:
-        value_type _value;
-        std::vector<symbol> _closure_symbols;
-    };
+	private:
+		value_type _value;
+		std::vector<symbol> _closure_symbols;
+	};
 }
 
 #endif

@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,38 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-03-03.
  *
- * src/c4/include/c4/visitor/vistor_base --
+ * src/c4/include/c4/ast3/primitive --
  *   
  */
-#ifndef C4_AST2_VISITOR_VISITOR_BASE_HXX
-#define C4_AST2_VISITOR_VISITOR_BASE_HXX
+#ifndef BLAST_PRIMITIVE_HXX
+#define BLAST_PRIMITIVE_HXX
 
-#include <c4/visitor/typeid.hxx>
+#include <cstdint>
+#include <string>
+#include <variant>
 
-namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        __attribute__((nodebug)) void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
+#include <c4/ast3/ast_node.hxx>
 
-        virtual ~visitor_base() = default;
+namespace c4::ast3 {
+struct primitive : ast_node {
+    explicit primitive(std::int64_t value)
+        : _value{value} { }
 
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
+    explicit primitive(double value)
+        : _value{value} { }
 
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
+    explicit primitive(std::string_view value)
+        : _value{value} { }
 
-        ~typed_visitor_base() override = default;
-    };
+    [[nodiscard]] const std::string_view& str() const { return std::get<std::string_view>(_value); }
+    [[nodiscard]] double fp() const { return std::get<double>(_value); }
+    [[nodiscard]] std::int64_t i() const { return std::get<std::int64_t>(_value); }
+
+private:
+    std::variant<std::string_view, double, std::int64_t> _value;
+};
 }
 
 #endif
