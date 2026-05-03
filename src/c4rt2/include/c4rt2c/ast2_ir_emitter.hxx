@@ -209,6 +209,9 @@ namespace c4rt2c {
 			std::vector<std::string> _names;
 		} _name_manager{};
 
+		llvm::Value*
+		allocate_argv(std::size_t count) const;
+
 
 		/// The universal function type to allow unrestricted
 		/// tail-calls. It is void(ptr, ptr), where the first is an array
@@ -218,11 +221,16 @@ namespace c4rt2c {
 		std::unordered_map<std::string, llvm::Function*> _extlib_functions{};
 		std::unordered_map<std::string, llvm::Function*> _predeclared_functions{};
 
+		// runtime internal functions
+		llvm::FunctionCallee _rti_allocate;
+		llvm::FunctionCallee _rti_is_thunk;
+
 		llvm::FunctionCallee _rt_make_thunk;
 		llvm::FunctionCallee _rt_set_thunk_args;
 		llvm::FunctionCallee _rt_make_datum_str;
 		llvm::FunctionCallee _rt_make_datum_int64;
 		llvm::FunctionCallee _rt_make_datum_float64;
+		llvm::FunctionCallee _rt_allocate_array;
 		llvm::FunctionCallee _rt_evaluate;
 
 		std::vector<function_scope> _scopes;

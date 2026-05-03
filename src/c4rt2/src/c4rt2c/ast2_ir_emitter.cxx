@@ -63,6 +63,8 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 
+#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/Demangle/MicrosoftDemangle.h"
+
 namespace {
 	template<class... Args>
 	llvm::FunctionCallee
@@ -104,11 +106,24 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			},
 			false)
 	}
+	, _rti_allocate{
+		make_rt_function(
+			&_module,
+			"_c4i_allocate",
+			llvm::PointerType::get(_context, 0),
+			llvm::IntegerType::get(_context, 64))
+	}
+	, _rti_is_thunk{
+		make_rt_function(
+			&_module,
+			"_c4i_is_thunk",
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 64))
+	}
 	, _rt_make_thunk{
 		make_rt_function(
 			&_module,
 			"_c4_make_thunk",
-			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	}
@@ -142,6 +157,14 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			llvm::PointerType::get(_context, 0),
 			_builder.getFloatTy())
 	}
+	, _rt_allocate_array{
+		make_rt_function(
+			&_module,
+			"_c4_allocate_array",
+			llvm::PointerType::get(_context, 0),
+			llvm::IntegerType::get(_context, 64),
+			llvm::IntegerType::get(_context, 64) )
+	}
 	, _rt_evaluate{
 		make_rt_function(
 			&_module,
@@ -150,6 +173,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	} {
+
 	const auto c4_main_ty = llvm::FunctionType::get(
 		llvm::IntegerType::get(_context, 32),
 		{
@@ -182,6 +206,12 @@ namespace {
 		closure_symbols_attribute(const std::vector<c4::ast2::tags::referable*>& refs)
 			: typed_attribute{refs} { }
 	};
+
+	struct already_thunk_attribute : c4::ast2::tags::typed_attribute<bool> {
+		explicit
+		already_thunk_attribute()
+			: typed_attribute{true} { }
+	};
 }
 
 void
@@ -190,9 +220,8 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	auto expressions = obj.expressions();
 	const auto fn = declare_function(scope.qualified_name());
 
-	if (const auto expr = active_expression()) {
+	if (const auto expr = active_expression())
 		expr->emplace_attribute<c4c::llvm_value_attribute>("value", fn);
-	}
 
 	std::vector<c4::ast2::tags::referable*> closure_symbols;
 	for (const auto& sym : obj.effective_context_symbols()) {
@@ -261,6 +290,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 			);
 			const auto val = _builder.CreateLoad(ptr, idx, free_args->name());
 			free_args->emplace_attribute<c4c::llvm_value_attribute>("value", val);
+			free_args->emplace_attribute<already_thunk_attribute>("thunk?");
 		}
 	}
 
@@ -273,6 +303,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 			);
 			const auto val = _builder.CreateLoad(ptr, idx, arg.name());
 			arg.emplace_attribute<c4c::llvm_value_attribute>("value", val);
+			arg.emplace_attribute<already_thunk_attribute>("thunk?");
 		}
 	}
 
@@ -286,9 +317,9 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	_last_callee_stack.pop_back();
 
 	const auto eval = _builder.CreateCall(_rt_evaluate, {
-		eval_start,
-		llvm::ConstantPointerNull::get(llvm::PointerType::get(_context, 0))
-	});
+		                                      eval_start,
+		                                      scope.continue_at(),
+	                                      });
 	eval->setTailCallKind(llvm::CallInst::TCK_MustTail);
 	_builder.CreateRetVoid();
 }
@@ -414,9 +445,7 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	std::span<const c4::ast2::expression*const> args
 ) {
 	llvm::Value* fn = resolve_referenced(symbol);
-	if (!fn) {
-		fn = try_get_value_attribute(symbol.references());
-	}
+	if (!fn) fn = try_get_value_attribute(symbol.references());
 
 	if (_let_only) {
 		std::ranges::for_each(
@@ -428,12 +457,17 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	}
 
 	ASSERT(fn, "function reference not resolved", symbol.name(), symbol.base_arity());
+	llvm::Value* thunk = nullptr;
+	bool need_argv = false;
+	if (const auto ref = symbol.references()) {
+		if (ref->attribute_value<bool>("thunk?")) thunk = fn;
+	}
 
-	auto& scope = last_scope();
-	auto* continue_at = scope.continue_at();
-	const auto thunk = _builder.CreateCall(_rt_make_thunk, {fn, continue_at});
-	scope.continue_at(thunk);
-	set_last_callee(thunk);
+	if (!thunk) {
+		need_argv = true;
+		thunk = _builder.CreateCall(_rt_make_thunk, {fn});
+		set_last_callee(thunk);
+	}
 
 	std::ranges::for_each(
 		args, [&](const auto& arg) {
@@ -441,70 +475,68 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 		}
 	);
 
-	llvm::Value* argv;
-	if (const auto callee = symbol.references()) {
-		// in-source defined functions
-		const auto csym = callee->attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols");
+	if (need_argv) {
+		llvm::Value* argv;
+		if (const auto callee = symbol.references()) {
+			// in-source defined functions
+			const auto csym = callee->attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols");
 
-		const auto context_count = csym.transform([](const auto& x) { return x.size(); })
-		                               .value_or(std::size_t{});
-		const auto args_count = callee->base_arity();
+			const auto context_count = csym.transform([](const auto& x) { return x.size(); })
+			                               .value_or(std::size_t{});
+			const auto args_count = callee->base_arity();
 
-		const auto count_val = llvm::ConstantInt::get(_context,
-		                                              llvm::APInt(64, context_count + args_count));
-		argv = _builder.CreateAlloca(llvm::PointerType::get(_context, 0),
-		                             count_val,
-		                             {symbol.name(), "_argv"});
+			argv = allocate_argv(context_count + args_count);
+			argv->setName({symbol.name(), "_argv"});
 
-		std::size_t i = 0;
-		for (; i < context_count; ++i) {
-			const auto idx = _builder.CreateGEP(
-				llvm::PointerType::get(_context, 0), argv,
-				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-				{symbol.name(), "_argv_args"}
-			);
-			const auto val = (*csym)[i]->attribute_value<llvm::Value*>("value");
-			ASSERT(val, "closure symbol value not found", symbol.name(), i);
-			_builder.CreateStore(*val, idx);
+			std::size_t i = 0;
+			for (; i < context_count; ++i) {
+				const auto idx = _builder.CreateGEP(
+					llvm::PointerType::get(_context, 0), argv,
+					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+					{symbol.name(), "_argv_args"}
+				);
+				const auto val = (*csym)[i]->attribute_value<llvm::Value*>("value");
+				ASSERT(val, "closure symbol value not found", symbol.name(), i);
+				_builder.CreateStore(*val, idx);
+			}
+			for (; i < context_count + args_count; ++i) {
+				const auto arg_i = i - context_count;
+				const auto arg = args[arg_i];
+				const auto val = arg->attribute_value<llvm::Value*>("value");
+				ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), arg_i);
+
+				const auto idx = _builder.CreateGEP(
+					llvm::PointerType::get(_context, 0), argv,
+					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+					{symbol.name(), "_argv_args"}
+				);
+				_builder.CreateStore(
+					*val,
+					idx);
+			}
 		}
-		for (; i < context_count + args_count; ++i) {
-			const auto arg_i = i - context_count;
-			const auto arg = args[arg_i];
-			const auto val = arg->attribute_value<llvm::Value*>("value");
-			ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), arg_i);
+		else {
+			argv = allocate_argv(args.size());
+			argv->setName({symbol.name(), "_argv"});
 
-			const auto idx = _builder.CreateGEP(
-				llvm::PointerType::get(_context, 0), argv,
-				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-				{symbol.name(), "_argv_args"}
-			);
-			_builder.CreateStore(
-				*val,
-				idx);
+			for (std::size_t i = 0; i < args.size(); ++i) {
+				const auto arg = args[i];
+				const auto val = arg->attribute_value<llvm::Value*>("value");
+				ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), i);
+				const auto idx = _builder.CreateGEP(
+					llvm::PointerType::get(_context, 0), argv,
+					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+					{symbol.name(), "_argv_args"}
+				);
+				_builder.CreateStore(
+					*val,
+					idx);
+			}
 		}
+
+		_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
 	}
-	else {
-		const auto count_val = llvm::ConstantInt::get(_context,
-		                                              llvm::APInt(64, args.size()));
-		argv = _builder.CreateAlloca(llvm::PointerType::get(_context, 0),
-		                             count_val,
-		                             {symbol.name(), "_argv"});
-		for (std::size_t i = 0; i < args.size(); ++i) {
-			const auto arg = args[i];
-			const auto val = arg->attribute_value<llvm::Value*>("value");
-			ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), i);
-			const auto idx = _builder.CreateGEP(
-				llvm::PointerType::get(_context, 0), argv,
-				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-				{symbol.name(), "_argv_args"}
-			);
-			_builder.CreateStore(
-				*val,
-				idx);
-		}
-	}
 
-	_builder.CreateCall(_rt_set_thunk_args, {fn, argv});
 	if (const auto expr = active_expression()) {
 		expr->emplace_attribute<c4c::llvm_value_attribute>("value", thunk);
 	}
@@ -606,6 +638,15 @@ c4rt2c::ast2_ir_emitter::name_manager::string_name() {
 std::string
 c4rt2c::ast2_ir_emitter::name_manager::global_name(const c4::ast2::symbol& sym) {
 	return fmt::format("q{}S{}E", 1, sym.mangle());
+}
+
+llvm::Value*
+c4rt2c::ast2_ir_emitter::allocate_argv(const std::size_t count) const {
+	const auto pointer_size = _module.getDataLayout().getPointerSize();
+	const auto size_val = llvm::ConstantInt::get(_context, llvm::APInt(64, pointer_size));
+	const auto count_val = llvm::ConstantInt::get(_context, llvm::APInt(64, count));
+
+	return _builder.CreateCall(_rt_allocate_array, {size_val, count_val}, "argv");
 }
 
 c4rt2c::ast2_ir_emitter::function_scope&
