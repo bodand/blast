@@ -43,10 +43,10 @@
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          ast2::symbol symbol,
                                          struct expression* expr)
-    : referable{position}
-    , _symbol{std::move(symbol)}
-    , _value{expr} {
-    _symbol.references(this);
+	: referable{position}
+	, _symbol{std::move(symbol)}
+	, _value{expr} {
+	_symbol.references(this);
 }
 
 void
@@ -57,28 +57,28 @@ c4::ast2::let_expression::expression(ast2::expression* expr) {
 
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
-    DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-    return *_value;
+	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
+	return *_value;
 }
 
 bool
 c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-    return value().const_evaluable();
+	return value().const_evaluable();
 }
 
 unsigned
 c4::ast2::let_expression::effective_arity() const {
-    return _symbol.base_arity() + static_cast<unsigned>(closure());
+	return _symbol.base_arity() + static_cast<unsigned>(closure());
 }
 
 bool
 c4::ast2::let_expression::closure() const noexcept {
-    return value().loose_closure();
+	return value().loose_closure();
 }
 
 bool
 c4::ast2::let_expression::pseudo_let() const noexcept {
-    const auto pseudo_let = attribute_value<bool>("pseudo_let");
-    if (!pseudo_let) return false;
-    return *pseudo_let;
+	const auto pseudo_let = attribute_value<bool>("pseudo_let");
+	if (!pseudo_let) return false;
+	return *pseudo_let;
 }

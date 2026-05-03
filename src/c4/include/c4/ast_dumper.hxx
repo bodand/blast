@@ -53,64 +53,64 @@
 #include <c4/visitor/visitor.hxx>
 
 namespace c4 {
-    struct ast_dumper final : ast2::visitor<
-                ast2::block,
-                ast2::block_args,
-                ast2::dynamic_call,
-                ast2::expression,
-                ast2::float_literal,
-                ast2::fn_call,
-                ast2::integer_literal,
-                ast2::let_expression,
-                ast2::binary_op_call,
-                ast2::unary_op_call,
-                ast2::string_literal,
-                ast2::symbol
-            > {
-        void do_visit(const ast2::block_args& obj) override;
+	struct ast_dumper final : ast2::visitor<
+				ast2::block,
+				ast2::block_args,
+				ast2::dynamic_call,
+				ast2::expression,
+				ast2::float_literal,
+				ast2::fn_call,
+				ast2::integer_literal,
+				ast2::let_expression,
+				ast2::binary_op_call,
+				ast2::unary_op_call,
+				ast2::string_literal,
+				ast2::symbol
+			> {
+		void do_visit(const ast2::block_args& obj) override;
 
-        void do_visit(const ast2::block& obj) override;
+		void do_visit(const ast2::block& obj) override;
 
-        void do_visit(const ast2::dynamic_call& obj) override;
+		void do_visit(const ast2::dynamic_call& obj) override;
 
-        void do_visit(const ast2::expression& obj) override;
+		void do_visit(const ast2::expression& obj) override;
 
-        void do_visit(const ast2::fn_call& obj) override;
+		void do_visit(const ast2::fn_call& obj) override;
 
-        void do_visit(const ast2::let_expression& obj) override;
+		void do_visit(const ast2::let_expression& obj) override;
 
-        void do_visit(const ast2::binary_op_call& obj) override;
+		void do_visit(const ast2::binary_op_call& obj) override;
 
-        void do_visit(const ast2::unary_op_call& obj) override;
+		void do_visit(const ast2::unary_op_call& obj) override;
 
-        void
-        do_visit(const ast2::symbol& obj) override {
-            _os << obj.name() << "/" << obj.base_arity();
-        }
+		void
+		do_visit(const ast2::symbol& obj) override {
+			_os << obj.name() << "/" << obj.base_arity();
+		}
 
-        void
-        do_visit(const ast2::integer_literal& obj) override {
-            _os << obj.value();
-        }
+		void
+		do_visit(const ast2::integer_literal& obj) override {
+			_os << obj.value();
+		}
 
-        void
-        do_visit(const ast2::float_literal& obj) override {
-            _os << obj.value();
-        }
+		void
+		do_visit(const ast2::float_literal& obj) override {
+			_os << obj.value();
+		}
 
-        void
-        do_visit(const ast2::string_literal& obj) override {
-            _os << std::quoted(obj.value());
-        }
+		void
+		do_visit(const ast2::string_literal& obj) override {
+			_os << std::quoted(obj.value());
+		}
 
-        explicit
-        ast_dumper(std::ostream& os)
-            : _os{os} { }
+		explicit
+		ast_dumper(std::ostream& os)
+			: _os{os} { }
 
-    private:
-        std::ostream& _os;
-        unsigned _depth = 0U;
-    };
+	private:
+		std::ostream& _os;
+		unsigned _depth = 0U;
+	};
 }
 
 #endif

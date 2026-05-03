@@ -41,10 +41,14 @@
 typedef uint64_t c4_datum_t;
 
 enum c4_datum_type {
-    C4_Float = 0x0, /* 0000 */
-    C4_Block = 0x1, /* 0001 */
-    C4_Integer = 0x2, /* 0010 */
-    C4_String = 0x4, /* 0100 */
+	C4_Float = 0x0,
+	/* 0000 */
+	C4_Block = 0x1,
+	/* 0001 */
+	C4_Integer = 0x2,
+	/* 0010 */
+	C4_String = 0x4,
+	/* 0100 */
 };
 
 #endif

@@ -45,48 +45,48 @@ void
 c4::p2::string_rule::update_matched_position(const char*& data, const char* end,
                                              position& pos,
                                              position& matched_at) const {
-    if (_match_newline) {
-        offset_positions_newline(data, end, pos);
-    }
-    else {
-        offset_positions_no_newline(data, end, pos);
-    }
-    // pos now points to next character to be read
-    matched_at.row_number_end = pos.row_number;
-    matched_at.col_number_end = pos.col_number - 1;
+	if (_match_newline) {
+		offset_positions_newline(data, end, pos);
+	}
+	else {
+		offset_positions_no_newline(data, end, pos);
+	}
+	// pos now points to next character to be read
+	matched_at.row_number_end = pos.row_number;
+	matched_at.col_number_end = pos.col_number - 1;
 
-    const auto range_start = matched_at.line.data();
-    const auto range_end = pos.line.data() + pos.line.size();
-    matched_at.expanded_range = std::string_view{range_start, range_end};
+	const auto range_start = matched_at.line.data();
+	const auto range_end = pos.line.data() + pos.line.size();
+	matched_at.expanded_range = std::string_view{range_start, range_end};
 }
 
 void
 c4::p2::string_rule::offset_positions_newline(const char*& begin, const char* end,
                                               position& pos) const {
-    DEBUG_ASSERT(_str.find('\n') != _str.npos,
-                 "precondition: pos update with newline did not match newline",
-                 _str);
+	DEBUG_ASSERT(_str.find('\n') != _str.npos,
+	             "precondition: pos update with newline did not match newline",
+	             _str);
 
-    begin += _str.size();
-    update_position_for_match(pos, begin, end, _str);
+	begin += _str.size();
+	update_position_for_match(pos, begin, end, _str);
 
-    DEBUG_ASSERT(begin <= end,
-                 "begin must not advance after end",
-                 pos.expanded_range,
-                 _str);
+	DEBUG_ASSERT(begin <= end,
+	             "begin must not advance after end",
+	             pos.expanded_range,
+	             _str);
 }
 
 void
 c4::p2::string_rule::offset_positions_no_newline(const char*& begin, const char* end,
                                                  position& pos) const {
-    DEBUG_ASSERT(_str.find('\n') == _str.npos,
-                 "precondition: no_newline rule matched newline",
-                 _str);
+	DEBUG_ASSERT(_str.find('\n') == _str.npos,
+	             "precondition: no_newline rule matched newline",
+	             _str);
 
-    begin += _str.size();
-    pos.col_number += utf8_strlen(_str);
+	begin += _str.size();
+	pos.col_number += utf8_strlen(_str);
 
-    DEBUG_ASSERT(begin <= end,
-                 "begin must not advance after end",
-                 _str);
+	DEBUG_ASSERT(begin <= end,
+	             "begin must not advance after end",
+	             _str);
 }

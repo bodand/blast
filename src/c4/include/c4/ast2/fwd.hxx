@@ -38,33 +38,33 @@
 #include <c4/visitor/visitor.hxx>
 
 namespace c4::ast2 {
-struct ast_context;
-struct ast_node;
-struct binary_op_call;
-struct block;
-struct block_args;
-struct dynamic_call;
-struct expression;
-struct float_literal;
-struct fn_call;
-struct integer_literal;
-struct let_expression;
-struct string_literal;
-struct symbol;
-struct unary_op_call;
+	struct ast_context;
+	struct ast_node;
+	struct binary_op_call;
+	struct block;
+	struct block_args;
+	struct dynamic_call;
+	struct expression;
+	struct float_literal;
+	struct fn_call;
+	struct integer_literal;
+	struct let_expression;
+	struct string_literal;
+	struct symbol;
+	struct unary_op_call;
 
-using ast2_visitor = visitor<
-	binary_op_call,
-	block,
-	dynamic_call,
-	expression,
-	float_literal,
-	let_expression,
-	string_literal,
-	integer_literal,
-	unary_op_call,
-	fn_call
->;
+	using ast2_visitor = visitor<
+		binary_op_call,
+		block,
+		dynamic_call,
+		expression,
+		float_literal,
+		let_expression,
+		string_literal,
+		integer_literal,
+		unary_op_call,
+		fn_call
+	>;
 }
 
 #endif

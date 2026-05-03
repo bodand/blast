@@ -43,25 +43,25 @@
 #include "source_positioned.hxx"
 
 namespace c4::ast2::tags {
-    struct referable : attributable, source_positioned {
-        explicit
-        referable(const struct c4::position& position)
-            : source_positioned{position} { }
+	struct referable : attributable, source_positioned {
+		explicit
+		referable(const struct c4::position& position)
+			: source_positioned{position} { }
 
-        virtual std::string_view
-        name() const = 0;
+		virtual std::string_view
+		name() const = 0;
 
-        virtual unsigned
-        base_arity() const = 0;
+		virtual unsigned
+		base_arity() const = 0;
 
-        virtual unsigned
-        effective_arity() const = 0;
+		virtual unsigned
+		effective_arity() const = 0;
 
-        virtual bool
-        closure() const noexcept { return base_arity() != effective_arity(); }
+		virtual bool
+		closure() const noexcept { return base_arity() != effective_arity(); }
 
-        ~referable() override = default;
-    };
+		~referable() override = default;
+	};
 }
 
 #endif

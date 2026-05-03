@@ -39,35 +39,36 @@
 #include <cstdint>
 
 namespace c4::ast2::visitor_aux {
-    struct type_id final {
-        template<class T>
-        static type_id
-        of() {
-            return type_id(my_type<T>::create(_type_counter));
-        }
+	struct type_id final {
+		template<class T>
+		static type_id
+		of() {
+			return type_id(my_type<T>::create(_type_counter));
+		}
 
-        bool operator==(const type_id& other) const noexcept = default;
+		bool operator==(const type_id& other) const noexcept = default;
 
-        bool operator!=(const type_id& other) const noexcept = default;
+		bool operator!=(const type_id& other) const noexcept = default;
 
-    private:
-        std::uint_fast32_t _value = 0;
-        inline static std::uint_fast32_t _type_counter = 1;
+	private:
+		std::uint_fast32_t _value = 0;
+		inline static std::uint_fast32_t _type_counter = 1;
 
-        explicit
-        type_id(const std::uint_fast32_t value)
-            : _value{value} { }
+		explicit
+		type_id(const std::uint_fast32_t value)
+			: _value{value} { }
 
-        template<class>
-        struct my_type {
-            static std::uint_fast32_t create(std::uint_fast32_t& cnt) {
-                if (_id == 0) _id = cnt++;
-                return _id;
-            }
-        private:
-            inline static std::uint_fast32_t _id = 0;
-        };
-    };
+		template<class>
+		struct my_type {
+			static std::uint_fast32_t create(std::uint_fast32_t& cnt) {
+				if (_id == 0) _id = cnt++;
+				return _id;
+			}
+
+		private:
+			inline static std::uint_fast32_t _id = 0;
+		};
+	};
 }
 
 #endif

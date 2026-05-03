@@ -47,11 +47,13 @@
 #  define MI_VERSION
 #endif
 
-BOOL WINAPI DllMain(
-    HINSTANCE hinstDLL, // handle to DLL module
-    DWORD fdwReason, // reason for calling function
-    LPVOID lpvReserved) // reserved
+BOOL WINAPI
+
+DllMain(
+	HINSTANCE hinstDLL, // handle to DLL module
+	DWORD fdwReason,    // reason for calling function
+	LPVOID lpvReserved) // reserved
 {
-    MI_VERSION;
-    return TRUE;
+	MI_VERSION;
+	return TRUE;
 }

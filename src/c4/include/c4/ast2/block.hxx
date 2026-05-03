@@ -58,140 +58,140 @@
 #include <vector>
 
 namespace c4::ast2 {
-struct expression;
+	struct expression;
 
-struct block_argument final : tags::referable
-                              , ast_node {
-    explicit
-    block_argument(symbol symbol)
-        : referable(symbol.position())
-        , _symbol{std::move(symbol)} { }
+	struct block_argument final : tags::referable
+	                              , ast_node {
+		explicit
+		block_argument(symbol symbol)
+			: referable(symbol.position())
+			, _symbol{std::move(symbol)} { }
 
-    block_argument(block_argument&) = delete;
+		block_argument(block_argument&) = delete;
 
-    block_argument&
-    operator=(block_argument&) = delete;
+		block_argument&
+		operator=(block_argument&) = delete;
 
-    block_argument&
-    operator=(block_argument&&) noexcept = delete;
+		block_argument&
+		operator=(block_argument&&) noexcept = delete;
 
-    block_argument(block_argument&&) noexcept = delete;
+		block_argument(block_argument&&) noexcept = delete;
 
-    [[nodiscard]] const symbol&
-    symbol() const noexcept { return _symbol; }
+		[[nodiscard]] const symbol&
+		symbol() const noexcept { return _symbol; }
 
-    std::string_view
-    name() const override { return _symbol.name(); }
+		std::string_view
+		name() const override { return _symbol.name(); }
 
-    [[nodiscard]] unsigned
-    base_arity() const override { return effective_arity(); }
+		[[nodiscard]] unsigned
+		base_arity() const override { return effective_arity(); }
 
-    [[nodiscard]] unsigned
-    effective_arity() const override {
-        // block arguments are always packaged as zero-arity non-closure
-        // functions: that is, they can always be called without arguments
-        // themselves
-        return 0;
-    }
+		[[nodiscard]] unsigned
+		effective_arity() const override {
+			// block arguments are always packaged as zero-arity non-closure
+			// functions: that is, they can always be called without arguments
+			// themselves
+			return 0;
+		}
 
-private:
-    struct symbol _symbol;
-};
+	private:
+		struct symbol _symbol;
+	};
 
-struct block_args final : ast_node
-                          , tags::visitable
-                          , tags::source_positioned
-                          , tags::constant_node {
-    block_args(const c4::position& position,
-               std::span<symbol> args);
+	struct block_args final : ast_node
+	                          , tags::visitable
+	                          , tags::source_positioned
+	                          , tags::constant_node {
+		block_args(const c4::position& position,
+		           std::span<symbol> args);
 
-    block_args(block_args&) = delete;
+		block_args(block_args&) = delete;
 
-    block_args&
-    operator=(block_args&) = delete;
+		block_args&
+		operator=(block_args&) = delete;
 
-    block_args(block_args&&) noexcept = delete;
+		block_args(block_args&&) noexcept = delete;
 
-    block_args&
-    operator=(block_args&&) noexcept = delete;
+		block_args&
+		operator=(block_args&&) noexcept = delete;
 
-    [[nodiscard]] std::vector<const symbol*>
-    args() const {
-        std::vector<const symbol*> result;
-        result.reserve(_args.size());
-        std::ranges::transform(
-            _args, std::back_inserter(result),
-            [](const auto& arg) { return &arg.symbol(); }
-        );
-        return result;
-    }
+		[[nodiscard]] std::vector<const symbol*>
+		args() const {
+			std::vector<const symbol*> result;
+			result.reserve(_args.size());
+			std::ranges::transform(
+				_args, std::back_inserter(result),
+				[](const auto& arg) { return &arg.symbol(); }
+			);
+			return result;
+		}
 
-    [[nodiscard]] std::span<const block_argument>
-    block_arguments() const noexcept { return _args; }
+		[[nodiscard]] std::span<const block_argument>
+		block_arguments() const noexcept { return _args; }
 
-    [[nodiscard]] std::size_t
-    size() const noexcept { return _args.size(); }
+		[[nodiscard]] std::size_t
+		size() const noexcept { return _args.size(); }
 
-    [[nodiscard]] block_argument&
-    argument_reference(std::size_t arg_idx);
+		[[nodiscard]] block_argument&
+		argument_reference(std::size_t arg_idx);
 
-    [[nodiscard]] const block_argument&
-    argument_reference(std::size_t arg_idx) const;
+		[[nodiscard]] const block_argument&
+		argument_reference(std::size_t arg_idx) const;
 
-private:
-    std::vector<block_argument> _args{};
-};
+	private:
+		std::vector<block_argument> _args{};
+	};
 
-struct block final : ast_node
-                     , tags::visitable
-                     , tags::source_positioned
-                     , tags::dynamic_node
-                     , tags::attributable {
-    block(const c4::position& position,
-          std::vector<expression*>&& expressions,
-          block_args* args = nullptr);
+	struct block final : ast_node
+	                     , tags::visitable
+	                     , tags::source_positioned
+	                     , tags::dynamic_node
+	                     , tags::attributable {
+		block(const c4::position& position,
+		      std::vector<expression*>&& expressions,
+		      block_args* args = nullptr);
 
-    block(block& cp) = delete;
+		block(block& cp) = delete;
 
-    block& operator=(const block&) = delete;
+		block& operator=(const block&) = delete;
 
-    block(block&&) noexcept = delete;
+		block(block&&) noexcept = delete;
 
-    block& operator=(block&&) noexcept = delete;
+		block& operator=(block&&) noexcept = delete;
 
-    [[nodiscard]] const block_args*
-    args() const { return _args; }
+		[[nodiscard]] const block_args*
+		args() const { return _args; }
 
-    [[nodiscard]] unsigned
-    arity() const noexcept {
-        if (!_args) return 0U;
-        return static_cast<unsigned>(_args->size());
-    }
+		[[nodiscard]] unsigned
+		arity() const noexcept {
+			if (!_args) return 0U;
+			return static_cast<unsigned>(_args->size());
+		}
 
-    [[nodiscard]] bool
-    requires_context() const noexcept;
+		[[nodiscard]] bool
+		requires_context() const noexcept;
 
-    /**
+		/**
      * Generates a set of symbols that are used by the contained expressions
      * but are not resolved by the block's arguments or symbols defined
      * within the block.
      */
-    [[nodiscard]] std::vector<symbol>
-    effective_context_symbols() const;
+		[[nodiscard]] std::vector<symbol>
+		effective_context_symbols() const;
 
-    [[nodiscard]] std::span<const expression* const>
-    expressions() const;
+		[[nodiscard]] std::span<const expression* const>
+		expressions() const;
 
-    [[nodiscard]] unsigned
-    unbound_parameters() const noexcept {
-        if (!_args) return 0U;
-        return static_cast<unsigned>(_args->size());
-    }
+		[[nodiscard]] unsigned
+		unbound_parameters() const noexcept {
+			if (!_args) return 0U;
+			return static_cast<unsigned>(_args->size());
+		}
 
-private:
-    block_args* _args{};
-    std::vector<expression*> _expressions;
-};
+	private:
+		block_args* _args{};
+		std::vector<expression*> _expressions;
+	};
 }
 
 #ifndef __clang__

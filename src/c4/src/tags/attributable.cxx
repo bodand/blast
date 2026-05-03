@@ -39,7 +39,7 @@
 #include <c4/tags/attributable.hxx>
 
 c4::ast2::tags::attributable::~attributable() {
-    for (const auto& ptr : _attributes | std::views::values) {
-        delete ptr;
-    }
+	for (const auto& ptr : _attributes | std::views::values) {
+		delete ptr;
+	}
 }

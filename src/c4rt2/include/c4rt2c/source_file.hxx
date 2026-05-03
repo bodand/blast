@@ -40,18 +40,18 @@
 #include <mio/mmap.hpp>
 
 namespace c4c {
-    struct source_file {
-        explicit
-        source_file(std::filesystem::path path);
+	struct source_file {
+		explicit
+		source_file(std::filesystem::path path);
 
-        const char* begin() const;
+		const char* begin() const;
 
-        const char* end() const;
+		const char* end() const;
 
-    private:
-        std::filesystem::path _file;
-        mio::mmap_source _mmap;
-    };
+	private:
+		std::filesystem::path _file;
+		mio::mmap_source _mmap;
+	};
 }
 
 #endif

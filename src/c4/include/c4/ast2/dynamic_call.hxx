@@ -43,39 +43,39 @@
 #include <c4/tags/evaluation_constness.hxx>
 
 namespace c4::ast2 {
-    struct let_expression;
+	struct let_expression;
 
-    struct dynamic_call final : ast_node
-                                , tags::visitable
-                                , tags::source_positioned
-                                , tags::dynamic_node {
-        dynamic_call(const c4::position& position,
-                     let_expression* callee,
-                     std::vector<expression*>&& args);
+	struct dynamic_call final : ast_node
+	                            , tags::visitable
+	                            , tags::source_positioned
+	                            , tags::dynamic_node {
+		dynamic_call(const c4::position& position,
+		             let_expression* callee,
+		             std::vector<expression*>&& args);
 
-        dynamic_call(const dynamic_call& cp) = delete;
+		dynamic_call(const dynamic_call& cp) = delete;
 
-        dynamic_call&
-        operator=(const dynamic_call& cp) = delete;
+		dynamic_call&
+		operator=(const dynamic_call& cp) = delete;
 
-        dynamic_call(dynamic_call&& other) noexcept = delete;
+		dynamic_call(dynamic_call&& other) noexcept = delete;
 
-        dynamic_call&
-        operator=(dynamic_call&& other) noexcept = delete;
+		dynamic_call&
+		operator=(dynamic_call&& other) noexcept = delete;
 
-        [[nodiscard]] const let_expression*
-        callee() const;
+		[[nodiscard]] const let_expression*
+		callee() const;
 
-        [[nodiscard]] std::span<const expression* const>
-        args() const;
+		[[nodiscard]] std::span<const expression* const>
+		args() const;
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept { return 0; }
+		[[nodiscard]] unsigned
+		unbound_parameters() const noexcept { return 0; }
 
-    private:
-        let_expression* _callee;
-        std::vector<expression*> _args;
-    };
+	private:
+		let_expression* _callee;
+		std::vector<expression*> _args;
+	};
 }
 
 #endif

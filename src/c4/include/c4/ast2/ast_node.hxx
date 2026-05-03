@@ -37,22 +37,22 @@
 #define C4_AST2_AST_NODE_HXX
 
 namespace c4::ast2 {
-    struct ast_node {
-        ast_node(ast_node& cp) = delete;
+	struct ast_node {
+		ast_node(ast_node& cp) = delete;
 
-        ast_node&
-        operator=(ast_node& cp) = delete;
+		ast_node&
+		operator=(ast_node& cp) = delete;
 
-        ast_node(const ast_node& mv) = delete;
+		ast_node(const ast_node& mv) = delete;
 
-        ast_node&
-        operator=(const ast_node& mv) = delete;
+		ast_node&
+		operator=(const ast_node& mv) = delete;
 
-        virtual ~ast_node() = default;
+		virtual ~ast_node() = default;
 
-    protected:
-        ast_node() = default;
-    };
+	protected:
+		ast_node() = default;
+	};
 }
 
 #endif

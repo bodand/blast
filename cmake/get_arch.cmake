@@ -47,14 +47,14 @@ function(get_arch _Arch)
                 COMPILE_OUTPUT_VARIABLE compile_log
                 RUN_OUTPUT_VARIABLE winarch_guess)
         if (NOT COMPILE_STATUS
-                OR NOT RUN_STATUS EQUAL 0)
+            OR NOT RUN_STATUS EQUAL 0)
             message(CHECK_FAIL "unknown")
         endif ()
 
         set(${_Arch} "${winarch_guess}")
     else ()
         execute_process(COMMAND uname -m
-                OUTPUT_VARIABLE uname_m)
+                        OUTPUT_VARIABLE uname_m)
         string(STRIP "${uname_m}" uname_m)
 
         set(${_Arch} "${uname_m}")

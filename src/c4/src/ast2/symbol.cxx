@@ -49,59 +49,59 @@ using namespace std::literals;
 c4::ast2::symbol::symbol(const c4::position& position,
                          const std::string_view name,
                          const unsigned arity)
-    : source_positioned{position}
-    , _name{name}
-    , _arity{arity} {
-    DEBUG_ASSERT(!_name.empty(), "symbol name must not be empty");
+	: source_positioned{position}
+	, _name{name}
+	, _arity{arity} {
+	DEBUG_ASSERT(!_name.empty(), "symbol name must not be empty");
 }
 
 namespace {
     // clang-format off
     constexpr auto operator_chars =            "-+*/%&|~!?,.:^@#`<>="sv;
     constexpr auto operator_char_replacement = "mptsPaoTeqcdChAHblgE"sv;
-    // clang-format on
-    static_assert(operator_chars.size() == operator_char_replacement.size(),
-                  "replacement set must equal operator set");
+	// clang-format on
+	static_assert(operator_chars.size() == operator_char_replacement.size(),
+	              "replacement set must equal operator set");
 
-    constexpr bool
-    is_operator_symbol(const std::string_view name) {
-        const auto idx = name.find_first_of(operator_chars);
-        return idx != std::string_view::npos;
-    }
+	constexpr bool
+	is_operator_symbol(const std::string_view name) {
+		const auto idx = name.find_first_of(operator_chars);
+		return idx != std::string_view::npos;
+	}
 
-    std::string
-    mangle_standard_function(const std::string_view name,
-                             const unsigned arity) {
-        return fmt::format("s{}N{}{}E",
-                           name.size(),
-                           name,
-                           arity);
-    }
+	std::string
+	mangle_standard_function(const std::string_view name,
+	                         const unsigned arity) {
+		return fmt::format("s{}N{}{}E",
+		                   name.size(),
+		                   name,
+		                   arity);
+	}
 
-    constexpr char
-    translate_operator_char(const char c) {
-        const auto c_idx = operator_chars.find(c);
-        if (c_idx == std::string_view::npos) return c;
-        return operator_char_replacement[c_idx];
-    }
+	constexpr char
+	translate_operator_char(const char c) {
+		const auto c_idx = operator_chars.find(c);
+		if (c_idx == std::string_view::npos) return c;
+		return operator_char_replacement[c_idx];
+	}
 
-    std::string
-    mangle_operator(const std::string_view name,
-                    const unsigned arity) {
-        auto normalized = std::string(name);
-        std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
-        return fmt::format("o{}N{}{}E",
-                           normalized.size(),
-                           normalized,
-                           arity);
-    }
+	std::string
+	mangle_operator(const std::string_view name,
+	                const unsigned arity) {
+		auto normalized = std::string(name);
+		std::ranges::transform(normalized, normalized.begin(), translate_operator_char);
+		return fmt::format("o{}N{}{}E",
+		                   normalized.size(),
+		                   normalized,
+		                   arity);
+	}
 
-    std::string
-    mangle_symbol(const std::string_view name,
-                  const unsigned arity) {
-        if (is_operator_symbol(name)) return mangle_operator(name, arity);
-        return mangle_standard_function(name, arity);
-    }
+	std::string
+	mangle_symbol(const std::string_view name,
+	              const unsigned arity) {
+		if (is_operator_symbol(name)) return mangle_operator(name, arity);
+		return mangle_standard_function(name, arity);
+	}
 }
 
 std::string

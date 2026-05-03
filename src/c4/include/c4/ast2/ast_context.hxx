@@ -49,86 +49,86 @@
 #include <c4/ast2/symbol.hxx>
 
 namespace c4::ast2 {
-    struct block_argument;
-    struct block_args;
-    struct block;
-    struct dynamic_call;
-    struct expression;
-    struct fn_call;
-    struct let_expression;
-    struct unary_op_call;
-    struct binary_op_call;
+	struct block_argument;
+	struct block_args;
+	struct block;
+	struct dynamic_call;
+	struct expression;
+	struct fn_call;
+	struct let_expression;
+	struct unary_op_call;
+	struct binary_op_call;
 
-    struct ast_context final {
-        block_args*
-        build_block_args(const position& position,
-                         std::span<symbol> args);
+	struct ast_context final {
+		block_args*
+		build_block_args(const position& position,
+		                 std::span<symbol> args);
 
-        block*
-        build_block(const position& position,
-                    std::vector<expression*>&& expressions,
-                    block_args* args = nullptr);
+		block*
+		build_block(const position& position,
+		            std::vector<expression*>&& expressions,
+		            block_args* args = nullptr);
 
-        dynamic_call*
-        build_dynamic_call(const position& position,
-                           let_expression* callee,
-                           std::vector<expression*>&& args);
+		dynamic_call*
+		build_dynamic_call(const position& position,
+		                   let_expression* callee,
+		                   std::vector<expression*>&& args);
 
-        fn_call*
-        build_fn_call(const position& position,
-                      const symbol& callee,
-                      std::vector<expression*>&& args);
+		fn_call*
+		build_fn_call(const position& position,
+		              const symbol& callee,
+		              std::vector<expression*>&& args);
 
-        expression*
-        build_expression(const symbol& sym);
+		expression*
+		build_expression(const symbol& sym);
 
-        expression*
-        build_expression(const string_literal& str);
+		expression*
+		build_expression(const string_literal& str);
 
-        expression*
-        build_expression(const float_literal& flt);
+		expression*
+		build_expression(const float_literal& flt);
 
-        expression*
-        build_expression(const integer_literal& i);
+		expression*
+		build_expression(const integer_literal& i);
 
-        expression*
-        build_expression(block* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(block* exp, std::vector<symbol>&& closure = {});
 
-        expression*
-        build_expression(dynamic_call* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(dynamic_call* exp, std::vector<symbol>&& closure = {});
 
-        expression*
-        build_expression(fn_call* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(fn_call* exp, std::vector<symbol>&& closure = {});
 
-        expression*
-        build_expression(let_expression* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(let_expression* exp, std::vector<symbol>&& closure = {});
 
-        expression*
-        build_expression(unary_op_call* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(unary_op_call* exp, std::vector<symbol>&& closure = {});
 
-        expression*
-        build_expression(binary_op_call* exp, std::vector<symbol>&& closure = {});
+		expression*
+		build_expression(binary_op_call* exp, std::vector<symbol>&& closure = {});
 
-        let_expression*
-        build_let_expression(const position& position,
-                             const symbol& sym,
-                             expression* expression);
+		let_expression*
+		build_let_expression(const position& position,
+		                     const symbol& sym,
+		                     expression* expression);
 
-        unary_op_call*
-        build_unary_op_call(const position& position,
-                            const symbol& sym,
-                            expression* operand);
+		unary_op_call*
+		build_unary_op_call(const position& position,
+		                    const symbol& sym,
+		                    expression* operand);
 
-        binary_op_call*
-        build_binary_op_call(const position& position,
-                             const symbol& sym,
-                             expression* left,
-                             expression* right);
+		binary_op_call*
+		build_binary_op_call(const position& position,
+		                     const symbol& sym,
+		                     expression* left,
+		                     expression* right);
 
-    private:
-        // TODO arena allocator
-        std::list<std::unique_ptr<ast_node>> _nodes{};
-    };
+	private:
+		// TODO arena allocator
+		std::list<std::unique_ptr<ast_node>> _nodes{};
+	};
 }
 
 #endif

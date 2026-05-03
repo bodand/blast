@@ -39,27 +39,29 @@
 #include <c4/visitor/typeid.hxx>
 
 namespace c4::ast2 {
-    struct visitor_base {
-        template<class T>
-        __attribute__((nodebug)) void
-        visit(const T& visitee) {
-            visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
-        }
+	struct visitor_base {
+		template<class T>
+		__attribute__ ((nodebug))
 
-        virtual ~visitor_base() = default;
+		void
+		visit(const T& visitee) {
+			visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
+		}
 
-    protected:
-        virtual void
-        visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
-    };
+		virtual ~visitor_base() = default;
 
-    template<class T>
-    struct typed_visitor_base : virtual visitor_base {
-        virtual void
-        do_visit(const T& obj) = 0;
+	protected:
+		virtual void
+		visit_impl(const void* raw, visitor_aux::type_id tid) = 0;
+	};
 
-        ~typed_visitor_base() override = default;
-    };
+	template<class T>
+	struct typed_visitor_base : virtual visitor_base {
+		virtual void
+		do_visit(const T& obj) = 0;
+
+		~typed_visitor_base() override = default;
+	};
 }
 
 #endif

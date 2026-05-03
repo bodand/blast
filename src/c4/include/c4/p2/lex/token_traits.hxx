@@ -42,32 +42,31 @@
 #include <string_view>
 
 namespace c4::p2 {
-    template<class T>
-    concept regex_token = requires(T token)
-    {
-        { T::regex } -> std::same_as<std::string_view>;
-    };
+	template<class T>
+	concept regex_token = requires(T token)
+	{
+		{ T::regex } -> std::same_as<std::string_view>;
+	};
 
-    template<auto>
-    using void_val_t = void;
+	template<auto>
+	using void_val_t = void;
 
-    template<class, class = void>
-    struct token_can_match_newline : std::false_type { };
+	template<class, class = void>
+	struct token_can_match_newline : std::false_type { };
 
-    template<class Token>
-    struct token_can_match_newline<Token,
-                             void_val_t<Token::can_match_newline>>
-            : std::bool_constant<Token::can_match_newline> { };
+	template<class Token>
+	struct token_can_match_newline<Token,
+	                               void_val_t<Token::can_match_newline>>
+			: std::bool_constant<Token::can_match_newline> { };
 
-    template<class, class = void>
-    struct token_capture_groups
-            : std::integral_constant<std::uint32_t, 0 + 1> { };
+	template<class, class = void>
+	struct token_capture_groups
+			: std::integral_constant<std::uint32_t, 0 + 1> { };
 
-    template<class Token>
-    struct token_capture_groups<Token,
-                          void_val_t<Token::group_count>>
-            : std::integral_constant<std::uint32_t, Token::group_count + 1> { };
-
+	template<class Token>
+	struct token_capture_groups<Token,
+	                            void_val_t<Token::group_count>>
+			: std::integral_constant<std::uint32_t, Token::group_count + 1> { };
 }
 
 #endif

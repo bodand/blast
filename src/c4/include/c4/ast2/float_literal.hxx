@@ -45,24 +45,24 @@
 #include <c4/tags/literal_from_token.hxx>
 
 namespace c4::ast2 {
-    struct float_literal final : tags::visitable
-                                 , tags::source_positioned
-                                 , tags::constant_node
-                                 , tags::attributable
-                                 , tags::literal_from_token<float_literal> {
-        using value_type = double;
+	struct float_literal final : tags::visitable
+	                             , tags::source_positioned
+	                             , tags::constant_node
+	                             , tags::attributable
+	                             , tags::literal_from_token<float_literal> {
+		using value_type = double;
 
-        float_literal(const c4::position& position,
-                      const double value)
-            : source_positioned{position}
-            , _value{value} { }
+		float_literal(const c4::position& position,
+		              const double value)
+			: source_positioned{position}
+			, _value{value} { }
 
-        [[nodiscard]] double
-        value() const { return _value; }
+		[[nodiscard]] double
+		value() const { return _value; }
 
-    private:
-        double _value;
-    };
+	private:
+		double _value;
+	};
 }
 
 #endif

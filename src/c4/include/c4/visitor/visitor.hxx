@@ -39,23 +39,28 @@
 #include <c4/visitor/visitor_base.hxx>
 
 namespace c4::ast2 {
-    template<class... Ts>
-    struct visitor : typed_visitor_base<Ts>... {
-        ~visitor() override = default;
-    protected:
-        template<class T>
-        __attribute__((nodebug)) bool
-        visit_one(const void* untyped, const visitor_aux::type_id tid) {
-            if (visitor_aux::type_id::of<T>() != tid) return false;
-            static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
-            return true;
-        }
+	template<class... Ts>
+	struct visitor : typed_visitor_base<Ts>... {
+		~visitor() override = default;
 
-        __attribute__((nodebug)) void
-        visit_impl(const void* raw, const visitor_aux::type_id tid) final {
-            (visit_one<Ts>(raw, tid) || ...);
-        }
-    };
+	protected:
+		template<class T>
+		__attribute__ ((nodebug))
+
+		bool
+		visit_one(const void* untyped, const visitor_aux::type_id tid) {
+			if (visitor_aux::type_id::of<T>() != tid) return false;
+			static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
+			return true;
+		}
+
+		__attribute__ ((nodebug))
+
+		void
+		visit_impl(const void* raw, const visitor_aux::type_id tid) final {
+			(visit_one<Ts>(raw, tid) || ...);
+		}
+	};
 }
 
 #endif

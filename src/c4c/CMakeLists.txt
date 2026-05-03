@@ -43,7 +43,7 @@ target_link_libraries(c4c PRIVATE
                       libassert::assert
                       )
 target_include_directories(c4c PRIVATE
-                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if (WIN32)
     add_custom_command(

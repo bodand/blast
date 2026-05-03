@@ -42,74 +42,74 @@
 #include <libassert/assert.hpp>
 
 namespace {
-    template<class>
-    struct ruleset_builder;
+	template<class>
+	struct ruleset_builder;
 
-    template<template<class...> class L, class... Ts>
-    struct ruleset_builder<L<Ts...>> {
-        static auto
-        build(c4::p2::token_source& token_source,
-              c4::p2::regex_context& regex_context) {
-            return std::make_tuple(
-                typename c4::p2::rule_type<Ts>::type(
-                    token_source,
-                    *c4::p2::rule_type<Ts>::member_pointer(),
-                    regex_context,
-                    c4::p2::token_capture_groups<Ts>::value
-                )...);
-        }
-    };
+	template<template<class...> class L, class... Ts>
+	struct ruleset_builder<L<Ts...>> {
+		static auto
+		build(c4::p2::token_source& token_source,
+		      c4::p2::regex_context& regex_context) {
+			return std::make_tuple(
+				typename c4::p2::rule_type<Ts>::type(
+					token_source,
+					*c4::p2::rule_type<Ts>::member_pointer(),
+					regex_context,
+					c4::p2::token_capture_groups<Ts>::value
+				)...);
+		}
+	};
 
-    constexpr auto linebreak_markers = std::string_view("\n\0", 2U);
+	constexpr auto linebreak_markers = std::string_view("\n\0", 2U);
 }
 
 c4::p2::lexer::lexer(const std::string_view source,
                      const char* begin, const char* end)
-    : _token_source{source}
-    , _end{end}
-    , _data{begin}
-    , _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
-    const auto buffer = std::string_view(begin, end);
-    const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
-    const auto head_line_sz = static_cast<std::size_t>(std::ranges::distance(std::begin(buffer), it));
-    _current_position.line = buffer.substr(0, head_line_sz + 1U);
-    _current_position.expanded_range = buffer.substr(0, head_line_sz + 1U);
+	: _token_source{source}
+	, _end{end}
+	, _data{begin}
+	, _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
+	const auto buffer = std::string_view(begin, end);
+	const auto it = std::ranges::find_first_of(buffer, linebreak_markers);
+	const auto head_line_sz = static_cast<std::size_t>(std::ranges::distance(std::begin(buffer), it));
+	_current_position.line = buffer.substr(0, head_line_sz + 1U);
+	_current_position.expanded_range = buffer.substr(0, head_line_sz + 1U);
 }
 
 namespace {
-    struct matcher {
-        matcher(const char*& data_,
-                const char* end_,
-                c4::position& pos_)
-            : data{data_}
-            , end{end_}
-            , pos{pos_} { }
+	struct matcher {
+		matcher(const char*& data_,
+		        const char* end_,
+		        c4::position& pos_)
+			: data{data_}
+			, end{end_}
+			, pos{pos_} { }
 
-        template<class T>
-        bool
-        do_match(const auto& rule) {
-            ret = rule.template match<T>(data, end, pos);
-            return ret.has_value();
-        }
+		template<class T>
+		bool
+		do_match(const auto& rule) {
+			ret = rule.template match<T>(data, end, pos);
+			return ret.has_value();
+		}
 
-        const char* & data;
-        const char* end;
-        c4::position& pos;
-        std::optional<c4::p2::tokens::token_type> ret;
-    };
+		const char* & data;
+		const char* end;
+		c4::position& pos;
+		std::optional<c4::p2::tokens::token_type> ret;
+	};
 }
 
 c4::p2::tokens::token_type
 c4::p2::lexer::next() {
-    if (_data == _end) return _token_source.build<tokens::eof>(_current_position, "");
+	if (_data == _end) return _token_source.build<tokens::eof>(_current_position, "");
 
-    auto m = matcher(_data, _end, _current_position);
-    std::ignore =
-            [this, &m]<std::size_t... Is>(std::index_sequence<Is...>) {
-                return (m.do_match<std::tuple_element_t<Is, token_types>>(std::get<Is>(_rules)) || ...);
-            }(std::make_index_sequence<std::tuple_size_v<decltype(_rules)>>{});
-    ASSERT(m.ret,
-           "abysmal input: could not make sense of found input with given lexer rules. "
-           "Either fix input or fix the lexer.");
-    return *m.ret;
+	auto m = matcher(_data, _end, _current_position);
+	std::ignore =
+			[this, &m]<std::size_t... Is>(std::index_sequence<Is...>) {
+				return (m.do_match<std::tuple_element_t<Is, token_types>>(std::get < Is > (_rules)) || ...);
+			}(std::make_index_sequence<std::tuple_size_v<decltype(_rules)>>{});
+	ASSERT(m.ret,
+	       "abysmal input: could not make sense of found input with given lexer rules. "
+	       "Either fix input or fix the lexer.");
+	return *m.ret;
 }

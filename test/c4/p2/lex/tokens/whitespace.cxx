@@ -41,7 +41,10 @@
 
 #include "token_finder.hxx"
 
-TEST_CASE("whitespace matches all consecutive whitespace characters") {
+TEST_CASE (
+"whitespace matches all consecutive whitespace characters"
+)
+ {
     constexpr std::string_view buf{" \r\n\f\v"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto tok = token_finder<c4::p2::tokens::whitespace>{}(lexer.next());

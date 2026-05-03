@@ -46,141 +46,138 @@
 #include <c4/visitor/typeid.hxx>
 
 namespace c4::ast2::tags {
-    enum class expected_error {
-        NO_VALUE,
-        INVALID_TYPE
-    };
+	enum class expected_error { NO_VALUE, INVALID_TYPE };
 
-    struct attribute {
-        template<class T>
-        std::expected<T, expected_error>
-        value() {
-            return value_untyped(visitor_aux::type_id::of<T>()).and_then([](void* x)
-            -> std::expected<T, expected_error> {
-                    return *static_cast<T*>(x);
-                });
-        }
+	struct attribute {
+		template<class T>
+		std::expected<T, expected_error>
+		value() {
+			return value_untyped(visitor_aux::type_id::of<T>()).and_then([](void* x)
+			-> std::expected<T, expected_error> {
+					return *static_cast<T*>(x);
+				});
+		}
 
-        template<class T>
-        std::expected<T, expected_error>
-        value() const {
-            return value_untyped(visitor_aux::type_id::of<T>()).and_then([](const void* x)
-            -> std::expected<T, expected_error> {
-                    return *static_cast<const T*>(x);
-                });
-        }
+		template<class T>
+		std::expected<T, expected_error>
+		value() const {
+			return value_untyped(visitor_aux::type_id::of<T>()).and_then([](const void* x)
+			-> std::expected<T, expected_error> {
+					return *static_cast<const T*>(x);
+				});
+		}
 
-        virtual ~attribute() = default;
+		virtual ~attribute() = default;
 
-    protected:
-        [[nodiscard]] virtual std::expected<void*, expected_error>
-        value_untyped(visitor_aux::type_id tid) = 0;
+	protected:
+		[[nodiscard]] virtual std::expected<void*, expected_error>
+		value_untyped(visitor_aux::type_id tid) = 0;
 
-        [[nodiscard]] virtual std::expected<const void*, expected_error>
-        value_untyped(visitor_aux::type_id tid) const = 0;
-    };
+		[[nodiscard]] virtual std::expected<const void*, expected_error>
+		value_untyped(visitor_aux::type_id tid) const = 0;
+	};
 
-    template<class T>
-    struct typed_attribute : attribute {
-        using value_type = T;
+	template<class T>
+	struct typed_attribute : attribute {
+		using value_type = T;
 
-    protected:
-        explicit
-        typed_attribute(const T& value)
-            : _value{value} { }
+	protected:
+		explicit
+		typed_attribute(const T& value)
+			: _value{value} { }
 
-        typed_attribute()
-            : _value{} { }
+		typed_attribute()
+			: _value{} { }
 
-        [[nodiscard]] std::expected<void*, expected_error>
-        value_untyped(visitor_aux::type_id tid) final {
-            if (tid != visitor_aux::type_id::of<T>()) return std::unexpected{expected_error::INVALID_TYPE};
-            if (!_value) return std::unexpected{expected_error::NO_VALUE};
-            return &*_value;
-        }
+		[[nodiscard]] std::expected<void*, expected_error>
+		value_untyped(visitor_aux::type_id tid) final {
+			if (tid != visitor_aux::type_id::of<T>()) return std::unexpected{expected_error::INVALID_TYPE};
+			if (!_value) return std::unexpected{expected_error::NO_VALUE};
+			return &*_value;
+		}
 
-        [[nodiscard]] std::expected<const void*, expected_error>
-        value_untyped(visitor_aux::type_id tid) const final {
-            if (tid != visitor_aux::type_id::of<T>()) return std::unexpected{expected_error::INVALID_TYPE};
-            if (!_value) return std::unexpected{expected_error::NO_VALUE};
-            return &*_value;
-        }
+		[[nodiscard]] std::expected<const void*, expected_error>
+		value_untyped(visitor_aux::type_id tid) const final {
+			if (tid != visitor_aux::type_id::of<T>()) return std::unexpected{expected_error::INVALID_TYPE};
+			if (!_value) return std::unexpected{expected_error::NO_VALUE};
+			return &*_value;
+		}
 
-        std::optional<T> _value;
-    };
+		std::optional<T> _value;
+	};
 
-    struct attributable {
-        template<class T, class... Args>
-            requires std::derived_from<T, attribute>
-                     && std::constructible_from<T, Args...>
-        std::unique_ptr<attribute>
-        emplace_attribute(std::string_view key, Args&&... args) const {
-            auto new_attr = std::make_unique<T>(std::forward<Args>(args)...);
-            if (const auto it = _attributes.find(key);
-                it != _attributes.end())
-                return std::unique_ptr<attribute>{std::exchange(it->second, new_attr.release())};
-            _attributes.insert(std::make_pair(key, new_attr.release()));
-            return {};
-        }
+	struct attributable {
+		template<class T, class... Args>
+			requires std::derived_from<T, attribute>
+			         && std::constructible_from<T, Args...>
+		std::unique_ptr<attribute>
+		emplace_attribute(std::string_view key, Args&&... args) const {
+			auto new_attr = std::make_unique<T>(std::forward<Args>(args)...);
+			if (const auto it = _attributes.find(key);
+				it != _attributes.end())
+				return std::unique_ptr<attribute>{std::exchange(it->second, new_attr.release())};
+			_attributes.insert(std::make_pair(key, new_attr.release()));
+			return {};
+		}
 
-        const attribute*
-        get_attribute(const std::string_view key) const {
-            if (const auto it = _attributes.find(key);
-                it != _attributes.end())
-                return it->second;
-            return nullptr;
-        }
+		const attribute*
+		get_attribute(const std::string_view key) const {
+			if (const auto it = _attributes.find(key);
+				it != _attributes.end())
+				return it->second;
+			return nullptr;
+		}
 
-        template<class T>
-        std::expected<T, expected_error>
-        attribute_value(const std::string_view key) const {
-            const auto attr = get_attribute(key);
-            if (!attr) return std::unexpected{expected_error::NO_VALUE};
-            return attr->value<T>();
-        }
+		template<class T>
+		std::expected<T, expected_error>
+		attribute_value(const std::string_view key) const {
+			const auto attr = get_attribute(key);
+			if (!attr) return std::unexpected{expected_error::NO_VALUE};
+			return attr->value<T>();
+		}
 
-        const attribute*
-        operator[](const std::string_view key) const { return get_attribute(key); }
+		const attribute*
+		operator[](const std::string_view key) const { return get_attribute(key); }
 
-        attributable() = default;
+		attributable() = default;
 
-        attributable(const attributable&) = default;
+		attributable(const attributable&) = default;
 
-        attributable&
-        operator=(const attributable&) = delete;
+		attributable&
+		operator=(const attributable&) = delete;
 
-        attributable(attributable&&) noexcept = default;
+		attributable(attributable&&) noexcept = default;
 
-        attributable&
-        operator=(attributable&&) noexcept = delete;
+		attributable&
+		operator=(attributable&&) noexcept = delete;
 
-        virtual ~attributable();
+		virtual ~attributable();
 
-    private:
-        struct string_hash {
-            using is_transparent = void;
+	private:
+		struct string_hash {
+			using is_transparent = void;
 
-            [[nodiscard]] size_t
-            operator()(const char* txt) const {
-                return std::hash<std::string_view>{}(txt);
-            }
+			[[nodiscard]] size_t
+			operator()(const char* txt) const {
+				return std::hash<std::string_view>{}(txt);
+			}
 
-            [[nodiscard]] size_t
-            operator()(const std::string_view txt) const {
-                return std::hash<std::string_view>{}(txt);
-            }
+			[[nodiscard]] size_t
+			operator()(const std::string_view txt) const {
+				return std::hash<std::string_view>{}(txt);
+			}
 
-            [[nodiscard]] size_t
-            operator()(const std::string& txt) const {
-                return std::hash<std::string>{}(txt);
-            }
-        };
+			[[nodiscard]] size_t
+			operator()(const std::string& txt) const {
+				return std::hash<std::string>{}(txt);
+			}
+		};
 
-        mutable std::unordered_map<std::string,
-                                   attribute*,
-                                   string_hash,
-                                   std::equal_to<>> _attributes;
-    };
+		mutable std::unordered_map<std::string,
+		                           attribute*,
+		                           string_hash,
+		                           std::equal_to<>> _attributes;
+	};
 }
 
 #endif

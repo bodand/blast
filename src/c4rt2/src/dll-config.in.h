@@ -36,7 +36,8 @@
 #ifndef C4RT_DLL_CONFIG_H
 #define C4RT_DLL_CONFIG_H
 
-@PVOID_SIZE_CODE@
+@
+PVOID_SIZE_CODE@
 
 #ifdef __cplusplus
 #  define C4_EXTERNC extern "C"
@@ -54,6 +55,8 @@
 #  define C4_FREE(...) mi_free(__VA_ARGS__)
 #  define C4_SMALL_ALLOC_SIZE MI_SMALL_SIZE_MAX
 #else
+
+
 #  include <gc.h>
 
 #  define C4_MALLOC(...) GC_malloc(__VA_ARGS__)
@@ -67,8 +70,8 @@
 #if 0
 C4_EXTERNC inline void*
 C4_ALLOCATE(const size_t bytes) {
-    if (bytes < C4_SMALL_ALLOC_SIZE) return C4_MALLOC_SMALL(bytes);
-    return C4_MALLOC(bytes);
+	if (bytes < C4_SMALL_ALLOC_SIZE) return C4_MALLOC_SMALL(bytes);
+	return C4_MALLOC(bytes);
 }
 #else
 #  define C4_ALLOCATE(bytes) C4_MALLOC(bytes)

@@ -48,163 +48,163 @@
 #include <c4/visitor/visitor.hxx>
 
 namespace {
-    struct value_extractor final {
-        const c4::ast2::tags::source_positioned&
-        operator()(const c4::ast2::tags::source_positioned& sp) const noexcept {
-            return sp;
-        }
+	struct value_extractor final {
+		const c4::ast2::tags::source_positioned&
+		operator()(const c4::ast2::tags::source_positioned& sp) const noexcept {
+			return sp;
+		}
 
-        const c4::ast2::tags::source_positioned&
-        operator()(c4::ast2::tags::source_positioned* const& sp) const noexcept {
-            return *sp;
-        }
-    };
+		const c4::ast2::tags::source_positioned&
+		operator()(c4::ast2::tags::source_positioned* const& sp) const noexcept {
+			return *sp;
+		}
+	};
 
-    void
-    uniqify_symbols(std::vector<c4::ast2::symbol>& symbols) {
-        if (symbols.empty()) return;
-        std::ranges::sort(symbols);
-        const auto [dup_begin, dup_end] = std::ranges::unique(symbols);
-        symbols.erase(dup_begin, dup_end);
-    }
+	void
+	uniqify_symbols(std::vector<c4::ast2::symbol>& symbols) {
+		if (symbols.empty()) return;
+		std::ranges::sort(symbols);
+		const auto [dup_begin, dup_end] = std::ranges::unique(symbols);
+		symbols.erase(dup_begin, dup_end);
+	}
 
-    struct recursive_closure_collector_visitor final : c4::ast2::visitor<
-                c4::ast2::expression,
-                c4::ast2::let_expression,
-                c4::ast2::block,
-                c4::ast2::fn_call,
-                c4::ast2::dynamic_call,
-                c4::ast2::binary_op_call,
-                c4::ast2::unary_op_call
-            > {
-        explicit
-        recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
-            : _symbols(symbols) { }
+	struct recursive_closure_collector_visitor final : c4::ast2::visitor<
+				c4::ast2::expression,
+				c4::ast2::let_expression,
+				c4::ast2::block,
+				c4::ast2::fn_call,
+				c4::ast2::dynamic_call,
+				c4::ast2::binary_op_call,
+				c4::ast2::unary_op_call
+			> {
+		explicit
+		recursive_closure_collector_visitor(std::vector<c4::ast2::symbol>& symbols)
+			: _symbols(symbols) { }
 
-        void
-        do_visit(const c4::ast2::expression& obj) override {
-            _symbols.insert(_symbols.end(), obj.closure_symbols().cbegin(), obj.closure_symbols().cend());
-        }
+		void
+		do_visit(const c4::ast2::expression& obj) override {
+			_symbols.insert(_symbols.end(), obj.closure_symbols().cbegin(), obj.closure_symbols().cend());
+		}
 
-        void
-        do_visit(const c4::ast2::let_expression& obj) override {
-            obj.value().accept(*this);
-        }
+		void
+		do_visit(const c4::ast2::let_expression& obj) override {
+			obj.value().accept(*this);
+		}
 
-        void
-        do_visit(const c4::ast2::block& obj) override {
-            auto block_symbols = obj.effective_context_symbols();
-            _symbols.reserve(_symbols.size() + block_symbols.size());
-            std::ranges::move(std::move(block_symbols), std::back_inserter(_symbols));
-        }
+		void
+		do_visit(const c4::ast2::block& obj) override {
+			auto block_symbols = obj.effective_context_symbols();
+			_symbols.reserve(_symbols.size() + block_symbols.size());
+			std::ranges::move(std::move(block_symbols), std::back_inserter(_symbols));
+		}
 
-        void
-        do_visit(const c4::ast2::fn_call& obj) override {
-            for (const auto& arg : obj.args()) arg->accept(*this);
-        }
+		void
+		do_visit(const c4::ast2::fn_call& obj) override {
+			for (const auto& arg : obj.args()) arg->accept(*this);
+		}
 
-        void
-        do_visit(const c4::ast2::dynamic_call& obj) override {
-            obj.callee()->accept(*this);
-            for (const auto& arg : obj.args()) arg->accept(*this);
-        }
+		void
+		do_visit(const c4::ast2::dynamic_call& obj) override {
+			obj.callee()->accept(*this);
+			for (const auto& arg : obj.args()) arg->accept(*this);
+		}
 
-        void
-        do_visit(const c4::ast2::binary_op_call& obj) override {
-            obj.left().accept(*this);
-            obj.right().accept(*this);
-        }
+		void
+		do_visit(const c4::ast2::binary_op_call& obj) override {
+			obj.left().accept(*this);
+			obj.right().accept(*this);
+		}
 
-        void
-        do_visit(const c4::ast2::unary_op_call& obj) override {
-            obj.operand().accept(*this);
-        }
+		void
+		do_visit(const c4::ast2::unary_op_call& obj) override {
+			obj.operand().accept(*this);
+		}
 
-    private:
-        std::vector<c4::ast2::symbol>& _symbols;
-    };
+	private:
+		std::vector<c4::ast2::symbol>& _symbols;
+	};
 
-    struct closure_collector final {
-        explicit
-        closure_collector(std::vector<c4::ast2::symbol>& sym)
-            : _visitor{sym} { }
+	struct closure_collector final {
+		explicit
+		closure_collector(std::vector<c4::ast2::symbol>& sym)
+			: _visitor{sym} { }
 
-        template<class T>
-        void
-        operator()(T* ptr) {
-            ptr->accept(_visitor);
-        }
+		template<class T>
+		void
+		operator()(T* ptr) {
+			ptr->accept(_visitor);
+		}
 
-        template<class T>
-        void
-        operator()(T&& val) {
-            std::forward<T>(val).accept(_visitor);
-        }
+		template<class T>
+		void
+		operator()(T&& val) {
+			std::forward<T>(val).accept(_visitor);
+		}
 
-    private:
-        recursive_closure_collector_visitor _visitor;
-    };
+	private:
+		recursive_closure_collector_visitor _visitor;
+	};
 
-    template<class Value>
-    void
-    collect_closure(Value& value, std::vector<c4::ast2::symbol>& symbols) {
-        std::visit(closure_collector{symbols}, value);
-    }
+	template<class Value>
+	void
+	collect_closure(Value& value, std::vector<c4::ast2::symbol>& symbols) {
+		std::visit(closure_collector{symbols}, value);
+	}
 
-    struct type_namer final {
-        std::string_view
-        operator()(const c4::ast2::float_literal&) const noexcept { return "float literal"; }
+	struct type_namer final {
+		std::string_view
+		operator()(const c4::ast2::float_literal&) const noexcept { return "float literal"; }
 
-        std::string_view
-        operator()(const c4::ast2::integer_literal&) const noexcept { return "integer literal"; }
+		std::string_view
+		operator()(const c4::ast2::integer_literal&) const noexcept { return "integer literal"; }
 
-        std::string_view
-        operator()(const c4::ast2::string_literal&) const noexcept { return "string literal"; }
+		std::string_view
+		operator()(const c4::ast2::string_literal&) const noexcept { return "string literal"; }
 
-        std::string_view
-        operator()(c4::ast2::let_expression*) const noexcept { return "let expression"; }
+		std::string_view
+		operator()(c4::ast2::let_expression*) const noexcept { return "let expression"; }
 
-        std::string_view
-        operator()(const c4::ast2::symbol&) const noexcept { return "symbol"; }
+		std::string_view
+		operator()(const c4::ast2::symbol&) const noexcept { return "symbol"; }
 
-        std::string_view
-        operator()(c4::ast2::fn_call*) const noexcept { return "function call"; }
+		std::string_view
+		operator()(c4::ast2::fn_call*) const noexcept { return "function call"; }
 
-        std::string_view
-        operator()(c4::ast2::dynamic_call*) const noexcept { return "dynamic call"; }
+		std::string_view
+		operator()(c4::ast2::dynamic_call*) const noexcept { return "dynamic call"; }
 
-        std::string_view
-        operator()(c4::ast2::binary_op_call*) const noexcept { return "binary operator call"; }
+		std::string_view
+		operator()(c4::ast2::binary_op_call*) const noexcept { return "binary operator call"; }
 
-        std::string_view
-        operator()(c4::ast2::unary_op_call*) const noexcept { return "unary operator call"; }
+		std::string_view
+		operator()(c4::ast2::unary_op_call*) const noexcept { return "unary operator call"; }
 
-        std::string_view
-        operator()(c4::ast2::block*) const noexcept { return "block"; }
-    };
+		std::string_view
+		operator()(c4::ast2::block*) const noexcept { return "block"; }
+	};
 }
 
 c4::ast2::expression::expression(value_type value,
                                  std::vector<symbol>&& closure_over)
-    : source_positioned{std::visit(value_extractor{}, value)}
-    , _value{std::move(value)}
-    , _closure_symbols{std::move(closure_over)} {
-    collect_closure(_value, _closure_symbols);
-    uniqify_symbols(_closure_symbols);
+	: source_positioned{std::visit(value_extractor{}, value)}
+	, _value{std::move(value)}
+	, _closure_symbols{std::move(closure_over)} {
+	collect_closure(_value, _closure_symbols);
+	uniqify_symbols(_closure_symbols);
 }
 
 bool
 c4::ast2::expression::loose_closure() const noexcept {
-    // A loose closure is a closure that does not take into account
-    // the set of externally defined (global) functions. That is,
-    // those symbols that would not need to be passed in anyways.
-    const auto referred_symbols = std::ranges::count_if(_closure_symbols, [](const auto& sym) {
-        return sym.references() != nullptr;
-    });
-    return referred_symbols != 0;
+	// A loose closure is a closure that does not take into account
+	// the set of externally defined (global) functions. That is,
+	// those symbols that would not need to be passed in anyways.
+	const auto referred_symbols = std::ranges::count_if(_closure_symbols, [](const auto& sym) {
+		return sym.references() != nullptr;
+	});
+	return referred_symbols != 0;
 }
 
 std::string_view
 c4::ast2::expression::containee_name() const noexcept {
-    return std::visit(type_namer{}, _value);
+	return std::visit(type_namer{}, _value);
 }

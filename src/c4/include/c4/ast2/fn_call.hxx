@@ -46,40 +46,40 @@
 #include <string_view>
 
 namespace c4::ast2 {
-struct expression;
+	struct expression;
 
-struct fn_call final : ast_node
-                       , tags::visitable
-                       , tags::attributable
-                       , tags::source_positioned
-                       , tags::dynamic_node {
-	fn_call(const c4::position& position,
-	        const symbol& sym,
-	        std::vector<expression*>&& args);
+	struct fn_call final : ast_node
+	                       , tags::visitable
+	                       , tags::attributable
+	                       , tags::source_positioned
+	                       , tags::dynamic_node {
+		fn_call(const c4::position& position,
+		        const symbol& sym,
+		        std::vector<expression*>&& args);
 
-	fn_call(const fn_call& cp) = delete;
+		fn_call(const fn_call& cp) = delete;
 
-	fn_call&
-	operator=(const fn_call& cp) = delete;
+		fn_call&
+		operator=(const fn_call& cp) = delete;
 
-	fn_call(fn_call&& mv) noexcept = delete;
+		fn_call(fn_call&& mv) noexcept = delete;
 
-	fn_call&
-	operator=(fn_call&& mv) noexcept = delete;
+		fn_call&
+		operator=(fn_call&& mv) noexcept = delete;
 
-	[[nodiscard]] symbol
-	sym() const { return _sym; }
+		[[nodiscard]] symbol
+		sym() const { return _sym; }
 
-	[[nodiscard]] std::span<const expression* const>
-	args() const;
+		[[nodiscard]] std::span<const expression* const>
+		args() const;
 
-	[[nodiscard]] unsigned
-	unbound_parameters() const noexcept { return 0; }
+		[[nodiscard]] unsigned
+		unbound_parameters() const noexcept { return 0; }
 
-private:
-	symbol _sym;
-	std::vector<expression*> _args;
-};
+	private:
+		symbol _sym;
+		std::vector<expression*> _args;
+	};
 }
 
 #endif

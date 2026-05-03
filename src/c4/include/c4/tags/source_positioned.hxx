@@ -45,21 +45,21 @@
 #include <c4/diagnostic.hxx>
 
 namespace c4::ast2::tags {
-    struct source_positioned {
-        [[nodiscard]] const position&
-        position() const { return _position; }
+	struct source_positioned {
+		[[nodiscard]] const position&
+		position() const { return _position; }
 
-        [[nodiscard]] std::string_view
-        file_source() const { return _position.filename(); }
+		[[nodiscard]] std::string_view
+		file_source() const { return _position.filename(); }
 
-    protected:
-        explicit
-        source_positioned(const struct position& position)
-            : _position{position} { }
+	protected:
+		explicit
+		source_positioned(const struct position& position)
+			: _position{position} { }
 
-    private:
-        struct position _position;
-    };
+	private:
+		struct position _position;
+	};
 }
 
 #ifndef __clang__

@@ -6,7 +6,9 @@ These types are usually implemented in a way that they have some internal, unspe
 
 [IMPORTANT]
 ====
-These behaviors only serve as documentational features. Nothing stops anybody in C4 to pass `42` to a function that expects a `List`. In some cases this may even be an intended behavior.
+These behaviors only serve as documentational features.
+Nothing stops anybody in C4 to pass `42` to a function that expects a `List`.
+In some cases this may even be an intended behavior.
 ====
 
 Each behavior has a name, at least one constructor (a function that returns a type that acts like the given behavior), and zero or more operators and function that take this behavior as an operand.

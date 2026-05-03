@@ -36,7 +36,7 @@
 
 include(CheckCXXCompilerFlag)
 
-function(CheckWarningFlag OptionName CacheName)
+function(checkwarningflag OptionName CacheName)
     if (OptionName MATCHES [[^/]]) # MSVC-style args are passed as-is
         set(WarningPrefix "")
     else ()
@@ -84,7 +84,7 @@ function(generate_warnings _Interface)
 
     foreach (warn IN LISTS gw_known_warnings)
         string(MAKE_C_IDENTIFIER "${warn}" CacheName)
-        CheckWarningFlag("${warn}" ${CacheName})
+        checkwarningflag("${warn}" ${CacheName})
         if (HAS_WARNING_${CacheName})
             if (warn MATCHES [[^/]]) # MSVC-style args are passed as-is
                 set(WarningPrefix "")

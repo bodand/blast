@@ -37,14 +37,14 @@
 #define C4_LITERAL_FROM_TOKEN_HXX
 
 namespace c4::ast2::tags {
-  template<class Self>
-  struct literal_from_token {
-      template<class Token>
-      [[nodiscard]] static Self
-      from_token(const Token& tok) {
-          return Self(tok.token_position(), tok.template as_value<typename Self::value_type>());
-      }
-  };
+	template<class Self>
+	struct literal_from_token {
+		template<class Token>
+		[[nodiscard]] static Self
+		from_token(const Token& tok) {
+			return Self(tok.token_position(), tok.template as_value<typename Self::value_type>());
+		}
+	};
 }
 
 #endif

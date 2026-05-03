@@ -69,7 +69,9 @@ else/1 Any@input -> #input <2>
 (+)/2 Int Int -> Int <3>
 (,)/2 Any *List -> *List <4>
 ----
-<1> Defines the `if/3` function. Since the returned value is dependent on the runtime value of the Bool parameter and the result types of the given and chosen Block parameters the return type is just Any.
+
+<1> Defines the `if/3` function.
+Since the returned value is dependent on the runtime value of the Bool parameter and the result types of the given and chosen Block parameters the return type is just Any.
 <2> The `else/1` function takes any type and returns it as-is.
 <3> The `(+)/2` function perform integer addition and thusly takes two ints and returns an int.
 <4> The `,` operator creates a list as defined in a named behavior called `List`.

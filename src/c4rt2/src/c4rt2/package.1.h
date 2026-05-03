@@ -90,31 +90,31 @@
  *          \c function_arity) * \c package_size
  */
 struct c4_package_v1_t {
-    /// Specifies the size of this package: used to differentiate the ABI
+	/// Specifies the size of this package: used to differentiate the ABI
     /// version used.
-    uint16_t version;
-    /// The callee functions's base arity, including the optional closure
+	uint16_t version;
+	/// The callee functions's base arity, including the optional closure
     /// context parameter.
-    uint16_t function_arity;
-    /// Whether this package has been completed. If yes, data contains a
+	uint16_t function_arity;
+	/// Whether this package has been completed. If yes, data contains a
     /// single datum, otherwise an encoded function payload.
-    uint8_t completed;
-    /// Whether this package packages a datum object to be evaluated with
+	uint8_t completed;
+	/// Whether this package packages a datum object to be evaluated with
     /// c4rt_datum_evaluate instead of a proper function.
-    uint8_t dynamic_datum : 4;
-    /// Whether this package is to be chainloaded. That is, data contains a
+	uint8_t dynamic_datum : 4;
+	/// Whether this package is to be chainloaded. That is, data contains a
     /// c4_package_v1_chainload_payload pointer. Chainload evaluation will be
     /// used.
-    uint8_t chainload : 4;
-    /// The size of the first parameter in bytes rounded up to the next multiple
+	uint8_t chainload : 4;
+	/// The size of the first parameter in bytes rounded up to the next multiple
     /// of 8, then divided by 8.
     /// This is used to specify the special context parameters of closures.
     /// If not holding a closure, it is zero, see the struct's documentation for
     /// a richer explanation of possible states.
-    uint16_t context_sz_divided_bytes;
-    /// Either an embedded value or a pointer to a c4_package_v1_function_payload
+	uint16_t context_sz_divided_bytes;
+	/// Either an embedded value or a pointer to a c4_package_v1_function_payload
     /// object that is dynamically allocated.
-    c4_ptr64_t data;
+	c4_ptr64_t data;
 };
 
 /**
@@ -127,14 +127,16 @@ struct c4_package_v1_t {
  *      a way that each context takes a multiple of package sizes.
  */
 struct c4_package_v1_function_payload {
-    c4rt_package_function_t* calc_fun;
-    ALIGNAS(8) char args_untyped[];
+	c4rt_package_function_t* calc_fun;
+	ALIGNAS(8)
+	char args_untyped[];
 };
 
 struct c4_package_v1_chainload_payload {
-    c4rt_package_function_t* calc_fun;
-    char* args_untyped_start;
-    ALIGNAS(8) char raw[];
+	c4rt_package_function_t* calc_fun;
+	char* args_untyped_start;
+	ALIGNAS(8)
+	char raw[];
 };
 
 #define C4PKGV1_CHAINLOAD_ARGS(payload) \
@@ -228,6 +230,7 @@ c4rt_package_init_from_result_v1(struct c4_package_v1_t* pkg,
  *   - The pkg value must not be NULL.
  */
 C4RT_IMPL c4_datum_t
+
 c4rt_package_evaluate_v1(void* pkg);
 
 /**

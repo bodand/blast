@@ -518,31 +518,33 @@ c4_dynamic_call_fn_all(v1, 128)
 #define c4_dynamic_cases_ctx(max) c4_dynamic_args##max(case_v1_ctx, max, c4_underscores(max))
 
 static C4RT_IMPL c4_datum_t
-c4_dynamic_call_v1(void* pkg_raw) {
-    const struct c4_package_v1_t* const pkg = pkg_raw;
-    const uint16_t arity = pkg->function_arity;
-    assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
-                            "with more than 128 arguments");
 
-    switch (arity) {
-    c4_dynamic_cases(128)
-    default: ;
-    }
-    C4_UNREACHABLE;
+c4_dynamic_call_v1(void* pkg_raw) {
+	const struct c4_package_v1_t* const pkg = pkg_raw;
+	const uint16_t arity = pkg->function_arity;
+	assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
+	       "with more than 128 arguments");
+
+	switch (arity) {
+	c4_dynamic_cases(128)
+	default: ;
+	}
+	C4_UNREACHABLE;
 }
 
 static C4RT_IMPL c4_datum_t
-c4_dynamic_call_v1_ctx(void* pkg_raw) {
-    const struct c4_package_v1_t* const pkg = pkg_raw;
-    const uint16_t arity = pkg->function_arity;
-    assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
-                            "with more than 128 arguments");
 
-    switch (arity) {
-    c4_dynamic_cases_ctx(128)
-    default: ;
-    }
-    C4_UNREACHABLE;
+c4_dynamic_call_v1_ctx(void* pkg_raw) {
+	const struct c4_package_v1_t* const pkg = pkg_raw;
+	const uint16_t arity = pkg->function_arity;
+	assert(arity <= 128u && "not implemented: c4rt2 cannot call functions "
+	       "with more than 128 arguments");
+
+	switch (arity) {
+	c4_dynamic_cases_ctx(128)
+	default: ;
+	}
+	C4_UNREACHABLE;
 }
 
 #undef _Xcase_v1

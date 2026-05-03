@@ -45,110 +45,110 @@
 
 c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::span<symbol> args)
-    : source_positioned{position}
-    , _args{args.begin(), args.end()} { }
+	: source_positioned{position}
+	, _args{args.begin(), args.end()} { }
 
 c4::ast2::block_argument&
 c4::ast2::block_args::argument_reference(std::size_t arg_idx) {
-    DEBUG_ASSERT(arg_idx < _args.size());
-    return _args[arg_idx];
+	DEBUG_ASSERT(arg_idx < _args.size());
+	return _args[arg_idx];
 }
 
 const c4::ast2::block_argument&
 c4::ast2::block_args::argument_reference(std::size_t arg_idx) const {
-    DEBUG_ASSERT(arg_idx < _args.size());
-    return _args[arg_idx];
+	DEBUG_ASSERT(arg_idx < _args.size());
+	return _args[arg_idx];
 }
 
 c4::ast2::block::block(const c4::position& position,
                        std::vector<expression*>&& expressions,
                        block_args* args)
-    : source_positioned{position}
-    , _args(args)
-    , _expressions{std::move(expressions)} {
-    ASSERT(!_args || _args->size() < std::numeric_limits<unsigned>::max(),
-           "too many arguments in block");
+	: source_positioned{position}
+	, _args(args)
+	, _expressions{std::move(expressions)} {
+	ASSERT(!_args || _args->size() < std::numeric_limits<unsigned>::max(),
+	       "too many arguments in block");
 }
 
 bool
 c4::ast2::block::requires_context() const noexcept {
-    return std::ranges::any_of(_expressions, [](const auto& expr) { return expr->closure(); });
+	return std::ranges::any_of(_expressions, [](const auto& expr) { return expr->closure(); });
 }
 
 namespace {
-    template<class It>
-    struct defined_symbols_remover final : c4::ast2::visitor<c4::ast2::let_expression> {
-        defined_symbols_remover(It begin_, It end_)
-            : begin(std::move(begin_))
-            , end(std::move(end_)) { }
+	template<class It>
+	struct defined_symbols_remover final : c4::ast2::visitor<c4::ast2::let_expression> {
+		defined_symbols_remover(It begin_, It end_)
+			: begin(std::move(begin_))
+			, end(std::move(end_)) { }
 
-        void
-        do_visit(const c4::ast2::let_expression& obj) override {
-            // you'd think we need to recurse here, but this is not the case
-            // since symbols defined in nested blocks are already filtered out
-            // and even if we have symbols with the same name as defined down-er
-            // they are different symbols shadowing the one we are copying into
-            // context
-            end = std::remove(begin, end, obj.symbol());
-        }
+		void
+		do_visit(const c4::ast2::let_expression& obj) override {
+			// you'd think we need to recurse here, but this is not the case
+			// since symbols defined in nested blocks are already filtered out
+			// and even if we have symbols with the same name as defined down-er
+			// they are different symbols shadowing the one we are copying into
+			// context
+			end = std::remove(begin, end, obj.symbol());
+		}
 
-        It begin;
-        It end;
-    };
+		It begin;
+		It end;
+	};
 
-    template<class It>
-    defined_symbols_remover(It begin, It end) -> defined_symbols_remover<It>;
+	template<class It>
+	defined_symbols_remover(It begin, It end) -> defined_symbols_remover<It>;
 
-    std::vector<c4::ast2::symbol>
-    merge_child_contexts(const std::span<c4::ast2::expression* const> expressions) {
-        std::vector<c4::ast2::symbol> result;
-        for (const auto& expr : expressions) {
-            auto symbols = expr->closure_symbols();
-            result.insert(result.end(), symbols.cbegin(), symbols.cend());
-        }
-        return result;
-    }
+	std::vector<c4::ast2::symbol>
+	merge_child_contexts(const std::span<c4::ast2::expression* const> expressions) {
+		std::vector<c4::ast2::symbol> result;
+		for (const auto& expr : expressions) {
+			auto symbols = expr->closure_symbols();
+			result.insert(result.end(), symbols.cbegin(), symbols.cend());
+		}
+		return result;
+	}
 
-    void
-    deduplicate(std::vector<c4::ast2::symbol>& result) {
-        std::ranges::sort(result);
-        const auto [dup_begin, dup_end] = std::ranges::unique(result);
-        result.erase(dup_begin, dup_end);
-    }
+	void
+	deduplicate(std::vector<c4::ast2::symbol>& result) {
+		std::ranges::sort(result);
+		const auto [dup_begin, dup_end] = std::ranges::unique(result);
+		result.erase(dup_begin, dup_end);
+	}
 
-    void
-    remove_block_arguments(std::vector<c4::ast2::symbol>& result,
-                           const c4::ast2::block_args* args) {
-        if (!args) return;
-        for (const auto& arg : args->args()) std::erase(result, *arg);
-    }
+	void
+	remove_block_arguments(std::vector<c4::ast2::symbol>& result,
+	                       const c4::ast2::block_args* args) {
+		if (!args) return;
+		for (const auto& arg : args->args()) std::erase(result, *arg);
+	}
 
-    void
-    remove_local_symbols(std::vector<c4::ast2::symbol>& result,
-                         const std::span<c4::ast2::expression* const> expressions) {
-        defined_symbols_remover remover(result.begin(), result.end());
-        for (const auto& expr : expressions) expr->accept_skip_self(remover);
-        result.erase(remover.end, result.end());
-    }
+	void
+	remove_local_symbols(std::vector<c4::ast2::symbol>& result,
+	                     const std::span<c4::ast2::expression* const> expressions) {
+		defined_symbols_remover remover(result.begin(), result.end());
+		for (const auto& expr : expressions) expr->accept_skip_self(remover);
+		result.erase(remover.end, result.end());
+	}
 
-    void
-    remove_locally_defined(std::vector<c4::ast2::symbol>& result,
-                           const c4::ast2::block_args* args,
-                           const std::span<c4::ast2::expression* const> expressions) {
-        remove_block_arguments(result, args);
-        remove_local_symbols(result, expressions);
-    }
+	void
+	remove_locally_defined(std::vector<c4::ast2::symbol>& result,
+	                       const c4::ast2::block_args* args,
+	                       const std::span<c4::ast2::expression* const> expressions) {
+		remove_block_arguments(result, args);
+		remove_local_symbols(result, expressions);
+	}
 }
 
 std::vector<c4::ast2::symbol>
 c4::ast2::block::effective_context_symbols() const {
-    auto result = merge_child_contexts(_expressions);
-    deduplicate(result);
-    remove_locally_defined(result, _args, _expressions);
-    return result;
+	auto result = merge_child_contexts(_expressions);
+	deduplicate(result);
+	remove_locally_defined(result, _args, _expressions);
+	return result;
 }
 
 std::span<const c4::ast2::expression* const>
 c4::ast2::block::expressions() const {
-    return std::span(_expressions);
+	return std::span(_expressions);
 }

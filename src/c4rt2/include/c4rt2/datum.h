@@ -49,6 +49,7 @@ C4RT_API bool
 c4rt_datum_remoteness_of(c4_datum_t datum);
 
 C4RT_API int32_t
+
 c4rt_datum_type_of(c4_datum_t datum);
 
 /// c4rt_datum_from_static_ptr(type, ptr) --
@@ -56,35 +57,45 @@ c4rt_datum_type_of(c4_datum_t datum);
 ///     The pointed to value will not be freed when c4rt_datum_free is called.
 ///     Type is passed as int32_t to ease ABI stability.
 C4RT_API c4_datum_t
+
 c4rt_datum_from_static_ptr(int32_t type, void* ptr);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_int32(int32_t i);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_int64(int64_t i);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_int(int64_t i);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_boolean(int32_t i);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_double(double d);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_string(const char* s);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_string_sz(const char* s, size_t s_sz);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_function(c4rt_package_function_t* calc_fun,
                          uint16_t base_arity,
                          const struct c4_package_t* fn_data, size_t fn_data_sz);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_from_closure(c4rt_package_function_t* calc_fun,
                         uint16_t base_arity,
                         const void* ctx, size_t ctx_sz,
@@ -94,21 +105,25 @@ C4RT_API void
 c4rt_datum_free(c4_datum_t d);
 
 C4RT_API int32_t
+
 c4rt_datum_get_int32(c4_datum_t datum);
 
 C4RT_API int64_t
+
 c4rt_datum_get_intó4(c4_datum_t datum);
 
 C4RT_API double
 c4rt_datum_get_double(c4_datum_t datum);
 
 C4RT_API const char*
-c4rt_datum_get_string(c4_datum_t* datum);
+		c4rt_datum_get_string(c4_datum_t * datum);
 
 C4RT_API int32_t
+
 c4rt_datum_coerce_int32(c4_datum_t datum);
 
 C4RT_API int64_t
+
 c4rt_datum_coerce_int64(c4_datum_t datum);
 
 C4RT_API double
@@ -124,16 +139,20 @@ C4RT_API char*
 c4rt_datum_coerce_string(c4_datum_t datum);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_dup(c4_datum_t datum);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_eq(c4_datum_t a, c4_datum_t b);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_preload_arguments(c4_datum_t datum,
                              const struct c4_package_t** args, size_t args_sz);
 
 C4RT_API c4_datum_t
+
 c4rt_datum_evaluate(c4_datum_t datum, struct c4_package_t** args);
 
 #endif

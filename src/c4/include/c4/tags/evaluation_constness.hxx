@@ -39,29 +39,29 @@
 #define C4_AST2_EVALUATION_CONSTNESS_HXX
 
 namespace c4::ast2::tags {
-    struct evaluation_constness {
-        [[nodiscard]] bool
-        const_evaluable(this auto&& self) noexcept {
-            return self.is_constant_evaluable();
-        }
-    };
+	struct evaluation_constness {
+		[[nodiscard]] bool
+		const_evaluable(this auto&& self) noexcept {
+			return self.is_constant_evaluable();
+		}
+	};
 
-    struct dynamic_node : evaluation_constness {
-        [[nodiscard]] static consteval bool
-        is_constant_evaluable() noexcept { return false; }
-    };
+	struct dynamic_node : evaluation_constness {
+		[[nodiscard]] static consteval bool
+		is_constant_evaluable() noexcept { return false; }
+	};
 
-    struct constant_node : evaluation_constness {
-        [[nodiscard]] static consteval bool
-        is_constant_evaluable() noexcept { return true; }
+	struct constant_node : evaluation_constness {
+		[[nodiscard]] static consteval bool
+		is_constant_evaluable() noexcept { return true; }
 
-        [[nodiscard]] unsigned
-        unbound_parameters() const noexcept {
-            // constant nodes do not depend on anything either marked (parameter)
-            // or unmarked (closure context), so this is guaranteed 0
-            return 0;
-        }
-    };
+		[[nodiscard]] unsigned
+		unbound_parameters() const noexcept {
+			// constant nodes do not depend on anything either marked (parameter)
+			// or unmarked (closure context), so this is guaranteed 0
+			return 0;
+		}
+	};
 }
 
 #endif

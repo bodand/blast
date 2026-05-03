@@ -163,7 +163,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			"_c4_allocate_array",
 			llvm::PointerType::get(_context, 0),
 			llvm::IntegerType::get(_context, 64),
-			llvm::IntegerType::get(_context, 64) )
+			llvm::IntegerType::get(_context, 64))
 	}
 	, _rt_evaluate{
 		make_rt_function(
@@ -173,7 +173,6 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	} {
-
 	const auto c4_main_ty = llvm::FunctionType::get(
 		llvm::IntegerType::get(_context, 32),
 		{

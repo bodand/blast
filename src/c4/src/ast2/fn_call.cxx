@@ -40,9 +40,9 @@
 c4::ast2::fn_call::fn_call(const c4::position& position,
                            const symbol& sym,
                            std::vector<expression*>&& args)
-    : source_positioned{position}
-    , _sym{sym}
-    , _args{std::move(args)} { }
+	: source_positioned{position}
+	, _sym{sym}
+	, _args{std::move(args)} { }
 
 std::span<const c4::ast2::expression* const>
 c4::ast2::fn_call::args() const { return _args; }

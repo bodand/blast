@@ -46,18 +46,18 @@
 #include <libassert/assert.hpp>
 
 namespace c4 {
-    struct position;
+	struct position;
 }
 
 inline std::size_t
 utf8_strlen(std::string_view str) {
-    auto str_view = str | una::views::utf8;
-    return static_cast<std::size_t>(std::distance(str_view.begin(), str_view.end()));
+	auto str_view = str | una::views::utf8;
+	return static_cast<std::size_t>(std::distance(str_view.begin(), str_view.end()));
 }
 
 struct line_data {
-    std::string_view remaining_buffer;
-    std::size_t line_increment;
+	std::string_view remaining_buffer;
+	std::size_t line_increment;
 };
 
 void

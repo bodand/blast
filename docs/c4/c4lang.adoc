@@ -58,10 +58,11 @@ As an example, this behavior can be perceived in Haskell as well where function 
 C4 is dynamically and weakly typed, i.e. types are "`checked`" at runtime.
 
 Contrary to languages like JavaScript that derive an operation's semantics from the dynamic types of values and the operator, C4 solely determines this from the operator.
-This allows C4 to stay easily understandable at a static glance without having to figure out what kind of type is stored in the operands (at runtime!). The following listings demonstrate how this reduces the mental burden of reading a C4 script.
+This allows C4 to stay easily understandable at a static glance without having to figure out what kind of type is stored in the operands (at runtime!).
+The following listings demonstrate how this reduces the mental burden of reading a C4 script.
 Those versed in the Perl language may feel this is familiar as Perl does this too with its operators.
-There are even some operators that can be mapped one-to-one with those found in Perl, e.g. Perl's `x` is semantically equivalent to C4's `(*{hash})/2`, or `.` that is `(+{hash})/2`. (Notation described below.)
-For a complete set of built-in operators see xref:./c4ops.adoc[].
+There are even some operators that can be mapped one-to-one with those found in Perl, e.g. Perl's `x` is semantically equivalent to C4's `(*{hash})/2`, or `.` that is `(+{hash})/2`.
+(Notation described below.) For a complete set of built-in operators see xref:./c4ops.adoc[].
 
 .The problem of JavaScript's weak typing
 [source,js]

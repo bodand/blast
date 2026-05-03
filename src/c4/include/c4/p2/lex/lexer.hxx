@@ -49,76 +49,78 @@
 #include <c4/diagnostic.hxx>
 
 namespace c4::p2 {
-    template<class T>
-    concept regex_based_token = requires
-    {
-        { T::regex } -> std::convertible_to<std::string_view>;
-    };
-    template<class T>
-    concept string_based_token = requires
-    {
-        { T::string } -> std::convertible_to<std::string_view>;
-    };
+	template<class T>
+	concept regex_based_token = requires
+	{
+		{ T::regex } -> std::convertible_to<std::string_view>;
+	};
+	template<class T>
+	concept string_based_token = requires
+	{
+		{ T::string } -> std::convertible_to<std::string_view>;
+	};
 
-    namespace aux {
-        template<auto Val>
-        struct type {
-            constexpr static auto value = Val;
-        };
-    }
+	namespace aux {
+		template<auto Val>
+		struct type {
+			constexpr static auto value = Val;
+		};
+	}
 
-    template<class T>
-    struct rule_type {
-        struct incorrect_token_type;
+	template<class T>
+	struct rule_type {
+		struct incorrect_token_type;
 
-        using type = std::conditional_t<
-            regex_based_token<T>,
-            regex_rule,
-            std::conditional_t<
-                string_based_token<T>,
-                string_rule,
-                incorrect_token_type>
-        >;
+		using type = std::conditional_t<
+			regex_based_token<T>,
+			regex_rule,
+			std::conditional_t <
+			string_based_token<T>,
+			string_rule,
+			incorrect_token_type>
+		>;
 
-        constexpr static const std::string_view*
-        member_pointer() requires regex_based_token<T> {
-            return &T::regex;
-        }
+		constexpr static const std::string_view*
+		member_pointer()
+			requires regex_based_token<T> {
+			return &T::regex;
+		}
 
-        constexpr static const std::string_view*
-        member_pointer() requires string_based_token<T> {
-            return &T::string;
-        }
-    };
+		constexpr static const std::string_view*
+		member_pointer()
+			requires string_based_token<T> {
+			return &T::string;
+		}
+	};
 
-    template<class>
-    struct rebind_to_lexer_rule_tuple;
+	template<class>
+	struct rebind_to_lexer_rule_tuple;
 
-    template<template<class...> class L, class... Ts>
-    struct rebind_to_lexer_rule_tuple<L<Ts...>> {
-        constexpr static auto size = sizeof...(Ts);
-        using type = std::tuple<typename rule_type<Ts>::type...>;
-        using token_types = std::tuple<Ts...>;
-    };
+	template<template<class...> class L, class... Ts>
+	struct rebind_to_lexer_rule_tuple<L<Ts...>> {
+		constexpr static auto size = sizeof...(Ts);
+		using type = std::tuple<typename rule_type<Ts>::type...>;
+		using token_types = std::tuple<Ts...>;
+	};
 
-    struct lexer {
-        lexer(std::string_view source,
-              const char* begin,
-              const char* end);
+	struct lexer {
+		lexer(std::string_view source,
+		      const char* begin,
+		      const char* end);
 
-        tokens::token_type
-        next();
+		tokens::token_type
+		next();
 
-    private:
-        using token_types = rebind_to_lexer_rule_tuple<tokens::token_type>::token_types;
+	private:
+		using token_types = rebind_to_lexer_rule_tuple<tokens::token_type>::token_types;
 
-        token_source _token_source;
-        position _current_position{&_token_source};
-        const char* const _end;
-        const char* _data;
-        regex_context _regex_context{};
-        rebind_to_lexer_rule_tuple<tokens::token_type>::type _rules;
-    };
+		token_source _token_source;
+		position _current_position{&_token_source};
+		const char* const _end;
+		const char* _data;
+		regex_context _regex_context{};
+		rebind_to_lexer_rule_tuple<tokens::token_type>::type _rules;
+	};
 }
 
 #endif

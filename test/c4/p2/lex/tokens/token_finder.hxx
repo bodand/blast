@@ -42,21 +42,21 @@
 
 template<class T>
 struct token_finder {
-    const T*
-    operator()(const T& token) const noexcept { return &token; }
+	const T*
+	operator()(const T& token) const noexcept { return &token; }
 
-    const T*
-    operator()(const auto&) const noexcept {
-        INFO("unexpected type of token returned from lexer");
-        REQUIRE(false);
-        return nullptr;
-    }
+	const T*
+	operator()(const auto&) const noexcept {
+		INFO("unexpected type of token returned from lexer");
+		REQUIRE(false);
+		return nullptr;
+	}
 
-    template<class... Args>
-    auto
-    operator()(const std::variant<Args...>& var) const {
-        return std::visit(*this, var);
-    }
+	template<class... Args>
+	auto
+	operator()(const std::variant<Args...>& var) const {
+		return std::visit(*this, var);
+	}
 };
 
 #endif

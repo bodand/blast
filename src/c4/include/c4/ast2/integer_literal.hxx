@@ -46,23 +46,23 @@
 #include <c4/tags/literal_from_token.hxx>
 
 namespace c4::ast2 {
-    struct integer_literal final : tags::visitable
-                                   , tags::source_positioned
-                                   , tags::constant_node
-                                   , tags::attributable
-                                   , tags::literal_from_token<integer_literal> {
-        using value_type = std::int64_t;
+	struct integer_literal final : tags::visitable
+	                               , tags::source_positioned
+	                               , tags::constant_node
+	                               , tags::attributable
+	                               , tags::literal_from_token<integer_literal> {
+		using value_type = std::int64_t;
 
-        integer_literal(const c4::position& position,
-                        const std::int64_t value)
-            : source_positioned{position}
-            , _value{value} { }
+		integer_literal(const c4::position& position,
+		                const std::int64_t value)
+			: source_positioned{position}
+			, _value{value} { }
 
-        [[nodiscard]] std::int64_t
-        value() const { return _value; }
+		[[nodiscard]] std::int64_t
+		value() const { return _value; }
 
-    private:
-        std::int64_t _value;
-    };
+	private:
+		std::int64_t _value;
+	};
 }
 #endif

@@ -41,7 +41,10 @@
 
 typedef uint64_t c4_ptr64_t;
 
-C4_MSVC_ALIGNMENT_BEGIN(8)
+C4_MSVC_ALIGNMENT_BEGIN (
+
+8
+)
 #pragma pack(push, 8)
 
 /**
@@ -51,12 +54,13 @@ C4_MSVC_ALIGNMENT_BEGIN(8)
  * Aligned to 8 bytes: storage arrays should follow.
  */
 struct c4_package_t {
-    uint16_t version;
+	uint16_t version;
 } C4_GCC_ALIGNMENT(8);
 
 #pragma pack(pop)
 C4_MSVC_ALIGNMENT_END()
 
-typedef c4_datum_t (c4rt_package_function_t)();
+typedef c4_datum_t
+(c4rt_package_function_t)();
 
 #endif

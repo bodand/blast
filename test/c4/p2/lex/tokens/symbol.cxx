@@ -41,21 +41,30 @@
 
 #include "token_finder.hxx"
 
-TEST_CASE("utf-8 symbol is lexed") {
+TEST_CASE (
+"utf-8 symbol is lexed"
+)
+ {
     constexpr std::string_view buf{"különben/1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto sym = token_finder<c4::p2::tokens::symbol>{}(lexer.next());
     CHECK(sym->value() == "különben/1");
 }
 
-TEST_CASE("symbol has name as before slash") {
+TEST_CASE (
+"symbol has name as before slash"
+)
+ {
     constexpr std::string_view buf{"különben/1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto sym = token_finder<c4::p2::tokens::symbol>{}(lexer.next());
     CHECK(sym->name() == "különben");
 }
 
-TEST_CASE("bare symbol has arity as after slash") {
+TEST_CASE (
+"bare symbol has arity as after slash"
+)
+ {
     constexpr std::string_view buf{"különben/1"};
     c4::p2::lexer lexer("", buf.data(), buf.data() + buf.size());
     const auto sym = token_finder<c4::p2::tokens::symbol>{}(lexer.next());

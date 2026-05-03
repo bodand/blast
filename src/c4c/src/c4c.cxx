@@ -111,14 +111,14 @@ void
 dump_cps(It begin, S end, std::ostream& out) {
 	// c4::ast3_dumper dumper(out);
 	// std::for_each(
-		// std::move(begin), std::move(end),
-		// [&mapper, &dumper, &out](const auto& expr) {
-			// expr->accept(mapper);
-			// if (auto* e = mapper.result()) {
-				// dumper.dump(e);
-				// out << "\n";
-			// }
-		// }
+	// std::move(begin), std::move(end),
+	// [&mapper, &dumper, &out](const auto& expr) {
+	// expr->accept(mapper);
+	// if (auto* e = mapper.result()) {
+	// dumper.dump(e);
+	// out << "\n";
+	// }
+	// }
 	// );
 }
 

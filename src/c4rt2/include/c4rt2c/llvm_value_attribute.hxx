@@ -39,29 +39,29 @@
 #include <c4/tags/attributable.hxx>
 
 namespace llvm {
-    class Value;
-    class Function;
-    class Type;
+	class Value;
+	class Function;
+	class Type;
 }
 
 namespace c4c {
-    struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
-        explicit
-        llvm_value_attribute(llvm::Value* const& value)
-            : typed_attribute{value} { }
-    };
+	struct llvm_value_attribute final : c4::ast2::tags::typed_attribute<llvm::Value*> {
+		explicit
+		llvm_value_attribute(llvm::Value* const& value)
+			: typed_attribute{value} { }
+	};
 
-    struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
-        explicit
-        llvm_function_attribute(llvm::Function* const& value)
-            : typed_attribute{value} { }
-    };
+	struct llvm_function_attribute final : c4::ast2::tags::typed_attribute<llvm::Function*> {
+		explicit
+		llvm_function_attribute(llvm::Function* const& value)
+			: typed_attribute{value} { }
+	};
 
-    struct llvm_type_attribute final : c4::ast2::tags::typed_attribute<llvm::Type*> {
-        explicit
-        llvm_type_attribute(llvm::Type* const& value)
-            : typed_attribute{value} { }
-    };
+	struct llvm_type_attribute final : c4::ast2::tags::typed_attribute<llvm::Type*> {
+		explicit
+		llvm_type_attribute(llvm::Type* const& value)
+			: typed_attribute{value} { }
+	};
 }
 
 #endif

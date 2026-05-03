@@ -42,53 +42,53 @@
 #include <llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h>
 
 namespace c4i {
-struct gc_registrar : llvm::orc::ObjectLinkingLayer::Plugin {
-    void
-    modifyPassConfig(llvm::orc::MaterializationResponsibility& MR,
-                     llvm::jitlink::LinkGraph& G,
-                     llvm::jitlink::PassConfiguration& Config) override;
+	struct gc_registrar : llvm::orc::ObjectLinkingLayer::Plugin {
+		void
+		modifyPassConfig(llvm::orc::MaterializationResponsibility& MR,
+		                 llvm::jitlink::LinkGraph& G,
+		                 llvm::jitlink::PassConfiguration& Config) override;
 
-    llvm::Error
-    notifyFailed(llvm::orc::MaterializationResponsibility& MR) override;
+		llvm::Error
+		notifyFailed(llvm::orc::MaterializationResponsibility& MR) override;
 
-    llvm::Error
-    notifyRemovingResources(llvm::orc::JITDylib& JD,
-                            llvm::orc::ResourceKey K) override;
+		llvm::Error
+		notifyRemovingResources(llvm::orc::JITDylib& JD,
+		                        llvm::orc::ResourceKey K) override;
 
-    void
-    notifyTransferringResources(llvm::orc::JITDylib& JD,
-                                llvm::orc::ResourceKey DstKey,
-                                llvm::orc::ResourceKey SrcKey) override;
+		void
+		notifyTransferringResources(llvm::orc::JITDylib& JD,
+		                            llvm::orc::ResourceKey DstKey,
+		                            llvm::orc::ResourceKey SrcKey) override;
 
-private:
-    struct pointer_range {
-        void* begin;
-        void* end;
-    };
+	private:
+		struct pointer_range {
+			void* begin;
+			void* end;
+		};
 
-    using vector_type = llvm::SmallVector<pointer_range, 4>;
-    using map_type = llvm::DenseMap<llvm::orc::ResourceKey, vector_type>;
+		using vector_type = llvm::SmallVector<pointer_range, 4>;
+		using map_type = llvm::DenseMap<llvm::orc::ResourceKey, vector_type>;
 
-    static void
-    unsafe_append_root(map_type::iterator it, void* begin, void* end);
+		static void
+		unsafe_append_root(map_type::iterator it, void* begin, void* end);
 
-    static void
-    unsafe_append_range(map_type::iterator it,
-                        vector_type::iterator begin,
-                        vector_type::iterator end);
+		static void
+		unsafe_append_range(map_type::iterator it,
+		                    vector_type::iterator begin,
+		                    vector_type::iterator end);
 
-    map_type::iterator
-    unsafe_insert_resource(llvm::orc::ResourceKey K);
+		map_type::iterator
+		unsafe_insert_resource(llvm::orc::ResourceKey K);
 
-    void
-    put_root(llvm::orc::ResourceKey K, void* begin, void* end);
+		void
+		put_root(llvm::orc::ResourceKey K, void* begin, void* end);
 
-    void
-    unsafe_put_range(llvm::orc::ResourceKey K, vector_type::iterator begin, vector_type::iterator end);
+		void
+		unsafe_put_range(llvm::orc::ResourceKey K, vector_type::iterator begin, vector_type::iterator end);
 
-    map_type _roots;
-    std::mutex _roots_mx;
-};
+		map_type _roots;
+		std::mutex _roots_mx;
+	};
 }
 
 #endif

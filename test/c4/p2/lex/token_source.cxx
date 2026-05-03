@@ -38,12 +38,18 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("empty token source has empty file_string") {
+TEST_CASE (
+"empty token source has empty file_string"
+)
+ {
     const c4::p2::token_source src;
     CHECK(src.file_string().empty());
 }
 
-TEST_CASE("token source returns given method filename for file_string") {
+TEST_CASE (
+"token source returns given method filename for file_string"
+)
+ {
     const c4::p2::token_source src("some/file.name");
     CHECK(src.file_string() == "some/file.name");
 }

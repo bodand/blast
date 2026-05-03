@@ -43,104 +43,104 @@ void
 c4i::gc_registrar::modifyPassConfig(llvm::orc::MaterializationResponsibility& MR,
                                     llvm::jitlink::LinkGraph& /*G*/,
                                     llvm::jitlink::PassConfiguration& Config) {
-    Config.PostAllocationPasses.emplace_back(
-        [this, &MR](llvm::jitlink::LinkGraph& G) {
-            using namespace llvm; // Get the darned & a few lines below
+	Config.PostAllocationPasses.emplace_back(
+		[this, &MR](llvm::jitlink::LinkGraph& G) {
+			using namespace llvm; // Get the darned & a few lines below
 
-            for (auto& section : G.sections()) {
-                // Ignore non-writable memory
-                if ((section.getMemProt() & orc::MemProt::Write) == orc::MemProt::None) continue;
+			for (auto& section : G.sections()) {
+				// Ignore non-writable memory
+				if ((section.getMemProt() & orc::MemProt::Write) == orc::MemProt::None) continue;
 
-                for (const auto* block : section.blocks()) {
-                    const auto block_start = std::bit_cast<void*>(block->getAddress().getValue());
-                    const auto block_end = std::bit_cast<void*>(block->getAddress().getValue() + block->getSize());
-                    assert(block_start <= block_end);
+				for (const auto* block : section.blocks()) {
+					const auto block_start = std::bit_cast<void*>(block->getAddress().getValue());
+					const auto block_end = std::bit_cast<void*>(block->getAddress().getValue() + block->getSize());
+					assert(block_start <= block_end);
 
-                    auto error = MR.withResourceKeyDo(
-                        [this, block_end, block_start](const orc::ResourceKey K) {
-                            put_root(K, block_start, block_end);
-                        }
-                    );
-                    if (!error) std::ignore = error;
+					auto error = MR.withResourceKeyDo(
+						[this, block_end, block_start](const orc::ResourceKey K) {
+							put_root(K, block_start, block_end);
+						}
+					);
+					if (!error) std::ignore = error;
 
-                    GC_add_roots(block_start, block_end);
-                }
-            }
-            return Error::success();
-        }
-    );
+					GC_add_roots(block_start, block_end);
+				}
+			}
+			return Error::success();
+		}
+	);
 }
 
 llvm::Error
 c4i::gc_registrar::notifyFailed(llvm::orc::MaterializationResponsibility& MR) {
-    return llvm::Error::success();
+	return llvm::Error::success();
 }
 
 llvm::Error
 c4i::gc_registrar::notifyRemovingResources(llvm::orc::JITDylib& JD,
                                            llvm::orc::ResourceKey K) {
-    std::scoped_lock<std::mutex> lck(_roots_mx);
+	std::scoped_lock<std::mutex> lck(_roots_mx);
 
-    const auto it = _roots.find(K);
-    if (it == _roots.end()) return llvm::Error::success();
+	const auto it = _roots.find(K);
+	if (it == _roots.end()) return llvm::Error::success();
 
-    for (const auto [start, end] : it->second) {
-        GC_remove_roots(start, end);
-    }
+	for (const auto [start, end] : it->second) {
+		GC_remove_roots(start, end);
+	}
 
-    _roots.erase(it);
+	_roots.erase(it);
 
-    return llvm::Error::success();
+	return llvm::Error::success();
 }
 
 void
 c4i::gc_registrar::notifyTransferringResources(llvm::orc::JITDylib& JD,
                                                llvm::orc::ResourceKey DstKey,
                                                llvm::orc::ResourceKey SrcKey) {
-    std::scoped_lock<std::mutex> lck(_roots_mx);
+	std::scoped_lock<std::mutex> lck(_roots_mx);
 
-    const auto it = _roots.find(SrcKey);
-    if (it == _roots.end()) return;
+	const auto it = _roots.find(SrcKey);
+	if (it == _roots.end()) return;
 
-    unsafe_put_range(DstKey, it->second.begin(), it->second.end());
+	unsafe_put_range(DstKey, it->second.begin(), it->second.end());
 }
 
 void
 c4i::gc_registrar::unsafe_append_root(const map_type::iterator it, void* begin, void* end) {
-    auto& key_associated_roots = it->second;
-    key_associated_roots.emplace_back(begin, end);
+	auto& key_associated_roots = it->second;
+	key_associated_roots.emplace_back(begin, end);
 }
 
 void
 c4i::gc_registrar::unsafe_append_range(const map_type::iterator it,
                                        const vector_type::iterator begin,
                                        const vector_type::iterator end) {
-    auto& key_associated_roots = it->second;
-    key_associated_roots.append(begin, end);
+	auto& key_associated_roots = it->second;
+	key_associated_roots.append(begin, end);
 }
 
 c4i::gc_registrar::map_type::iterator
 c4i::gc_registrar::unsafe_insert_resource(llvm::orc::ResourceKey K) {
-    auto [it, succ] = _roots.try_emplace(K);
-    return it;
+	auto [it, succ] = _roots.try_emplace(K);
+	return it;
 }
 
 void
 c4i::gc_registrar::put_root(const llvm::orc::ResourceKey K, void* begin, void* end) {
-    std::scoped_lock<std::mutex> lck(_roots_mx);
+	std::scoped_lock<std::mutex> lck(_roots_mx);
 
-    auto it = _roots.find(K);
-    if (it == _roots.end()) it = unsafe_insert_resource(K);
+	auto it = _roots.find(K);
+	if (it == _roots.end()) it = unsafe_insert_resource(K);
 
-    unsafe_append_root(it, begin, end);
+	unsafe_append_root(it, begin, end);
 }
 
 void
 c4i::gc_registrar::unsafe_put_range(const llvm::orc::ResourceKey K,
                                     const vector_type::iterator begin,
                                     const vector_type::iterator end) {
-    auto it = _roots.find(K);
-    if (it == _roots.end()) it = unsafe_insert_resource(K);
+	auto it = _roots.find(K);
+	if (it == _roots.end()) it = unsafe_insert_resource(K);
 
-    unsafe_append_range(it, begin, end);
+	unsafe_append_range(it, begin, end);
 }
