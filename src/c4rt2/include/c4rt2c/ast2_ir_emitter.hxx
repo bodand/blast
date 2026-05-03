@@ -40,8 +40,6 @@
 
 #include <c4/ast2/fwd.hxx>
 
-#include <c4rt2c/c4rt_emitter.hxx>
-
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
 

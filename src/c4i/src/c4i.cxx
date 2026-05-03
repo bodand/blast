@@ -40,14 +40,10 @@
 #include <filesystem>
 #include <gc_registrar.hxx>
 
-#include <c4/ffm.hxx>
-#include <c4/ffm_mapper.hxx>
-
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
 #include <c4rt2/datum.h>
 #include <c4rt2/datum_type.h>
-#include <c4rt2c/ffm_ir_emitter.hxx>
 
 #include <c4rt2c/source_file.hxx>
 
@@ -249,16 +245,6 @@ main(int argc, char** argv) {
         if (diagnostics_engine.errored())
             return 1;
 
-        c4::ffm::ffm_context ffm_context;
-        c4::ffm_mapper mapper(diagnostics_engine, ffm_context);
-        for (const auto& expression : script) expression->accept(mapper);
-        mapper.finalize_block_body();
-
-        if (diagnostics_engine.errored())
-            return 1;
-
-        const auto roots = mapper.roots();
-
         auto context = std::make_unique<llvm::LLVMContext>();
 
         const auto module_id = src_path.string();
@@ -289,10 +275,7 @@ main(int argc, char** argv) {
         pass_builder.registerFunctionAnalyses(fn_am);
         pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
-        llvm::IRBuilder<> builder(*context);
-        c4c::ffm_ir_emitter ir(*context, *module, builder, fn_pm, fn_am);
-        for (const auto& ffm_entry : roots) ffm_entry->accept(ir);
-
+        llvm::IRBuilder<> builder(*context); //todo: ast2_ir_mapper
         llvm::orc::ThreadSafeModule ts_module(std::move(module), std::move(context));
         if (auto err = jit_ptr->addModule(std::move(ts_module));
             err) {

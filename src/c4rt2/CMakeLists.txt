@@ -153,11 +153,6 @@ compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 
 add_library(c4rt2c STATIC
-            include/c4rt2c/c4rt_emitter.hxx
-            src/c4rt2c/c4rt_emitter.cxx
-
-            include/c4rt2c/ffm_ir_emitter.hxx
-            src/c4rt2c/ffm_ir_emitter.cxx
 
             include/c4rt2c/llvm_value_attribute.hxx
             src/c4rt2c/llvm_value_attribute.cxx

@@ -42,16 +42,11 @@
 #include <utility>
 
 #include <c4/ast_dumper.hxx>
-#include <c4/ast3_mapper.hxx>
 
-#include <c4/ffm.hxx>
-#include <c4/ffm_dumper.hxx>
-#include <c4/ffm_mapper.hxx>
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
-#include <c4rt2c/ffm_ir_emitter.hxx>
 #include <c4rt2c/source_file.hxx>
 
 #include <libassert/assert.hpp>
@@ -127,19 +122,6 @@ dump_cps(It begin, S end, std::ostream& out) {
 	// );
 }
 
-template<class It, class S = It>
-void
-dump_ffm(It begin, S end, std::ostream& out) {
-	c4::ffm_dumper dumper(out);
-	std::for_each(
-		std::move(begin), std::move(end),
-		[&dumper, &out](const auto& expr) {
-			expr->accept(dumper);
-			out << "\n";
-		}
-	);
-}
-
 void
 initialize_targets();
 
@@ -163,8 +145,8 @@ main(int argc, const char** argv) {
 		                 "The name of the output file. When -d is set, STDOUT if `-'."
 	                 )
 	                 | lyra::opt(dump_type, "dump")["-d"]["--dump"](
-		                 "Do not compile, dump code instead. [AST, CPS, FFM, IR, ASM]"
-	                 ).choices("AST", "CPS", "FFM", "IR", "ASM")
+		                 "Do not compile, dump code instead. [AST, IR, ASM]"
+	                 ).choices("AST", "IR", "ASM")
 	                 | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
 		                 "The target triplet to produce the binary for."
 	                 )

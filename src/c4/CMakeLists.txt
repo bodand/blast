@@ -94,49 +94,6 @@ add_library(c4
             include/c4/ast2/ast_context.hxx
             src/ast2/ast_context.cxx
 
-            # FFM
-            include/c4/ffm/fwd.hxx
-            include/c4/ffm.hxx
-
-            include/c4/ffm/block_argument.hxx
-            src/ffm/block_argument.cxx
-
-            include/c4/ffm/context_type.hxx
-            src/ffm/context_type.cxx
-
-            include/c4/ffm/expression.hxx
-            src/ffm/expression.cxx
-
-            include/c4/ffm/ffm_context.hxx
-            src/ffm/ffm_context.cxx
-
-            include/c4/ffm/ffm_node.hxx
-            src/ffm/ffm_node.cxx
-
-            include/c4/ffm/function.hxx
-            src/ffm/function.cxx
-
-            include/c4/ffm/function_call.hxx
-            src/ffm/function_call.cxx
-
-            include/c4/ffm/function_declaration.hxx
-            src/ffm/function_declaration.cxx
-
-            include/c4/ffm/function_definition.hxx
-            src/ffm/function_definition.cxx
-
-            include/c4/ffm/literal.hxx
-            src/ffm/literal.cxx
-
-            include/c4/ffm/local.hxx
-            src/ffm/local.cxx
-
-            include/c4/ffm/symbol.hxx
-            src/ffm/symbol.cxx
-
-            include/c4/ffm/unpack.hxx
-            src/ffm/unpack.cxx
-
             # Tags
             include/c4/tags/source_positioned.hxx
             src/tags/source_positioned.cxx
@@ -165,31 +122,14 @@ add_library(c4
             include/c4/visitor/visitor.hxx
             src/visitor/visitor.cxx
 
-            # ffm utils
-            include/c4/ffm_dumper.hxx
-            src/ffm_dumper.cxx
-
-            include/c4/ffm_mapper.hxx
-            src/ffm_mapper.cxx
-
-            src/ffm/attributes.cxx
-            src/ffm/attributes.hxx
-
             # Misc
             include/c4/diagnostic.hxx
             src/diagnostic.cxx
 
             include/c4/ast_dumper.hxx
             src/ast_dumper.cxx
-            include/c4/ffm.hxx
             include/c4/fmt.hxx
 
-            include/c4/ast3/ast_node.hxx
-            include/c4/ast3/ast_context.hxx
-            include/c4/ast3/primitive.hxx
-            include/c4/ast3_mapper.hxx
-            src/ast3_mapper.cxx
-            src/ast3/ast3_context.cxx
             include/c4/ast2/fwd.hxx
             )
 
