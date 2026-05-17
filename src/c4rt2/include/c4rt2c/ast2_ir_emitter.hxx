@@ -54,6 +54,41 @@ namespace llvm {
 }
 
 namespace c4rt2c {
+	struct runtime_fn {
+		llvm::FunctionType* type;
+		llvm::Function* fn;
+
+		llvm::BasicBlock*
+		define(llvm::LLVMContext& ctx) const;
+
+		template<class Fn>
+		void
+		define(llvm::LLVMContext& ctx, llvm::IRBuilder<>& builder, Fn&& body_builder) const {
+			const auto ip = builder.saveIP();
+			builder.SetInsertPoint(define(ctx));
+
+			std::vector<llvm::Argument*> args(fn->arg_size());
+			std::transform(fn->arg_begin(), fn->arg_end(), args.begin(),
+			               [](llvm::Argument& arg) { return &arg; });
+
+			if constexpr (std::convertible_to<decltype(std::invoke(std::forward<Fn>(body_builder), args)),
+			                                  llvm::Value*>) {
+				const auto ret = std::invoke(std::forward<Fn>(body_builder), args);
+				builder.CreateRet(ret);
+			}
+			else {
+				std::invoke(std::forward<Fn>(body_builder), args);
+				builder.CreateRetVoid();
+			}
+
+			builder.restoreIP(ip);
+		}
+
+		explicit(false) operator llvm::FunctionCallee() const noexcept {
+			return llvm::FunctionCallee(type, fn);
+		}
+	};
+
 	struct ast2_ir_emitter : c4::ast2::ast2_visitor {
 		using builder_type = llvm::IRBuilder<>;
 
@@ -210,7 +245,6 @@ namespace c4rt2c {
 		llvm::Value*
 		allocate_argv(std::size_t count) const;
 
-
 		/// The universal function type to allow unrestricted
 		/// tail-calls. It is void(ptr, ptr), where the first is an array
 		/// to pointers as "argv" and the latter is the K continuation.
@@ -219,17 +253,14 @@ namespace c4rt2c {
 		std::unordered_map<std::string, llvm::Function*> _extlib_functions{};
 		std::unordered_map<std::string, llvm::Function*> _predeclared_functions{};
 
-		// runtime internal functions
-		llvm::FunctionCallee _rti_allocate;
-		llvm::FunctionCallee _rti_is_thunk;
-
-		llvm::FunctionCallee _rt_make_thunk;
-		llvm::FunctionCallee _rt_set_thunk_args;
-		llvm::FunctionCallee _rt_make_datum_str;
-		llvm::FunctionCallee _rt_make_datum_int64;
-		llvm::FunctionCallee _rt_make_datum_float64;
-		llvm::FunctionCallee _rt_allocate_array;
-		llvm::FunctionCallee _rt_evaluate;
+		runtime_fn _rt_make_thunk;
+		runtime_fn _rt_set_thunk_args;
+		runtime_fn _rt_make_datum_str;
+		runtime_fn _rt_make_datum_int64;
+		runtime_fn _rt_make_datum_float64;
+		runtime_fn _rt_allocate_array;
+		runtime_fn _rt_evaluate;
+		runtime_fn _rt_complete_thunk;
 
 		std::vector<function_scope> _scopes;
 

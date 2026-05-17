@@ -36,8 +36,7 @@
 #ifndef C4RT_DLL_CONFIG_H
 #define C4RT_DLL_CONFIG_H
 
-@
-PVOID_SIZE_CODE@
+@PVOID_SIZE_CODE@
 
 #ifdef __cplusplus
 #  define C4_EXTERNC extern "C"
