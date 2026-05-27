@@ -6,13 +6,9 @@
    \xetexorluatextrue
 \fi
 
-\ifxetexorluatex
-  \usepackage{fontspec}
-\else
-  \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
-  \usepackage[lighttt]{lmodern}
-\fi
+\usepackage[T1]{fontenc}
+%\usepackage[utf8]{inputenc}
+\usepackage[lighttt]{lmodern}
 
 \usepackage[english,magyar]{babel} % Alapértelmezés szerint utoljára definiált nyelv lesz aktív, de később külön beállítjuk az aktív nyelvet.
 
@@ -32,7 +28,7 @@
 
 \usepackage[unicode]{hyperref} % For hyperlinks in the generated document.
 \usepackage{xcolor}
-\usepackage{listings} % For source code snippets.
+\usepackage{listingsutf8} % For source code snippets.
 
 \usepackage[amsmath]{ntheorem} % Theorem-like environments.
 

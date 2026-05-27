@@ -11,153 +11,189 @@
 %\numberwithin{tabular}{section}
 
 \section{Állapotgép leíró nyelv}\label{sec:app:fsm}
-\begin{lstlisting}[gobble=4,numbers=left]
-    let fsm/1 { |builder|
-        &(builder)/5 set_value nil_block "active" nil_block
-            nil_block
-            nil_block
-            nil_block
-            nil_block
+
+Az alábbi kódrészlet valósítja meg \aref{sec:uses:fsm}.~fejezetben bemutatott \gls{FSM} leíró nyelvet. 
+Röviden itt ismertetem a működését. 
+A koncepció alapvetően egyszerű: a \gls{DSL} nyelv elemei ({\tt state}, {\tt final}, stb.) egy-egy függvényként kerülnek definiálásra, amelyek a létrehozásért felelős függvény objektumokat adják vissza. Utóbbi objektumok azonos hívási interfésszel (aritással a típusok dinamikussága miatt) rendelkeznek: ennek megfelelően egymás után
+tudják hívni egymást anélkül, hogy a konkrét nyelvi elemet ismerni kéne, amelyik előállotta az adott függvényt. 
+Az így előálló hívási lánc, egy megfelelő adatstruktúrát épít fel lépésről lépésre, amelyik a végén visszakerül a {\tt fsm/1} függvényt hívónak.
+
+A továbbhívás megvalósításához a felső szintű -- kulcsszavakat megvalósító -- függvények egyel több paramétert vesznek át, mint amire szükségük van. 
+Így a tényleges \gls{DSL} igazából csak egy bevezető függvény paramétereiben jelenik meg, egyre mélyebb zárójelezésben.
+Ezt használja ki \aref{sec:ftr:argfun}.~fejezetben bevezetett argumentum-kötött függvények továbbfejlesztés.
+
+Az {\tt add\_*} kezdetű függvények mind segédfüggvények, amelyek a nevük szerinti értékkel módosítják az állapotgép leíró fa adatszerkezetet.
+
+\begin{lstlisting}[numbers=left]
+let fsm/1 { |builder|
+    &(builder)/5
+        set_value nil_block "active" nil_block # initial FSM structure
+        nil_block # defaults are all nil
+        nil_block
+        nil_block
+        nil_block
+}
+
+# generate a new state entity, start, error and final
+# describe if any of those attributes are true for the
+# new state
+let make_state_internal/3 { |start error final|
+    set_value set_value set_value nil_block
+        "start" start
+        "error" error
+        "final" final
+}
+
+let add_state/5 { |sm name start error final|
+    let st make_state_internal start error final
+    if start {
+        set_value set_value sm
+            name { st }
+            "active" name
     }
-
-    let make_state_internal/3 { |start error final|
-        set_value set_value set_value nil_block
-            "start" start
-            "error" error
-            "final" final
+    {
+        set_value sm name { st }
     }
+}
 
-    let add_state/5 { |sm name start error final|
-        let st make_state_internal start error final
-        if start {
-            set_value set_value sm
-                name { st }
-                "active" name
-        }
-        {
-            set_value sm name { st }
-        }
+let add_action/4 { |sm state type action|
+    let newstate
+        set_value
+            &(sm.state)/0
+           type action
+    set_value sm
+        state { newstate }
+}
+
+let add_transition/4 { |sm ev st1 st2|
+    let tr set_value nil_block "to" st2
+    let new_trtbl
+        set_value
+            &(sm.st1!."trtbl")/0
+            ev { tr }
+    let new_state
+        set_value
+            &(sm.st1)/0
+            "trtbl" { new_trtbl }
+    set_value sm st1 { new_state }
+}
+
+# update state in sm state machine to run code
+# in action when ev event occurs
+let add_tr_action/4 { |sm state ev action|
+    let to sm.state!."trtbl"!.ev!."to"
+    let new_tr
+        set_value set_value nil_block
+            "to" to
+            "action" action
+    let new_trtbl
+        set_value
+            &(sm.state!."trtbl")/0
+            ev { new_tr }
+    let new_state
+        set_value
+            &(sm.state)/0
+            "trtbl" { new_trtbl }
+
+    set_value sm state { new_state }
+}
+
+let start/1 { |state|
+    { |sm last str err fin|
+        &(state)/5 sm last 1 err fin # set start to 1
     }
+}
 
-    let add_action/4 { |sm state type action|
-        let newstate
-            set_value
-                &(sm.state)/0
-                type action
-        set_value sm
-            state { newstate }
+let error/1 { |state|
+    { |sm last str err fin|
+        &(state)/5 sm last str 1 fin # set error to 1
     }
+}
 
-    let add_transition/4 { |sm ev st1 st2|
-        let tr set_value nil_block "to" st2
-        let new_trtbl
-            set_value
-                &(sm.st1!."trtbl")/0
-                ev { tr }
-        let new_state
-            set_value
-                &(sm.st1)/0
-                "trtbl" { new_trtbl }
-        set_value sm st1 { new_state }
+let final/1 { |state|
+    { |sm last str err fin|
+        &(state)/5 sm last str err 1 # set final to 1
     }
+}
 
-    let add_tr_action/4 { |sm state ev action|
-        let to sm.state!."trtbl"!.ev!."to"
-        let new_tr
-            set_value set_value nil_block
-                "to" to
-                "action" action
-        let new_trtbl
-            set_value
-                &(sm.state!."trtbl")/0
-                ev { new_tr }
-        let new_state
-            set_value
-                &(sm.state)/0
-                "trtbl" { new_trtbl }
-
-        set_value sm state { new_state }
+let state/2 { |name exec|
+    { |sm last str err fin|
+        let sm2 add_state sm name str err fin
+        &(exec)/5 sm2 name nil_block nil_block nil_block
     }
+}
 
-    let start/1 { |state|
-        { |sm last str err fin|
-            &(state)/5 sm last 1 err fin
-        }
+let enter/2 { |action exec|
+    { |sm last str err fin|
+        let sm2 add_action sm last "enter" action
+        &(exec)/5 sm2 last str err fin
     }
+}
 
-    let error/1 { |state|
-        { |sm last str err fin|
-            &(state)/5 sm last str 1 fin
-        }
+let leave/2 { |action exec|
+    { |sm last str err fin|
+        let sm2 add_action sm last "leave" action
+        &(exec)/5 sm2 last str err fin
     }
+}
 
-    let final/1 { |state|
-        { |sm last str err fin|
-            &(state)/5 sm last str err 1
-        }
+let on/2 { |ev exec|
+    { |sm ignore1 ignore2 ignore3 ignore4|
+        # after on there is no state definition directly,
+        # so reset the current arguments to nil
+        &(exec)/5 sm ev nil_block nil_block nil_block
     }
+}
 
-    let state/2 { |name exec|
-        { |sm last str err fin|
-            let sm2 add_state sm name str err fin
-            &(exec)/5 sm2 name nil_block nil_block nil_block
-        }
+let to/1 { |x| x }
+
+let from/3 { |st1 st2 exec|
+    { |sm ev ignore1 ignore2 ignore3|
+        let sm2 add_transition sm ev st1 st2
+        &(exec)/5 sm2 ev st1 nil_block nil_block
     }
+}
 
-    let enter/2 { |action exec|
-        { |sm last str err fin|
-            let sm2 add_action sm last "enter" action
-            &(exec)/5 sm2 last str err fin
-        }
+let do/2 { |action exec|
+    { |sm ev st ignore2 ignore3|
+        let sm2 add_tr_action sm st ev action
+        &(exec)/5 sm2 ev nil_block nil_block nil_block
     }
+}
 
-    let leave/2 { |action exec|
-        { |sm last str err fin|
-            let sm2 add_action sm last "leave" action
-            &(exec)/5 sm2 last str err fin
-        }
+let done/0 {
+    { |sm ignore1 ignore2 ignore3 ignore4|
+        sm
     }
+}
 
-    let on/2 { |ev exec|
-        { |sm i0 i1 i2 i3|
-            # todo check
-            &(exec)/5 sm ev nil_block nil_block nil_block
-        }
+let step/2 { |sm inp|
+    let curr sm."active"
+    &(sm.curr!."leave")/0
+    &(sm.curr!."trtbl"!.inp!."action")/0
+    let new sm.curr!."trtbl"!.inp!."to"
+    &(sm.new!."enter")/0
+    set_value sm "active" new
+}
+
+let steup_until_empty/1 { |state|
+    let ln readln
+    if str_empty ln {}
+    {
+        steup_until_empty step state ln
     }
-
-    let to/1 { |x| x }
-
-    let from/3 { |st1 st2 exec|
-        { |sm ev i1 i2 i3|
-            let sm2 add_transition sm ev st1 st2
-            &(exec)/5 sm2 ev st1 nil_block nil_block
-        }
-    }
-
-    let do/2 { |action exec|
-        { |sm ev st i2 i3|
-            let sm2 add_tr_action sm st ev action
-            &(exec)/5 sm2 ev nil_block nil_block nil_block
-        }
-    }
-
-    let done/0 {
-        { |sm i1 i2 i3 i4|
-            sm
-        }
-    }
-
-    let step/2 { |sm inp|
-        let curr sm."active"
-        &(sm.curr!."leave")/0
-        &(sm.curr!."trtbl"!.inp!."action")/0
-        let new sm.curr!."trtbl"!.inp!."to"
-        &(sm.new!."enter")/0
-        set_value sm "active" new
-    }
+}
 \end{lstlisting}
 
 \section{Primitív feladat ütemező}\label{sec:app:make}
+
+Az alábbi kódrészlet valósítja meg \aref{sec:uses:make}.~fejezetben bemutatott feladatütemező nyelvet.
+Működése koncepcionálisan azonos \aref{sec:app:fsm}.~szakaszban tárgyalttal. 
+Egyedüli különbség, az operátorok miatt jelenik meg: egy extra lépésben szét kell szedni az operátor eredményeként előálló paraméterek listáját, ami alapján lehet felépíteni az ütemező adatstruktúráját.
+\Aref{sec:uses:mix}.~fejezetben használt {\tt run} függvény is itt kerül megvalósításra. 
+Ez egyszerűen átvesz egy kiértékelendő feladatot, majd előfeltételei rekurzív futtatása után, lefuttatja a cél feladatot. 
+Ezen keresztül valósul meg a feladatok között leírt sorrendiség garantálása.
+
 \begin{lstlisting}[gobble=4,numbers=left]
     let split_args/1 { |list|
         let hd car list

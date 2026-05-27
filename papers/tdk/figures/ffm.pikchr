@@ -20,7 +20,7 @@ AST: box fill xbg ht 3.44cm wid 6.513cm
      text with .w at AST.nw - (.228  - 0*ind, .12 + 1*ln) "decl _Co1p2E( arg@0 arg@1 )"                  big monospace
      text with .w at AST.nw - (.11   - 0*ind, .12 + 2*ln) "decl _C@main( )"                 big monospace
      text with .w at AST.nw - (.132  - 0*ind, .12 + 3*ln) "defn _C@main( ) {"                 big monospace
-C1:  text with .w at AST.nw - (.275  - 1*ind, .12 + 4*ln) "call _Cs3add2E( litp 1 litp 2 )" big monospace
+C1:  text with .w at AST.nw - (.169  - 1*ind, .12 + 4*ln) "call _Cs3add2E( 1 2 )" big monospace
      text with .w at AST.nw - (-.024 - 0*ind, .12 + 5*ln) "}" big monospace
 L0:  text with .w at AST.nw - (.188  - 0*ind, .12 + 6*ln) "defn _Cs3add2E( a b ) {"        big monospace
 P0:  text with .w at AST.nw - (.234  - 1*ind, .12 + 7*ln) "call _Co1p2E( arg a arg b )" big monospace
@@ -30,7 +30,7 @@ line color xred \
   from Call.sw + (.1, .07) \
     to Call.se + (-.07, .07) \
   then to C1.sw + (.16, .06) \
-  then to C1.se + (-.33, .06)
+  then to C1.se + (-.23, .06)
 
 line color xgreen \
   from Let0.s + (.1, .04) \

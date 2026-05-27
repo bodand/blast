@@ -3,7 +3,7 @@ PICS := ast.pikchr ffm.pikchr ssa.pikchr bad-memory.pikchr bits.pikchr \
 SVGS := 
 PDFS := $(PICS:.pikchr=.pdf) $(SVGS:.svg=.pdf)
 
-INKSCAPE := "C:\Program Files\Inkscape\bin\inkscape.exe" 
+INKSCAPE := inkscape
 PIKCHR   := pikchr
 
 .SUFFIXES:
