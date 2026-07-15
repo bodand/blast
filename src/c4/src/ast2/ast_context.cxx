@@ -143,7 +143,9 @@ c4::ast2::let_expression*
 c4::ast2::ast_context::build_let_expression(const position& position,
                                             const symbol& sym,
                                             expression* expression) {
-	return build_insert<let_expression>(_nodes, position, sym, expression);
+	const auto ret = build_insert<let_expression>(_nodes, position, sym, expression);
+	_lets.push_back(ret);
+	return ret;
 }
 
 c4::ast2::unary_op_call*

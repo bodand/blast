@@ -36,6 +36,8 @@
 #ifndef C4_LITERAL_FROM_TOKEN_HXX
 #define C4_LITERAL_FROM_TOKEN_HXX
 
+#include <optional>
+
 namespace c4::ast2::tags {
 	template<class Self>
 	struct literal_from_token {
@@ -44,6 +46,12 @@ namespace c4::ast2::tags {
 		from_token(const Token& tok) {
 			return Self(tok.token_position(), tok.template as_value<typename Self::value_type>());
 		}
+
+		[[nodiscard]] static unsigned
+		unbound_parameters() noexcept { return 0; }
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
 	};
 }
 

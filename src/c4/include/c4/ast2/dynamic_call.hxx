@@ -47,8 +47,7 @@ namespace c4::ast2 {
 
 	struct dynamic_call final : ast_node
 	                            , tags::visitable
-	                            , tags::source_positioned
-	                            , tags::dynamic_node {
+	                            , tags::source_positioned {
 		dynamic_call(const c4::position& position,
 		             let_expression* callee,
 		             std::vector<expression*>&& args);
@@ -71,6 +70,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
 
 	private:
 		let_expression* _callee;

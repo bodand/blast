@@ -127,6 +127,7 @@ namespace c4::ast2 {
 
 	private:
 		// TODO arena allocator
+		std::vector<let_expression*> _lets{};
 		std::list<std::unique_ptr<ast_node>> _nodes{};
 	};
 }

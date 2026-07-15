@@ -51,8 +51,7 @@ namespace c4::ast2 {
 	struct fn_call final : ast_node
 	                       , tags::visitable
 	                       , tags::attributable
-	                       , tags::source_positioned
-	                       , tags::dynamic_node {
+	                       , tags::source_positioned {
 		fn_call(const c4::position& position,
 		        const symbol& sym,
 		        std::vector<expression*>&& args);
@@ -75,6 +74,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
 
 	private:
 		symbol _sym;

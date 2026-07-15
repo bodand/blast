@@ -47,7 +47,6 @@
 namespace c4::ast2 {
 	struct float_literal final : tags::visitable
 	                             , tags::source_positioned
-	                             , tags::constant_node
 	                             , tags::attributable
 	                             , tags::literal_from_token<float_literal> {
 		using value_type = double;

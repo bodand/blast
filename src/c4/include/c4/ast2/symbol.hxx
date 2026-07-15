@@ -75,7 +75,6 @@ namespace c4::ast2 {
 	};
 
 	struct symbol final : tags::visitable
-	                      , tags::dynamic_node
 	                      , tags::source_positioned {
 		template<class Token>
 		[[nodiscard]] static symbol
@@ -135,6 +134,9 @@ namespace c4::ast2 {
 		friend bool
 		operator!=(const symbol& lhs, const symbol& rhs) { return !(lhs == rhs); }
 
+		[[nodiscard]] bool
+		extern_() const noexcept { return _references == nullptr; }
+
 		[[nodiscard]] tags::referable*
 		references() const noexcept { return _references; }
 
@@ -143,6 +145,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
 
 	private:
 		mutable tags::referable* _references{};

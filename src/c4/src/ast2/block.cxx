@@ -70,11 +70,6 @@ c4::ast2::block::block(const c4::position& position,
 	       "too many arguments in block");
 }
 
-bool
-c4::ast2::block::requires_context() const noexcept {
-	return std::ranges::any_of(_expressions, [](const auto& expr) { return expr->closure(); });
-}
-
 namespace {
 	template<class It>
 	struct defined_symbols_remover final : c4::ast2::visitor<c4::ast2::let_expression> {

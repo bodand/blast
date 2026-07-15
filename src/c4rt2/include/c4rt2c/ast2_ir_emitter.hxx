@@ -228,17 +228,24 @@ namespace c4rt2c {
 			push(const c4::ast2::let_expression& started_by,
 			     const c4::ast2::symbol& name);
 
+			[[nodiscard("automatic scope keeper")]] function_scope
+			push_lambda(std::string name);
+
 			void
 			pop() noexcept;
 
 			std::string
 			string_name();
 
+			std::string
+			lambda_name();
+
 			static std::string
 			global_name(const c4::ast2::symbol& sym);
 
 		private:
 			std::size_t _string_counter{};
+			std::size_t _lambda_counter{};
 			std::vector<std::string> _names;
 		} _name_manager{};
 
@@ -258,6 +265,7 @@ namespace c4rt2c {
 		runtime_fn _rt_make_datum_str;
 		runtime_fn _rt_make_datum_int64;
 		runtime_fn _rt_make_datum_float64;
+		runtime_fn _rt_make_datum_block;
 		runtime_fn _rt_allocate_array;
 		runtime_fn _rt_evaluate;
 		runtime_fn _rt_complete_thunk;

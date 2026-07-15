@@ -47,7 +47,6 @@
 namespace c4::ast2 {
 	struct string_literal final : tags::visitable
 	                              , tags::source_positioned
-	                              , tags::evaluation_constness
 	                              , tags::attributable
 	                              , tags::literal_from_token<string_literal> {
 		using value_type = std::string_view;
@@ -60,9 +59,6 @@ namespace c4::ast2 {
 
 		[[nodiscard]] std::string_view
 		value() const { return _value; }
-
-		[[nodiscard]] bool
-		is_constant_evaluable() const noexcept { return _value.size() < short_string_limit; }
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }

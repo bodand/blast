@@ -36,6 +36,7 @@
 #ifndef C4_AST2_EXPRESSION_HXX
 #define C4_AST2_EXPRESSION_HXX
 
+#include <functional>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -56,7 +57,6 @@ namespace c4::ast2 {
 	struct expression final : ast_node
 	                          , tags::visitable
 	                          , tags::source_positioned
-	                          , tags::evaluation_constness
 	                          , tags::attributable {
 		using value_type = std::variant<
 			float_literal,
@@ -109,18 +109,6 @@ namespace c4::ast2 {
 		[[nodiscard]] std::span<const symbol>
 		closure_symbols() const noexcept { return _closure_symbols; }
 
-		[[nodiscard]] bool
-		is_constant_evaluable() const noexcept {
-			return std::visit([]<typename T>(const T& x) {
-				if constexpr (std::is_pointer_v<T>) {
-					return x->const_evaluable();
-				}
-				else {
-					return x.const_evaluable();
-				}
-			}, _value);
-		}
-
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept {
 			return std::visit([]<typename T>(const T& x) {
@@ -133,11 +121,37 @@ namespace c4::ast2 {
 			}, _value);
 		}
 
-		[[nodiscard]] std::string_view
-		containee_name() const noexcept;
+		[[nodiscard]] bool
+		owned() const noexcept { return _owner; }
+
+		void
+		owner(let_expression* owner) noexcept { _owner = owner; }
+
+		[[nodiscard]] let_expression*
+		owner() const noexcept { return _owner; }
+
+		[[nodiscard]] bool
+		true_closure() const noexcept {
+			return !std::ranges::all_of(_closure_symbols,
+			                            std::mem_fn(&symbol::extern_));
+		}
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept {
+			return std::visit(
+				[](const auto& x) {
+					if constexpr (std::is_pointer_v<std::remove_cvref_t<decltype(x)>>) {
+						return x->invocable_with();
+					}
+					else {
+						return x.invocable_with();
+					}
+				}, _value);
+		}
 
 	private:
 		value_type _value;
+		let_expression* _owner{nullptr};
 		std::vector<symbol> _closure_symbols;
 	};
 }

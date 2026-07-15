@@ -141,6 +141,13 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			llvm::PointerType::get(_context, 0),
 			_builder.getFloatTy())
 	}
+	, _rt_make_datum_block{
+		make_rt_function(
+			&_module,
+			"_c4_make_datum_block",
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
 	, _rt_allocate_array{
 		make_rt_function(
 			&_module,
@@ -366,28 +373,118 @@ namespace {
 		already_thunk_attribute()
 			: typed_attribute{true} { }
 	};
+
+	struct is_block_attribute : c4::ast2::tags::typed_attribute<bool> {
+		explicit
+		is_block_attribute()
+			: typed_attribute{true} { }
+	};
 }
+
+struct lambda_name_attribute : c4::ast2::tags::typed_attribute<std::string> {
+	explicit lambda_name_attribute(std::string name) : typed_attribute{std::move(name)} { }
+};
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
-	auto& scope = last_scope();
+	std::optional<function_scope> lambda_scope;
+	auto* scope_ptr = &last_scope();
+	if ((scope_ptr->started_by() && scope_ptr->started_by()->attribute_value<llvm::Function*>("function"))
+		|| (_let_only && scope_ptr->started_by() && scope_ptr->started_by()->attribute_value<bool>("pre-declared"))) {
+		std::string name;
+		if (const auto attr = obj.attribute_value<std::string>("lambda name")) {
+			name = *attr;
+		}
+		else {
+			name = _name_manager.lambda_name();
+			obj.emplace_attribute<lambda_name_attribute>("lambda name", name);
+		}
+		lambda_scope.emplace(_name_manager.push_lambda(std::move(name)));
+		scope_ptr = &*lambda_scope;
+	}
+	auto& scope = *scope_ptr;
+
 	auto expressions = obj.expressions();
+
+	if (_let_only) {
+		declare_function(scope.qualified_name());
+		if (const auto start = scope.started_by()) {
+			start->emplace_attribute<already_thunk_attribute>("pre-declared");
+			start->emplace_attribute<is_block_attribute>("is_block");
+		}
+
+		std::vector<c4::ast2::tags::referable*> closure_symbols;
+		for (const auto& sym : obj.effective_context_symbols()) {
+			const auto ref = sym.references();
+			if (!ref) continue;
+			if (ref == scope.started_by()) continue;
+
+			closure_symbols.emplace_back(ref);
+		}
+		if (!closure_symbols.empty())
+			obj.emplace_attribute<closure_symbols_attribute>("closure symbols", closure_symbols);
+
+		if (const auto args = obj.args()) {
+			for (auto& arg : args->block_arguments()) {
+				const_cast<c4::ast2::block_argument&>(arg).emplace_attribute<already_thunk_attribute>("thunk?");
+			}
+		}
+
+		std::ranges::for_each(
+			expressions.begin(), expressions.end(), [&](const auto& expr) {
+				expr->accept(*this);
+			}
+		);
+		return;
+	}
+
 	const auto fn = declare_function(scope.qualified_name());
 
-	if (const auto expr = active_expression())
-		expr->emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+	if (const auto expr = active_expression()) {
+		if (lambda_scope) {
+			const auto datum = _builder.CreateCall(_rt_make_datum_block, {fn}, "lambda.datum");
+			expr->emplace_attribute<c4c::llvm_value_attribute>("value", datum);
+			obj.emplace_attribute<is_block_attribute>("is_block");
+
+			if (const auto attr = obj.attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols")) {
+				const auto& csym = *attr;
+				if (!csym.empty()) {
+					const auto argv = allocate_argv(csym.size());
+					for (std::size_t i = 0; i < csym.size(); ++i) {
+						const auto idx = _builder.CreateGEP(
+							llvm::PointerType::get(_context, 0), argv,
+							llvm::ConstantInt::get(_context, llvm::APInt(64, i))
+						);
+						const auto val = csym[i]->attribute_value<llvm::Value*>("value");
+						if (val) {
+							_builder.CreateStore(*val, idx);
+						}
+					}
+					// _builder.CreateCall(_rt_set_thunk_args, {datum, argv});
+				}
+			}
+		}
+		else {
+			expr->emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+		}
+	}
 
 	std::vector<c4::ast2::tags::referable*> closure_symbols;
-	for (const auto& sym : obj.effective_context_symbols()) {
-		const auto ref = sym.references();
-		if (!ref) continue;
-		if (ref->attribute_value<llvm::Value*>("value")) continue;
-		if (ref == scope.started_by()) continue; // don't be a closure over oneself
-
-		closure_symbols.emplace_back(ref);
+	if (const auto attr = obj.attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols")) {
+		closure_symbols = *attr;
 	}
-	if (!closure_symbols.empty())
-		obj.emplace_attribute<closure_symbols_attribute>("closure symbols", closure_symbols);
+	else {
+		for (const auto& sym : obj.effective_context_symbols()) {
+			const auto ref = sym.references();
+			if (!ref) continue;
+			if (ref->attribute_value<llvm::Value*>("value")) continue;
+			if (ref == scope.started_by()) continue; // don't be a closure over oneself
+
+			closure_symbols.emplace_back(ref);
+		}
+		if (!closure_symbols.empty())
+			obj.emplace_attribute<closure_symbols_attribute>("closure symbols", closure_symbols);
+	}
 
 	if (const auto start = scope.started_by()) {
 		start->emplace_attribute<closure_symbols_attribute>("closure symbols", closure_symbols);
@@ -398,7 +495,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 				closure_symbols.begin(), closure_symbols.end(),
 				name,
 				[](const auto& acc, const auto& sym) {
-					return acc + '^' + std::string(sym->name()) + " ";
+					return acc + '^' + (sym ? std::string(sym->name()) : "??") + " ";
 				});
 			if (const auto args = obj.args()) {
 				name = std::accumulate(
@@ -422,11 +519,6 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	scope.start_function(fn);
 
 	if (_let_only) {
-		std::ranges::for_each(
-			expressions.begin(), expressions.end(), [&](const auto& expr) {
-				expr->accept(*this);
-			}
-		);
 		return;
 	}
 
@@ -450,6 +542,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 
 	if (obj.args()) {
 		for (auto& arg : obj.args()->block_arguments()) {
+			const_cast<c4::ast2::block_argument&>(arg).emplace_attribute<already_thunk_attribute>("thunk?");
 			const auto idx = _builder.CreateGEP(
 				ptr, fn->getArg(0),
 				llvm::ConstantInt::get(_context, llvm::APInt(64, i++)),
@@ -469,7 +562,23 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	);
 	const auto eval_start = _last_callee_stack.back();
 	_last_callee_stack.pop_back();
-	ASSERT(eval_start, "eval_start must not be null");
+
+	if (!eval_start) {
+		const auto* expr = active_expression();
+		const auto res = expr ? expr->attribute_value<llvm::Value*>("value") : nullptr;
+		if (res) {
+			const auto eval = _builder.CreateCall(_rt_evaluate, {
+				                                      *res,
+				                                      scope.continue_at(),
+			                                      });
+			eval->setTailCallKind(llvm::CallInst::TCK_MustTail);
+			_builder.CreateRetVoid();
+			set_last_callee(*res);
+			return;
+		}
+		_builder.CreateRetVoid();
+		return;
+	}
 
 	const auto eval = _builder.CreateCall(_rt_evaluate, {
 		                                      eval_start,
@@ -616,11 +725,27 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	bool need_argv = false;
 	if (const auto ref = symbol.references()) {
 		if (ref->attribute_value<bool>("thunk?")) thunk = fn;
+		if (!thunk) {
+			if (const auto attr = ref->attribute_value<llvm::Value*>("value")) {
+				thunk = *attr;
+			}
+		}
 	}
 
 	if (!thunk) {
+		bool is_block = false;
+		if (const auto ref = symbol.references()) {
+			if (const auto attr = ref->attribute_value<bool>("is_block")) {
+				is_block = *attr;
+			}
+		}
 		need_argv = true;
-		thunk = _builder.CreateCall(_rt_make_thunk, {fn});
+		if (is_block) {
+			thunk = _builder.CreateCall(_rt_make_datum_block, {fn});
+		}
+		else {
+			thunk = _builder.CreateCall(_rt_make_thunk, {fn});
+		}
 	}
 	set_last_callee(thunk);
 
@@ -733,8 +858,8 @@ c4rt2c::ast2_ir_emitter::function_scope::function_scope(
 	, _started_by{started_by} {
 	ASSERT(!_qualified_name.empty(), "name must not be empty");
 	ASSERT(_manager, "manager must not be null");
-	if (_qualified_name == "_c4_main") {
-		_owning = false;
+	if (_qualified_name == "_c4_main" || _qualified_name.find("lambda") != std::string::npos) {
+		_owning = _qualified_name != "_c4_main";
 	}
 	else {
 		ASSERT(_started_by, "started_by must not be null");
@@ -774,6 +899,14 @@ c4rt2c::ast2_ir_emitter::name_manager::push(const c4::ast2::let_expression& star
 	return function_scope{this, std::move(qualified_name), &started_by};
 }
 
+c4rt2c::ast2_ir_emitter::function_scope
+c4rt2c::ast2_ir_emitter::name_manager::push_lambda(std::string name) {
+	_names.emplace_back(std::move(name));
+	auto qualified_name = qualify_name_globally();
+
+	return function_scope{this, std::move(qualified_name), nullptr};
+}
+
 void
 c4rt2c::ast2_ir_emitter::name_manager::pop() noexcept {
 	ASSERT(_names.size() >= 1, "global scope cannot pop name qualifier");
@@ -788,6 +921,11 @@ c4rt2c::ast2_ir_emitter::name_manager::string_name() {
 	_names.pop_back();
 
 	return qualified_name;
+}
+
+std::string
+c4rt2c::ast2_ir_emitter::name_manager::lambda_name() {
+	return fmt::format("lambda{}", _lambda_counter++);
 }
 
 std::string

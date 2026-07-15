@@ -48,7 +48,6 @@
 namespace c4::ast2 {
 	struct integer_literal final : tags::visitable
 	                               , tags::source_positioned
-	                               , tags::constant_node
 	                               , tags::attributable
 	                               , tags::literal_from_token<integer_literal> {
 		using value_type = std::int64_t;

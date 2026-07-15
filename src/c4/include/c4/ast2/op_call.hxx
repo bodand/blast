@@ -47,8 +47,7 @@ namespace c4::ast2 {
 
 	struct binary_op_call final : ast_node
 	                              , tags::visitable
-	                              , tags::source_positioned
-	                              , tags::dynamic_node {
+	                              , tags::source_positioned {
 		binary_op_call(const c4::position& position,
 		               const symbol& op,
 		               expression* left,
@@ -80,6 +79,9 @@ namespace c4::ast2 {
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
 
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
+
 	private:
 		symbol _op;
 		std::array<expression*, 2> _args;
@@ -87,8 +89,7 @@ namespace c4::ast2 {
 
 	struct unary_op_call final : ast_node
 	                             , tags::visitable
-	                             , tags::source_positioned
-	                             , tags::dynamic_node {
+	                             , tags::source_positioned {
 		unary_op_call(const c4::position& position,
 		              const symbol& op,
 		              expression* operand);
@@ -115,6 +116,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return std::nullopt; }
 
 	private:
 		symbol _op;

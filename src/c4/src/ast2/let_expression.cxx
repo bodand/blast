@@ -34,11 +34,11 @@
  *   
  */
 
-#include <c4/ast2/let_expression.hxx>
 #include <c4/ast2/expression.hxx>
+#include <c4/ast2/let_expression.hxx>
 
-#include <libassert/assert.hpp>
 #include <utility>
+#include <libassert/assert.hpp>
 
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          ast2::symbol symbol,
@@ -47,23 +47,26 @@ c4::ast2::let_expression::let_expression(const c4::position& position,
 	, _symbol{std::move(symbol)}
 	, _value{expr} {
 	_symbol.references(this);
+	mark_expression_owned();
+}
+
+void
+c4::ast2::let_expression::mark_expression_owned() {
+	if (!_value) return;
+	_value->owner(this);
 }
 
 void
 c4::ast2::let_expression::expression(ast2::expression* expr) {
 	ASSERT(_value == nullptr, "let-expression's value is already set", _symbol);
 	_value = expr;
+	mark_expression_owned();
 }
 
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
 	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
 	return *_value;
-}
-
-bool
-c4::ast2::let_expression::is_constant_evaluable() const noexcept {
-	return value().const_evaluable();
 }
 
 unsigned
@@ -81,4 +84,18 @@ c4::ast2::let_expression::pseudo_let() const noexcept {
 	const auto pseudo_let = attribute_value<bool>("pseudo_let");
 	if (!pseudo_let) return false;
 	return *pseudo_let;
+}
+
+bool
+c4::ast2::let_expression::introduces_variable() const noexcept {
+	if (_value->true_closure()) return false;
+	if (_value->invocable_with()) return false;
+	return true;
+}
+
+c4::ast2::block*
+c4::ast2::let_expression::function_body() const noexcept {
+	ASSERT(introduces_function(), "let is not function");
+
+	return std::get<block*>(_value->value());
 }

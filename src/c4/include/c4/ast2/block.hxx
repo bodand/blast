@@ -100,8 +100,7 @@ namespace c4::ast2 {
 
 	struct block_args final : ast_node
 	                          , tags::visitable
-	                          , tags::source_positioned
-	                          , tags::constant_node {
+	                          , tags::source_positioned {
 		block_args(const c4::position& position,
 		           std::span<symbol> args);
 
@@ -145,7 +144,6 @@ namespace c4::ast2 {
 	struct block final : ast_node
 	                     , tags::visitable
 	                     , tags::source_positioned
-	                     , tags::dynamic_node
 	                     , tags::attributable {
 		block(const c4::position& position,
 		      std::vector<expression*>&& expressions,
@@ -168,14 +166,11 @@ namespace c4::ast2 {
 			return static_cast<unsigned>(_args->size());
 		}
 
-		[[nodiscard]] bool
-		requires_context() const noexcept;
-
 		/**
-     * Generates a set of symbols that are used by the contained expressions
-     * but are not resolved by the block's arguments or symbols defined
-     * within the block.
-     */
+       * Generates a set of symbols that are used by the contained expressions
+       * but are not resolved by the block's arguments or symbols defined
+       * within the block.
+       */
 		[[nodiscard]] std::vector<symbol>
 		effective_context_symbols() const;
 
@@ -187,6 +182,9 @@ namespace c4::ast2 {
 			if (!_args) return 0U;
 			return static_cast<unsigned>(_args->size());
 		}
+
+		[[nodiscard]] std::optional<unsigned>
+		invocable_with() const noexcept { return unbound_parameters(); }
 
 	private:
 		block_args* _args{};
