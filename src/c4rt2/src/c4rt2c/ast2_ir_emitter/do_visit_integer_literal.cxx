@@ -42,7 +42,6 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::integer_literal& obj) {
-	if (_let_only) return;
 	const auto val = _builder.CreateCall(
 		_rt_make_datum_int64, {
 			llvm::ConstantInt::get(_context, llvm::APInt(64, obj.value()))

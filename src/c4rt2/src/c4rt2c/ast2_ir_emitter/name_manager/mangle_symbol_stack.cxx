@@ -30,24 +30,27 @@
  *
  * Originally created: 2026-07-17.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/resolve_referenced --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack --
  *   
  */
+
+#include <span>
+#include <string>
 
 #include <c4/ast2/symbol.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
-#include <libassert/assert.hpp>
+#include <fmt/format.h>
 
-namespace {
-	llvm::Function*
-	try_get_function_attribute(const c4::ast2::tags::attributable* ref) {
-		ASSERT(ref, "ref must not be null");
+std::string
+c4rt2c::ast2_ir_emitter::name_manager::mangle_symbol_stack(
+     const std::span<const c4::ast2::symbol> symbols) {
+	auto result = fmt::format("q{}", symbols.size());
 
-		const auto attr = ref->attribute_value<llvm::Function*>("function");
-		if (!attr) return nullptr;
-
-		return *attr;
+	for (const auto& sym : symbols) {
+		result += sym.mangle();
 	}
+
+	return result + "E";
 }

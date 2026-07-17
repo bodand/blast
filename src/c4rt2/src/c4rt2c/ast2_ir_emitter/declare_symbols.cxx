@@ -30,24 +30,37 @@
  *
  * Originally created: 2026-07-17.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/resolve_referenced --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/declare_functions --
  *   
  */
 
+#include <iostream>
+#include <c4/ast2/ast_context.hxx>
+#include <c4/ast2/let_expression.hxx>
 #include <c4/ast2/symbol.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
 
 #include <libassert/assert.hpp>
 
-namespace {
-	llvm::Function*
-	try_get_function_attribute(const c4::ast2::tags::attributable* ref) {
-		ASSERT(ref, "ref must not be null");
+void
+c4rt2c::ast2_ir_emitter::declare_symbols(const c4::ast2::ast_context& ctx) {
+	for (const auto& gsym : ctx.named_symbols()) {
+		const auto& stck = gsym->attribute_value<std::vector<c4::ast2::symbol>>(
+			"symbol-stack");
+		ASSERT(stck, "symbol-stack is not defined on named symbol", gsym->name());
 
-		const auto attr = ref->attribute_value<llvm::Function*>("function");
-		if (!attr) return nullptr;
+		const auto name = _name_manager.mangle_symbol_stack(*stck);
 
-		return *attr;
+		if (gsym->introduces_function()) {
+			const auto decl = declare_function(name);
+			gsym->emplace_attribute<c4c::llvm_function_attribute>("function", decl);
+			continue;
+		}
+
+		if (!gsym->global_symbol()) continue;
+		const auto var = define_global_var(gsym);
+		gsym->emplace_attribute<c4c::llvm_value_attribute>("value", var);
 	}
 }

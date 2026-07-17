@@ -159,6 +159,9 @@ namespace c4::ast2 {
 		[[nodiscard]] const block_args*
 		args() const { return _args; }
 
+		void
+		args(block_args* args) { _args = args; }
+
 		[[nodiscard]] unsigned
 		arity() const noexcept {
 			if (!_args) return 0U;
@@ -175,6 +178,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] std::span<const expression* const>
 		expressions() const;
+
+		void
+		expressions(std::vector<expression*>&& expressions);
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept {

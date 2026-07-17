@@ -40,23 +40,16 @@
 
 llvm::Function*
 c4rt2c::ast2_ir_emitter::declare_function(const std::string_view name) {
-	if (_let_only) {
-		ASSERT(!name.empty(), "function name must not be empty");
+	ASSERT(!name.empty(), "function name must not be empty");
 
-		const auto decl = llvm::Function::Create(
-			_function_type,
-			llvm::Function::ExternalLinkage,
-			name,
-			_module
-		);
-		decl->getArg(0)->setName("argv");
-		decl->getArg(1)->setName("K");
-		_predeclared_functions.emplace(name, decl);
+	const auto decl = llvm::Function::Create(
+		_function_type,
+		llvm::Function::ExternalLinkage,
+		name,
+		_module
+	);
+	decl->getArg(0)->setName("argv");
+	decl->getArg(1)->setName("K");
 
-		return decl;
-	}
-
-	const auto it = _predeclared_functions.find(std::string{name});
-	ASSERT(it != _predeclared_functions.end(), "function not predeclared", name);
-	return it->second;
+	return decl;
 }

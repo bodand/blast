@@ -147,3 +147,8 @@ std::span<const c4::ast2::expression* const>
 c4::ast2::block::expressions() const {
 	return std::span(_expressions);
 }
+
+void
+c4::ast2::block::expressions(std::vector<expression*>&& expressions) {
+	_expressions = std::move(expressions);
+}

@@ -125,6 +125,11 @@ namespace c4::ast2 {
 		                     expression* left,
 		                     expression* right);
 
+		[[nodiscard]] std::span<const let_expression* const>
+		named_symbols() const noexcept {
+			return _lets;
+		}
+
 	private:
 		// TODO arena allocator
 		std::vector<let_expression*> _lets{};

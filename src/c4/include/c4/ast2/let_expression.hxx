@@ -118,6 +118,9 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		introduces_function() const noexcept { return !introduces_variable(); }
 
+		[[nodiscard]] bool
+		global_symbol() const;
+
 		[[nodiscard]] block*
 		function_body() const noexcept;
 

@@ -111,7 +111,7 @@ std::string_view
 c4::position::range() const {
 	// XXX allocating on what is basically a subrange calculation, truly
 	//  the pinnacle of software engineering
-	auto leading_utf_str = expanded_range
+	const auto leading_utf_str = expanded_range
 	                       | una::views::utf8
 	                       | una::views::take(col_number - 1)
 	                       | una::ranges::to_utf8<std::string>();

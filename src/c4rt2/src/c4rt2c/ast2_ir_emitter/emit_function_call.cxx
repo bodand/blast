@@ -80,116 +80,121 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	const c4::ast2::symbol& symbol,
 	std::span<const c4::ast2::expression*const> args
 ) {
-	llvm::Value* fn = resolve_referenced(symbol);
-	if (!fn) fn = try_get_value_attribute(symbol.references());
-
-	if (_let_only) {
-		std::ranges::for_each(
-			args, [&](const auto& arg) {
-				arg->accept(*this);
-			}
-		);
-		return;
-	}
-
-	ASSERT(fn, "function reference not resolved", symbol.name(), symbol.base_arity());
-	llvm::Value* thunk = nullptr;
-	bool need_argv = false;
-	if (const auto ref = symbol.references()) {
-		if (ref->attribute_value<bool>("thunk?")) thunk = fn;
-		if (!thunk) {
-			if (const auto attr = ref->attribute_value<llvm::Value*>("value")) {
-				thunk = *attr;
-			}
-		}
-	}
-
-	if (!thunk) {
-		bool is_block = false;
-		if (const auto ref = symbol.references()) {
-			if (const auto attr = ref->attribute_value<bool>("is_block")) {
-				is_block = *attr;
-			}
-		}
-		need_argv = true;
-		if (is_block) {
-			thunk = _builder.CreateCall(_rt_make_datum_block, {fn});
-		}
-		else {
-			thunk = _builder.CreateCall(_rt_make_thunk, {fn});
-		}
-	}
-	set_last_callee(thunk);
-
-	std::ranges::for_each(
-		args, [&](const auto& arg) {
-			arg->accept(*this);
-		}
-	);
-
-	if (need_argv) {
-		llvm::Value* argv;
-		if (const auto callee = symbol.references()) {
-			// in-source defined functions
-			const auto csym = callee->attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols");
-
-			const auto context_count = csym.transform([](const auto& x) { return x.size(); })
-			                               .value_or(std::size_t{});
-			const auto args_count = callee->base_arity();
-
-			argv = allocate_argv(context_count + args_count);
-			argv->setName({symbol.name(), "_argv"});
-
-			std::size_t i = 0;
-			for (; i < context_count; ++i) {
-				const auto idx = _builder.CreateGEP(
-					llvm::PointerType::get(_context, 0), argv,
-					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-					{symbol.name(), "_argv_args"}
-				);
-				const auto val = (*csym)[i]->attribute_value<llvm::Value*>("value");
-				ASSERT(val, "closure symbol value not found", symbol.name(), i);
-				_builder.CreateStore(*val, idx);
-			}
-			for (; i < context_count + args_count; ++i) {
-				const auto arg_i = i - context_count;
-				const auto arg = args[arg_i];
-				const auto val = arg->attribute_value<llvm::Value*>("value");
-				ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), arg_i);
-
-				const auto idx = _builder.CreateGEP(
-					llvm::PointerType::get(_context, 0), argv,
-					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-					{symbol.name(), "_argv_args"}
-				);
-				_builder.CreateStore(
-					*val,
-					idx);
-			}
-		}
-		else {
-			argv = allocate_argv(args.size());
-			argv->setName({symbol.name(), "_argv"});
-
-			for (std::size_t i = 0; i < args.size(); ++i) {
-				const auto arg = args[i];
-				const auto val = arg->attribute_value<llvm::Value*>("value");
-				ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), i);
-				const auto idx = _builder.CreateGEP(
-					llvm::PointerType::get(_context, 0), argv,
-					llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
-					{symbol.name(), "_argv_args"}
-				);
-				_builder.CreateStore(
-					*val,
-					idx);
-			}
-		}
-
-		_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
-	}
+	// llvm::Value* fn = resolve_referenced(symbol);
+	// if (!fn) fn = try_get_value_attribute(symbol.references());
+	//
+	// if (_let_only) {
+	// 	std::ranges::for_each(
+	// 		args, [&](const auto& arg) {
+	// 			arg->accept(*this);
+	// 		}
+	// 	);
+	// 	return;
+	// }
+	//
+	// ASSERT(fn, "function reference not resolved", symbol.name(), symbol.base_arity());
+	// llvm::Value* thunk = nullptr;
+	// bool need_argv = false;
+	// if (const auto ref = symbol.references()) {
+	// 	if (ref->attribute_value<bool>("thunk?")) thunk = fn;
+	// 	if (!thunk) {
+	// 		if (const auto attr = ref->attribute_value<llvm::Value*>("value")) {
+	// 			thunk = *attr;
+	// 		}
+	// 	}
+	// }
+	//
+	// if (!thunk) {
+	// 	bool is_block = false;
+	// 	if (const auto ref = symbol.references()) {
+	// 		if (const auto attr = ref->attribute_value<bool>("is_block")) {
+	// 			is_block = *attr;
+	// 		}
+	// 	}
+	// 	need_argv = true;
+	// 	if (is_block) {
+	// 		thunk = _builder.CreateCall(_rt_make_datum_block, {fn});
+	// 	}
+	// 	else {
+	// 		thunk = _builder.CreateCall(_rt_make_thunk, {fn});
+	// 	}
+	// }
+	// set_last_callee(thunk);
+	//
+	// std::ranges::for_each(
+	// 	args, [&](const auto& arg) {
+	// 		arg->accept(*this);
+	// 	}
+	// );
+	//
+	// if (need_argv) {
+	// 	llvm::Value* argv;
+	// 	if (const auto callee = symbol.references()) {
+	// 		// in-source defined functions
+	// 		const auto csym = callee->attribute_value<std::vector<c4::ast2::tags::referable*>>("closure symbols");
+	//
+	// 		const auto context_count = csym.transform([](const auto& x) { return x.size(); })
+	// 		                               .value_or(std::size_t{});
+	// 		const auto args_count = callee->base_arity();
+	//
+	// 		argv = allocate_argv(context_count + args_count);
+	// 		argv->setName({symbol.name(), "_argv"});
+	//
+	// 		std::size_t i = 0;
+	// 		for (; i < context_count; ++i) {
+	// 			const auto idx = _builder.CreateGEP(
+	// 				llvm::PointerType::get(_context, 0), argv,
+	// 				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+	// 				{symbol.name(), "_argv_args"}
+	// 			);
+	// 			const auto val = (*csym)[i]->attribute_value<llvm::Value*>("value");
+	// 			ASSERT(val, "closure symbol value not found", symbol.name(), i);
+	// 			_builder.CreateStore(*val, idx);
+	// 		}
+	// 		for (; i < context_count + args_count; ++i) {
+	// 			const auto arg_i = i - context_count;
+	// 			const auto arg = args[arg_i];
+	// 			const auto val = arg->attribute_value<llvm::Value*>("value");
+	// 			ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), arg_i);
+	//
+	// 			const auto idx = _builder.CreateGEP(
+	// 				llvm::PointerType::get(_context, 0), argv,
+	// 				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+	// 				{symbol.name(), "_argv_args"}
+	// 			);
+	// 			_builder.CreateStore(
+	// 				*val,
+	// 				idx);
+	// 		}
+	// 	}
+	// 	else {
+	// 		argv = allocate_argv(args.size());
+	// 		argv->setName({symbol.name(), "_argv"});
+	//
+	// 		for (std::size_t i = 0; i < args.size(); ++i) {
+	// 			const auto arg = args[i];
+	// 			const auto val = arg->attribute_value<llvm::Value*>("value");
+	// 			ASSERT(val, "value not found for expression", symbol.name(), symbol.base_arity(), i);
+	// 			const auto idx = _builder.CreateGEP(
+	// 				llvm::PointerType::get(_context, 0), argv,
+	// 				llvm::ConstantInt::get(_context, llvm::APInt(64, i)),
+	// 				{symbol.name(), "_argv_args"}
+	// 			);
+	// 			_builder.CreateStore(
+	// 				*val,
+	// 				idx);
+	// 		}
+	// 	}
+	//
+	// 	_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
+	// }
 
 	if (const auto expr = active_expression()) {
-		expr->emplace_attribute<c4c::llvm_value_attribute>("value", thunk);
+		// TODO: temporary nullptr to allow other code to rely on "value" being
+		// 	defined
+		const auto ptr_t = llvm::PointerType::get(_context, 0);
+		expr->emplace_attribute<c4c::llvm_value_attribute>("value",
+			llvm::ConstantPointerNull::get(ptr_t)
+		);
 	}
 }

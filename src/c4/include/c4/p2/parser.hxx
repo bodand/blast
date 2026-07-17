@@ -156,15 +156,19 @@ namespace c4::p2 {
 		ast2::expression*
 		parse_expression();
 
-		c4::ast2::expression*
+		ast2::expression*
 		parse_operator_let();
 
 		static void
-		set_symbol_stack(const c4::ast2::symbol& symbol, const c4::ast2::let_expression* let, const c4::ast2::let_expression* memory);
+		set_symbol_stack(const ast2::symbol& symbol,
+		                 const ast2::let_expression* let,
+		                 const ast2::let_expression* memory);
 
-		c4::ast2::expression* parse_expression_of_let(const c4::ast2::symbol& symbol, c4::ast2::let_expression* let);
+		ast2::expression*
+		parse_expression_of_let(const ast2::symbol& symbol,
+		                        ast2::let_expression* let);
 
-		c4::ast2::expression*
+		ast2::expression*
 		parse_fn_let();
 
 		ast2::expression*
@@ -183,10 +187,14 @@ namespace c4::p2 {
 		parse_script();
 
 		void
-		declare_symbol(std::string_view symbol, unsigned arity, ast2::tags::referable* referee);
+		declare_symbol(std::string_view symbol,
+		               unsigned arity,
+		               ast2::tags::referable* referee);
 
 		void
-		declare_binop(std::string_view symbol, unsigned precedence, bool right_assoc);
+		declare_binop(std::string_view symbol,
+		              unsigned precedence,
+		              bool right_assoc);
 
 		void
 		declare_uniop(std::string_view symbol);
@@ -310,6 +318,7 @@ namespace c4::p2 {
 		std::vector<parser_symbol> _scope_symbols;
 
 		ast2::let_expression* _within_let = nullptr;
+		ast2::block* _within_block = nullptr;
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;

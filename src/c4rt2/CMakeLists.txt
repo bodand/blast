@@ -181,6 +181,8 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/last_scope.cxx
             src/c4rt2c/ast2_ir_emitter/resolve_referenced.cxx
             src/c4rt2c/ast2_ir_emitter/set_last_callee.cxx
+            src/c4rt2c/ast2_ir_emitter/declare_symbols.cxx
+            src/c4rt2c/ast2_ir_emitter/define_global_var.cxx
 
             src/c4rt2c/ast2_ir_emitter/function_scope/continue_at.cxx
             src/c4rt2c/ast2_ir_emitter/function_scope/definition.cxx
@@ -195,9 +197,11 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/name_manager/qualify_name_globally.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/root.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack.cxx
 
             include/c4rt2c/runtime_fn.hxx
             src/c4rt2c/runtime_fn/define.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

@@ -30,24 +30,32 @@
  *
  * Originally created: 2026-07-17.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/resolve_referenced --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/define_global_var --
  *   
  */
 
-#include <c4/ast2/symbol.hxx>
+#include <c4/ast2/expression.hxx>
+#include <c4/ast2/let_expression.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
 
-namespace {
-	llvm::Function*
-	try_get_function_attribute(const c4::ast2::tags::attributable* ref) {
-		ASSERT(ref, "ref must not be null");
+llvm::GlobalVariable*
+c4rt2c::ast2_ir_emitter::define_global_var(const c4::ast2::let_expression* gsym) {
+	const auto ptr_t = llvm::PointerType::get(_context, 0);
 
-		const auto attr = ref->attribute_value<llvm::Function*>("function");
-		if (!attr) return nullptr;
+	// _module takes ownership of this, no need to fret
+	const auto var = new llvm::GlobalVariable(_module, ptr_t, false,
+	                                          llvm::GlobalValue::PrivateLinkage,
+	                                          llvm::ConstantPointerNull::get(ptr_t));
+	const auto var_name = _name_manager.mangle_symbol(gsym->symbol());
+	var->setName(var_name);
 
-		return *attr;
-	}
+	gsym->value().accept(*this);
+	const auto val = gsym->value().attribute_value<llvm::Value*>("value");
+	ASSERT(val, "symbol didn't get defined to value", var_name, gsym);
+
+	_builder.CreateStore(*val, var);
+	return var;
 }

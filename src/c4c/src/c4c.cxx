@@ -255,8 +255,7 @@ main(int argc, const char** argv) {
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
 		c4rt2c::ast2_ir_emitter ir(context, module, builder, fn_pm, fn_am);
-		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
-		ir.full();
+		ir.declare_symbols(ast_context);
 		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
 		ir.finalize();
 

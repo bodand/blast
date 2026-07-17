@@ -85,8 +85,12 @@ namespace c4rt2c {
 
 		void do_visit(const c4::ast2::unary_op_call& obj) override;
 
-		void full() { _let_only = false; }
-		bool _let_only{true};
+		llvm::GlobalVariable
+		*
+		define_global_var(const c4::ast2::let_expression* gsym);
+
+		void
+		declare_symbols(const c4::ast2::ast_context& ctx);
 
 		void finalize() const;
 
@@ -210,6 +214,12 @@ namespace c4rt2c {
 			static std::string
 			global_name(const c4::ast2::symbol& sym);
 
+			static std::string
+			mangle_symbol(const c4::ast2::symbol& symbol);
+
+			static std::string
+			mangle_symbol_stack(std::span<const c4::ast2::symbol> symbols);
+
 		private:
 			std::size_t _string_counter{};
 			std::size_t _lambda_counter{};
@@ -223,9 +233,6 @@ namespace c4rt2c {
 		/// tail-calls. It is void(ptr, ptr), where the first is an array
 		/// to pointers as "argv" and the latter is the K continuation.
 		llvm::FunctionType* _function_type;
-
-		std::unordered_map<std::string, llvm::Function*> _extlib_functions{};
-		std::unordered_map<std::string, llvm::Function*> _predeclared_functions{};
 
 		runtime_fn _rt_make_thunk;
 		runtime_fn _rt_set_thunk_args;
@@ -247,9 +254,6 @@ namespace c4rt2c {
 
 		[[nodiscard]] llvm::BasicBlock*
 		define(llvm::Function* fn_decl);
-
-		[[nodiscard]] llvm::Function*
-		resolve_referenced(const c4::ast2::symbol& sym);
 	};
 }
 

@@ -41,7 +41,6 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::string_literal& obj) {
-	if (_let_only) return;
 	const auto name = _name_manager.string_name();
 	const auto bytes = _builder.CreateGlobalStringPtr(obj.value(), name);
 	const auto bytes_sz = obj.value().size();

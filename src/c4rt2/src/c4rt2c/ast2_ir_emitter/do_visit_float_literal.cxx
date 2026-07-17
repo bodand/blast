@@ -42,7 +42,6 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::float_literal& obj) {
-	if (_let_only) return;
 	const auto val = _builder.CreateCall(
 		_rt_make_datum_float64, {
 			llvm::ConstantFP::get(_context, llvm::APFloat(obj.value()))

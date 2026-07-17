@@ -93,6 +93,12 @@ c4::ast2::let_expression::introduces_variable() const noexcept {
 	return true;
 }
 
+bool
+c4::ast2::let_expression::global_symbol() const {
+	const auto in = attribute_value<block*>("nested-in");
+	return !in.has_value();
+}
+
 c4::ast2::block*
 c4::ast2::let_expression::function_body() const noexcept {
 	ASSERT(introduces_function(), "let is not function");
