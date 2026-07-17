@@ -60,14 +60,14 @@ c4::ast_dumper::do_visit(const ast2::block_args& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::block& obj) {
-	_os << "(lambda ";
+	_os << "{lambda ";
 	if (obj.args()) {
 		obj.args()->accept(*this);
 		_os << " ";
 	}
 	auto expressions = obj.expressions();
 	if (expressions.empty()) {
-		_os << ")";
+		_os << "}";
 		return;
 	}
 
@@ -77,7 +77,7 @@ c4::ast_dumper::do_visit(const ast2::block& obj) {
 		_os << "\n" << std::string(2U * _depth, ' ');
 	}
 	expressions.back()->accept(*this);
-	_os << ")";
+	_os << "}";
 	--_depth;
 }
 
@@ -85,16 +85,16 @@ void
 c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
 	_os << "(";
 	obj.callee()->accept(*this);
-	_os << " ";
 	auto expressions = obj.args();
 	if (expressions.empty()) {
 		_os << ")";
 		return;
 	}
 
+	_os << "\n" << std::string(2U * _depth, ' ');
 	for (const auto& expr : expressions | std::views::take(expressions.size() - 1)) {
 		expr->accept(*this);
-		_os << " ";
+		_os << "\n" << std::string(2U * _depth, ' ');
 	}
 	expressions.back()->accept(*this);
 	_os << ")";
@@ -102,7 +102,7 @@ c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::expression& obj) {
-	_os << "(";
+	_os << "{";
 	if (obj.true_closure()) {
 		_os << "closure ";
 	}
@@ -116,7 +116,7 @@ c4::ast_dumper::do_visit(const ast2::expression& obj) {
 	if (!obj.closure()) {
 		_os << "\n" << std::string(2U * ++_depth, ' ');
 		obj.accept_skip_self(*this);
-		_os << ")";
+		_os << "}";
 		--_depth;
 		return;
 	}
@@ -131,7 +131,7 @@ c4::ast_dumper::do_visit(const ast2::expression& obj) {
 
 	obj.accept_skip_self(*this);
 	--_depth;
-	_os << ")";
+	_os << "}";
 }
 
 void
@@ -158,7 +158,7 @@ c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
-	_os << "(";
+	_os << "{";
 	if (obj.introduces_variable()) {
 		_os << "let(var) ";
 	}
@@ -170,7 +170,7 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 	_os << "@" << &obj << " \n" << std::string(2U * ++_depth, ' ');
 	obj.value().accept(*this);
 	--_depth;
-	_os << ")";
+	_os << "}";
 }
 
 void

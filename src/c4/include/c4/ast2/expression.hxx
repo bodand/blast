@@ -42,14 +42,14 @@
 #include <variant>
 
 #include <c4/ast2/block.hxx>
+#include <c4/ast2/dynamic_call.hxx>
 #include <c4/ast2/float_literal.hxx>
 #include <c4/ast2/fn_call.hxx>
-#include <c4/ast2/op_call.hxx>
 #include <c4/ast2/integer_literal.hxx>
 #include <c4/ast2/let_expression.hxx>
+#include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
-#include <c4/ast2/dynamic_call.hxx>
 
 #include <c4/tags/source_positioned.hxx>
 
@@ -125,7 +125,7 @@ namespace c4::ast2 {
 		owned() const noexcept { return _owner; }
 
 		void
-		owner(let_expression* owner) noexcept { _owner = owner; }
+		owner(let_expression* owner) noexcept;
 
 		[[nodiscard]] let_expression*
 		owner() const noexcept { return _owner; }
@@ -139,8 +139,8 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept {
 			return std::visit(
-				[](const auto& x) {
-					if constexpr (std::is_pointer_v<std::remove_cvref_t<decltype(x)>>) {
+				[]<typename T0>(const T0& x) {
+					if constexpr (std::is_pointer_v<std::remove_cvref_t<T0>>) {
 						return x->invocable_with();
 					}
 					else {

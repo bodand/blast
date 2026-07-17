@@ -39,6 +39,7 @@
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
 
+#include <c4/tags/attributable.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
@@ -47,7 +48,8 @@ namespace c4::ast2 {
 
 	struct binary_op_call final : ast_node
 	                              , tags::visitable
-	                              , tags::source_positioned {
+	                              , tags::source_positioned
+	                              , tags::attributable {
 		binary_op_call(const c4::position& position,
 		               const symbol& op,
 		               expression* left,
@@ -89,7 +91,8 @@ namespace c4::ast2 {
 
 	struct unary_op_call final : ast_node
 	                             , tags::visitable
-	                             , tags::source_positioned {
+	                             , tags::source_positioned
+	                             , tags::attributable {
 		unary_op_call(const c4::position& position,
 		              const symbol& op,
 		              expression* operand);

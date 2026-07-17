@@ -412,13 +412,6 @@ c4::p2::parser::parse_final_expression() {
 		//    dynamic call is generated.
 		auto expr = parse_expression();
 
-		_dynamic_call_buffers.push_front(fmt::format("dyn@{}", ++_dynamic_call_index));
-		auto pseudo_let = _context.build_let_expression(expr->position(),
-		                                                ast2::symbol(expr->position(), _dynamic_call_buffers.front(),
-		                                                             0),
-		                                                expr);
-		std::ignore = pseudo_let->emplace_attribute<ast2::dynamic_call_pseudo_let_attribute>("pseudo_let");
-
 		const auto dyn_call_end = expect_token<tokens::arity_marker>();
 		if (!dyn_call_end) report_failure(_diag, dyn_call_end);
 		next_relevant();
@@ -430,7 +423,7 @@ c4::p2::parser::parse_final_expression() {
 		// XXX make dynamic_call be positioned between (- dyn_call_{end,start})
 
 		const auto dyn_call = _context.build_dynamic_call(dyn_call_start->token_position(),
-		                                                  pseudo_let,
+		                                                  expr,
 		                                                  std::move(args));
 		return _context.build_expression(dyn_call);
 	}

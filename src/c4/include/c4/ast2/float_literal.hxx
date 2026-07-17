@@ -40,7 +40,6 @@
 
 #include <c4/tags/visitable.hxx>
 #include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/literal_from_token.hxx>
 

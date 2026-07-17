@@ -41,23 +41,19 @@
 #pragma GCC diagnostic ignored "-Wchanges-meaning"
 #endif
 
-#include <stdexcept>
 #include <expected>
-#include <deque>
-#include <deque>
 #include <list>
-
-#include <c4/ast2/symbol.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/float_literal.hxx>
-
-#include <c4/p2/lex/lexer.hxx>
+#include <stdexcept>
 #include <utility>
+
 #include <c4/ast2/ast_context.hxx>
 #include <c4/ast2/expression.hxx>
-#include <c4/ast2/let_expression.hxx>
-#include <fmt/format.h>
+#include <c4/ast2/float_literal.hxx>
+#include <c4/ast2/integer_literal.hxx>
+#include <c4/ast2/string_literal.hxx>
+#include <c4/ast2/symbol.hxx>
+
+#include <c4/p2/lex/lexer.hxx>
 
 namespace c4::p2 {
 	struct bad_token_error final : std::runtime_error {
@@ -302,8 +298,8 @@ namespace c4::p2 {
 		std::vector<unsigned> _scope_symbol_size;
 		std::vector<parser_symbol> _scope_symbols;
 
-		unsigned _dynamic_call_index{};
-		std::list<std::string> _dynamic_call_buffers;
+		// unsigned _dynamic_call_index{};
+		// std::list<std::string> _dynamic_call_buffers;
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;

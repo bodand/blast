@@ -36,14 +36,13 @@
 #ifndef C4_AST2_INTEGER_LITERAL_HXX
 #define C4_AST2_INTEGER_LITERAL_HXX
 
-#include <string_view>
 #include <cstdint>
+#include <string_view>
 
-#include <c4/tags/visitable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/literal_from_token.hxx>
+#include <c4/tags/source_positioned.hxx>
+#include <c4/tags/visitable.hxx>
 
 namespace c4::ast2 {
 	struct integer_literal final : tags::visitable

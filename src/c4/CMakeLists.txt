@@ -101,8 +101,6 @@ add_library(c4
             include/c4/tags/visitable.hxx
             src/tags/visitable.cxx
 
-            include/c4/tags/evaluation_constness.hxx
-
             include/c4/tags/literal_from_token.hxx
             src/tags/literal_from_token.cxx
 

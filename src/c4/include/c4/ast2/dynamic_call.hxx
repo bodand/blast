@@ -38,18 +38,19 @@
 
 #include <span>
 
-#include <c4/tags/visitable.hxx>
+#include <c4/tags/attributable.hxx>
 #include <c4/tags/source_positioned.hxx>
-#include <c4/tags/evaluation_constness.hxx>
+#include <c4/tags/visitable.hxx>
 
 namespace c4::ast2 {
-	struct let_expression;
+	struct expression;
 
 	struct dynamic_call final : ast_node
 	                            , tags::visitable
-	                            , tags::source_positioned {
+	                            , tags::source_positioned
+	                            , tags::attributable {
 		dynamic_call(const c4::position& position,
-		             let_expression* callee,
+		             expression* callee,
 		             std::vector<expression*>&& args);
 
 		dynamic_call(const dynamic_call& cp) = delete;
@@ -62,7 +63,7 @@ namespace c4::ast2 {
 		dynamic_call&
 		operator=(dynamic_call&& other) noexcept = delete;
 
-		[[nodiscard]] const let_expression*
+		[[nodiscard]] const expression*
 		callee() const;
 
 		[[nodiscard]] std::span<const expression* const>
@@ -75,7 +76,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 	private:
-		let_expression* _callee;
+		expression* _callee;
 		std::vector<expression*> _args;
 	};
 }

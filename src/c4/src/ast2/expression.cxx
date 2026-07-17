@@ -171,3 +171,25 @@ c4::ast2::expression::loose_closure() const noexcept {
 	});
 	return referred_symbols != 0;
 }
+
+namespace {
+	struct owner_holder : c4::ast2::tags::typed_attribute<c4::ast2::let_expression*> {
+		explicit
+		owner_holder(c4::ast2::let_expression* const& value)
+			: typed_attribute{value} { }
+	};
+}
+
+void
+c4::ast2::expression::owner(let_expression* owner) noexcept {
+	_owner = owner;
+	std::visit(
+		[owner]<typename T0>(const T0& x) {
+			if constexpr (std::is_pointer_v<std::remove_cvref_t<T0>>) {
+				x->template emplace_attribute<owner_holder>("owner", owner);
+			}
+			else {
+				// return x.template emplace_attribute<owner_holder>("owner", owner);
+			}
+		}, _value);
+}
