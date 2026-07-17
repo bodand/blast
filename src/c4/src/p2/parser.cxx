@@ -36,14 +36,14 @@
 
 #include <deque>
 #include <iostream>
-#include <utility>
 #include <ranges>
+#include <utility>
 
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/tokens.hxx>
 
-#include <libassert/assert.hpp>
 #include <fmt/format.h>
+#include <libassert/assert.hpp>
 
 namespace {
 	struct token_ignorer final {
@@ -101,6 +101,12 @@ namespace {
 			return tok.token_position();
 		}, token);
 	}
+
+	struct namespaced_symbol_attribute : c4::ast2::tags::typed_attribute<std::vector<c4::ast2::symbol>> {
+		explicit
+		namespaced_symbol_attribute(std::vector<c4::ast2::symbol>&& symbols)
+			: typed_attribute(symbols) { }
+	};
 }
 
 c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
@@ -185,12 +191,10 @@ c4::p2::parser::parse_op_symbol() {
 c4::ast2::symbol
 c4::p2::parser::parse_bare_symbol() {
 	const auto bare_symbol = expect_token<tokens::bare_symbol>();
-	if (bare_symbol) {
-		next_relevant();
-		return ast2::symbol::from_token(*bare_symbol);
-	}
+	if (!bare_symbol) report_failure(_diag, bare_symbol);
 
-	report_failure(_diag, bare_symbol);
+	next_relevant();
+	return ast2::symbol::from_token(*bare_symbol);
 }
 
 c4::ast2::expression*
@@ -203,86 +207,98 @@ c4::p2::parser::parse_expression() {
 }
 
 c4::ast2::expression*
-c4::p2::parser::parse_let_expression() {
-	if (const auto let = expect_token<tokens::let>();
-		!let)
-		report_failure(_diag, let);
-	next_relevant();
+c4::p2::parser::parse_operator_let() {
+	const auto op = parse_op_symbol();
+	parser_symbol* sym = nullptr;
+	const auto let = _context.build_let_expression(
+		op.position(),
+		op,
+		nullptr
+	);
 
-	// Symbol declaration happens immediately after parsing the symbol: this is
-	// required to allow recursion. If symbol was declared at the end of the
-	// let expression, the expression parsing after this could not refer to it
-	// this is true for normal symbols as well as operator symbols
+	ASSERT(op.base_arity() == 1 || op.base_arity() == 2,
+	       "invalid operator arity", op);
 
-	if (expect_token<tokens::operator_symbol>()
-	    || expect_token<tokens::fn_operator>()) {
-		const auto op = parse_op_symbol();
+	std::string_view diagnostic;
+	std::string_view continuation_note;
 
-		if (op.base_arity() == 1) {
-			auto& sym = declare_symbol_internal(op.name(),
-			                                    op.base_arity(),
-			                                    nullptr,
-			                                    static_cast<unsigned>(-1));
+	if (op.base_arity() == 1) {
+		diagnostic = "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments";
+		continuation_note = "continuing parsing as if `{}' had one parameter (prefix)";
 
-			enter_scope();
-			auto expr = parse_expression();
-			leave_scope();
-			if (unsigned unbound = expr->unbound_parameters();
-				unbound != op.base_arity()) {
-				_diag.error(op.position(),
-				            "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments",
-				            op.name(),
-				            unbound)
-				     .note(expr->position(), "definition is here")
-				     .note("continuing parsing as if `{}' had one parameter (prefix)", op.name());
-			}
+		sym = &declare_symbol_internal(op.name(),
+		                               op.base_arity(),
+		                               nullptr,
+		                               static_cast<unsigned>(-1));
+	}
+	if (op.base_arity() == 2) {
+		diagnostic = "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments";
+		continuation_note = "continuing parsing as if `{}' had two parameters (infix)";
 
-			const auto let = _context.build_let_expression(
-				op.position(),
-				op,
-				expr
-			);
-			sym.referee = let;
-			return _context.build_expression(let);
-		}
-		if (op.base_arity() == 2) {
-			auto left_assoc = parse_associativity_indicator(op.name());
-			next_relevant();
-			unsigned precedence = parse_precedence(op.name());
-			next_relevant();
+		const auto left_assoc = parse_associativity_indicator(op.name());
+		next_relevant();
+		const unsigned precedence = parse_precedence(op.name());
+		next_relevant();
 
-			auto& sym = declare_symbol_internal(op.name(),
-			                                    op.base_arity(),
-			                                    nullptr,
-			                                    precedence,
-			                                    !left_assoc);
-
-			enter_scope();
-			auto expr = parse_expression();
-			leave_scope();
-			if (unsigned unbound = expr->unbound_parameters();
-				unbound != op.base_arity()) {
-				_diag.error(op.position(),
-				            "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments",
-				            op.name(),
-				            unbound)
-				     .note(expr->position(), "definition is here")
-				     .note("continuing parsing as if `{}' had two parameters (infix)",
-				           op.name());
-			}
-
-			const auto let = _context.build_let_expression(
-				op.position(),
-				op,
-				expr
-			);
-			sym.referee = let;
-			return _context.build_expression(let);
-		}
-
-		UNREACHABLE("operator's arity can only be 1 or 2", op);
+		sym = &declare_symbol_internal(op.name(),
+		                               op.base_arity(),
+		                               nullptr,
+		                               precedence,
+		                               !left_assoc);
 	}
 
+	const auto expr = parse_expression_of_let(op, let);
+
+	if (unsigned unbound = expr->unbound_parameters();
+		unbound != op.base_arity()) {
+		_diag.error(op.position(),
+		            fmt::runtime(diagnostic),
+		            op.name(),
+		            unbound)
+		     .note(expr->position(), "definition is here")
+		     .note(fmt::runtime(continuation_note), op.name());
+	}
+
+	let->expression(expr);
+	sym->referee = let;
+	return _context.build_expression(let);
+}
+
+void
+c4::p2::parser::set_symbol_stack(const ast2::symbol& symbol,
+                                 const ast2::let_expression* let,
+                                 const ast2::let_expression* const memory) {
+	if (memory) {
+		if (const auto& stck = memory->attribute_value<std::vector<ast2::symbol>>("symbol-stack")) {
+			std::vector symbol_stack(stck->begin(), stck->end());
+			symbol_stack.push_back(symbol);
+			let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
+			return;
+		}
+	}
+
+	std::vector symbol_stack{symbol};
+	let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
+}
+
+c4::ast2::expression*
+c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
+                                        ast2::let_expression* let) {
+	enter_scope();
+	const auto memory = std::exchange(_within_let, let);
+
+	set_symbol_stack(symbol, let, memory);
+
+	const auto expr = parse_expression();
+
+	std::exchange(_within_let, memory);
+	leave_scope();
+
+	return expr;
+}
+
+c4::ast2::expression*
+c4::p2::parser::parse_fn_let() {
 	const auto symbol = parse_symbol();
 	const auto let = _context.build_let_expression(
 		symbol.position(),
@@ -291,9 +307,7 @@ c4::p2::parser::parse_let_expression() {
 	);
 	declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
 
-	enter_scope();
-	auto expr = parse_expression();
-	leave_scope();
+	const auto expr = parse_expression_of_let(symbol, let);
 
 	if (unsigned unbound = expr->unbound_parameters();
 		unbound != symbol.base_arity()) {
@@ -310,6 +324,25 @@ c4::p2::parser::parse_let_expression() {
 
 	let->expression(expr);
 	return _context.build_expression(let);
+}
+
+c4::ast2::expression*
+c4::p2::parser::parse_let_expression() {
+	if (const auto let = expect_token<tokens::let>();
+		!let)
+		report_failure(_diag, let);
+	next_relevant();
+
+	// Symbol declaration happens immediately after parsing the symbol: this is
+	// required to allow recursion. If symbol was declared at the end of the
+	// let expression, the expression parsing after this could not refer to it
+	// this is true for normal symbols as well as operator symbols
+
+	if (expect_token<tokens::operator_symbol>()
+	    || expect_token<tokens::fn_operator>())
+		return parse_operator_let();
+
+	return parse_fn_let();
 }
 
 
@@ -405,11 +438,6 @@ c4::p2::parser::parse_final_expression() {
 	if (dyn_call_start) {
 		next_relevant();
 
-		// dynamic calls are parsed in two steps:
-		// 1. The callee expression is parsed, in complete generality.
-		// 2. A pseudo-let node is generated into the ast. This is used to
-		//    allow generation of variables in later processing when the
-		//    dynamic call is generated.
 		auto expr = parse_expression();
 
 		const auto dyn_call_end = expect_token<tokens::arity_marker>();

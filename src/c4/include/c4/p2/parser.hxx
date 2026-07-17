@@ -156,6 +156,17 @@ namespace c4::p2 {
 		ast2::expression*
 		parse_expression();
 
+		c4::ast2::expression*
+		parse_operator_let();
+
+		static void
+		set_symbol_stack(const c4::ast2::symbol& symbol, const c4::ast2::let_expression* let, const c4::ast2::let_expression* memory);
+
+		c4::ast2::expression* parse_expression_of_let(const c4::ast2::symbol& symbol, c4::ast2::let_expression* let);
+
+		c4::ast2::expression*
+		parse_fn_let();
+
 		ast2::expression*
 		parse_let_expression();
 
@@ -298,8 +309,7 @@ namespace c4::p2 {
 		std::vector<unsigned> _scope_symbol_size;
 		std::vector<parser_symbol> _scope_symbols;
 
-		// unsigned _dynamic_call_index{};
-		// std::list<std::string> _dynamic_call_buffers;
+		ast2::let_expression* _within_let = nullptr;
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;

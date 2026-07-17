@@ -167,7 +167,14 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 	}
 
 	obj.symbol().accept(*this);
-	_os << "@" << &obj << " \n" << std::string(2U * ++_depth, ' ');
+	_os << " @" << &obj;
+	if (const auto& stck = obj.attribute_value<std::vector<ast2::symbol>>("symbol-stack")) {
+		_os << " [";
+		std::ranges::copy(*stck | std::views::transform([](const auto& sym) { return sym.name(); }),
+		                  std::ostream_iterator<std::string_view>(_os, ", "));
+		_os << "]";
+	}
+	_os << " \n" << std::string(2U * ++_depth, ' ');
 	obj.value().accept(*this);
 	--_depth;
 	_os << "}";
