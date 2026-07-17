@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,59 +28,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-07-17.
  *
- * src/c4/include/c4/ast2/dynamic_call --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/name_manager/qualify_name_globally --
  *   
  */
-#ifndef C4_AST2_DYNAMIC_CALL_HXX
-#define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <span>
 
-#include <c4/ast2/ast_node.hxx>
+#include <numeric>
+#include <string>
 
-#include <c4/tags/attributable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/visitable.hxx>
+#include <fmt/format.h>
 
-namespace c4::ast2 {
-	struct expression;
+#include <c4rt2c/ast2_ir_emitter.hxx>
 
-	struct dynamic_call final : ast_node
-	                            , tags::visitable
-	                            , tags::source_positioned
-	                            , tags::attributable {
-		dynamic_call(const c4::position& position,
-		             expression* callee,
-		             std::vector<expression*>&& args);
+std::string
+c4rt2c::ast2_ir_emitter::name_manager::qualify_name_globally() {
+	auto qualified_name = fmt::format("q{}S", _names.size());
 
-		dynamic_call(const dynamic_call& cp) = delete;
+	const auto full_size = qualified_name.size()
+								  + std::accumulate(
+									  _names.begin(), _names.end(), std::size_t{},
+									  [](auto acc, const auto& current_name) {
+										  return acc + current_name.size();
+									  }
+								  )
+								  + 1;
+	qualified_name.reserve(full_size);
 
-		dynamic_call&
-		operator=(const dynamic_call& cp) = delete;
-
-		dynamic_call(dynamic_call&& other) noexcept = delete;
-
-		dynamic_call&
-		operator=(dynamic_call&& other) noexcept = delete;
-
-		[[nodiscard]] const expression*
-		callee() const;
-
-		[[nodiscard]] std::span<const expression* const>
-		args() const;
-
-		[[nodiscard]] unsigned
-		unbound_parameters() const noexcept { return 0; }
-
-		[[nodiscard]] std::optional<unsigned>
-		invocable_with() const noexcept { return std::nullopt; }
-
-	private:
-		expression* _callee;
-		std::vector<expression*> _args;
-	};
+	qualified_name = std::accumulate(_names.begin(), _names.end(), qualified_name);
+	qualified_name += 'E';
+	return qualified_name;
 }
-
-#endif

@@ -161,7 +161,43 @@ add_library(c4rt2c STATIC
             src/c4rt2c/source_file.cxx
 
             include/c4rt2c/ast2_ir_emitter.hxx
-            src/c4rt2c/ast2_ir_emitter.cxx
+            src/c4rt2c/ast2_ir_emitter/active_expression.cxx
+            src/c4rt2c/ast2_ir_emitter/allocate_argv.cxx
+            src/c4rt2c/ast2_ir_emitter/ast2_ir_emitter.cxx
+            src/c4rt2c/ast2_ir_emitter/declare_function.cxx
+            src/c4rt2c/ast2_ir_emitter/define.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_binary_op_call.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_block.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_dynamic_call.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_expression.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_float_literal.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_fn_call.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_integer_literal.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_let_expression.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_string_literal.cxx
+            src/c4rt2c/ast2_ir_emitter/do_visit_unary_op_call.cxx
+            src/c4rt2c/ast2_ir_emitter/emit_function_call.cxx
+            src/c4rt2c/ast2_ir_emitter/finalize.cxx
+            src/c4rt2c/ast2_ir_emitter/last_scope.cxx
+            src/c4rt2c/ast2_ir_emitter/resolve_referenced.cxx
+            src/c4rt2c/ast2_ir_emitter/set_last_callee.cxx
+
+            src/c4rt2c/ast2_ir_emitter/function_scope/continue_at.cxx
+            src/c4rt2c/ast2_ir_emitter/function_scope/definition.cxx
+            src/c4rt2c/ast2_ir_emitter/function_scope/function_scope.cxx
+            src/c4rt2c/ast2_ir_emitter/function_scope/start_function.cxx
+
+            src/c4rt2c/ast2_ir_emitter/name_manager/global_name.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/lambda_name.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/pop.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/push.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/push_lambda.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/qualify_name_globally.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/root.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
+
+            include/c4rt2c/runtime_fn.hxx
+            src/c4rt2c/runtime_fn/define.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

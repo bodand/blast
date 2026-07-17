@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,59 +28,22 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-07-17.
  *
- * src/c4/include/c4/ast2/dynamic_call --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/do_visit_let_expression --
  *   
  */
-#ifndef C4_AST2_DYNAMIC_CALL_HXX
-#define C4_AST2_DYNAMIC_CALL_HXX
 
-#include <span>
+#include <c4/ast2/expression.hxx>
+#include <c4/ast2/let_expression.hxx>
 
-#include <c4/ast2/ast_node.hxx>
+#include <c4rt2c/ast2_ir_emitter.hxx>
 
-#include <c4/tags/attributable.hxx>
-#include <c4/tags/source_positioned.hxx>
-#include <c4/tags/visitable.hxx>
+void
+c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::let_expression& obj) {
+	_scopes.emplace_back(_name_manager.push(obj, obj.symbol()));
 
-namespace c4::ast2 {
-	struct expression;
+	obj.value().accept(*this);
 
-	struct dynamic_call final : ast_node
-	                            , tags::visitable
-	                            , tags::source_positioned
-	                            , tags::attributable {
-		dynamic_call(const c4::position& position,
-		             expression* callee,
-		             std::vector<expression*>&& args);
-
-		dynamic_call(const dynamic_call& cp) = delete;
-
-		dynamic_call&
-		operator=(const dynamic_call& cp) = delete;
-
-		dynamic_call(dynamic_call&& other) noexcept = delete;
-
-		dynamic_call&
-		operator=(dynamic_call&& other) noexcept = delete;
-
-		[[nodiscard]] const expression*
-		callee() const;
-
-		[[nodiscard]] std::span<const expression* const>
-		args() const;
-
-		[[nodiscard]] unsigned
-		unbound_parameters() const noexcept { return 0; }
-
-		[[nodiscard]] std::optional<unsigned>
-		invocable_with() const noexcept { return std::nullopt; }
-
-	private:
-		expression* _callee;
-		std::vector<expression*> _args;
-	};
+	_scopes.pop_back();
 }
-
-#endif

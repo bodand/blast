@@ -40,6 +40,8 @@
 
 #include <c4/ast2/fwd.hxx>
 
+#include <c4rt2c/runtime_fn.hxx>
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
 
@@ -54,41 +56,6 @@ namespace llvm {
 }
 
 namespace c4rt2c {
-	struct runtime_fn {
-		llvm::FunctionType* type;
-		llvm::Function* fn;
-
-		llvm::BasicBlock*
-		define(llvm::LLVMContext& ctx) const;
-
-		template<class Fn>
-		void
-		define(llvm::LLVMContext& ctx, llvm::IRBuilder<>& builder, Fn&& body_builder) const {
-			const auto ip = builder.saveIP();
-			builder.SetInsertPoint(define(ctx));
-
-			std::vector<llvm::Argument*> args(fn->arg_size());
-			std::transform(fn->arg_begin(), fn->arg_end(), args.begin(),
-			               [](llvm::Argument& arg) { return &arg; });
-
-			if constexpr (std::convertible_to<decltype(std::invoke(std::forward<Fn>(body_builder), args)),
-			                                  llvm::Value*>) {
-				const auto ret = std::invoke(std::forward<Fn>(body_builder), args);
-				builder.CreateRet(ret);
-			}
-			else {
-				std::invoke(std::forward<Fn>(body_builder), args);
-				builder.CreateRetVoid();
-			}
-
-			builder.restoreIP(ip);
-		}
-
-		explicit(false) operator llvm::FunctionCallee() const noexcept {
-			return llvm::FunctionCallee(type, fn);
-		}
-	};
-
 	struct ast2_ir_emitter : c4::ast2::ast2_visitor {
 		using builder_type = llvm::IRBuilder<>;
 
