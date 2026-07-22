@@ -85,8 +85,7 @@ namespace c4rt2c {
 
 		void do_visit(const c4::ast2::unary_op_call& obj) override;
 
-		llvm::GlobalVariable
-		*
+		llvm::GlobalVariable*
 		define_global_var(const c4::ast2::let_expression* gsym);
 
 		void
@@ -102,13 +101,9 @@ namespace c4rt2c {
 		builder_type& _builder;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
-		std::vector<llvm::Value*> _last_callee_stack;
 
 		const c4::ast2::expression*
 		active_expression();
-
-		void
-		set_last_callee(llvm::Value* val);
 
 		void
 		emit_function_call(const c4::ast2::symbol& symbol,
@@ -242,6 +237,7 @@ namespace c4rt2c {
 		runtime_fn _rt_make_datum_block;
 		runtime_fn _rt_allocate_array;
 		runtime_fn _rt_evaluate;
+		runtime_fn _rt_seq;
 		runtime_fn _rt_complete_thunk;
 
 		std::vector<function_scope> _scopes;
@@ -251,6 +247,20 @@ namespace c4rt2c {
 
 		[[nodiscard]] llvm::Function*
 		declare_function(std::string_view name);
+
+		llvm::Value*
+		resolve_symbol(const c4::ast2::symbol& sym) const;
+
+		std::vector<llvm::Value*> _resolved_external_symbols;
+
+		[[nodiscard]] std::pair<bool, llvm::Value*>
+		thunked_symbol(const c4::ast2::symbol& sym) const;
+
+		void
+		define_function(const c4::ast2::let_expression& let);
+
+		void
+		define_variable(const c4::ast2::let_expression& let);
 
 		[[nodiscard]] llvm::BasicBlock*
 		define(llvm::Function* fn_decl);

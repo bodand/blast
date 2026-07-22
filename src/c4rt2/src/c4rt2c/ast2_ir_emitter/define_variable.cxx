@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2026-07-17.
  *
- * src/c4/include/c4/tags/referable --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/define_variable --
  *   
  */
-#ifndef C4_AST2_REFERABLE_HXX
-#define C4_AST2_REFERABLE_HXX
 
-#include <string_view>
+#include <c4/ast2/expression.hxx>
+#include <c4/ast2/let_expression.hxx>
 
-#include <c4/tags/attributable.hxx>
+#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
 
-#include "source_positioned.hxx"
+#include <libassert/assert.hpp>
 
-namespace c4::ast2::tags {
-	struct referable : attributable
-	                 , source_positioned {
-		explicit
-		referable(const c4::position& position)
-			: source_positioned{position} { }
+void
+c4rt2c::ast2_ir_emitter::define_variable(const c4::ast2::let_expression& let) {
+	DEBUG_ASSERT(let.introduces_variable(), "let does not introduce var", let);
+	if (let.global_symbol()) return;
 
-		[[nodiscard]] virtual std::string_view
-		name() const = 0;
+	// const auto ptr_t = llvm::PointerType::get(_context, 0);
+	// const auto var = _builder.CreateAlloca(ptr_t, nullptr, let.symbol().name());
 
-		[[nodiscard]] virtual bool
-		thunk() const noexcept;
+	let.value().accept(*this);
+	const auto val = let.value().attribute_value<llvm::Value*>("value");
+	ASSERT(val, "symbol didn't get defined to value", let.symbol().name(), let);
+	(*val)->setName(let.symbol().name());
 
-		[[nodiscard]] virtual bool
-		introduces_variable() const noexcept = 0;
-
-		[[nodiscard]] virtual bool
-		introduces_function() const noexcept = 0;
-
-		~referable() override = default;
-	};
+	// _builder.CreateStore(*val, var);
+	// let.emplace_attribute<c4c::llvm_value_attribute>("value", var);
 }
-
-#endif

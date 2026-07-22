@@ -30,24 +30,28 @@
  *
  * Originally created: 2026-07-17.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/resolve_referenced --
+ * src/c4rt2/include/c4rt2c/scoped_scope --
  *   
  */
+#ifndef BLAST_SCOPED_SCOPE_HXX
+#define BLAST_SCOPED_SCOPE_HXX
 
-#include <c4/ast2/symbol.hxx>
+#include <llvm/IR/IRBuilder.h>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+namespace c4rt2c {
+	struct scoped_scope {
+		scoped_scope(llvm::IRBuilder<>& builder)
+			: _ip(builder.saveIP())
+			, _builder(&builder) { }
 
-#include <libassert/assert.hpp>
+		~scoped_scope() {
+			_builder->restoreIP(_ip);
+		}
 
-namespace {
-	llvm::Function*
-	try_get_function_attribute(const c4::ast2::tags::attributable* ref) {
-		ASSERT(ref, "ref must not be null");
-
-		const auto attr = ref->attribute_value<llvm::Function*>("function");
-		if (!attr) return nullptr;
-
-		return *attr;
-	}
+	private:
+		llvm::IRBuilder<>::InsertPoint _ip;
+		llvm::IRBuilder<>* _builder;
+	};
 }
+
+#endif

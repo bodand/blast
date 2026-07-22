@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2026-07-22.
  *
- * src/c4/include/c4/tags/referable --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/make_datum_str --
  *   
  */
-#ifndef C4_AST2_REFERABLE_HXX
-#define C4_AST2_REFERABLE_HXX
 
-#include <string_view>
+#include <c4rt2c/runtime_emitter.hxx>
 
-#include <c4/tags/attributable.hxx>
+llvm::Value*
+c4rt2c::runtime_emitter::make_datum_str(const std::string_view str,
+                                        const std::optional<std::string_view>& global_name) const {
+	const auto name = global_name ? *global_name : std::string_view{"global_str"};
+	const auto bytes = _builder.CreateGlobalStringPtr(str, name);
+	const auto bytes_sz = str.size();
 
-#include "source_positioned.hxx"
-
-namespace c4::ast2::tags {
-	struct referable : attributable
-	                 , source_positioned {
-		explicit
-		referable(const c4::position& position)
-			: source_positioned{position} { }
-
-		[[nodiscard]] virtual std::string_view
-		name() const = 0;
-
-		[[nodiscard]] virtual bool
-		thunk() const noexcept;
-
-		[[nodiscard]] virtual bool
-		introduces_variable() const noexcept = 0;
-
-		[[nodiscard]] virtual bool
-		introduces_function() const noexcept = 0;
-
-		~referable() override = default;
-	};
+	return _builder.CreateCall(
+		_rt_make_datum_str, {
+			bytes,
+			_builder.getInt64(bytes_sz)
+		}, "lit.str");
 }
-
-#endif

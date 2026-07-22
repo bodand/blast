@@ -140,7 +140,13 @@ target_include_directories(c4rt2-core
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 target_compile_definitions(c4rt2-core PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
 
-add_library(c4rt2 SHARED)
+add_library(c4rt2 SHARED
+            include/c4rt2c/scoped_scope.hxx
+            include/c4rt2c/runtime_emitter.hxx
+            src/c4rt2c/runtime_emitter/runtime_emitter.cxx
+            src/c4rt2c/runtime_emitter/make_datum_str.cxx
+            src/c4rt2c/runtime_emitter/set_thunk_args.cxx
+            src/c4rt2c/runtime_emitter/make_thunk.cxx)
 target_link_libraries(c4rt2 PUBLIC c4rt2-core BDWgc::gc)
 
 add_library(c4rt2-internal STATIC)
@@ -179,10 +185,11 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/emit_function_call.cxx
             src/c4rt2c/ast2_ir_emitter/finalize.cxx
             src/c4rt2c/ast2_ir_emitter/last_scope.cxx
-            src/c4rt2c/ast2_ir_emitter/resolve_referenced.cxx
-            src/c4rt2c/ast2_ir_emitter/set_last_callee.cxx
             src/c4rt2c/ast2_ir_emitter/declare_symbols.cxx
             src/c4rt2c/ast2_ir_emitter/define_global_var.cxx
+            src/c4rt2c/ast2_ir_emitter/define_function.cxx
+            src/c4rt2c/ast2_ir_emitter/define_variable.cxx
+            src/c4rt2c/ast2_ir_emitter/resolve_symbol.cxx
 
             src/c4rt2c/ast2_ir_emitter/function_scope/continue_at.cxx
             src/c4rt2c/ast2_ir_emitter/function_scope/definition.cxx
@@ -198,10 +205,11 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/name_manager/root.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
 
             include/c4rt2c/runtime_fn.hxx
             src/c4rt2c/runtime_fn/define.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
+            src/c4rt2c/ast2_ir_emitter/thunked_symbol.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

@@ -69,16 +69,6 @@ c4::ast2::let_expression::value() const {
 	return *_value;
 }
 
-unsigned
-c4::ast2::let_expression::effective_arity() const {
-	return _symbol.base_arity() + static_cast<unsigned>(closure());
-}
-
-bool
-c4::ast2::let_expression::closure() const noexcept {
-	return value().loose_closure();
-}
-
 bool
 c4::ast2::let_expression::pseudo_let() const noexcept {
 	const auto pseudo_let = attribute_value<bool>("pseudo_let");

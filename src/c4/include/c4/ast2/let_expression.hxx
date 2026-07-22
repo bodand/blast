@@ -98,25 +98,14 @@ namespace c4::ast2 {
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
 
-		unsigned
-		base_arity() const override {
-			return _symbol.base_arity();
-		}
-
-		unsigned
-		effective_arity() const override;
-
-		bool
-		closure() const noexcept override;
-
 		[[nodiscard]] bool
 		pseudo_let() const noexcept;
 
 		[[nodiscard]] bool
-		introduces_variable() const noexcept;
+		introduces_variable() const noexcept override;
 
 		[[nodiscard]] bool
-		introduces_function() const noexcept { return !introduces_variable(); }
+		introduces_function() const noexcept override { return !introduces_variable(); }
 
 		[[nodiscard]] bool
 		global_symbol() const;

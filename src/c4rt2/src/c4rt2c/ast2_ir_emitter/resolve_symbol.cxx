@@ -28,18 +28,39 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-19.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/set_last_callee --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/resolve_symbol --
  *   
  */
+
+#include <iostream>
+#include <c4/ast2/symbol.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
 
-void
-c4rt2c::ast2_ir_emitter::set_last_callee(llvm::Value* val) {
-	ASSERT(!_last_callee_stack.empty(), "callee stack must not be empty");
-	_last_callee_stack.back() = val;
+namespace {
+	llvm::Value*
+	try_get_value_attribute(const c4::ast2::symbol& sym) {
+		const auto ref = sym.references();
+		if (!ref) return nullptr;
+
+		const auto attr = ref->attribute_value<llvm::Value*>("value");
+		if (!attr) return nullptr;
+
+		return *attr;
+	}
+}
+
+llvm::Value*
+c4rt2c::ast2_ir_emitter::resolve_symbol(const c4::ast2::symbol& sym) const {
+	if (const auto value = try_get_value_attribute(sym)) return value;
+
+	const auto gsym = name_manager::global_name(sym);
+	if (const auto value = _module.getNamedValue(gsym)) return value;
+
+	std::clog << "creating " << gsym << std::endl;
+	return llvm::Function::Create(_function_type, llvm::GlobalValue::ExternalLinkage, gsym, _module);
 }

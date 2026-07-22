@@ -36,29 +36,8 @@
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
-namespace {
-	template<class... Args>
-	c4rt2c::runtime_fn
-	make_rt_function(llvm::Module* module,
-						  std::string_view name,
-						  llvm::Type* ret, Args&&... args) {
-		const auto fn_type = llvm::FunctionType::get(
-			ret,
-			{std::forward<Args>(args)...},
-			false
-		);
-		const auto fn = llvm::Function::Create(
-			fn_type,
-			llvm::Function::ExternalLinkage,
-			name,
-			module
-		);
-
-		return {fn_type, fn};
-	}
-}
-
 c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
+
                                          llvm::Module& module,
                                          llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
                                          llvm::FunctionPassManager& pass_manager,
@@ -68,83 +47,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	, _context{context}
 	, _module{module}
 	, _builder{builder}
-	, _function_type{
-		llvm::FunctionType::get(
-			llvm::Type::getVoidTy(_context),
-			std::array<llvm::Type*, 2>{
-				llvm::PointerType::get(_context, 0),
-				llvm::PointerType::get(_context, 0)
-			},
-			false)
-	}
-	, _rt_make_thunk{
-		make_rt_function(
-			&_module,
-			"_c4_make_thunk",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_set_thunk_args{
-		make_rt_function(
-			&_module,
-			"_c4_set_thunk_args",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_make_datum_str{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_str",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
-	}
-	, _rt_make_datum_int64{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_int64",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
-	}
-	, _rt_make_datum_float64{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_float64",
-			llvm::PointerType::get(_context, 0),
-			_builder.getFloatTy())
-	}
-	, _rt_make_datum_block{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_block",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_allocate_array{
-		make_rt_function(
-			&_module,
-			"_c4_allocate_array",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64),
-			llvm::IntegerType::get(_context, 64))
-	}
-	, _rt_evaluate{
-		make_rt_function(
-			&_module,
-			"_c4_evaluate",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_complete_thunk{
-		make_rt_function(
-			&_module,
-			"_c4_complete_thunk",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	} {
+ {
 	const auto gc_malloc_ty = llvm::FunctionType::get(
 		llvm::PointerType::get(_context, 0),
 		{
@@ -175,12 +78,31 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	const auto trap = llvm::Intrinsic::getDeclaration(&module, llvm::Intrinsic::trap);
 
 	_rt_allocate_array.define(context, builder, [&](const std::span<llvm::Argument*> args) {
-		const auto mul = builder.CreateNUWMul(args[0], args[1]);
-		const auto memory = builder.CreateCall(gc_malloc, {mul});
-		return memory;
+		args[0]->setName("count");
+		args[1]->setName("size");
+		const auto cmp = builder.CreateICmp(llvm::CmpInst::ICMP_EQ, args[0], builder.getInt64(0));
+
+		const auto zero_bb = llvm::BasicBlock::Create(context, "nonalloc", _rt_allocate_array.fn);
+		const auto alloc_bb = llvm::BasicBlock::Create(context, "alloc", _rt_allocate_array.fn);
+		builder.CreateCondBr(cmp, zero_bb, alloc_bb);
+
+		// do not allocate zero size
+		{
+			builder.SetInsertPoint(zero_bb);
+			builder.CreateRet(llvm::ConstantPointerNull::get(ptr_t));
+		}
+
+		// allocate
+		{
+			builder.SetInsertPoint(alloc_bb);
+			const auto mul = builder.CreateNUWMul(args[0], args[1]);
+			const auto memory = builder.CreateCall(gc_malloc, {mul});
+			return memory;
+		}
 	});
 
 	_rt_make_datum_int64.define(context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("ival");
 		const auto memory = builder.CreateCall(gc_malloc, {builder.getInt64(4 + 4 + 8 + 8)});
 
 		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
@@ -194,6 +116,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	});
 
 	_rt_make_thunk.define(context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("callee");
 		const auto memory = builder.CreateCall(gc_malloc, {builder.getInt64(4 + 4 + 8 + 8)});
 
 		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
@@ -210,13 +133,17 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	});
 
 	_rt_set_thunk_args.define(context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("datum");
+		args[1]->setName("argv");
 		const auto argv_ptr = builder.CreateStructGEP(datum_t, args[0], 3, "datum_argv");
 		builder.CreateStore(args[1], argv_ptr)->setAlignment(llvm::Align(8));
 	});
 
 	_rt_complete_thunk.define(context, builder, [&](const std::span<llvm::Argument*> args) {
 		const auto& self = args[0];
+		self->setName("self");
 		const auto& res = args[1];
+		res->setName("resume");
 
 		const auto target_thunk_addr = builder.CreateStructGEP(completion_t, self, 1, "completion_thunk.addr");
 		const auto target_thunk = builder.CreateLoad(ptr_t, target_thunk_addr, "completion_thunk");
@@ -250,7 +177,9 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 
 	_rt_evaluate.define(context, builder, [&](const std::span<llvm::Argument*> args) {
 		const auto& thunk = args[0];
+		thunk->setName("thunk");
 		const auto& K = args[1];
+		K->setName("K");
 
 		const auto eval_done = llvm::BasicBlock::Create(context, "rt_eval_done", _rt_evaluate.fn);
 		const auto eval_thunk = llvm::BasicBlock::Create(context, "rt_eval_thunk", _rt_evaluate.fn);
@@ -327,5 +256,4 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	_scopes.push_back(_name_manager.root());
 	last_scope().continue_at(c4_main->getArg(1));
 	_builder.SetInsertPoint(llvm::BasicBlock::Create(_context, "entry", c4_main));
-	_last_callee_stack.push_back(nullptr);
 }

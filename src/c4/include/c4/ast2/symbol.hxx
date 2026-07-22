@@ -95,12 +95,6 @@ namespace c4::ast2 {
 		[[nodiscard]] unsigned
 		base_arity() const noexcept { return _arity; }
 
-		[[nodiscard]] unsigned
-		effective_arity() const {
-			if (_references) return _references->effective_arity();
-			return _arity;
-		}
-
 		[[nodiscard]] symbol
 		with_arity(unsigned arity) const;
 

@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,39 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2026-07-19.
  *
- * src/c4/include/c4/tags/referable --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/thunked_symbol --
  *   
  */
-#ifndef C4_AST2_REFERABLE_HXX
-#define C4_AST2_REFERABLE_HXX
 
-#include <string_view>
+#include <c4/ast2/symbol.hxx>
 
-#include <c4/tags/attributable.hxx>
+#include <c4rt2c/ast2_ir_emitter.hxx>
 
-#include "source_positioned.hxx"
+#include <llvm/IR/IRBuilder.h>
 
-namespace c4::ast2::tags {
-	struct referable : attributable
-	                 , source_positioned {
-		explicit
-		referable(const c4::position& position)
-			: source_positioned{position} { }
+#include <libassert/assert.hpp>
 
-		[[nodiscard]] virtual std::string_view
-		name() const = 0;
+std::pair<bool, llvm::Value*>
+c4rt2c::ast2_ir_emitter::thunked_symbol(const c4::ast2::symbol& sym) const {
+	const auto ref = sym.references();
+	if (!ref) {
+		auto fn = _module.getOrInsertFunction(name_manager::global_name(sym), _function_type);
+		return {true, _builder.CreateCall(_rt_make_thunk, {fn.getCallee()}, {sym.name(), ".thunk"})};
+	}
 
-		[[nodiscard]] virtual bool
-		thunk() const noexcept;
+	const auto fn_attr = ref->attribute_value<llvm::Function*>("function");
+	const auto val_attr = ref->attribute_value<llvm::Value*>("value");
 
-		[[nodiscard]] virtual bool
-		introduces_variable() const noexcept = 0;
+	if (ref->introduces_function()) {
+		ASSERT(fn_attr, "function attribute must not be null", ref, sym.name(), sym.base_arity());
+		if (ref->thunk()) return {false, *fn_attr};
 
-		[[nodiscard]] virtual bool
-		introduces_function() const noexcept = 0;
+		return {true, _builder.CreateCall(_rt_make_thunk, {*fn_attr}, {sym.name(), ".thunk"})};
+	}
 
-		~referable() override = default;
-	};
+	// values are always thunks
+	ASSERT(val_attr, "value attribute must not be null", ref, sym.name(), sym.base_arity());
+	return {false, *val_attr};
 }
-
-#endif

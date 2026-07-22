@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,40 +28,61 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-04-04.
+ * Originally created: 2026-07-22.
  *
- * src/c4/include/c4/tags/referable --
+ * src/c4rt2/include/c4rt2c/runtime_emitter --
  *   
  */
-#ifndef C4_AST2_REFERABLE_HXX
-#define C4_AST2_REFERABLE_HXX
+#ifndef BLAST_RUNTIME_EMITTER_HXX
+#define BLAST_RUNTIME_EMITTER_HXX
 
-#include <string_view>
+#include <c4rt2c/runtime_fn.hxx>
 
-#include <c4/tags/attributable.hxx>
+#include <llvm/IR/IRBuilder.h>
 
-#include "source_positioned.hxx"
+namespace llvm {
+	class FunctionType;
+	class LLVMContext;
+	class Module;
+	class Value;
+}
 
-namespace c4::ast2::tags {
-	struct referable : attributable
-	                 , source_positioned {
-		explicit
-		referable(const c4::position& position)
-			: source_positioned{position} { }
+namespace c4rt2c {
+	struct runtime_emitter {
+		runtime_emitter(llvm::LLVMContext& ctx, llvm::Module& module, llvm::IRBuilder<>& builder);
 
-		[[nodiscard]] virtual std::string_view
-		name() const = 0;
+		[[nodiscard]] llvm::FunctionType*
+		function_type() const { return _function_type; }
 
-		[[nodiscard]] virtual bool
-		thunk() const noexcept;
+		llvm::Value*
+		make_thunk(llvm::Value* fnptr);
 
-		[[nodiscard]] virtual bool
-		introduces_variable() const noexcept = 0;
+		void
+		set_thunk_args(llvm::Value* thunk, llvm::Value* argv);
 
-		[[nodiscard]] virtual bool
-		introduces_function() const noexcept = 0;
+		[[nodiscard]] llvm::Value*
+		make_datum_str(std::string_view str, const std::optional<std::string_view>& global_name = {}) const;
 
-		~referable() override = default;
+	private:
+		llvm::LLVMContext& _context;
+		llvm::Module& _module;
+		llvm::IRBuilder<>& _builder;
+
+		/// The universal function type to allow unrestricted
+		/// tail-calls. It is void(ptr, ptr), where the first is an array
+		/// to pointers as "argv" and the latter is the K continuation.
+		llvm::FunctionType* _function_type;
+
+		runtime_fn _rt_make_thunk;
+		runtime_fn _rt_set_thunk_args;
+		runtime_fn _rt_make_datum_str;
+		runtime_fn _rt_make_datum_int64;
+		runtime_fn _rt_make_datum_float64;
+		runtime_fn _rt_make_datum_block;
+		runtime_fn _rt_allocate_array;
+		runtime_fn _rt_evaluate;
+		runtime_fn _rt_seq;
+		runtime_fn _rt_complete_thunk;
 	};
 }
 

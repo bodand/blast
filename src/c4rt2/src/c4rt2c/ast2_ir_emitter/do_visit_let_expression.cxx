@@ -41,9 +41,6 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::let_expression& obj) {
-	_scopes.emplace_back(_name_manager.push(obj, obj.symbol()));
-
-	obj.value().accept(*this);
-
-	_scopes.pop_back();
+	if (obj.introduces_function()) return define_function(obj);
+	define_variable(obj);
 }

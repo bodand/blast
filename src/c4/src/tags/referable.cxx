@@ -35,3 +35,9 @@
  */
 
 #include <c4/tags/referable.hxx>
+
+bool
+c4::ast2::tags::referable::thunk() const noexcept {
+	if (const auto attr = attribute_value<bool>("thunk?")) return *attr;
+	return false;
+}

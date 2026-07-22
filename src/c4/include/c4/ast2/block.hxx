@@ -60,7 +60,7 @@ namespace c4::ast2 {
 	struct expression;
 
 	struct block_argument final : tags::referable
-	                              , ast_node {
+	                            , ast_node {
 		explicit
 		block_argument(symbol symbol)
 			: referable(symbol.position())
@@ -82,24 +82,22 @@ namespace c4::ast2 {
 		std::string_view
 		name() const override { return _symbol.name(); }
 
-		[[nodiscard]] unsigned
-		base_arity() const override { return effective_arity(); }
+		[[nodiscard]] bool
+		thunk() const noexcept override { return true; }
 
-		[[nodiscard]] unsigned
-		effective_arity() const override {
-			// block arguments are always packaged as zero-arity non-closure
-			// functions: that is, they can always be called without arguments
-			// themselves
-			return 0;
-		}
+		[[nodiscard]] bool
+		introduces_variable() const noexcept override { return true; }
+
+		[[nodiscard]] bool
+		introduces_function() const noexcept override { return false; }
 
 	private:
 		struct symbol _symbol;
 	};
 
 	struct block_args final : ast_node
-	                          , tags::visitable
-	                          , tags::source_positioned {
+	                        , tags::visitable
+	                        , tags::source_positioned {
 		block_args(const c4::position& position,
 		           std::span<symbol> args);
 
