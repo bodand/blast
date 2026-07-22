@@ -46,7 +46,8 @@ std::pair<bool, llvm::Value*>
 c4rt2c::ast2_ir_emitter::thunked_symbol(const c4::ast2::symbol& sym) const {
 	const auto ref = sym.references();
 	if (!ref) {
-		auto fn = _module.getOrInsertFunction(name_manager::global_name(sym), _runtime.function_type());
+		auto fn = _module.getOrInsertFunction(name_manager::global_name(sym),
+		                                      _runtime.function_type());
 		auto thunk = _runtime.make_thunk(fn.getCallee());
 		thunk->setName({sym.name(), ".thunk"});
 		return {true, thunk};

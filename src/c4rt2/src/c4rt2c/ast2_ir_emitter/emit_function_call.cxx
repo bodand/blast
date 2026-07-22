@@ -66,14 +66,26 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 ) {
 	const auto [fresh, thunk] = thunked_symbol(symbol);
 
-	std::ranges::for_each(args, [&](const auto& arg) {
-		arg->accept(*this);
-	});
+	llvm::Value* argv = nullptr;
 	if (fresh) {
-		const auto argv = _runtime.allocate_array(args.size(), sizeof(void*));
+		argv = _runtime.allocate_array(args.size(), sizeof(void*));
 		argv->setName({symbol.name(), ".argv"});
 		_runtime.set_thunk_args(thunk, argv);
 	}
+	std::ranges::for_each(args, [&, i=0](const auto& arg) mutable {
+		arg->accept(*this);
+		if (argv) {
+			const auto ptr_t = llvm::PointerType::get(_context, 0);
+			const auto addr = _builder.CreateGEP(
+				ptr_t,
+				argv,
+				llvm::ConstantInt::get(_context, llvm::APInt(64, i++)));
+
+			auto value = arg->template attribute_value<llvm::Value*>("value");
+			ASSERT(value, "argument didn't get assigned a value", symbol.name(), arg);
+			_builder.CreateStore(*value, addr);
+		}
+	});
 
 	const auto expr = active_expression();
 	ASSERT(expr);

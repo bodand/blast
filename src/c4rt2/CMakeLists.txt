@@ -153,7 +153,6 @@ compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
 
 add_library(c4rt2c STATIC
-
             include/c4rt2c/llvm_value_attribute.hxx
             src/c4rt2c/llvm_value_attribute.cxx
 
@@ -165,7 +164,11 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/allocate_argv.cxx
             src/c4rt2c/ast2_ir_emitter/ast2_ir_emitter.cxx
             src/c4rt2c/ast2_ir_emitter/declare_function.cxx
+            src/c4rt2c/ast2_ir_emitter/declare_symbols.cxx
             src/c4rt2c/ast2_ir_emitter/define.cxx
+            src/c4rt2c/ast2_ir_emitter/define_function.cxx
+            src/c4rt2c/ast2_ir_emitter/define_global_var.cxx
+            src/c4rt2c/ast2_ir_emitter/define_variable.cxx
             src/c4rt2c/ast2_ir_emitter/do_visit_binary_op_call.cxx
             src/c4rt2c/ast2_ir_emitter/do_visit_block.cxx
             src/c4rt2c/ast2_ir_emitter/do_visit_dynamic_call.cxx
@@ -179,10 +182,6 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/emit_function_call.cxx
             src/c4rt2c/ast2_ir_emitter/finalize.cxx
             src/c4rt2c/ast2_ir_emitter/last_scope.cxx
-            src/c4rt2c/ast2_ir_emitter/declare_symbols.cxx
-            src/c4rt2c/ast2_ir_emitter/define_global_var.cxx
-            src/c4rt2c/ast2_ir_emitter/define_function.cxx
-            src/c4rt2c/ast2_ir_emitter/define_variable.cxx
             src/c4rt2c/ast2_ir_emitter/resolve_symbol.cxx
             src/c4rt2c/ast2_ir_emitter/thunked_symbol.cxx
 
@@ -193,14 +192,14 @@ add_library(c4rt2c STATIC
 
             src/c4rt2c/ast2_ir_emitter/name_manager/global_name.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/lambda_name.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/pop.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/push.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/push_lambda.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/qualify_name_globally.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/root.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
 
             include/c4rt2c/runtime_fn.hxx
             src/c4rt2c/runtime_fn/define.cxx
@@ -208,18 +207,19 @@ add_library(c4rt2c STATIC
             include/c4rt2c/scoped_scope.hxx
 
             include/c4rt2c/runtime_emitter.hxx
-            src/c4rt2c/runtime_emitter/runtime_emitter.cxx
-            src/c4rt2c/runtime_emitter/make_datum_str.cxx
-            src/c4rt2c/runtime_emitter/make_datum_int64.cxx
-            src/c4rt2c/runtime_emitter/make_datum_float64.cxx
-            src/c4rt2c/runtime_emitter/make_datum_block.cxx
-            src/c4rt2c/runtime_emitter/make_thunk.cxx
-            src/c4rt2c/runtime_emitter/set_thunk_args.cxx
-            src/c4rt2c/runtime_emitter/allocate_array.cxx
-            src/c4rt2c/runtime_emitter/evaluate.cxx
-            src/c4rt2c/runtime_emitter/complete_thunk.cxx
-            src/c4rt2c/runtime_emitter/seq.cxx
             src/c4rt2c/runtime_emitter/allocate.cxx
+            src/c4rt2c/runtime_emitter/allocate_array.cxx
+            src/c4rt2c/runtime_emitter/complete_thunk.cxx
+            src/c4rt2c/runtime_emitter/evaluate.cxx
+            src/c4rt2c/runtime_emitter/make_datum_block.cxx
+            src/c4rt2c/runtime_emitter/make_datum_float64.cxx
+            src/c4rt2c/runtime_emitter/make_datum_int64.cxx
+            src/c4rt2c/runtime_emitter/make_datum_str.cxx
+            src/c4rt2c/runtime_emitter/make_seq_thunk.cxx
+            src/c4rt2c/runtime_emitter/make_thunk.cxx
+            src/c4rt2c/runtime_emitter/runtime_emitter.cxx
+            src/c4rt2c/runtime_emitter/seq.cxx
+            src/c4rt2c/runtime_emitter/set_thunk_args.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

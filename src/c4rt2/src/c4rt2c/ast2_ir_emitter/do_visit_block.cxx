@@ -75,7 +75,7 @@ namespace {
 		print(std::ostream& os) const = 0;
 
 		virtual llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_fn& seq) const = 0;
+		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const = 0;
 
 		virtual ~seq_builder_node() = default;
 	};
@@ -100,18 +100,13 @@ namespace {
 		}
 
 		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_fn& seq) const override {
-			const auto seq_left = _left->build(builder, seq);
+		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
+			const auto seq_left = _left->build(builder, rt);
 			seq_left->setName("seql");
-			const auto seq_right = _right->build(builder, seq);
+			const auto seq_right = _right->build(builder, rt);
 			seq_right->setName("seqr");
 
-			return builder.CreateCall(
-				seq, {
-					seq_left,
-					llvm::ConstantPointerNull::get(llvm::PointerType::get(builder.getContext(), 0))
-					// _right->build(builder, seq)
-				});
+			return rt.make_seq_thunk(seq_left, seq_right);
 		}
 
 		std::unique_ptr<seq_builder_node> _left;
@@ -131,7 +126,7 @@ namespace {
 		}
 
 		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_fn& seq) const override {
+		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
 			return _value;
 		}
 
@@ -155,7 +150,7 @@ namespace {
 		}
 
 		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_fn& seq) const override {
+		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
 			ASSERT(false, "WIP");
 			return nullptr;
 		}
@@ -174,8 +169,8 @@ namespace {
 		}
 
 		[[nodiscard]] llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_fn& seq) const {
-			return _root->build(builder, seq);
+		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const {
+			return _root->build(builder, rt);
 		}
 
 		std::unique_ptr<seq_builder_node> _root;
@@ -228,20 +223,14 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	const auto& expr = obj.expressions();
 	std::ranges::for_each(expr, [&](const auto& expr) {
 		expr->accept(*this);
-		if (expr->template attribute_value<bool>("thunk?")) {
-			const auto val = expr->template attribute_value<llvm::Value*>("value");
-			ASSERT(val);
-			builder.push(*val);
-		}
+		if (!expr->template attribute_value<bool>("thunk?")) return;
+
+		const auto val = expr->template attribute_value<llvm::Value*>("value");
+		ASSERT(val);
+		builder.push(*val);
 	});
 
-	builder._root->print(std::clog) << "\n";
-	// TODO: seq_builder needs refactoring to use runtime_emitter::seq() instead of runtime_fn&
-	// std::ignore = builder.build(_builder, _rt_seq);
+	const auto seq = builder.build(_builder, _runtime);
 
-	// const auto eval = _builder.CreateCall(_rt_evaluate, {
-	// *expr.front()->attribute_value<llvm::Value*>("value"),
-	// *K
-	// });
-	// eval->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	_runtime.evaluate(seq, *K);
 }

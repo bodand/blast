@@ -84,6 +84,9 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::Value*
 		make_thunk(llvm::Value* fnptr) const;
 
+		[[nodiscard]] llvm::Value*
+		make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const;
+
 		void
 		set_thunk_args(llvm::Value* thunk, llvm::Value* argv) const;
 
