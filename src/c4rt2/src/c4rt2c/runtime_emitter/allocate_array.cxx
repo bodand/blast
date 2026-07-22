@@ -28,24 +28,27 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-22.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/do_visit_float_literal --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/allocate_array --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/float_literal.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
-#include <c4rt2c/llvm_value_attribute.hxx>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Value.h>
 
-void
-c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::float_literal& obj) {
-	const auto val = _runtime.make_datum_float64(obj.value());
-	val->setName("lit.float");
-	if (const auto expr = active_expression()) {
-		expr->emplace_attribute<c4c::llvm_value_attribute>("value", val);
-	}
+llvm::Value*
+c4rt2c::runtime_emitter::allocate_array(llvm::Value* count, llvm::Value* size) const {
+	return _builder.CreateCall(_rt_allocate_array, {count, size});
 }
 
+llvm::Value*
+c4rt2c::runtime_emitter::allocate_array(const std::size_t count, const std::size_t size) const {
+	return allocate_array(
+		llvm::ConstantInt::get(_context, llvm::APInt(64, count)),
+		llvm::ConstantInt::get(_context, llvm::APInt(64, size)));
+}

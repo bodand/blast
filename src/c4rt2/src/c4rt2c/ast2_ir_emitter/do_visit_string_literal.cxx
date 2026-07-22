@@ -41,13 +41,8 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::string_literal& obj) {
-	const auto name = _name_manager.string_name();
-	const auto bytes = _builder.CreateGlobalStringPtr(obj.value(), name);
-	const auto bytes_sz = obj.value().size();
-
-	const auto val = _builder.CreateCall(_rt_make_datum_str,
-													 {bytes, _builder.getInt64(bytes_sz)},
-													 "lit.str");
+	const auto val = _runtime.make_datum_str(obj.value(), _name_manager.string_name());
+	val->setName("lit.str");
 	if (const auto expr = active_expression()) {
 		expr->emplace_attribute<c4c::llvm_value_attribute>("value", val);
 	}

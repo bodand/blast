@@ -46,8 +46,10 @@ std::pair<bool, llvm::Value*>
 c4rt2c::ast2_ir_emitter::thunked_symbol(const c4::ast2::symbol& sym) const {
 	const auto ref = sym.references();
 	if (!ref) {
-		auto fn = _module.getOrInsertFunction(name_manager::global_name(sym), _function_type);
-		return {true, _builder.CreateCall(_rt_make_thunk, {fn.getCallee()}, {sym.name(), ".thunk"})};
+		auto fn = _module.getOrInsertFunction(name_manager::global_name(sym), _runtime.function_type());
+		auto thunk = _runtime.make_thunk(fn.getCallee());
+		thunk->setName({sym.name(), ".thunk"});
+		return {true, thunk};
 	}
 
 	const auto fn_attr = ref->attribute_value<llvm::Function*>("function");
@@ -57,7 +59,9 @@ c4rt2c::ast2_ir_emitter::thunked_symbol(const c4::ast2::symbol& sym) const {
 		ASSERT(fn_attr, "function attribute must not be null", ref, sym.name(), sym.base_arity());
 		if (ref->thunk()) return {false, *fn_attr};
 
-		return {true, _builder.CreateCall(_rt_make_thunk, {*fn_attr}, {sym.name(), ".thunk"})};
+		auto thunk = _runtime.make_thunk(*fn_attr);
+		thunk->setName({sym.name(), ".thunk"});
+		return {true, thunk};
 	}
 
 	// values are always thunks

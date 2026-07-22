@@ -33,3 +33,13 @@
  * src/c4rt2/src/c4rt2c/runtime_emitter/set_thunk_args --
  *   
  */
+
+#include <c4rt2c/runtime_emitter.hxx>
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Value.h>
+
+void
+c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk, llvm::Value* argv) const {
+	_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
+}

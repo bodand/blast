@@ -70,12 +70,9 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 		arg->accept(*this);
 	});
 	if (fresh) {
-		const auto argv = _builder.CreateCall(
-			_rt_allocate_array, {
-				_builder.getInt64(args.size()),
-				_builder.getInt64(sizeof(void*))
-			}, {symbol.name(), ".argv"});
-		_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
+		const auto argv = _runtime.allocate_array(args.size(), sizeof(void*));
+		argv->setName({symbol.name(), ".argv"});
+		_runtime.set_thunk_args(thunk, argv);
 	}
 
 	const auto expr = active_expression();

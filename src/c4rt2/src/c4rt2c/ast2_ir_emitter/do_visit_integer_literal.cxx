@@ -42,12 +42,8 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::integer_literal& obj) {
-	const auto val = _builder.CreateCall(
-		_rt_make_datum_int64, {
-			llvm::ConstantInt::get(_context, llvm::APInt(64, obj.value()))
-		},
-		"lit.int"
-	);
+	const auto val = _runtime.make_datum_int64(obj.value());
+	val->setName("lit.int");
 
 	const auto expr = active_expression();
 	if (!expr) return;

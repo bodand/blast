@@ -36,6 +36,9 @@
 #ifndef BLAST_RUNTIME_EMITTER_HXX
 #define BLAST_RUNTIME_EMITTER_HXX
 
+#include <cstddef>
+#include <cstdint>
+
 #include <c4rt2c/runtime_fn.hxx>
 
 #include <llvm/IR/IRBuilder.h>
@@ -54,14 +57,50 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::FunctionType*
 		function_type() const { return _function_type; }
 
-		llvm::Value*
-		make_thunk(llvm::Value* fnptr);
+		[[nodiscard]] llvm::Value*
+		allocate(llvm::Value* size) const;
 
-		void
-		set_thunk_args(llvm::Value* thunk, llvm::Value* argv);
+		[[nodiscard]] llvm::Value*
+		allocate(std::size_t size) const;
 
 		[[nodiscard]] llvm::Value*
 		make_datum_str(std::string_view str, const std::optional<std::string_view>& global_name = {}) const;
+
+		[[nodiscard]] llvm::Value*
+		make_datum_int64(llvm::Value* val) const;
+
+		[[nodiscard]] llvm::Value*
+		make_datum_int64(std::int64_t val) const;
+
+		[[nodiscard]] llvm::Value*
+		make_datum_float64(llvm::Value* val) const;
+
+		[[nodiscard]] llvm::Value*
+		make_datum_float64(double val) const;
+
+		[[nodiscard]] llvm::Value*
+		make_datum_block(llvm::Value* val) const;
+
+		[[nodiscard]] llvm::Value*
+		make_thunk(llvm::Value* fnptr) const;
+
+		void
+		set_thunk_args(llvm::Value* thunk, llvm::Value* argv) const;
+
+		[[nodiscard]] llvm::Value*
+		allocate_array(llvm::Value* count, llvm::Value* size) const;
+
+		[[nodiscard]] llvm::Value*
+		allocate_array(std::size_t count, std::size_t size) const;
+
+		void
+		evaluate(llvm::Value* thunk, llvm::Value* K) const;
+
+		void
+		complete_thunk(llvm::Value* self, llvm::Value* res) const;
+
+		void
+		seq(llvm::Value* left, llvm::Value* right) const;
 
 	private:
 		llvm::LLVMContext& _context;
@@ -83,6 +122,7 @@ namespace c4rt2c {
 		runtime_fn _rt_evaluate;
 		runtime_fn _rt_seq;
 		runtime_fn _rt_complete_thunk;
+		runtime_fn _gc_malloc;
 	};
 }
 

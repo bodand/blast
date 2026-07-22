@@ -43,7 +43,7 @@ c4rt2c::ast2_ir_emitter::declare_function(const std::string_view name) {
 	ASSERT(!name.empty(), "function name must not be empty");
 
 	const auto decl = llvm::Function::Create(
-		_function_type,
+		_runtime.function_type(),
 		llvm::Function::ExternalLinkage,
 		name,
 		_module

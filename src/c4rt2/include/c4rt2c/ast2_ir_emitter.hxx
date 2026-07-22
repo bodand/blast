@@ -40,7 +40,7 @@
 
 #include <c4/ast2/fwd.hxx>
 
-#include <c4rt2c/runtime_fn.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
@@ -99,6 +99,8 @@ namespace c4rt2c {
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
 		builder_type& _builder;
+
+		runtime_emitter _runtime;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
 
@@ -223,22 +225,6 @@ namespace c4rt2c {
 
 		llvm::Value*
 		allocate_argv(std::size_t count) const;
-
-		/// The universal function type to allow unrestricted
-		/// tail-calls. It is void(ptr, ptr), where the first is an array
-		/// to pointers as "argv" and the latter is the K continuation.
-		llvm::FunctionType* _function_type;
-
-		runtime_fn _rt_make_thunk;
-		runtime_fn _rt_set_thunk_args;
-		runtime_fn _rt_make_datum_str;
-		runtime_fn _rt_make_datum_int64;
-		runtime_fn _rt_make_datum_float64;
-		runtime_fn _rt_make_datum_block;
-		runtime_fn _rt_allocate_array;
-		runtime_fn _rt_evaluate;
-		runtime_fn _rt_seq;
-		runtime_fn _rt_complete_thunk;
 
 		std::vector<function_scope> _scopes;
 

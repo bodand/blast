@@ -62,5 +62,5 @@ c4rt2c::ast2_ir_emitter::resolve_symbol(const c4::ast2::symbol& sym) const {
 	if (const auto value = _module.getNamedValue(gsym)) return value;
 
 	std::clog << "creating " << gsym << std::endl;
-	return llvm::Function::Create(_function_type, llvm::GlobalValue::ExternalLinkage, gsym, _module);
+	return llvm::Function::Create(_runtime.function_type(), llvm::GlobalValue::ExternalLinkage, gsym, _module);
 }

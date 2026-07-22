@@ -1,4 +1,3 @@
-#include <c4rt2c/runtime_emitter.hxx>
 /* blAST project
  *
  * Copyright (c) 2026 András Bodor <bodand@pm.me>
@@ -35,10 +34,12 @@
  *   
  */
 
+#include <c4rt2c/runtime_emitter.hxx>
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
 
-void
-c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk, llvm::Value* argv) {
-
+llvm::Value*
+c4rt2c::runtime_emitter::make_thunk(llvm::Value* fnptr) const {
+	return _builder.CreateCall(_rt_make_thunk, {fnptr});
 }

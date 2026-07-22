@@ -236,7 +236,8 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	});
 
 	builder._root->print(std::clog) << "\n";
-	std::ignore = builder.build(_builder, _rt_seq);
+	// TODO: seq_builder needs refactoring to use runtime_emitter::seq() instead of runtime_fn&
+	// std::ignore = builder.build(_builder, _rt_seq);
 
 	// const auto eval = _builder.CreateCall(_rt_evaluate, {
 	// *expr.front()->attribute_value<llvm::Value*>("value"),

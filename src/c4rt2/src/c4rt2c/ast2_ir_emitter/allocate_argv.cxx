@@ -39,8 +39,7 @@
 llvm::Value*
 c4rt2c::ast2_ir_emitter::allocate_argv(const std::size_t count) const {
 	const auto pointer_size = _module.getDataLayout().getPointerSize();
-	const auto size_val = llvm::ConstantInt::get(_context, llvm::APInt(64, pointer_size));
-	const auto count_val = llvm::ConstantInt::get(_context, llvm::APInt(64, count));
-
-	return _builder.CreateCall(_rt_allocate_array, {size_val, count_val}, "argv");
+	auto result = _runtime.allocate_array(count, pointer_size);
+	result->setName("argv");
+	return result;
 }
