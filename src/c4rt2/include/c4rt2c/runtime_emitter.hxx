@@ -102,9 +102,6 @@ namespace c4rt2c {
 		void
 		complete_thunk(llvm::Value* self, llvm::Value* res) const;
 
-		void
-		seq(llvm::Value* left, llvm::Value* right) const;
-
 	private:
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
@@ -115,16 +112,18 @@ namespace c4rt2c {
 		/// to pointers as "argv" and the latter is the K continuation.
 		llvm::FunctionType* _function_type;
 
-		runtime_fn _rt_make_thunk;
-		runtime_fn _rt_set_thunk_args;
-		runtime_fn _rt_make_datum_str;
-		runtime_fn _rt_make_datum_int64;
-		runtime_fn _rt_make_datum_float64;
-		runtime_fn _rt_make_datum_block;
-		runtime_fn _rt_allocate_array;
-		runtime_fn _rt_evaluate;
-		runtime_fn _rt_seq;
-		runtime_fn _rt_complete_thunk;
+		runtime_fn _rt_allocate_array;     // void* allocate_array(size, size)
+		runtime_fn _rt_complete_thunk;     // void complete_thunk(datum* thunk, fn K)
+		runtime_fn _rt_evaluate;           // void evaluate(datum* thunk, fn K)
+		runtime_fn _rt_make_datum_block;   // datum* make_datum_block(fn anon)
+		runtime_fn _rt_make_datum_float64; // datum* make_datum_float64(f64 val)
+		runtime_fn _rt_make_datum_int64;   // datum* make_datum_int64(i64 val)
+		runtime_fn _rt_make_datum_str;     // datum* make_datum_str(char* val)
+		runtime_fn _rt_make_thunk;         // datum* make_thunk(fn namedfn)
+		runtime_fn _rt_seq;                // datum* seq(datum* thunks, datum* K)
+		runtime_fn _rt_seq2;               // datum* seq2(datum* thunks, datum* K)
+		runtime_fn _rt_set_thunk_args;     // void set_thunk_args(datum* datum, datum[] argv)
+
 		runtime_fn _gc_malloc;
 	};
 }

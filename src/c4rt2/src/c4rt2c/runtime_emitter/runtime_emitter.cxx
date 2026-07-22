@@ -34,6 +34,7 @@
  *   
  */
 
+#include <c4/ast2/ast_context.hxx>
 #include <c4rt2c/runtime_emitter.hxx>
 #include <c4rt2c/runtime_fn.hxx>
 
@@ -80,20 +81,50 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			},
 			false)
 	}
-	, _rt_make_thunk{
+	, _rt_allocate_array{
 		make_rt_function(
 			&_module,
-			"_c4_make_thunk",
+			"_c4_allocate_array",
 			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
+			llvm::IntegerType::get(_context, 64),
+			llvm::IntegerType::get(_context, 64))
 	}
-	, _rt_set_thunk_args{
+	, _rt_complete_thunk{
 		make_rt_function(
 			&_module,
-			"_c4_set_thunk_args",
+			"_c4_complete_thunk",
 			llvm::Type::getVoidTy(_context),
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
+	}
+	, _rt_evaluate{
+		make_rt_function(
+			&_module,
+			"_c4_evaluate",
+			llvm::Type::getVoidTy(_context),
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
+	, _rt_make_datum_block{
+		make_rt_function(
+			&_module,
+			"_c4_make_datum_block",
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
+	, _rt_make_datum_float64{
+		make_rt_function(
+			&_module,
+			"_c4_make_datum_float64",
+			llvm::PointerType::get(_context, 0),
+			builder.getFloatTy())
+	}
+	, _rt_make_datum_int64{
+		make_rt_function(
+			&_module,
+			"_c4_make_datum_int64",
+			llvm::PointerType::get(_context, 0),
+			llvm::IntegerType::get(_context, 64))
 	}
 	, _rt_make_datum_str{
 		make_rt_function(
@@ -103,40 +134,10 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			llvm::PointerType::get(_context, 0),
 			llvm::IntegerType::get(_context, 64))
 	}
-	, _rt_make_datum_int64{
+	, _rt_make_thunk{
 		make_rt_function(
 			&_module,
-			"_c4_make_datum_int64",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
-	}
-	, _rt_make_datum_float64{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_float64",
-			llvm::PointerType::get(_context, 0),
-			builder.getFloatTy())
-	}
-	, _rt_make_datum_block{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_block",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_allocate_array{
-		make_rt_function(
-			&_module,
-			"_c4_allocate_array",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64),
-			llvm::IntegerType::get(_context, 64))
-	}
-	, _rt_evaluate{
-		make_rt_function(
-			&_module,
-			"_c4_evaluate",
-			llvm::Type::getVoidTy(_context),
+			"_c4_make_thunk",
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	}
@@ -148,10 +149,18 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
 	}
-	, _rt_complete_thunk{
+	, _rt_seq2{
 		make_rt_function(
 			&_module,
-			"_c4_complete_thunk",
+			"_c4_seq2",
+			llvm::Type::getVoidTy(_context),
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
+	, _rt_set_thunk_args{
+		make_rt_function(
+			&_module,
+			"_c4_set_thunk_args",
 			llvm::Type::getVoidTy(_context),
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0))
@@ -201,44 +210,6 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			const auto memory = allocate(mul);
 			return memory;
 		}
-	});
-
-	_rt_make_datum_int64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("ival");
-		const auto memory = allocate(4 + 4 + 8 + 8);
-
-		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
-		builder.CreateStore(builder.getInt32(datum_type_int64),
-		                    type_ptr)->setAlignment(llvm::Align(8));
-
-		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
-		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
-
-		return memory;
-	});
-
-	_rt_make_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("callee");
-		const auto memory = allocate(4 + 4 + 8 + 8);
-
-		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
-		builder.CreateStore(builder.getInt32(datum_type_thunk),
-		                    type_ptr)->setAlignment(llvm::Align(8));
-
-		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
-		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
-
-		const auto argv_ptr = builder.CreateStructGEP(datum_t, memory, 3, "datum_argv");
-		builder.CreateStore(llvm::ConstantPointerNull::get(ptr_t), argv_ptr)->setAlignment(llvm::Align(8));
-
-		return memory;
-	});
-
-	_rt_set_thunk_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("datum");
-		args[1]->setName("argv");
-		const auto argv_ptr = builder.CreateStructGEP(datum_t, args[0], 3, "datum_argv");
-		builder.CreateStore(args[1], argv_ptr)->setAlignment(llvm::Align(8));
 	});
 
 	_rt_complete_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
@@ -318,7 +289,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 			builder.CreateAlignedStore(builder.getInt32(datum_type_immediate), thunk_type_addr, llvm::Align(8));
 
-			const auto completer = allocate(8+8+8);
+			const auto completer = allocate(8 + 8 + 8);
 			completer->setName("completer");
 
 			const auto completer_func_addr = builder.CreateStructGEP(completion_t, completer, 0, "completer_fn.addr");
@@ -339,5 +310,85 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			const auto call = builder.CreateCall(_function_type, func, {argv, completer});
 			call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 		}
+	});
+
+	_rt_make_datum_int64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("ival");
+		const auto memory = allocate(4 + 4 + 8 + 8);
+
+		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
+		builder.CreateStore(builder.getInt32(datum_type_int64),
+		                    type_ptr)->setAlignment(llvm::Align(8));
+
+		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
+		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
+
+		return memory;
+	});
+
+	_rt_make_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("callee");
+		const auto memory = allocate(4 + 4 + 8 + 8);
+
+		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
+		builder.CreateStore(builder.getInt32(datum_type_thunk),
+		                    type_ptr)->setAlignment(llvm::Align(8));
+
+		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
+		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
+
+		const auto argv_ptr = builder.CreateStructGEP(datum_t, memory, 3, "datum_argv");
+		builder.CreateStore(llvm::ConstantPointerNull::get(ptr_t), argv_ptr)->setAlignment(llvm::Align(8));
+
+		return memory;
+	});
+
+	_rt_seq.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		llvm::Argument* thunks,* K;
+		(thunks = args[0])->setName("thunks");
+		(K = args[1])->setName("K");
+
+		const auto left_addr = builder.CreateGEP(ptr_t, thunks, builder.getInt64(0), "left.addr");
+		const auto left = builder.CreateLoad(ptr_t, left_addr, "left");
+
+		const auto right_addr = builder.CreateGEP(ptr_t, thunks, builder.getInt64(1), "right.addr");
+		const auto right = builder.CreateLoad(ptr_t, right_addr, "right");
+
+		const auto cont = allocate(8 + 8 + 8);
+		cont->setName("cont");
+
+		const auto cont_fn_addr = builder.CreateStructGEP(completion_t, cont, 0, "cont.fn.addr");
+		builder.CreateAlignedStore(_rt_seq2.fn, cont_fn_addr, llvm::Align(8));
+
+		const auto cont_target_addr = builder.CreateStructGEP(completion_t, cont, 1, "cont.target.addr");
+		builder.CreateAlignedStore(right, cont_target_addr, llvm::Align(8));
+
+		const auto cont_K_addr = builder.CreateStructGEP(completion_t, cont, 2, "cont.K.addr");
+		builder.CreateAlignedStore(K, cont_K_addr, llvm::Align(8));
+
+		const auto call = builder.CreateCall(_rt_evaluate, { left, cont });
+		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	});
+
+	_rt_seq2.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		llvm::Argument* self,* evaled;
+		(self = args[0])->setName("self");
+		(evaled = args[1])->setName("_evaled");
+
+		const auto self_next_addr = builder.CreateStructGEP(completion_t, self, 1, "self.next.addr");
+		const auto self_next = builder.CreateLoad(ptr_t, self_next_addr, "self.next");
+
+		const auto self_K_addr = builder.CreateStructGEP(completion_t, self, 2, "self.K.addr");
+		const auto self_K = builder.CreateLoad(ptr_t, self_K_addr, "self.K");
+
+		const auto call = builder.CreateCall(_rt_evaluate, { self_next, self_K });
+		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	});
+
+	_rt_set_thunk_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		args[0]->setName("datum");
+		args[1]->setName("argv");
+		const auto argv_ptr = builder.CreateStructGEP(datum_t, args[0], 3, "datum_argv");
+		builder.CreateStore(args[1], argv_ptr)->setAlignment(llvm::Align(8));
 	});
 }

@@ -218,7 +218,6 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/make_seq_thunk.cxx
             src/c4rt2c/runtime_emitter/make_thunk.cxx
             src/c4rt2c/runtime_emitter/runtime_emitter.cxx
-            src/c4rt2c/runtime_emitter/seq.cxx
             src/c4rt2c/runtime_emitter/set_thunk_args.cxx
             )
 target_link_libraries(c4rt2c
