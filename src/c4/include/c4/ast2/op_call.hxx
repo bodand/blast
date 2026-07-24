@@ -84,6 +84,9 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
 
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept override;
+
 	private:
 		symbol _op;
 		std::array<expression*, 2> _args;
@@ -122,6 +125,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
+
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept override;
 
 	private:
 		symbol _op;

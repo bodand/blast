@@ -52,6 +52,9 @@ namespace c4::ast2::tags {
 
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
+
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept { return true; }
 	};
 }
 

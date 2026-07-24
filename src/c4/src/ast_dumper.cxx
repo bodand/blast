@@ -52,15 +52,15 @@ c4::ast_dumper::do_visit(const ast2::block_args& obj) {
 	size_t i = 0;
 	for (const auto& expr : args | std::views::take(args.size() - 1)) {
 		expr->accept(*this);
-		_os << "#" << &obj.argument_reference(i++) << ", ";
+		_os << "\033[2m#" << &obj.argument_reference(i++) << ", \033[m";
 	}
 	args.back()->accept(*this);
-	_os << "#" << &obj.argument_reference(i++) << "]";
+	_os << "\033[2m#" << &obj.argument_reference(i++) << "\033[m]";
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::block& obj) {
-	_os << "{lambda ";
+	_os << "{\033[34mlambda\033[m ";
 	if (obj.args()) {
 		obj.args()->accept(*this);
 		_os << " ";
@@ -83,11 +83,13 @@ c4::ast_dumper::do_visit(const ast2::block& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
-	_os << "(";
+	_os << "\033[1;3m(\033[m";
 	obj.callee()->accept(*this);
+
+
 	auto expressions = obj.args();
 	if (expressions.empty()) {
-		_os << ")";
+		_os << "\033[1;3m)\033[m";
 		return;
 	}
 
@@ -97,7 +99,7 @@ c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
 		_os << "\n" << std::string(2U * _depth, ' ');
 	}
 	expressions.back()->accept(*this);
-	_os << ")";
+	_os << "\033[1;3m)\033[m";
 }
 
 void
@@ -107,11 +109,11 @@ c4::ast_dumper::do_visit(const ast2::expression& obj) {
 		_os << "closure ";
 	}
 	else {
-		_os << "expr ";
+		_os << "\033[2mexpr\033[m ";
 	}
 
 	if (const auto let = obj.owner()) {
-		_os << "@" << let << " ";
+		_os << "\033[2m@" << let << "\033[m ";
 	}
 	if (!obj.closure()) {
 		_os << "\n" << std::string(2U * ++_depth, ' ');
@@ -136,12 +138,13 @@ c4::ast_dumper::do_visit(const ast2::expression& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
-	_os << "(";
+	_os << "\033[1m(";
 	obj.sym().accept(*this);
+	_os << "\033[m";
 
 	auto expressions = obj.args();
 	if (expressions.empty()) {
-		_os << ")";
+		_os << "\033[1m)\033[m";
 		return;
 	}
 
@@ -152,27 +155,34 @@ c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
 		_os << "\n" << std::string(2U * _depth, ' ');
 	}
 	expressions.back()->accept(*this);
-	_os << ")";
+	_os << "\033[1m)\033[m";
 	--_depth;
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
-	_os << "{";
+	_os << "{\033[34mlet\033[m";
 	if (obj.introduces_variable()) {
-		_os << "let(var) ";
+		if (obj.value_constant()) {
+			_os << "\033[2;34m(const)\033[m ";
+		}
+		else {
+			_os << "\033[2;34m(var)\033[m ";
+		}
 	}
 	else {
-		_os << "let(fn) ";
+		_os << "\033[2;34m(fn)\033[m ";
 	}
 
+	_os << "\033[3m";
 	obj.symbol().accept(*this);
-	_os << " @" << &obj;
+	_os << " \033[2m@" << &obj << "\033[m";
 	if (const auto& stck = obj.attribute_value<std::vector<ast2::symbol>>("symbol-stack")) {
-		_os << " [";
+		_os << " [\033[2;32m";
 		std::ranges::copy(*stck | std::views::transform([](const auto& sym) { return sym.name(); }),
-		                  std::ostream_iterator<std::string_view>(_os, ", "));
-		_os << "]";
+		                  std::ostream_iterator<std::string_view>(_os, "\033[39m, \033[32m"));
+		// ", " always present because stack always contains at least current name
+		_os << "\b\b\033[0m]";
 	}
 	_os << " \n" << std::string(2U * ++_depth, ' ');
 	obj.value().accept(*this);
@@ -182,33 +192,36 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::binary_op_call& obj) {
-	_os << "(";
+	_os << "\033[1m(";
 	obj.op().accept(*this);
+	_os << "\033[m";
+
 	_os << "\n" << std::string(2U * ++_depth, ' ');
 	obj.left().accept(*this);
 	_os << "\n" << std::string(2U * _depth, ' ');
 	obj.right().accept(*this);
-	_os << ")";
+
+	_os << "\033[1m)\033[m";
 	--_depth;
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::unary_op_call& obj) {
-	_os << "(";
+	_os << "\033[1m(";
 	obj.op().accept(*this);
+	_os << "\033[m";
+
 	_os << "\n" << std::string(2U * ++_depth, ' ');
 	obj.operand().accept(*this);
-	_os << ")";
+
+	_os << "\033[1m)\033[m";
 	--_depth;
 }
 
 void
 c4::ast_dumper::do_visit(const ast2::symbol& obj) {
-	if (obj.extern_()) {
-		_os << "extern ";
-	}
-	_os << obj.name() << "/" << obj.base_arity();
+	_os << "\033[32m" << obj.name() << "\033[33m/" << obj.base_arity() << "\033[m";
 	if (!obj.extern_()) {
-		_os << "->" << obj.references();
+		_os << "\033[2m->" << obj.references() << "\033[m";
 	}
 }

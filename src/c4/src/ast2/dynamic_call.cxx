@@ -51,3 +51,9 @@ c4::ast2::dynamic_call::callee() const { return _callee; }
 
 std::span<const c4::ast2::expression* const>
 c4::ast2::dynamic_call::args() const { return _args; }
+
+bool
+c4::ast2::dynamic_call::constant_evaluated() const noexcept {
+	return _callee->constant_evaluated()
+	       && std::ranges::all_of(_args, std::mem_fn(&block_argument::constant_evaluated));
+}

@@ -77,6 +77,9 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
 
+		bool
+		constant_evaluated() const noexcept override;
+
 	private:
 		expression* _callee;
 		std::vector<expression*> _args;

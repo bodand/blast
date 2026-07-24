@@ -132,8 +132,8 @@ namespace c4::ast2 {
 
 		[[nodiscard]] bool
 		true_closure() const noexcept {
-			return !std::ranges::all_of(_closure_symbols,
-			                            std::mem_fn(&symbol::extern_));
+			return std::ranges::any_of(_closure_symbols,
+			                           std::mem_fn(&symbol::captured));
 		}
 
 		[[nodiscard]] std::optional<unsigned>
@@ -145,6 +145,19 @@ namespace c4::ast2 {
 					}
 					else {
 						return x.invocable_with();
+					}
+				}, _value);
+		}
+
+		bool
+		constant_evaluated() const noexcept override {
+			return std::visit(
+				[]<typename T0>(const T0& x) {
+					if constexpr (std::is_pointer_v<std::remove_cvref_t<T0>>) {
+						return x->constant_evaluated();
+					}
+					else {
+						return x.constant_evaluated();
 					}
 				}, _value);
 		}

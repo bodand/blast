@@ -61,6 +61,9 @@ namespace c4::ast2::tags {
 		[[nodiscard]] virtual bool
 		introduces_function() const noexcept = 0;
 
+		[[nodiscard]] virtual bool
+		value_constant() const noexcept { return true; }
+
 		~referable() override = default;
 	};
 }

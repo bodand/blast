@@ -78,6 +78,9 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
 
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept override;
+
 	private:
 		symbol _sym;
 		std::vector<expression*> _args;

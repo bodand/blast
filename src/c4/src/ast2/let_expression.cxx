@@ -63,17 +63,15 @@ c4::ast2::let_expression::expression(ast2::expression* expr) {
 	mark_expression_owned();
 }
 
+bool
+c4::ast2::let_expression::value_constant() const noexcept {
+	return _value->constant_evaluated();
+}
+
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
 	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
 	return *_value;
-}
-
-bool
-c4::ast2::let_expression::pseudo_let() const noexcept {
-	const auto pseudo_let = attribute_value<bool>("pseudo_let");
-	if (!pseudo_let) return false;
-	return *pseudo_let;
 }
 
 bool

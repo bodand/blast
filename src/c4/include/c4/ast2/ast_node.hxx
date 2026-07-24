@@ -50,6 +50,9 @@ namespace c4::ast2 {
 
 		virtual ~ast_node() = default;
 
+		[[nodiscard]] virtual bool
+		constant_evaluated() const noexcept { return false; }
+
 	protected:
 		ast_node() = default;
 	};

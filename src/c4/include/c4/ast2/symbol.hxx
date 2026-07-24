@@ -130,6 +130,9 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		extern_() const noexcept { return _references == nullptr; }
 
+		[[nodiscard]] bool
+		captured() const noexcept;
+
 		[[nodiscard]] tags::referable*
 		references() const noexcept { return _references; }
 
@@ -141,6 +144,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
+
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept { return true; }
 
 	private:
 		mutable tags::referable* _references{};

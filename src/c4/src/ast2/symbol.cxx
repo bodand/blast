@@ -117,6 +117,18 @@ c4::ast2::symbol::with_arity(const unsigned arity) const {
 std::string
 c4::ast2::symbol::mangle() const { return mangle_symbol(_name, _arity); }
 
+bool
+c4::ast2::symbol::captured() const noexcept {
+	if (extern_()) return false;
+	DEBUG_ASSERT(_references != nullptr,
+	             "captured symbol must have a referable as per !extern_()",
+	             _name,
+	             _arity,
+	             mangle());
+
+	return !_references->value_constant();
+}
+
 void
 c4::ast2::symbol::references(tags::referable* ref) const noexcept {
 	if (ref == nullptr) {

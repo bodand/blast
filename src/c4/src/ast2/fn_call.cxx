@@ -46,3 +46,11 @@ c4::ast2::fn_call::fn_call(const c4::position& position,
 
 std::span<const c4::ast2::expression* const>
 c4::ast2::fn_call::args() const { return _args; }
+
+bool
+c4::ast2::fn_call::constant_evaluated() const noexcept {
+	// TODO: this is always false, but symbols should be upgraded to know if the
+	//  function they refer to (eg. built-ins) can be constant evaluated
+	return ast_node::constant_evaluated()
+	       && std::ranges::all_of(_args, std::mem_fn(&block_argument::constant_evaluated));
+}

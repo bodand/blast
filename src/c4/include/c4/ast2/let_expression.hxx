@@ -54,12 +54,6 @@ namespace c4::ast2 {
 	struct expression;
 	struct block;
 
-	struct dynamic_call_pseudo_let_attribute final : ast2::tags::typed_attribute<bool> {
-		explicit
-		dynamic_call_pseudo_let_attribute()
-			: typed_attribute{true} { }
-	};
-
 	struct let_expression final : tags::referable
 	                              , ast_node
 	                              , tags::visitable {
@@ -75,6 +69,9 @@ namespace c4::ast2 {
 		void
 		expression(expression* expr);
 
+		[[nodiscard]] bool
+		value_constant() const noexcept override;
+
 		let_expression(let_expression&&) noexcept = delete;
 
 		let_expression&
@@ -83,23 +80,14 @@ namespace c4::ast2 {
 		[[nodiscard]] symbol
 		symbol() const { return _symbol; }
 
-		[[nodiscard]] unsigned
-		symbol_arity() const { return _symbol.base_arity(); }
-
 		[[nodiscard]] const struct expression&
 		value() const;
-
-		[[nodiscard]] std::string
-		mangled_name() const { return _symbol.mangle(); }
 
 		std::string_view
 		name() const override { return _symbol.name(); }
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }
-
-		[[nodiscard]] bool
-		pseudo_let() const noexcept;
 
 		[[nodiscard]] bool
 		introduces_variable() const noexcept override;
@@ -115,6 +103,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
+
+		[[nodiscard]] bool
+		constant_evaluated() const noexcept override { return true; }
 
 	private:
 		void
