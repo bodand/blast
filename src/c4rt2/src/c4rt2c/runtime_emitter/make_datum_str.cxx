@@ -43,9 +43,11 @@ c4rt2c::runtime_emitter::make_datum_str(const std::string_view str,
 	const auto bytes = _builder.CreateGlobalStringPtr(str, name);
 	const auto bytes_sz = str.size();
 
-	return _builder.CreateCall(
+	const auto call = _builder.CreateCall(
 		_rt_make_datum_str, {
 			bytes,
 			_builder.getInt64(bytes_sz)
 		}, "lit.str");
+	call->setCallingConv(llvm::CallingConv::Tail);
+	return call;
 }

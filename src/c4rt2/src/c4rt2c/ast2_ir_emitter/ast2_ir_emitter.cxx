@@ -46,8 +46,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	, _context{context}
 	, _module{module}
 	, _builder{builder}
-	, _runtime{context, module, builder}
- {
+	, _runtime{context, module, builder} {
 	const auto c4_main_ty = llvm::FunctionType::get(
 		llvm::IntegerType::get(_context, 32),
 		{

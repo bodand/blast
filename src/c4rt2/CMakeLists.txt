@@ -219,6 +219,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/make_thunk.cxx
             src/c4rt2c/runtime_emitter/runtime_emitter.cxx
             src/c4rt2c/runtime_emitter/set_thunk_args.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/format_symbol_stack.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

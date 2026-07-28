@@ -42,5 +42,6 @@
 void
 c4rt2c::runtime_emitter::evaluate(llvm::Value* thunk, llvm::Value* K) const {
 	const auto call = _builder.CreateCall(_rt_evaluate, {thunk, K});
+	call->setCallingConv(llvm::CallingConv::Tail);
 	call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 }

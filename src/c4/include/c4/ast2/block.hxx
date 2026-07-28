@@ -189,6 +189,9 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return unbound_parameters(); }
 
+		[[nodiscard]] bool
+		constant_evaluated(std::span<const symbol> skips) const noexcept override;
+
 	private:
 		block_args* _args{};
 		std::vector<expression*> _expressions;

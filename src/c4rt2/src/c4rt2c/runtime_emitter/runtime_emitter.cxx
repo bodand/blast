@@ -245,6 +245,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto K = builder.CreateAlignedLoad(ptr_t, target_K, llvm::Align(8), "K");
 
 		const auto call = builder.CreateCall(_function_type, K, {target_K, res});
+		call->setCallingConv(llvm::CallingConv::Tail);
 		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 	});
 
@@ -277,6 +278,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 			const auto cont_fn = builder.CreateAlignedLoad(ptr_t, K, llvm::Align(8), "cont_fn");
 			const auto call = builder.CreateCall(_function_type, cont_fn, {K, thunk});
+		call->setCallingConv(llvm::CallingConv::Tail);
 			call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 			builder.CreateRetVoid();
 
@@ -308,6 +310,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			const auto argv = builder.CreateLoad(ptr_t, argv_addr, "argv");
 
 			const auto call = builder.CreateCall(_function_type, func, {argv, completer});
+		call->setCallingConv(llvm::CallingConv::Tail);
 			call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 		}
 	});
@@ -367,6 +370,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		builder.CreateAlignedStore(K, cont_K_addr, llvm::Align(8));
 
 		const auto call = builder.CreateCall(_rt_evaluate, { left, cont });
+		call->setCallingConv(llvm::CallingConv::Tail);
 		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 	});
 
@@ -382,6 +386,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto self_K = builder.CreateLoad(ptr_t, self_K_addr, "self.K");
 
 		const auto call = builder.CreateCall(_rt_evaluate, { self_next, self_K });
+		call->setCallingConv(llvm::CallingConv::Tail);
 		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
 	});
 

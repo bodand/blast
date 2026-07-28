@@ -89,6 +89,7 @@ namespace {
 		void
 		do_visit(const c4::ast2::let_expression& obj) override {
 			obj.value().accept(*this);
+			// erase(_symbols, obj.symbol());
 		}
 
 		void
@@ -158,6 +159,9 @@ c4::ast2::expression::expression(value_type value,
 	, _value{std::move(value)}
 	, _closure_symbols{std::move(closure_over)} {
 	collect_closure(_value, _closure_symbols);
+	// if (const auto let = std::get_if<let_expression*>(&_value)) {
+		// std::erase((*let)->value()._closure_symbols, (*let)->symbol());
+	// }
 	uniqify_symbols(_closure_symbols);
 }
 
@@ -183,13 +187,15 @@ namespace {
 void
 c4::ast2::expression::owner(let_expression* owner) noexcept {
 	_owner = owner;
+	// erase(_closure_symbols, _owner->symbol());
 	std::visit(
 		[owner]<typename T0>(const T0& x) {
 			if constexpr (std::is_pointer_v<std::remove_cvref_t<T0>>) {
 				x->template emplace_attribute<owner_holder>("owner", owner);
 			}
-			else {
-				// return x.template emplace_attribute<owner_holder>("owner", owner);
+			else if constexpr (!std::same_as<symbol, T0>) {
+				x.template emplace_attribute<owner_holder>("owner", owner);
 			}
+			// XXX symbol: ???
 		}, _value);
 }

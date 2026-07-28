@@ -41,5 +41,6 @@
 
 void
 c4rt2c::runtime_emitter::complete_thunk(llvm::Value* self, llvm::Value* res) const {
-	_builder.CreateCall(_rt_complete_thunk, {self, res});
+	const auto call = _builder.CreateCall(_rt_complete_thunk, {self, res});
+	call->setCallingConv(llvm::CallingConv::Tail);
 }

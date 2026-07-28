@@ -43,7 +43,9 @@
 
 llvm::Value*
 c4rt2c::runtime_emitter::make_datum_int64(llvm::Value* val) const {
-	return _builder.CreateCall(_rt_make_datum_int64, {val});
+	const auto call = _builder.CreateCall(_rt_make_datum_int64, {val});
+	call->setCallingConv(llvm::CallingConv::Tail);
+	return call;
 }
 
 llvm::Value*

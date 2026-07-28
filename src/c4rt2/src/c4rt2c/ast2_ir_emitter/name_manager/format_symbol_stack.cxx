@@ -28,29 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-22.
+ * Originally created: 2026-07-24.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/allocate_array --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/name_manager/format_symbol_stack --
  *   
  */
 
-#include <c4rt2c/runtime_emitter.hxx>
+#include <span>
+#include <string>
 
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Value.h>
+#include <c4/ast2/symbol.hxx>
 
-llvm::Value*
-c4rt2c::runtime_emitter::allocate_array(llvm::Value* count, llvm::Value* size) const {
-	const auto call = _builder.CreateCall(_rt_allocate_array, {count, size});
-	call->setCallingConv(llvm::CallingConv::Tail);
-	return call;
-}
+#include <c4rt2c/ast2_ir_emitter.hxx>
 
-llvm::Value*
-c4rt2c::runtime_emitter::allocate_array(const std::size_t count, const std::size_t size) const {
-	return allocate_array(
-		llvm::ConstantInt::get(_context, llvm::APInt(64, count)),
-		llvm::ConstantInt::get(_context, llvm::APInt(64, size)));
+std::string
+c4rt2c::ast2_ir_emitter::name_manager::format_symbols_stack(
+	std::span<const c4::ast2::symbol> symbols) {
+	std::string result;
+
+	for (const auto& sym : symbols) {
+		std::format_to(std::back_inserter(result),
+			"{}/{}::",
+			sym.name(),
+			sym.base_arity());
+	}
+	result.resize(result.size() - 2);
+
+	return result;
 }

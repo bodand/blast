@@ -146,7 +146,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 		[[nodiscard]] bool
-		constant_evaluated() const noexcept { return true; }
+		constant_evaluated(std::span<const symbol>) const noexcept { return true; }
 
 	private:
 		mutable tags::referable* _references{};

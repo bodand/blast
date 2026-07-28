@@ -95,11 +95,16 @@ namespace {
 	defined_symbols_remover(It begin, It end) -> defined_symbols_remover<It>;
 
 	std::vector<c4::ast2::symbol>
-	merge_child_contexts(const std::span<c4::ast2::expression* const> expressions) {
+	merge_child_contexts(const std::span<c4::ast2::expression* const> expressions,
+	                     std::span<const c4::ast2::symbol> skips = {}) {
 		std::vector<c4::ast2::symbol> result;
 		for (const auto& expr : expressions) {
 			auto symbols = expr->closure_symbols();
-			result.insert(result.end(), symbols.cbegin(), symbols.cend());
+			result.reserve(result.size() + symbols.size());
+			std::ranges::copy(symbols, std::back_inserter(result));
+			std::erase_if(result, [&skips](const auto& sym) {
+				return std::ranges::find(skips, sym) != skips.end();
+			});
 		}
 		return result;
 	}
@@ -139,6 +144,7 @@ std::vector<c4::ast2::symbol>
 c4::ast2::block::effective_context_symbols() const {
 	auto result = merge_child_contexts(_expressions);
 	deduplicate(result);
+	std::erase_if(result, [](const auto& sym) { return !sym.captured(); });
 	remove_locally_defined(result, _args, _expressions);
 	return result;
 }
@@ -151,4 +157,13 @@ c4::ast2::block::expressions() const {
 void
 c4::ast2::block::expressions(std::vector<expression*>&& expressions) {
 	_expressions = std::move(expressions);
+}
+
+bool
+c4::ast2::block::constant_evaluated(std::span<const symbol> skips) const noexcept {
+	// Effectively not a closure
+	auto syms = merge_child_contexts(_expressions, skips);
+	std::erase_if(syms, [](const auto& sym) { return !sym.captured(); });
+	remove_locally_defined(syms, _args, _expressions);
+	return syms.empty();
 }

@@ -85,7 +85,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 		[[nodiscard]] bool
-		constant_evaluated() const noexcept override;
+		constant_evaluated(std::span<const symbol> skips) const noexcept override;
 
 	private:
 		symbol _op;
@@ -127,7 +127,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 		[[nodiscard]] bool
-		constant_evaluated() const noexcept override;
+		constant_evaluated(std::span<const symbol> skips) const noexcept override;
 
 	private:
 		symbol _op;

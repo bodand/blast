@@ -83,6 +83,9 @@ namespace c4::ast2 {
 		[[nodiscard]] const struct expression&
 		value() const;
 
+		[[nodiscard]] struct expression&
+		value();
+
 		std::string_view
 		name() const override { return _symbol.name(); }
 
@@ -105,7 +108,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 		[[nodiscard]] bool
-		constant_evaluated() const noexcept override { return true; }
+		constant_evaluated(std::span<const struct symbol> skips) const noexcept override;
 
 	private:
 		void

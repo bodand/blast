@@ -68,11 +68,11 @@ const c4::ast2::expression&
 c4::ast2::binary_op_call::right() const noexcept { return *_args[1]; }
 
 bool
-c4::ast2::binary_op_call::constant_evaluated() const noexcept {
+c4::ast2::binary_op_call::constant_evaluated(std::span<const symbol> skips) const noexcept {
 	// TODO: op symbol upgrade : see fn_call::constant_evaluated
-	return ast_node::constant_evaluated()
-	       && _args[0]->constant_evaluated()
-	       && _args[1]->constant_evaluated();
+	return ast_node::constant_evaluated(skips)
+	       && _args[0]->constant_evaluated(skips)
+	       && _args[1]->constant_evaluated(skips);
 }
 
 c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
@@ -96,8 +96,8 @@ const c4::ast2::expression&
 c4::ast2::unary_op_call::operand() const noexcept { return *_operand; }
 
 bool
-c4::ast2::unary_op_call::constant_evaluated() const noexcept {
+c4::ast2::unary_op_call::constant_evaluated(std::span<const symbol> skips) const noexcept {
 	// TODO: op symbol upgrade : see fn_call::constant_evaluated
-	return ast_node::constant_evaluated()
-	       && _operand->constant_evaluated();
+	return ast_node::constant_evaluated(skips)
+	       && _operand->constant_evaluated(skips);
 }

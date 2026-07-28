@@ -50,6 +50,11 @@ c4::ast2::let_expression::let_expression(const c4::position& position,
 	mark_expression_owned();
 }
 
+bool
+c4::ast2::let_expression::constant_evaluated(std::span<const ast2::symbol>) const noexcept {
+	return true;
+}
+
 void
 c4::ast2::let_expression::mark_expression_owned() {
 	if (!_value) return;
@@ -65,11 +70,21 @@ c4::ast2::let_expression::expression(ast2::expression* expr) {
 
 bool
 c4::ast2::let_expression::value_constant() const noexcept {
-	return _value->constant_evaluated();
+	// TODO: this is triggered by recursion, returning false possibly inhibits
+	//		some constant calculations that could take place, or even introduces
+	//		closures in referencing code
+	if (!_value) return false;
+	return _value->constant_evaluated(std::array{_symbol});
 }
 
 const c4::ast2::expression&
 c4::ast2::let_expression::value() const {
+	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
+	return *_value;
+}
+
+c4::ast2::expression&
+c4::ast2::let_expression::value() {
 	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
 	return *_value;
 }

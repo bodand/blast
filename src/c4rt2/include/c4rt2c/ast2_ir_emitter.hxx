@@ -217,6 +217,9 @@ namespace c4rt2c {
 			static std::string
 			mangle_symbol_stack(std::span<const c4::ast2::symbol> symbols);
 
+			static std::string
+			format_symbols_stack(std::span<const c4::ast2::symbol> symbols);
+
 		private:
 			std::size_t _string_counter{};
 			std::size_t _lambda_counter{};

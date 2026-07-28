@@ -78,7 +78,7 @@ namespace c4::ast2 {
 		invocable_with() const noexcept { return std::nullopt; }
 
 		bool
-		constant_evaluated() const noexcept override;
+		constant_evaluated(std::span<const symbol> skips) const noexcept override;
 
 	private:
 		expression* _callee;

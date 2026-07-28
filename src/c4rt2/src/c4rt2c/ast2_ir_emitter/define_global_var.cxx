@@ -41,6 +41,14 @@
 
 #include <libassert/assert.hpp>
 
+namespace {
+	struct needs_loading_attribute : c4::ast2::tags::typed_attribute<bool> {
+		explicit
+		needs_loading_attribute(const bool val)
+			: typed_attribute{val} { }
+	};
+}
+
 llvm::GlobalVariable*
 c4rt2c::ast2_ir_emitter::define_global_var(const c4::ast2::let_expression* gsym) {
 	const auto ptr_t = llvm::PointerType::get(_context, 0);
@@ -53,6 +61,7 @@ c4rt2c::ast2_ir_emitter::define_global_var(const c4::ast2::let_expression* gsym)
 	var->setName(var_name);
 
 	gsym->value().accept(*this);
+	gsym->emplace_attribute<needs_loading_attribute>("needs-loading?", true);
 	const auto val = gsym->value().attribute_value<llvm::Value*>("value");
 	ASSERT(val, "symbol didn't get defined to value", var_name, gsym);
 

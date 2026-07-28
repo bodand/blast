@@ -41,5 +41,6 @@
 
 void
 c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk, llvm::Value* argv) const {
-	_builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
+	const auto call = _builder.CreateCall(_rt_set_thunk_args, {thunk, argv});
+	call->setCallingConv(llvm::CallingConv::Tail);
 }

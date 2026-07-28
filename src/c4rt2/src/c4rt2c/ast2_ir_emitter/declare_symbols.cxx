@@ -55,6 +55,7 @@ c4rt2c::ast2_ir_emitter::declare_symbols(const c4::ast2::ast_context& ctx) {
 
 		if (gsym->introduces_function()) {
 			const auto decl = declare_function(name);
+			decl->setCallingConv(llvm::CallingConv::Tail);
 			gsym->emplace_attribute<c4c::llvm_function_attribute>("function", decl);
 			continue;
 		}

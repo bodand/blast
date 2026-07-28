@@ -46,6 +46,16 @@
 
 namespace c4::ast2::tags {
 	struct source_positioned {
+		source_positioned(const source_positioned&) = default;
+
+		source_positioned&
+		operator=(const source_positioned&) = default;
+
+		source_positioned(source_positioned&&) = default;
+
+		source_positioned&
+		operator=(source_positioned&&) = default;
+
 		[[nodiscard]] const position&
 		position() const { return _position; }
 

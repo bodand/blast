@@ -41,5 +41,6 @@
 
 llvm::BasicBlock*
 c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
+	fn->setCallingConv(llvm::CallingConv::Tail);
 	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
 }

@@ -64,18 +64,44 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	const c4::ast2::symbol& symbol,
 	std::span<const c4::ast2::expression*const> args
 ) {
-	const auto [fresh, thunk] = thunked_symbol(symbol);
+	const auto ptr_t = llvm::PointerType::get(_context, 0);
+
+	auto [fresh, thunk] = thunked_symbol(symbol);
 
 	llvm::Value* argv = nullptr;
 	if (fresh) {
-		argv = _runtime.allocate_array(args.size(), sizeof(void*));
+		size_t callee_args_size = args.size();
+		std::optional<llvm::SmallVector<llvm::Value*, 4>> closure_over{};
+
+		if (const auto ref = symbol.references()) {
+			const auto raw_closures = ref->attribute_value<
+				llvm::SmallVector<llvm::Value*, 4>>("closure-over");
+
+			if (raw_closures) {
+				closure_over = *raw_closures;
+				callee_args_size += closure_over->size();
+			}
+		}
+
+		argv = _runtime.allocate_array(callee_args_size, sizeof(void*));
 		argv->setName({symbol.name(), ".argv"});
+
+		if (closure_over) {
+			for (size_t i = 0;
+			     const auto& val : *closure_over) {
+				const auto addr = _builder.CreateGEP(
+					ptr_t,
+					argv,
+					llvm::ConstantInt::get(_context, llvm::APInt(64, i++)));
+				_builder.CreateStore(val, addr);
+			}
+		}
+
 		_runtime.set_thunk_args(thunk, argv);
 	}
 	std::ranges::for_each(args, [&, i=0](const auto& arg) mutable {
 		arg->accept(*this);
 		if (argv) {
-			const auto ptr_t = llvm::PointerType::get(_context, 0);
 			const auto addr = _builder.CreateGEP(
 				ptr_t,
 				argv,
@@ -89,6 +115,14 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 
 	const auto expr = active_expression();
 	ASSERT(expr);
+
+	if (const auto ref = symbol.references()) {
+		if (const auto needs = ref->attribute_value<bool>("needs-loading?");
+			needs && *needs) {
+			thunk = _builder.CreateLoad(ptr_t, thunk, {symbol.name(), ".load"});
+		}
+	}
+
 	expr->emplace_attribute<c4c::llvm_value_attribute>(
 		"value",
 		thunk

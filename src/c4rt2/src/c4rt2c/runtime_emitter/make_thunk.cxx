@@ -41,5 +41,7 @@
 
 llvm::Value*
 c4rt2c::runtime_emitter::make_thunk(llvm::Value* fnptr) const {
-	return _builder.CreateCall(_rt_make_thunk, {fnptr});
+	const auto call = _builder.CreateCall(_rt_make_thunk, {fnptr});
+	call->setCallingConv(llvm::CallingConv::Tail);
+	return call;
 }

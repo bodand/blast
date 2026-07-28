@@ -36,7 +36,11 @@
 #ifndef C4_AST2_AST_NODE_HXX
 #define C4_AST2_AST_NODE_HXX
 
+#include <span>
+
 namespace c4::ast2 {
+	struct symbol;
+
 	struct ast_node {
 		ast_node(ast_node& cp) = delete;
 
@@ -51,7 +55,7 @@ namespace c4::ast2 {
 		virtual ~ast_node() = default;
 
 		[[nodiscard]] virtual bool
-		constant_evaluated() const noexcept { return false; }
+		constant_evaluated(std::span<const symbol>) const noexcept { return false; }
 
 	protected:
 		ast_node() = default;

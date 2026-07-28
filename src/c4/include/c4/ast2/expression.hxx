@@ -76,13 +76,13 @@ namespace c4::ast2 {
 
 		expression(const expression&) = delete;
 
-		expression&
-		operator=(const expression&) = delete;
-
 		expression(expression&&) noexcept = delete;
 
 		expression&
 		operator=(expression&&) noexcept = delete;
+
+		expression&
+		operator=(const expression&) = delete;
 
 		[[nodiscard]] const value_type&
 		value() const { return _value; }
@@ -150,14 +150,14 @@ namespace c4::ast2 {
 		}
 
 		bool
-		constant_evaluated() const noexcept override {
+		constant_evaluated(std::span<const symbol> skips) const noexcept override {
 			return std::visit(
-				[]<typename T0>(const T0& x) {
+				[skips]<typename T0>(const T0& x) {
 					if constexpr (std::is_pointer_v<std::remove_cvref_t<T0>>) {
-						return x->constant_evaluated();
+						return x->constant_evaluated(skips);
 					}
 					else {
-						return x.constant_evaluated();
+						return x.constant_evaluated(skips);
 					}
 				}, _value);
 		}
