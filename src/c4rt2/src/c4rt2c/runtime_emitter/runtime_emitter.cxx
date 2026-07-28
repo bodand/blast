@@ -41,7 +41,6 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 
 namespace {
@@ -180,11 +179,101 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	const auto int64_t = llvm::IntegerType::get(_context, 64);
 	const auto ptr_t = llvm::PointerType::get(_context, 0);
 
+	constexpr auto datum_field_type = 0;
+	constexpr auto datum_field_value = 2;
+	constexpr auto datum_field_argv = 3;
 	const auto datum_t = llvm::StructType::create(_context, "c4_datum_t");
-	datum_t->setBody({int32_t, int32_t, ptr_t, ptr_t});
+	datum_t->setBody({
+		int32_t, // type
+		int32_t, // ???
+		ptr_t,   // value
+		ptr_t    // argv ptr
+	});
 
+	const auto get_datum_type = [&](llvm::Value* d) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_type, {d->getName(), ".type.addr"});
+		return builder.CreateLoad(int32_t, addr, {d->getName(), ".type"});
+	};
+
+	const auto get_datum_value = [&](llvm::Value* d, llvm::Type* type) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_value, {d->getName(), ".value.addr"});
+		return builder.CreateLoad(type, addr, {d->getName(), ".value"});
+	};
+
+	const auto get_datum_argv = [&](llvm::Value* d) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_argv, {d->getName(), ".argv.addr"});
+		return builder.CreateLoad(ptr_t, addr, {d->getName(), ".argv"});
+	};
+
+	const auto set_datum_type = [&](llvm::Value* d, llvm::Value* type) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_type, {d->getName(), ".type.addr"});
+		builder.CreateAlignedStore(type, addr, llvm::Align(8));
+	};
+
+	const auto set_datum_value = [&](llvm::Value* d, llvm::Value* value) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_value, {d->getName(), ".value.addr"});
+		builder.CreateAlignedStore(value, addr, llvm::Align(8));
+	};
+
+	const auto set_datum_argv = [&](llvm::Value* d, llvm::Value* argv) {
+		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_argv, {d->getName(), ".argv.addr"});
+		builder.CreateAlignedStore(argv, addr, llvm::Align(8));
+	};
+
+	constexpr auto completion_field_self = 0;
+	constexpr auto completion_field_thunk = 1;
+	constexpr auto completion_field_K = 2;
 	const auto completion_t = llvm::StructType::create(_context, "c4_completion_t");
-	completion_t->setBody({ptr_t, ptr_t, ptr_t});
+	completion_t->setBody({
+		ptr_t, // self
+		ptr_t, // thunk
+		ptr_t  // K
+	});
+
+	const auto get_completion_self = [&](llvm::Value* c) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_self, {c->getName(), ".self.addr"});
+		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".self"});
+	};
+	std::ignore = get_completion_self;
+
+	const auto get_completion_thunk = [&](llvm::Value* c) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_thunk, {c->getName(), ".thunk.addr"});
+		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".thunk"});
+	};
+
+	const auto get_completion_K = [&](llvm::Value* c) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_K, {c->getName(), ".K.addr"});
+		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".K"});
+	};
+
+	const auto set_completion_self = [&](llvm::Value* c, llvm::Value* self) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_self, {c->getName(), ".self.addr"});
+		builder.CreateAlignedStore(self, addr, llvm::Align(8));
+	};
+
+	const auto set_completion_thunk = [&](llvm::Value* c, llvm::Value* thunk) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_thunk, {c->getName(), ".thunk.addr"});
+		builder.CreateAlignedStore(thunk, addr, llvm::Align(8));
+	};
+
+	const auto set_completion_K = [&](llvm::Value* c, llvm::Value* K) {
+		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_K, {c->getName(), ".K.addr"});
+		builder.CreateAlignedStore(K, addr, llvm::Align(8));
+	};
+
+	const auto tail_call = [&](llvm::Value* callee, llvm::Value* args, llvm::Value* K) {
+		const auto call = builder.CreateCall(_function_type, callee, {args, K});
+		call->setCallingConv(llvm::CallingConv::Tail);
+		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	};
+
+	const auto tail_callt = [&](const llvm::FunctionCallee callee,
+	                            llvm::Value* args,
+	                            llvm::Value* K) {
+		const auto call = builder.CreateCall(callee, {args, K});
+		call->setCallingConv(llvm::CallingConv::Tail);
+		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	};
 
 	const auto trap = llvm::Intrinsic::getDeclaration(&module, llvm::Intrinsic::trap);
 
@@ -218,35 +307,16 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto& res = args[1];
 		res->setName("resume");
 
-		const auto target_thunk_addr = builder.CreateStructGEP(completion_t, self, 1, "completion_thunk.addr");
-		const auto target_thunk = builder.CreateLoad(ptr_t, target_thunk_addr, "completion_thunk");
+		const auto target_thunk = get_completion_thunk(self);
+		const auto target_K = get_completion_K(self);
 
-		const auto target_K_addr = builder.CreateStructGEP(completion_t, self, 2, "completion_K.addr");
-		const auto target_K = builder.CreateLoad(ptr_t, target_K_addr, "completion_K");
-
-		const auto res_type_addr = builder.CreateStructGEP(datum_t, res, 0, "res_type.addr");
-		const auto res_type = builder.CreateLoad(int32_t, res_type_addr, "res_type");
-
-		const auto target_thunk_type_addr = builder.CreateStructGEP(datum_t, target_thunk, 0, "thunk_type.addr");
-		builder.CreateAlignedStore(res_type, target_thunk_type_addr, llvm::Align(8));
-
-		const auto res_value_addr = builder.CreateStructGEP(datum_t, res, 2, "res_value.addr");
-		const auto res_value = builder.CreateLoad(int64_t, res_value_addr, "res_value");
-
-		const auto target_thunk_value_addr = builder.CreateStructGEP(datum_t, target_thunk, 2, "thunk_value.addr");
-		builder.CreateAlignedStore(res_value, target_thunk_value_addr, llvm::Align(8));
-
-		const auto res_argv_addr = builder.CreateStructGEP(datum_t, res, 3, "res_argv.addr");
-		const auto res_argv = builder.CreateLoad(ptr_t, res_argv_addr, "res_argv");
-
-		const auto target_thunk_argv_addr = builder.CreateStructGEP(datum_t, target_thunk, 3, "thunk_argv.addr");
-		builder.CreateAlignedStore(res_argv, target_thunk_argv_addr, llvm::Align(8));
+		set_datum_type(target_thunk, get_datum_type(res));
+		set_datum_value(target_thunk, get_datum_value(res, int64_t));
+		set_datum_argv(target_thunk, get_datum_argv(res));
 
 		const auto K = builder.CreateAlignedLoad(ptr_t, target_K, llvm::Align(8), "K");
 
-		const auto call = builder.CreateCall(_function_type, K, {target_K, res});
-		call->setCallingConv(llvm::CallingConv::Tail);
-		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+		tail_call(K, target_K, res);
 	});
 
 	_rt_evaluate.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
@@ -259,8 +329,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto eval_thunk = llvm::BasicBlock::Create(_context, "rt_eval_thunk", _rt_evaluate.fn);
 		const auto error = llvm::BasicBlock::Create(_context, "rt_error", _rt_evaluate.fn);
 
-		const auto thunk_type_addr = builder.CreateStructGEP(datum_t, thunk, 0, "thunk_type.addr");
-		const auto thunk_type = builder.CreateLoad(int32_t, thunk_type_addr, "thunk_type");
+		const auto thunk_type = get_datum_type(thunk);
 
 		const auto switch_ = builder.CreateSwitch(thunk_type, error, 2); {
 			const auto ip = builder.saveIP();
@@ -277,9 +346,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			builder.SetInsertPoint(eval_done);
 
 			const auto cont_fn = builder.CreateAlignedLoad(ptr_t, K, llvm::Align(8), "cont_fn");
-			const auto call = builder.CreateCall(_function_type, cont_fn, {K, thunk});
-		call->setCallingConv(llvm::CallingConv::Tail);
-			call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+			tail_call(cont_fn, K, thunk);
 			builder.CreateRetVoid();
 
 			builder.restoreIP(ip);
@@ -289,42 +356,29 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			// deliberately not saving ip; define(..., { }) adds ret void here
 			builder.SetInsertPoint(eval_thunk);
 
-			builder.CreateAlignedStore(builder.getInt32(datum_type_immediate), thunk_type_addr, llvm::Align(8));
+			set_datum_type(thunk, builder.getInt32(datum_type_immediate));
 
 			const auto completer = allocate(8 + 8 + 8);
 			completer->setName("completer");
 
-			const auto completer_func_addr = builder.CreateStructGEP(completion_t, completer, 0, "completer_fn.addr");
-			builder.CreateAlignedStore(_rt_complete_thunk.fn, completer_func_addr, llvm::Align(8));
+			set_completion_self(completer, _rt_complete_thunk.fn);
+			set_completion_thunk(completer, thunk);
+			set_completion_K(completer, K);
 
-			const auto completer_target_addr = builder.
-					CreateStructGEP(completion_t, completer, 1, "completer_target.addr");
-			builder.CreateAlignedStore(thunk, completer_target_addr, llvm::Align(8));
+			const auto func = get_datum_value(thunk, ptr_t);
+			const auto argv = get_datum_argv(thunk);
 
-			const auto completer_K_addr = builder.CreateStructGEP(completion_t, completer, 2, "completer_K.addr");
-			builder.CreateAlignedStore(K, completer_K_addr, llvm::Align(8));
-
-			const auto func_addr = builder.CreateStructGEP(datum_t, thunk, 2, "func.addr");
-			const auto func = builder.CreateLoad(ptr_t, func_addr, "func");
-			const auto argv_addr = builder.CreateStructGEP(datum_t, thunk, 3, "argv.addr");
-			const auto argv = builder.CreateLoad(ptr_t, argv_addr, "argv");
-
-			const auto call = builder.CreateCall(_function_type, func, {argv, completer});
-		call->setCallingConv(llvm::CallingConv::Tail);
-			call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+			tail_call(func, argv, completer);
 		}
 	});
 
 	_rt_make_datum_int64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		args[0]->setName("ival");
 		const auto memory = allocate(4 + 4 + 8 + 8);
+		memory->setName("datum");
 
-		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
-		builder.CreateStore(builder.getInt32(datum_type_int64),
-		                    type_ptr)->setAlignment(llvm::Align(8));
-
-		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
-		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
+		set_datum_type(memory, builder.getInt32(datum_type_int64));
+		set_datum_value(memory, args[0]);
 
 		return memory;
 	});
@@ -332,16 +386,11 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	_rt_make_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		args[0]->setName("callee");
 		const auto memory = allocate(4 + 4 + 8 + 8);
+		memory->setName("thunk");
 
-		const auto type_ptr = builder.CreateStructGEP(datum_t, memory, 0, "datum_type");
-		builder.CreateStore(builder.getInt32(datum_type_thunk),
-		                    type_ptr)->setAlignment(llvm::Align(8));
-
-		const auto value_ptr = builder.CreateStructGEP(datum_t, memory, 2, "datum_value");
-		builder.CreateStore(args[0], value_ptr)->setAlignment(llvm::Align(8));
-
-		const auto argv_ptr = builder.CreateStructGEP(datum_t, memory, 3, "datum_argv");
-		builder.CreateStore(llvm::ConstantPointerNull::get(ptr_t), argv_ptr)->setAlignment(llvm::Align(8));
+		set_datum_type(memory, builder.getInt32(datum_type_thunk));
+		set_datum_value(memory, args[0]);
+		set_datum_argv(memory, llvm::ConstantPointerNull::get(ptr_t));
 
 		return memory;
 	});
@@ -360,40 +409,28 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto cont = allocate(8 + 8 + 8);
 		cont->setName("cont");
 
-		const auto cont_fn_addr = builder.CreateStructGEP(completion_t, cont, 0, "cont.fn.addr");
-		builder.CreateAlignedStore(_rt_seq2.fn, cont_fn_addr, llvm::Align(8));
+		set_completion_self(cont, _rt_seq2.fn);
+		set_completion_thunk(cont, right);
+		set_completion_K(cont, K);
 
-		const auto cont_target_addr = builder.CreateStructGEP(completion_t, cont, 1, "cont.target.addr");
-		builder.CreateAlignedStore(right, cont_target_addr, llvm::Align(8));
-
-		const auto cont_K_addr = builder.CreateStructGEP(completion_t, cont, 2, "cont.K.addr");
-		builder.CreateAlignedStore(K, cont_K_addr, llvm::Align(8));
-
-		const auto call = builder.CreateCall(_rt_evaluate, { left, cont });
-		call->setCallingConv(llvm::CallingConv::Tail);
-		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+		tail_callt(_rt_evaluate, left, cont);
 	});
 
 	_rt_seq2.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		llvm::Argument* self,* evaled;
 		(self = args[0])->setName("self");
 		(evaled = args[1])->setName("_evaled");
+		std::ignore = evaled;
 
-		const auto self_next_addr = builder.CreateStructGEP(completion_t, self, 1, "self.next.addr");
-		const auto self_next = builder.CreateLoad(ptr_t, self_next_addr, "self.next");
+		const auto next = get_completion_thunk(self);
+		const auto K = get_completion_K(self);
 
-		const auto self_K_addr = builder.CreateStructGEP(completion_t, self, 2, "self.K.addr");
-		const auto self_K = builder.CreateLoad(ptr_t, self_K_addr, "self.K");
-
-		const auto call = builder.CreateCall(_rt_evaluate, { self_next, self_K });
-		call->setCallingConv(llvm::CallingConv::Tail);
-		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+		tail_callt(_rt_evaluate, K, next);
 	});
 
 	_rt_set_thunk_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		args[0]->setName("datum");
 		args[1]->setName("argv");
-		const auto argv_ptr = builder.CreateStructGEP(datum_t, args[0], 3, "datum_argv");
-		builder.CreateStore(args[1], argv_ptr)->setAlignment(llvm::Align(8));
+		set_datum_argv(args[0], args[1]);
 	});
 }
