@@ -220,13 +220,11 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	}
 
 	seq_builder builder;
-	const auto& expr = obj.expressions();
-	std::ranges::for_each(expr, [&](const auto& expr) {
+	std::ranges::for_each(obj.expressions(), [&](const auto& expr) {
 		expr->accept(*this);
-		if (!expr->template attribute_value<bool>("thunk?")) return;
-
 		const auto val = expr->template attribute_value<llvm::Value*>("value");
-		ASSERT(val);
+		if (!val) return;
+
 		builder.push(*val);
 	});
 

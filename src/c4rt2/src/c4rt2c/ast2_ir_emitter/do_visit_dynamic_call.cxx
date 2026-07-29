@@ -35,12 +35,30 @@
  */
 
 #include <c4/ast2/dynamic_call.hxx>
+#include <c4/ast2/expression.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
 
 #include <libassert/assert.hpp>
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
-	ASSERT(false, "sorry, not implemented", obj);
+	obj.callee()->accept(*this);
+	const auto callee_val = obj.callee()->attribute_value<llvm::Value*>("value");
+	ASSERT(callee_val, "callee value is not defined", obj, obj.callee());
+
+	llvm::SmallVector<llvm::Value*, 8> args;
+	args.reserve(obj.args().size() + 1);
+
+	args.push_back(*callee_val);
+	std::ranges::transform(obj.args(), std::back_inserter(args), [&, this](const auto& arg) {
+		arg->accept(*this);
+		const auto arg_val = arg->template attribute_value<llvm::Value*>("value");
+		ASSERT(arg_val, "argument value is not defined", obj, arg);
+		return *arg_val;
+	});
+
+	const auto apply = _runtime.make_apply_thunk(args);
+	obj.emplace_attribute<c4c::llvm_value_attribute>("value", apply);
 }

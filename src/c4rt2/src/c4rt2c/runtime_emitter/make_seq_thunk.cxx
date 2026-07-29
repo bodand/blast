@@ -46,7 +46,8 @@ c4rt2c::runtime_emitter::make_seq_thunk(llvm::Value* thunk_left, llvm::Value* th
 	const auto seq = make_thunk(_rt_seq.fn);
 	seq->setName("seq.thunk");
 
-	const auto argv = allocate_array(2, 8);
+	constexpr uint32_t argv_sz = 2;
+	const auto argv = allocate_array(argv_sz, 8);
 	argv->setName("seq.argv");
 
 	const auto addr0 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 0))});
@@ -55,7 +56,7 @@ c4rt2c::runtime_emitter::make_seq_thunk(llvm::Value* thunk_left, llvm::Value* th
 	const auto addr1 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 1))});
 	_builder.CreateStore(thunk_right, addr1);
 
-	set_thunk_args(seq, argv);
+	set_thunk_args(seq, argv, argv_sz);
 
 	return seq;
 }

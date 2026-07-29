@@ -88,6 +88,22 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			llvm::IntegerType::get(_context, 64),
 			llvm::IntegerType::get(_context, 64))
 	}
+	, _rt_apply{
+		make_rt_function(
+			&_module,
+			"_c4_apply",
+			llvm::Type::getVoidTy(_context),
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
+	, _rt_apply2{
+		make_rt_function(
+			&_module,
+			"_c4_apply2",
+			llvm::Type::getVoidTy(_context),
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0))
+	}
 	, _rt_complete_thunk{
 		make_rt_function(
 			&_module,
@@ -162,6 +178,16 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			"_c4_set_thunk_args",
 			llvm::Type::getVoidTy(_context),
 			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0),
+			llvm::IntegerType::get(_context, 32))
+	}
+	, _rt_merge_argv{
+		make_rt_function(
+			&_module,
+			"_c4_merge_argv", // ptr(ptr, i32, ptr)
+			llvm::PointerType::get(_context, 0),
+			llvm::PointerType::get(_context, 0),
+			llvm::IntegerType::get(_context, 32),
 			llvm::PointerType::get(_context, 0))
 	}
 	, _gc_malloc{
@@ -171,116 +197,32 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			llvm::PointerType::get(_context, 0),
 			llvm::IntegerType::get(_context, 64))
 	} {
-	constexpr auto datum_type_int64 = 0;
-	constexpr auto datum_type_thunk = 1;
-	constexpr auto datum_type_immediate = 2;
+	int32_t = llvm::IntegerType::get(_context, 32);
+	int64_t = llvm::IntegerType::get(_context, 64);
+	ptr_t = llvm::PointerType::get(_context, 0);
 
-	const auto int32_t = llvm::IntegerType::get(_context, 32);
-	const auto int64_t = llvm::IntegerType::get(_context, 64);
-	const auto ptr_t = llvm::PointerType::get(_context, 0);
+	datum_t = llvm::StructType::create(
+		_context, {
+			int32_t, // type
+			int32_t, // argv_sz
+			ptr_t,   // value
+			ptr_t    // argv ptr
+		}, "c4_datum_t");
 
-	constexpr auto datum_field_type = 0;
-	constexpr auto datum_field_value = 2;
-	constexpr auto datum_field_argv = 3;
-	const auto datum_t = llvm::StructType::create(_context, "c4_datum_t");
-	datum_t->setBody({
-		int32_t, // type
-		int32_t, // ???
-		ptr_t,   // value
-		ptr_t    // argv ptr
-	});
-
-	const auto get_datum_type = [&](llvm::Value* d) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_type, {d->getName(), ".type.addr"});
-		return builder.CreateLoad(int32_t, addr, {d->getName(), ".type"});
-	};
-
-	const auto get_datum_value = [&](llvm::Value* d, llvm::Type* type) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_value, {d->getName(), ".value.addr"});
-		return builder.CreateLoad(type, addr, {d->getName(), ".value"});
-	};
-
-	const auto get_datum_argv = [&](llvm::Value* d) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_argv, {d->getName(), ".argv.addr"});
-		return builder.CreateLoad(ptr_t, addr, {d->getName(), ".argv"});
-	};
-
-	const auto set_datum_type = [&](llvm::Value* d, llvm::Value* type) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_type, {d->getName(), ".type.addr"});
-		builder.CreateAlignedStore(type, addr, llvm::Align(8));
-	};
-
-	const auto set_datum_value = [&](llvm::Value* d, llvm::Value* value) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_value, {d->getName(), ".value.addr"});
-		builder.CreateAlignedStore(value, addr, llvm::Align(8));
-	};
-
-	const auto set_datum_argv = [&](llvm::Value* d, llvm::Value* argv) {
-		const auto addr = builder.CreateStructGEP(datum_t, d, datum_field_argv, {d->getName(), ".argv.addr"});
-		builder.CreateAlignedStore(argv, addr, llvm::Align(8));
-	};
-
-	constexpr auto completion_field_self = 0;
-	constexpr auto completion_field_thunk = 1;
-	constexpr auto completion_field_K = 2;
-	const auto completion_t = llvm::StructType::create(_context, "c4_completion_t");
-	completion_t->setBody({
-		ptr_t, // self
-		ptr_t, // thunk
-		ptr_t  // K
-	});
-
-	const auto get_completion_self = [&](llvm::Value* c) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_self, {c->getName(), ".self.addr"});
-		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".self"});
-	};
-	std::ignore = get_completion_self;
-
-	const auto get_completion_thunk = [&](llvm::Value* c) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_thunk, {c->getName(), ".thunk.addr"});
-		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".thunk"});
-	};
-
-	const auto get_completion_K = [&](llvm::Value* c) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_K, {c->getName(), ".K.addr"});
-		return builder.CreateLoad(ptr_t, addr, {c->getName(), ".K"});
-	};
-
-	const auto set_completion_self = [&](llvm::Value* c, llvm::Value* self) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_self, {c->getName(), ".self.addr"});
-		builder.CreateAlignedStore(self, addr, llvm::Align(8));
-	};
-
-	const auto set_completion_thunk = [&](llvm::Value* c, llvm::Value* thunk) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_thunk, {c->getName(), ".thunk.addr"});
-		builder.CreateAlignedStore(thunk, addr, llvm::Align(8));
-	};
-
-	const auto set_completion_K = [&](llvm::Value* c, llvm::Value* K) {
-		const auto addr = builder.CreateStructGEP(completion_t, c, completion_field_K, {c->getName(), ".K.addr"});
-		builder.CreateAlignedStore(K, addr, llvm::Align(8));
-	};
-
-	const auto tail_call = [&](llvm::Value* callee, llvm::Value* args, llvm::Value* K) {
-		const auto call = builder.CreateCall(_function_type, callee, {args, K});
-		call->setCallingConv(llvm::CallingConv::Tail);
-		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
-	};
-
-	const auto tail_callt = [&](const llvm::FunctionCallee callee,
-	                            llvm::Value* args,
-	                            llvm::Value* K) {
-		const auto call = builder.CreateCall(callee, {args, K});
-		call->setCallingConv(llvm::CallingConv::Tail);
-		call->setTailCallKind(llvm::CallInst::TCK_MustTail);
-	};
+	completion_t = llvm::StructType::create(
+		_context, {
+			ptr_t, // self
+			ptr_t, // thunk
+			ptr_t  // K
+		}, "c4_completion_t");
 
 	const auto trap = llvm::Intrinsic::getDeclaration(&module, llvm::Intrinsic::trap);
 
 	_rt_allocate_array.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("count");
-		args[1]->setName("size");
-		const auto cmp = builder.CreateICmp(llvm::CmpInst::ICMP_EQ, args[0], builder.getInt64(0));
+		const auto count = with_name(args[0], "count");
+		const auto size = with_name(args[1], "size");
+
+		const auto cmp = builder.CreateICmp(llvm::CmpInst::ICMP_EQ, count, builder.getInt64(0));
 
 		const auto zero_bb = llvm::BasicBlock::Create(_context, "nonalloc", _rt_allocate_array.fn);
 		const auto alloc_bb = llvm::BasicBlock::Create(_context, "alloc", _rt_allocate_array.fn);
@@ -295,17 +237,52 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		// allocate
 		{
 			builder.SetInsertPoint(alloc_bb);
-			const auto mul = builder.CreateNUWMul(args[0], args[1]);
+			const auto mul = builder.CreateNUWMul(count, size);
 			const auto memory = allocate(mul);
 			return memory;
 		}
 	});
 
+	_rt_apply.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto argv = with_name(args[0], "argv");
+		const auto K = with_name(args[1], "K");
+
+		const auto thunk_addr = builder.CreateGEP(ptr_t, argv, builder.getInt64(0), "thunk.addr");
+		const auto thunk = builder.CreateLoad(ptr_t, thunk_addr, "thunk");
+
+		const auto argv_tail = builder.CreateGEP(ptr_t, argv, builder.getInt64(1), "argv.tail");
+
+		const auto completer = with_name(allocate(8 + 8 + 8), "completer");
+		set_completion_self(completer, _rt_apply2.fn);
+		set_completion_K(completer, K);
+		set_completion_thunk(completer, argv_tail);
+
+		tail_call(_rt_evaluate, thunk, completer);
+	});
+
+	_rt_apply2.define(_context, _builder, [&](const std::span<llvm::Argument*> args) {
+		const auto self = with_name(args[0], "self");
+		const auto value = with_name(args[1], "value");
+
+		const auto callee = get_datum_value(value, ptr_t);
+		const auto dyn = with_name(make_thunk(callee), "dyn");
+
+		const auto argv = get_datum_argv(value);
+		const auto argv_sz = get_datum_argv_sz(value);
+
+		const auto K = get_completion_K(self);
+		const auto callee_args = get_completion_thunk(self); // hijacked ptr field
+
+		const auto new_args = with_name(merge_argv(argv, argv_sz, callee_args), "new_args");
+
+		set_thunk_args(dyn, new_args, argv_sz);
+
+		tail_call(_rt_evaluate, dyn, K);
+	});
+
 	_rt_complete_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		const auto& self = args[0];
-		self->setName("self");
-		const auto& res = args[1];
-		res->setName("resume");
+		const auto& self = with_name(args[0], "self");
+		const auto& res = with_name(args[1], "resume");
 
 		const auto target_thunk = get_completion_thunk(self);
 		const auto target_K = get_completion_K(self);
@@ -320,10 +297,8 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	});
 
 	_rt_evaluate.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		const auto& thunk = args[0];
-		thunk->setName("thunk");
-		const auto& K = args[1];
-		K->setName("K");
+		const auto& thunk = with_name(args[0], "thunk");
+		const auto& K = with_name(args[1], "K");
 
 		const auto eval_done = llvm::BasicBlock::Create(_context, "rt_eval_done", _rt_evaluate.fn);
 		const auto eval_thunk = llvm::BasicBlock::Create(_context, "rt_eval_thunk", _rt_evaluate.fn);
@@ -358,8 +333,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 			set_datum_type(thunk, builder.getInt32(datum_type_immediate));
 
-			const auto completer = allocate(8 + 8 + 8);
-			completer->setName("completer");
+			const auto completer = with_name(allocate(8 + 8 + 8), "completer");
 
 			set_completion_self(completer, _rt_complete_thunk.fn);
 			set_completion_thunk(completer, thunk);
@@ -373,32 +347,30 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	});
 
 	_rt_make_datum_int64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("ival");
-		const auto memory = allocate(4 + 4 + 8 + 8);
-		memory->setName("datum");
+		const auto val = with_name(args[0], "ival");
+
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
 
 		set_datum_type(memory, builder.getInt32(datum_type_int64));
-		set_datum_value(memory, args[0]);
+		set_datum_value(memory, val);
 
 		return memory;
 	});
 
 	_rt_make_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("callee");
-		const auto memory = allocate(4 + 4 + 8 + 8);
-		memory->setName("thunk");
+		const auto callee = with_name(args[0], "callee");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "thunk");
 
 		set_datum_type(memory, builder.getInt32(datum_type_thunk));
-		set_datum_value(memory, args[0]);
+		set_datum_value(memory, callee);
 		set_datum_argv(memory, llvm::ConstantPointerNull::get(ptr_t));
 
 		return memory;
 	});
 
 	_rt_seq.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		llvm::Argument* thunks,* K;
-		(thunks = args[0])->setName("thunks");
-		(K = args[1])->setName("K");
+		const auto thunks = with_name(args[0], "thunks");
+		const auto K = with_name(args[1], "K");
 
 		const auto left_addr = builder.CreateGEP(ptr_t, thunks, builder.getInt64(0), "left.addr");
 		const auto left = builder.CreateLoad(ptr_t, left_addr, "left");
@@ -406,31 +378,100 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto right_addr = builder.CreateGEP(ptr_t, thunks, builder.getInt64(1), "right.addr");
 		const auto right = builder.CreateLoad(ptr_t, right_addr, "right");
 
-		const auto cont = allocate(8 + 8 + 8);
-		cont->setName("cont");
+		const auto cont = with_name(allocate(8 + 8 + 8), "cont");
 
 		set_completion_self(cont, _rt_seq2.fn);
 		set_completion_thunk(cont, right);
 		set_completion_K(cont, K);
 
-		tail_callt(_rt_evaluate, left, cont);
+		tail_call(_rt_evaluate, left, cont);
 	});
 
 	_rt_seq2.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		llvm::Argument* self,* evaled;
-		(self = args[0])->setName("self");
-		(evaled = args[1])->setName("_evaled");
+		const auto self = with_name(args[0], "self");
+		const auto evaled = with_name(args[1], "_evaled");
 		std::ignore = evaled;
 
 		const auto next = get_completion_thunk(self);
 		const auto K = get_completion_K(self);
 
-		tail_callt(_rt_evaluate, K, next);
+		tail_call(_rt_evaluate, K, next);
 	});
 
 	_rt_set_thunk_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		args[0]->setName("datum");
-		args[1]->setName("argv");
-		set_datum_argv(args[0], args[1]);
+		const auto datum = with_name(args[0], "datum");
+		const auto argv = with_name(args[1], "argv");
+		const auto argv_sz = with_name(args[2], "argv_sz");
+
+		set_datum_argv(datum, argv);
+		set_datum_argv_sz(datum, argv_sz);
+	});
+
+	_rt_merge_argv.define(_context, builder, [&](const std::span<llvm::Argument*> args_) {
+		const auto argv = with_name(args_[0], "argv");
+		const auto argv_sz = with_name(args_[1], "argv_sz");
+		const auto args = with_name(args_[2], "args");
+
+		const auto big_sz = _builder.CreateIntCast(argv_sz, int64_t, false, "big_sz");
+
+		const auto out = with_name(allocate_array(
+			                           big_sz,
+			                           _builder.getInt64(8)
+		                           ), "out");
+
+		const auto init = llvm::BasicBlock::Create(_context, "init", _rt_merge_argv.fn);
+		const auto loop1 = llvm::BasicBlock::Create(_context, "loop1", _rt_merge_argv.fn);
+		const auto loop1c2 = llvm::BasicBlock::Create(_context, "loop1c2", _rt_merge_argv.fn);
+		const auto loop1body = llvm::BasicBlock::Create(_context, "loop1body", _rt_merge_argv.fn);
+		const auto loop2 = llvm::BasicBlock::Create(_context, "loop2", _rt_merge_argv.fn);
+		const auto loop2body = llvm::BasicBlock::Create(_context, "loop2body", _rt_merge_argv.fn);
+		const auto end = llvm::BasicBlock::Create(_context, "end", _rt_merge_argv.fn);
+
+		_builder.CreateBr(init);
+		_builder.SetInsertPoint(init);
+		_builder.CreateBr(loop1);
+		_builder.SetInsertPoint(loop1);
+
+		const auto i = _builder.CreatePHI(int32_t, 2, "i");
+		i->addIncoming(builder.getInt32(0), init);
+		i->addIncoming(
+			builder.CreateAdd(i, builder.getInt32(1), "i.loop", true),
+			loop1body);
+
+		const auto in_range = _builder.CreateICmp(llvm::CmpInst::ICMP_ULT, i, argv_sz);
+		_builder.CreateCondBr(in_range, loop1c2, loop2);
+		_builder.SetInsertPoint(loop1c2);
+
+		const auto addr = _builder.CreateGEP(ptr_t, argv, i, "addr");
+		const auto value = _builder.CreateAlignedLoad(ptr_t, addr, llvm::Align(8), "value");
+		const auto not_null = _builder.CreateICmp(llvm::CmpInst::ICMP_NE, value, llvm::ConstantPointerNull::get(ptr_t));
+		_builder.CreateCondBr(not_null, loop1body, loop2);
+		_builder.SetInsertPoint(loop1body);
+
+		const auto out_addr = _builder.CreateGEP(ptr_t, out, i, "out_addr");
+		_builder.CreateAlignedStore(value, out_addr, llvm::Align(8));
+		_builder.CreateBr(loop1);
+
+		_builder.SetInsertPoint(loop2);
+		const auto j = _builder.CreatePHI(int32_t, 3, "j");
+		j->addIncoming(i, loop1);
+		j->addIncoming(i, loop1c2);
+		j->addIncoming(
+			builder.CreateAdd(j, builder.getInt32(1), "j.loop", true),
+			loop2body);
+
+		const auto in_range2 = _builder.CreateICmp(llvm::CmpInst::ICMP_ULT, j, argv_sz);
+		_builder.CreateCondBr(in_range2, loop2body, end);
+		_builder.SetInsertPoint(loop2body);
+
+		const auto argv_idx = _builder.CreateSub(j, i, "argv_idx", true);
+		const auto argv_addr = _builder.CreateGEP(ptr_t, args, argv_idx, "argv_addr");
+		const auto src = _builder.CreateAlignedLoad(ptr_t, argv_addr, llvm::Align(8), "src");
+		const auto out2_addr = _builder.CreateGEP(ptr_t, out, j, "out2_addr");
+		_builder.CreateAlignedStore(src, out2_addr, llvm::Align(8));
+		_builder.CreateBr(loop2);
+
+		_builder.SetInsertPoint(end);
+		return out;
 	});
 }

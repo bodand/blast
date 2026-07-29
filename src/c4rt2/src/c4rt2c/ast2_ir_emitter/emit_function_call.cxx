@@ -69,6 +69,7 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 	auto [fresh, thunk] = thunked_symbol(symbol);
 
 	llvm::Value* argv = nullptr;
+	size_t closure_size = 0u;
 	if (fresh) {
 		size_t callee_args_size = args.size();
 		std::optional<llvm::SmallVector<llvm::Value*, 4>> closure_over{};
@@ -80,6 +81,7 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 			if (raw_closures) {
 				closure_over = *raw_closures;
 				callee_args_size += closure_over->size();
+				closure_size += closure_over->size();
 			}
 		}
 
@@ -97,9 +99,10 @@ c4rt2c::ast2_ir_emitter::emit_function_call(
 			}
 		}
 
-		_runtime.set_thunk_args(thunk, argv);
+		ASSERT(callee_args_size < UINT32_MAX, "way too much arguments for thunk");
+		_runtime.set_thunk_args(thunk, argv, callee_args_size);
 	}
-	std::ranges::for_each(args, [&, i=0](const auto& arg) mutable {
+	std::ranges::for_each(args, [&, i=closure_size](const auto& arg) mutable {
 		arg->accept(*this);
 		if (argv) {
 			const auto addr = _builder.CreateGEP(

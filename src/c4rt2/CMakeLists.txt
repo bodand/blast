@@ -190,6 +190,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/function_scope/function_scope.cxx
             src/c4rt2c/ast2_ir_emitter/function_scope/start_function.cxx
 
+            src/c4rt2c/ast2_ir_emitter/name_manager/format_symbol_stack.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/global_name.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/lambda_name.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
@@ -211,15 +212,31 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/allocate_array.cxx
             src/c4rt2c/runtime_emitter/complete_thunk.cxx
             src/c4rt2c/runtime_emitter/evaluate.cxx
+            src/c4rt2c/runtime_emitter/get_completion_K.cxx
+            src/c4rt2c/runtime_emitter/get_completion_self.cxx
+            src/c4rt2c/runtime_emitter/get_completion_thunk.cxx
+            src/c4rt2c/runtime_emitter/get_datum_argv.cxx
+            src/c4rt2c/runtime_emitter/get_datum_argv_sz.cxx
+            src/c4rt2c/runtime_emitter/get_datum_type.cxx
+            src/c4rt2c/runtime_emitter/get_datum_value.cxx
+            src/c4rt2c/runtime_emitter/make_apply_thunk.cxx
             src/c4rt2c/runtime_emitter/make_datum_block.cxx
             src/c4rt2c/runtime_emitter/make_datum_float64.cxx
             src/c4rt2c/runtime_emitter/make_datum_int64.cxx
             src/c4rt2c/runtime_emitter/make_datum_str.cxx
             src/c4rt2c/runtime_emitter/make_seq_thunk.cxx
             src/c4rt2c/runtime_emitter/make_thunk.cxx
+            src/c4rt2c/runtime_emitter/merge_argv.cxx
             src/c4rt2c/runtime_emitter/runtime_emitter.cxx
+            src/c4rt2c/runtime_emitter/set_completion_K.cxx
+            src/c4rt2c/runtime_emitter/set_completion_self.cxx
+            src/c4rt2c/runtime_emitter/set_completion_thunk.cxx
+            src/c4rt2c/runtime_emitter/set_datum_argv.cxx
+            src/c4rt2c/runtime_emitter/set_datum_argv_sz.cxx
+            src/c4rt2c/runtime_emitter/set_datum_type.cxx
+            src/c4rt2c/runtime_emitter/set_datum_value.cxx
             src/c4rt2c/runtime_emitter/set_thunk_args.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/format_symbol_stack.cxx
+            src/c4rt2c/runtime_emitter/tail_call.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

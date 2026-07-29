@@ -28,32 +28,25 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-22.
+ * Originally created: 2026-07-28.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/set_thunk_args --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/dynamic_continuation --
  *   
  */
 
 #include <c4rt2c/runtime_emitter.hxx>
 
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Value.h>
+llvm::Value*
+c4rt2c::runtime_emitter::make_apply_thunk(std::span<llvm::Value*> args) const {
+	const auto apply = with_name(make_thunk(_rt_apply.fn), "apply.thunk");
 
-void
-c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk,
-                                        llvm::Value* argv,
-                                        llvm::Value* argv_sz) const {
-	const auto call = _builder.CreateCall(_rt_set_thunk_args, {
-		                                      thunk, argv, argv_sz
-	                                      });
-	call->setCallingConv(llvm::CallingConv::Tail);
-}
+	const auto argv = with_name(allocate_array(args.size(), 8), "apply.argv");
+	std::ranges::for_each(args, [&, this, i = 0](const auto& arg) mutable {
+		const auto addr = _builder.CreateGEP(ptr_t, argv,
+		                                     _builder.getInt64(i++));
+		_builder.CreateAlignedStore(arg, addr, llvm::Align(8));
+	});
+	set_thunk_args(apply, argv, args.size());
 
-void
-c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk,
-                                        llvm::Value* argv,
-                                        const uint32_t argv_sz) const {
-	set_thunk_args(thunk,
-	               argv,
-	               llvm::ConstantInt::get(_context, llvm::APInt(32, argv_sz)));
+	return apply;
 }

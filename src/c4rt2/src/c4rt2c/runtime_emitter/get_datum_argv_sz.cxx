@@ -28,32 +28,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-22.
+ * Originally created: 2026-07-28.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/set_thunk_args --
- *   
+ * src/c4rt2/src/c4rt2c/runtime_emitter/get_datum_argv_sz --
+ *
  */
 
 #include <c4rt2c/runtime_emitter.hxx>
 
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Value.h>
-
-void
-c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk,
-                                        llvm::Value* argv,
-                                        llvm::Value* argv_sz) const {
-	const auto call = _builder.CreateCall(_rt_set_thunk_args, {
-		                                      thunk, argv, argv_sz
-	                                      });
-	call->setCallingConv(llvm::CallingConv::Tail);
-}
-
-void
-c4rt2c::runtime_emitter::set_thunk_args(llvm::Value* thunk,
-                                        llvm::Value* argv,
-                                        const uint32_t argv_sz) const {
-	set_thunk_args(thunk,
-	               argv,
-	               llvm::ConstantInt::get(_context, llvm::APInt(32, argv_sz)));
+llvm::Value*
+c4rt2c::runtime_emitter::get_datum_argv_sz(llvm::Value* d) const {
+	const auto addr = _builder.CreateStructGEP(datum_t, d, datum_field_argv_sz, {d->getName(), ".argv_sz.addr"});
+	return _builder.CreateLoad(int32_t, addr, {d->getName(), ".argv_sz"});
 }
