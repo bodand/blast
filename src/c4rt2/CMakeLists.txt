@@ -180,6 +180,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/do_visit_string_literal.cxx
             src/c4rt2c/ast2_ir_emitter/do_visit_unary_op_call.cxx
             src/c4rt2c/ast2_ir_emitter/emit_function_call.cxx
+            src/c4rt2c/ast2_ir_emitter/emit_named_function.cxx
             src/c4rt2c/ast2_ir_emitter/finalize.cxx
             src/c4rt2c/ast2_ir_emitter/thunked_symbol.cxx
 
@@ -216,6 +217,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/make_datum_block.cxx
             src/c4rt2c/runtime_emitter/make_datum_float64.cxx
             src/c4rt2c/runtime_emitter/make_datum_int64.cxx
+            src/c4rt2c/runtime_emitter/make_datum_nil.cxx
             src/c4rt2c/runtime_emitter/make_datum_str.cxx
             src/c4rt2c/runtime_emitter/make_seq_thunk.cxx
             src/c4rt2c/runtime_emitter/make_thunk.cxx
@@ -230,7 +232,22 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/set_datum_value.cxx
             src/c4rt2c/runtime_emitter/set_thunk_args.cxx
             src/c4rt2c/runtime_emitter/tail_call.cxx
-            src/c4rt2c/ast2_ir_emitter/emit_named_function.cxx
+
+            include/c4rt2c/seq_node.hxx
+            src/c4rt2c/seq_node/seq_leaf/build.cxx
+            src/c4rt2c/seq_node/seq_leaf/push.cxx
+            src/c4rt2c/seq_node/seq_leaf/seq_leaf.cxx
+            src/c4rt2c/seq_node/seq_nil/build.cxx
+            src/c4rt2c/seq_node/seq_nil/push.cxx
+            src/c4rt2c/seq_node/seq_pair/build.cxx
+            src/c4rt2c/seq_node/seq_pair/last.cxx
+            src/c4rt2c/seq_node/seq_pair/push.cxx
+            src/c4rt2c/seq_node/seq_pair/seq_pair.cxx
+
+            include/c4rt2c/seq_builder.hxx
+            src/c4rt2c/seq_builder/seq_builder.cxx
+            src/c4rt2c/seq_builder/push.cxx
+            src/c4rt2c/seq_builder/build.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

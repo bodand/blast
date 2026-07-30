@@ -41,6 +41,7 @@
 #include <c4/ast2/fwd.hxx>
 
 #include <c4rt2c/runtime_emitter.hxx>
+#include <c4rt2c/seq_builder.hxx>
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
@@ -100,6 +101,7 @@ namespace c4rt2c {
 		llvm::Module& _module;
 		builder_type& _builder;
 		runtime_emitter _runtime;
+		seq_builder _seq_builder;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
 

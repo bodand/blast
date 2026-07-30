@@ -43,135 +43,22 @@
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 #include <c4rt2c/llvm_value_attribute.hxx>
+#include <c4rt2c/seq_builder.hxx>
 
 #include <libassert/assert.hpp>
 
-
 namespace {
-	struct funk {
+	struct attr_restorer {
 		llvm::Value* _val;
 		const c4::ast2::tags::attributable* attr_holder;
 
-		funk(const c4::ast2::tags::attributable* arg, llvm::Value* val)
+		attr_restorer(const c4::ast2::tags::attributable* arg, llvm::Value* val)
 			: _val(val)
 			, attr_holder{arg} { }
 
-		~funk() {
+		~attr_restorer() {
 			attr_holder->emplace_attribute<c4c::llvm_value_attribute>("value", _val);
 		}
-	};
-
-	struct seq_builder_node {
-		virtual std::unique_ptr<seq_builder_node>
-		push(llvm::Value* val) = 0;
-
-		virtual std::unique_ptr<seq_builder_node>*
-		last() { return nullptr; }
-
-		virtual std::ostream&
-		print(std::ostream& os) const = 0;
-
-		virtual llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const = 0;
-
-		virtual ~seq_builder_node() = default;
-	};
-
-	struct seq_builder_seq final : seq_builder_node {
-		seq_builder_seq(std::unique_ptr<seq_builder_node>&& left,
-		                std::unique_ptr<seq_builder_node>&& right)
-			: _left{std::move(left)}
-			, _right{std::move(right)} { }
-
-		std::unique_ptr<seq_builder_node>
-		push(llvm::Value* val) override {
-			return _right->push(val);
-		}
-
-		[[nodiscard]] std::unique_ptr<seq_builder_node>*
-		last() override { return &_right; }
-
-		std::ostream&
-		print(std::ostream& os) const override {
-			return _right->print(_left->print(os << "(") << ",") << ")";
-		}
-
-		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
-			const auto seq_left = _left->build(builder, rt);
-			seq_left->setName("seql");
-			const auto seq_right = _right->build(builder, rt);
-			seq_right->setName("seqr");
-
-			return rt.make_seq_thunk(seq_left, seq_right);
-		}
-
-		std::unique_ptr<seq_builder_node> _left;
-		std::unique_ptr<seq_builder_node> _right;
-	};
-
-	struct seq_builder_leaf final : seq_builder_node {
-		explicit seq_builder_leaf(llvm::Value* value)
-			: _value{value} { }
-
-		std::unique_ptr<seq_builder_node>
-		push(llvm::Value* val) override {
-			return std::make_unique<seq_builder_seq>(
-				std::make_unique<seq_builder_leaf>(_value),
-				std::make_unique<seq_builder_leaf>(val)
-			);
-		}
-
-		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
-			return _value;
-		}
-
-		std::ostream&
-		print(std::ostream& os) const override {
-			return os << std::string_view(_value->getName());
-		}
-
-		llvm::Value* _value;
-	};
-
-	struct seq_builder_empty final : seq_builder_node {
-		std::unique_ptr<seq_builder_node>
-		push(llvm::Value* val) override {
-			return std::make_unique<seq_builder_leaf>(val);
-		}
-
-		std::ostream&
-		print(std::ostream& os) const override {
-			return os << "()";
-		}
-
-		llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const override {
-			ASSERT(false, "WIP");
-			return nullptr;
-		}
-	};
-
-	struct seq_builder {
-		seq_builder()
-			: _root{std::make_unique<seq_builder_empty>()}
-			, _last{&_root} { }
-
-		void
-		push(llvm::Value* val) {
-			auto next = (*_last)->push(val);
-			_last->swap(next);
-			if (const auto push_to = (*_last)->last()) _last = push_to;
-		}
-
-		[[nodiscard]] llvm::Value*
-		build(llvm::IRBuilder<>& builder, c4rt2c::runtime_emitter& rt) const {
-			return _root->build(builder, rt);
-		}
-
-		std::unique_ptr<seq_builder_node> _root;
-		std::unique_ptr<seq_builder_node>* _last;
 	};
 }
 
@@ -185,7 +72,7 @@ c4rt2c::ast2_ir_emitter::emit_named_function(const c4::ast2::block& block) {
 	ASSERT(argv);
 	ASSERT(K);
 
-	std::vector<funk> restorer_holder;
+	std::vector<attr_restorer> restorer_holder;
 
 	for (const auto& sym : block.effective_context_symbols()) {
 		const auto ref = sym.references();

@@ -85,6 +85,9 @@ namespace c4rt2c {
 		make_datum_int64(std::int64_t val) const;
 
 		[[nodiscard]] llvm::Value*
+		make_datum_nil() const;
+
+		[[nodiscard]] llvm::Value*
 		make_datum_float64(llvm::Value* val) const;
 
 		[[nodiscard]] llvm::Value*
@@ -129,6 +132,7 @@ namespace c4rt2c {
 		constexpr static int datum_type_float64 = 3;
 		constexpr static int datum_type_string = 4;
 		constexpr static int datum_type_block = 5;
+		constexpr static int datum_type_nil = 6;
 
 		constexpr static int datum_field_type = 0;
 		constexpr static int datum_field_argv_sz = 1;
@@ -207,6 +211,7 @@ namespace c4rt2c {
 		runtime_fn _rt_make_datum_block;   // datum* make_datum_block(fn anon)
 		runtime_fn _rt_make_datum_float64; // datum* make_datum_float64(f64 val)
 		runtime_fn _rt_make_datum_int64;   // datum* make_datum_int64(i64 val)
+		runtime_fn _rt_make_datum_nil;     // datum* make_datum_nil()
 		runtime_fn _rt_make_datum_str;     // datum* make_datum_str(char* val)
 		runtime_fn _rt_make_thunk;         // datum* make_thunk(fn namedfn)
 		runtime_fn _rt_seq;                // datum* seq(datum* thunks, fn K)

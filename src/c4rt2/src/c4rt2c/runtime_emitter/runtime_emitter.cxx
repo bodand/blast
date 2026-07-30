@@ -154,6 +154,9 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, _rt_make_datum_int64{
 		make_rt_function(&_module, ptr, "_c4_make_datum_int64", i64)
 	}
+	, _rt_make_datum_nil{
+		make_rt_function(&_module, ptr, "_c4_make_datum_nil")
+	}
 	, _rt_make_datum_str{
 		make_rt_function(&_module, ptr, "_c4_make_datum_str", ptr, i64)
 	}
@@ -278,7 +281,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 		const auto thunk_type = get_datum_type(thunk);
 
-		const auto switch_ = builder.CreateSwitch(thunk_type, eval_done, 6); {
+		const auto switch_ = builder.CreateSwitch(thunk_type, eval_done, 3); {
 			const auto ip = builder.saveIP();
 			builder.SetInsertPoint(eval_done);
 
@@ -347,6 +350,14 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 		set_datum_type(memory, builder.getInt32(datum_type_int64));
 		set_datum_value(memory, val);
+
+		return memory;
+	});
+
+	_rt_make_datum_nil.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+
+		set_datum_type(memory, builder.getInt32(datum_type_nil));
 
 		return memory;
 	});
