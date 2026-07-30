@@ -242,17 +242,34 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto self = with_name(args[0], "self");
 		const auto value = with_name(args[1], "value");
 
-		const auto callee = get_datum_value(value, ptr_t);
-
-		const auto argv = get_datum_argv(value);
-		const auto argv_sz = get_datum_argv_sz(value);
-
 		const auto K = get_completion_K(self);
-		const auto callee_args = get_completion_thunk(self); // hijacked ptr field
 
-		const auto new_args = with_name(merge_argv(argv, argv_sz, callee_args), "new_args");
+		const auto apply = llvm::BasicBlock::Create(_context, "rt_apply", _rt_apply2.fn);
+		const auto fallthrough = llvm::BasicBlock::Create(_context, "rt_fallthrough", _rt_apply2.fn);
 
-		tail_call(callee, new_args, K);
+		const auto type = get_datum_type(value);
+		const auto is_block = builder.CreateICmp(llvm::CmpInst::ICMP_EQ, type, builder.getInt32(datum_type_block));
+		_builder.CreateCondBr(is_block, apply, fallthrough);
+
+		_builder.SetInsertPoint(fallthrough); {
+			const auto cont_fn = builder.CreateAlignedLoad(ptr_t, K, llvm::Align(8), "cont_fn");
+
+			tail_call(cont_fn, K, value);
+			builder.CreateRetVoid();
+		}
+
+		_builder.SetInsertPoint(apply); { // apply actual block in datum
+			const auto callee = get_datum_value(value, ptr_t);
+
+			const auto argv = get_datum_argv(value);
+			const auto argv_sz = get_datum_argv_sz(value);
+
+			const auto callee_args = get_completion_thunk(self); // hijacked ptr field
+
+			const auto new_args = with_name(merge_argv(argv, argv_sz, callee_args), "new_args");
+
+			tail_call(callee, new_args, K);
+		}
 	});
 
 	_rt_complete_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {

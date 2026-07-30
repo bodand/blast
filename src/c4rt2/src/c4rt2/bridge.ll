@@ -31,7 +31,8 @@ declare i64 @write(i32, ptr, i64)
 
 declare void @llvm.trap() #0
 
-@yee = private unnamed_addr constant [11 x i8] c"yer fucked\0A", align 1
+@yee = private unnamed_addr constant [10 x i8] c"yer fucked", align 1
+@nl = private unnamed_addr constant [1 x i8] c"\0A", align 1
 
 %c4_datum_t = type { i32, i32, ptr, ptr }
 define tailcc void @q1Ss5Nprint1EE(ptr %argv, ptr %K) {
@@ -51,7 +52,10 @@ good:
     ret void
 
 fucked:
-    call i64 @write(i32 2, ptr @yee, i64 11)
+    call i64 @write(i32 2, ptr @yee, i64 10)
+    call i64 @write(i32 2, ptr @nl, i64 1)
+    call i64 @write(i32 2, ptr %datum, i64 4)
+    call i64 @write(i32 2, ptr @nl, i64 1)
     call void @llvm.trap()
     unreachable
 }
