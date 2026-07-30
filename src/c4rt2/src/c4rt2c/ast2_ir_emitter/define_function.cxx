@@ -69,17 +69,11 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 
 	_builder.CreateRetVoid();
 
-	if (const auto& stck = let.attribute_value<std::vector<c4::ast2::symbol>>(
-		"symbol-stack")) {
-		const auto src_name = _name_manager.format_symbols_stack(*stck);
-		const auto meta_name = llvm::MDString::get(_context, src_name);
-		const auto meta_node = llvm::MDNode::get(_context, meta_name);
-		(*fn)->setMetadata("fn.source_name", meta_node);
-	}
-
+	size_t argv_sz = 0;
+	size_t closure_sz = 0;
 	if (const auto args = body->args()) {
 		llvm::SmallVector<llvm::Metadata*, 4> arg_names;
-		arg_names.reserve(args->block_arguments().size());
+		arg_names.reserve(argv_sz = args->block_arguments().size());
 
 		for (const auto& arg : args->block_arguments()) {
 			arg_names.push_back(llvm::MDString::get(_context, arg.name()));
@@ -93,7 +87,7 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 		let.value().true_closure()) {
 		llvm::SmallVector<llvm::Value*, 4> closure_args;
 		llvm::SmallVector<llvm::Metadata*, 4> closure_names;
-		closure_names.reserve(closures.size());
+		closure_names.reserve(closure_sz = closures.size());
 
 		for (const auto& closure : closures) {
 			if (!closure.captured()) continue;
@@ -115,4 +109,25 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 
 		let.emplace_attribute<closure_list_attribute>("closure-over", std::move(closure_args));
 	}
+
+	const auto symbol = let.symbol();
+	auto name_fmt = _name_manager.format_symbols_stack(std::span(&symbol, 1));
+	if (const auto& stck = let.attribute_value<std::vector<c4::ast2::symbol>>(
+		"symbol-stack")) {
+		name_fmt = _name_manager.format_symbols_stack(*stck);
+	}
+
+	const auto& pos = let.position();
+	const auto sub = _di_builder->createFunction(
+		_file, // TODO: function scope stack
+		name_fmt,
+		(*fn)->getName(),
+		_file,
+		pos.row_number,
+		fn_type(closure_sz, argv_sz),
+		pos.row_number,
+		llvm::DINode::FlagPrototyped,
+		llvm::DISubprogram::SPFlagDefinition
+	);
+	(*fn)->setSubprogram(sub);
 }

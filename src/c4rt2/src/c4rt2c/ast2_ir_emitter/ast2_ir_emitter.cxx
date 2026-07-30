@@ -46,7 +46,10 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	, _context{context}
 	, _module{module}
 	, _builder{builder}
-	, _runtime{context, module, builder} {
+	, _di_builder{std::make_unique<llvm::DIBuilder>(module)}
+	, _runtime{context, module, builder}
+// , dbg{}
+{
 	const auto c4_main_ty = llvm::FunctionType::get(
 		llvm::Type::getVoidTy(_context),
 		{
@@ -54,14 +57,14 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 			llvm::PointerType::get(_context, 0)
 		}, false
 	);
-	const auto c4_main = llvm::Function::Create(
+	_c4_main = llvm::Function::Create(
 		c4_main_ty,
 		llvm::GlobalValue::ExternalLinkage,
 		"_c4_main",
 		_module
 	);
-	c4_main->setCallingConv(llvm::CallingConv::Tail);
-	c4_main->getArg(0)->setName("argv");
-	(_mainK = c4_main->getArg(1))->setName("K");
-	_builder.SetInsertPoint(llvm::BasicBlock::Create(_context, "entry", c4_main));
+	_c4_main->setCallingConv(llvm::CallingConv::Tail);
+	_c4_main->getArg(0)->setName("argv");
+	(_mainK = _c4_main->getArg(1))->setName("K");
+	_builder.SetInsertPoint(llvm::BasicBlock::Create(_context, "entry", _c4_main));
 }

@@ -38,6 +38,36 @@
 
 #include <libassert/assert.hpp>
 
+// TODO: WIP WIP WIP WIP WIP WIP
+llvm::DIType*
+c4rt2c::ast2_ir_emitter::get_type() {
+	if (_ptr_t) return _ptr_t;
+
+	_ptr_t = _di_builder->createBasicType(
+		"datum",
+		_module.getDataLayout().getPointerSize(),
+		llvm::dwarf::DW_AT_object_pointer
+	);
+	return _ptr_t;
+}
+
+llvm::DISubroutineType*
+c4rt2c::ast2_ir_emitter::fn_type(const size_t cls_size, const size_t argv_sz) {
+	llvm::SmallVector<llvm::Metadata*, 8> params;
+	params.reserve(1 + cls_size + argv_sz);
+
+	const auto type = get_type();
+
+	params.push_back(type);
+	std::generate_n(std::back_inserter(params), cls_size + argv_sz, [&] { return type; });
+
+	return _di_builder->createSubroutineType(
+		_di_builder->getOrCreateTypeArray(params)
+	);
+}
+
+// TODOEND
+
 const c4::ast2::expression*
 c4rt2c::ast2_ir_emitter::active_expression() {
 	ASSERT(!_expression_stack.empty(),

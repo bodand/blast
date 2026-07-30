@@ -57,6 +57,7 @@ namespace {
 
 	using i64_tag = i_tag<64>;
 	using i32_tag = i_tag<32>;
+	using i8_tag = i_tag<8>;
 
 	template<class T>
 	struct type;
@@ -97,6 +98,7 @@ namespace {
 	constexpr auto ptr = type<ptr_tag>{};
 	constexpr auto i64 = type<i64_tag>{};
 	constexpr auto i32 = type<i32_tag>{};
+	constexpr auto i8 = type<i8_tag>{};
 	constexpr auto double_ = type<double_tag>{};
 
 	template<class R, class... Args>
@@ -172,6 +174,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, _gc_malloc{
 		make_rt_function(&_module, ptr, "GC_malloc", i64)
 	} {
+	int8_t = i8.get(_context);
 	int32_t = i32.get(_context);
 	int64_t = i64.get(_context);
 	ptr_t = ptr.get(_context);
@@ -260,7 +263,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto target_K = get_completion_K(self);
 
 		set_datum_type(target_thunk, get_datum_type(res));
-		set_datum_value(target_thunk, get_datum_value(res, int64_t));
+		set_datum_value(target_thunk, get_datum_value(res, ptr_t));
 		set_datum_argv(target_thunk, get_datum_argv(res));
 
 		const auto K = builder.CreateAlignedLoad(ptr_t, target_K, llvm::Align(8), "K");
@@ -360,23 +363,23 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	});
 
 	_rt_make_datum_str.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
-		const auto val = with_name(args[0], "str");
-		const auto val_sz = with_name(args[1], "str_sz");
+		const auto str = with_name(args[0], "str");
+		const auto str_sz = with_name(args[1], "str_sz");
 
 		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
 
-		const auto zero_size = builder.CreateAdd(val_sz,
+		const auto zero_size = builder.CreateAdd(str_sz,
 		                                         builder.getInt64(1),
 		                                         "zero_size", true);
 		const auto cpy = with_name(allocate(zero_size), "cpy");
-		builder.CreateMemCpy(cpy, llvm::Align(1), val, llvm::Align(1), val_sz);
+		builder.CreateMemCpy(cpy, llvm::Align(1), str, llvm::Align(1), str_sz);
 
-		const auto end = builder.CreateGEP(ptr_t, cpy, val_sz, "end");
+		const auto end = builder.CreateGEP(int8_t, cpy, str_sz, "end");
 		builder.CreateStore(builder.getInt8(0), end);
 
 		set_datum_type(memory, builder.getInt32(datum_type_string));
-		set_datum_value(memory, val);
-		set_datum_argv(memory, val_sz);
+		set_datum_value(memory, cpy);
+		set_datum_argv(memory, str_sz);
 
 		return memory;
 	});

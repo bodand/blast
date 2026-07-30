@@ -120,6 +120,7 @@ namespace c4rt2c {
 		llvm::IRBuilder<>& _builder;
 
 		llvm::PointerType* ptr_t;
+		llvm::IntegerType* int8_t;
 		llvm::IntegerType* int32_t;
 		llvm::IntegerType* int64_t;
 

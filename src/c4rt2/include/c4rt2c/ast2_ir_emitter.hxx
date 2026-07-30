@@ -36,6 +36,7 @@
 #ifndef BLAST_AST3_IR_EMITTER_HXX
 #define BLAST_AST3_IR_EMITTER_HXX
 
+#include <filesystem>
 #include <string_view>
 
 #include <c4/ast2/fwd.hxx>
@@ -43,6 +44,7 @@
 #include <c4rt2c/runtime_emitter.hxx>
 #include <c4rt2c/seq_builder.hxx>
 
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
 
@@ -54,6 +56,7 @@ namespace llvm {
 	class FunctionType;
 	class Value;
 	class BasicBlock;
+	class DIBuilder;
 }
 
 namespace c4rt2c {
@@ -92,7 +95,11 @@ namespace c4rt2c {
 		void
 		declare_symbols(const c4::ast2::ast_context& ctx);
 
-		void finalize();
+		void
+		init(const std::filesystem::path& fname);
+
+		void
+		finalize();
 
 	private:
 		llvm::FunctionPassManager& _pass_manager;
@@ -100,11 +107,29 @@ namespace c4rt2c {
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
 		builder_type& _builder;
+		std::unique_ptr<llvm::DIBuilder> _di_builder;
+
 		runtime_emitter _runtime;
+
+		llvm::Function* _c4_main;
 		llvm::Value* _mainK;
 		seq_builder _seq_builder;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
+
+		// struct dbginfo {
+		llvm::DICompileUnit* _cu;
+		llvm::DIFile* _file;
+
+		llvm::DIType* _ptr_t;
+
+		llvm::DIType*
+		get_type();
+
+		llvm::DISubroutineType*
+		fn_type(size_t cls_size, size_t argv_sz);
+
+		// } dbg;
 
 		const c4::ast2::expression*
 		active_expression();

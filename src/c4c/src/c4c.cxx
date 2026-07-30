@@ -196,7 +196,7 @@ main(int argc, const char** argv) {
 
 	parser.declare_symbol("print", 1, nullptr);
 	parser.declare_symbol("println", 1, nullptr);
-	parser.declare_symbol("if", 3, nullptr);
+	// parser.declare_symbol("if", 3, nullptr);
 	parser.declare_symbol("int", 1, nullptr);
 	parser.declare_symbol("str_empty", 1, nullptr);
 	parser.declare_symbol("blk_empty", 1, nullptr);
@@ -255,8 +255,11 @@ main(int argc, const char** argv) {
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
 		c4rt2c::ast2_ir_emitter ir(context, module, builder, fn_pm, fn_am);
+		ir.init(src_path);
+
 		ir.declare_symbols(ast_context);
 		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
+
 		ir.finalize();
 
 		if (dump_type == "IR") {

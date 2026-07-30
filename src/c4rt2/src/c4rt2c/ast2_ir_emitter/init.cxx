@@ -28,21 +28,50 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-30.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/init --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
+#include <filesystem>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
-void
-c4rt2c::ast2_ir_emitter::finalize() {
-	const auto seq = _seq_builder.build(_builder, _runtime);
-	_runtime.evaluate(seq, _mainK);
-	_builder.CreateRetVoid();
+#include <llvm/IR/DIBuilder.h>
 
-	_di_builder->finalize();
+namespace fs = std::filesystem;
+namespace dwf = llvm::dwarf;
+
+void
+c4rt2c::ast2_ir_emitter::init(const fs::path& fname) {
+	const auto filename = fname.filename().string();
+	const auto directory = fname.parent_path().string();
+
+	_module.addModuleFlag(llvm::Module::Warning, "Debug Info Version", llvm::DEBUG_METADATA_VERSION);
+	_cu = _di_builder->createCompileUnit(
+		dwf::DW_LANG_C, // XXX is this ok?
+		_di_builder->createFile(filename, directory),
+		"c4c",
+		false,
+		"",
+		0
+	);
+
+	_file = _di_builder->createFile(
+		_cu->getFilename(),
+		_cu->getDirectory());
+
+	const auto sub = _di_builder->createFunction(
+		_file,
+		"_c4_main",
+		"_c4_main",
+		_file,
+		0,
+		fn_type(0, 0),
+		0,
+		llvm::DINode::FlagArtificial,
+		llvm::DISubprogram::SPFlagDefinition
+	);
+	_c4_main->setSubprogram(sub);
 }

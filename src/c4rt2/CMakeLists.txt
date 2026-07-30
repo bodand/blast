@@ -160,6 +160,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/source_file.cxx
 
             include/c4rt2c/ast2_ir_emitter.hxx
+            src/c4rt2c/ast2_ir_emitter/init.cxx
             src/c4rt2c/ast2_ir_emitter/active_expression.cxx
             src/c4rt2c/ast2_ir_emitter/allocate_argv.cxx
             src/c4rt2c/ast2_ir_emitter/ast2_ir_emitter.cxx

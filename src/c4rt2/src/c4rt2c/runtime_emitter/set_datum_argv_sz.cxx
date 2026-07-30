@@ -39,5 +39,5 @@
 void
 c4rt2c::runtime_emitter::set_datum_argv_sz(llvm::Value* d, llvm::Value* argv_sz) const {
 	const auto addr = _builder.CreateStructGEP(datum_t, d, datum_field_argv_sz, {d->getName(), ".argv_sz.addr"});
-	_builder.CreateAlignedStore(argv_sz, addr, llvm::Align(8));
+	_builder.CreateAlignedStore(argv_sz, addr, llvm::Align(4));
 }

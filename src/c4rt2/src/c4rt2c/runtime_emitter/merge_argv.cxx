@@ -40,7 +40,9 @@ llvm::Value*
 c4rt2c::runtime_emitter::merge_argv(llvm::Value* argv1,
                                     llvm::Value* argv1_sz,
                                     llvm::Value* argv2) const {
-	return _builder.CreateCall(_rt_merge_argv, {
-		                           argv1, argv1_sz, argv2
-	                           });
+	const auto call = _builder.CreateCall(_rt_merge_argv, {
+		                                      argv1, argv1_sz, argv2
+	                                      });
+	call->setCallingConv(llvm::CallingConv::Tail);
+	return call;
 }
