@@ -62,7 +62,5 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	);
 	c4_main->getArg(0)->setName("argv");
 	c4_main->getArg(1)->setName("K");
-	_scopes.push_back(_name_manager.root());
-	last_scope().continue_at(c4_main->getArg(1));
 	_builder.SetInsertPoint(llvm::BasicBlock::Create(_context, "entry", c4_main));
 }

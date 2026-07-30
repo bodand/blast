@@ -40,10 +40,6 @@
 
 std::string
 c4rt2c::ast2_ir_emitter::name_manager::string_name() {
-	_names.emplace_back(fmt::format("str{}", _string_counter++));
-	auto qualified_name = qualify_name_globally();
-	_names.pop_back();
-
-	return qualified_name;
+	return fmt::format("str{}", _string_counter++);
 }
 

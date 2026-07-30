@@ -37,12 +37,3 @@
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
-
-void
-c4rt2c::ast2_ir_emitter::function_scope::continue_at(llvm::Value* continuation) noexcept {
-	ASSERT(continuation, "continuation must not be null");
-	ASSERT(continuation->getType()->isPointerTy(), "continuation must be a pointer");
-
-	_next_continuation = continuation;
-}
-

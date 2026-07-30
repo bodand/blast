@@ -50,14 +50,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Verifier.h>
 
-namespace {
-	struct already_thunk_attribute : c4::ast2::tags::typed_attribute<bool> {
-		template<class... Args>
-		explicit
-		already_thunk_attribute(Args...)
-			: typed_attribute{true} { }
-	};
-}
+#include "already_thunk_attribute.hxx"
 
 void
 c4rt2c::ast2_ir_emitter::emit_function_call(

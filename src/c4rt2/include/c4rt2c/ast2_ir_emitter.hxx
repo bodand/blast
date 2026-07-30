@@ -99,7 +99,6 @@ namespace c4rt2c {
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
 		builder_type& _builder;
-
 		runtime_emitter _runtime;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
@@ -111,97 +110,13 @@ namespace c4rt2c {
 		emit_function_call(const c4::ast2::symbol& symbol,
 		                   std::span<const c4::ast2::expression* const> args);
 
+		void
+		emit_named_function(const c4::ast2::block& block);
 
-		struct name_manager;
-
-		struct function_scope {
-			function_scope(const function_scope&) = delete;
-
-			function_scope&
-			operator=(const function_scope&) = delete;
-
-			void definition(
-				llvm::BasicBlock* define,
-				builder_type* ir_builder
-			);
-
-			void
-			continue_at(llvm::Value* continuation) noexcept;
-
-			[[nodiscard]] llvm::Value*
-			continue_at() const noexcept { return _next_continuation; }
-
-			function_scope(function_scope&& other) noexcept
-				: _ip{other._ip}
-				, _owning{std::exchange(other._owning, false)}
-				, _qualified_name{std::exchange(other._qualified_name, "")}
-				, _manager{std::exchange(other._manager, nullptr)}
-				, _ir_builder{std::exchange(other._ir_builder, nullptr)}
-				, _started_by{std::exchange(other._started_by, nullptr)}
-				, _next_continuation{std::exchange(other._next_continuation, nullptr)} { }
-
-			function_scope&
-			operator=(function_scope&& other) noexcept {
-				if (this == &other) return *this;
-				_owning = std::exchange(other._owning, false);
-				_manager = std::exchange(other._manager, nullptr);
-				_qualified_name = std::exchange(other._qualified_name, _qualified_name);
-				_ir_builder = std::exchange(other._ir_builder, nullptr);
-				_started_by = std::exchange(other._started_by, nullptr);
-				_ip = other._ip;
-				_next_continuation = std::exchange(other._next_continuation, _next_continuation);
-				return *this;
-			}
-
-			[[nodiscard]] std::string_view
-			qualified_name() const noexcept { return _qualified_name; }
-
-			[[nodiscard]] const c4::ast2::let_expression*
-			started_by() const { return _started_by; }
-
-			void
-			start_function(llvm::Function* fn);
-
-			~function_scope() {
-				if (!_owning) return;
-
-				_manager->pop();
-				if (_ir_builder) _ir_builder->restoreIP(_ip);
-			}
-
-		private:
-			friend struct name_manager;
-
-			explicit function_scope(name_manager* manager,
-			                        std::string qualified_name,
-			                        const c4::ast2::let_expression* started_by);
-
-			builder_type::InsertPoint _ip{};
-			bool _owning{true};
-			std::string _qualified_name;
-			name_manager* _manager;
-			builder_type* _ir_builder{};
-			const c4::ast2::let_expression* _started_by;
-			llvm::Value* _next_continuation{};
-		};
+		void
+		emit_anonymous_function(const c4::ast2::block& block);
 
 		struct name_manager {
-			[[nodiscard]] function_scope
-			root();
-
-			std::string
-			qualify_name_globally();
-
-			[[nodiscard("automatic scope keeper")]] function_scope
-			push(const c4::ast2::let_expression& started_by,
-			     const c4::ast2::symbol& name);
-
-			[[nodiscard("automatic scope keeper")]] function_scope
-			push_lambda(std::string name);
-
-			void
-			pop() noexcept;
-
 			std::string
 			string_name();
 
@@ -223,24 +138,13 @@ namespace c4rt2c {
 		private:
 			std::size_t _string_counter{};
 			std::size_t _lambda_counter{};
-			std::vector<std::string> _names;
 		} _name_manager{};
 
 		llvm::Value*
 		allocate_argv(std::size_t count) const;
 
-		std::vector<function_scope> _scopes;
-
-		[[nodiscard]] function_scope&
-		last_scope();
-
 		[[nodiscard]] llvm::Function*
 		declare_function(std::string_view name);
-
-		llvm::Value*
-		resolve_symbol(const c4::ast2::symbol& sym) const;
-
-		std::vector<llvm::Value*> _resolved_external_symbols;
 
 		[[nodiscard]] std::pair<bool, llvm::Value*>
 		thunked_symbol(const c4::ast2::symbol& sym) const;

@@ -50,6 +50,7 @@ c4rt2c::ast2_ir_emitter::declare_function(const std::string_view name) {
 	);
 	decl->getArg(0)->setName("argv");
 	decl->getArg(1)->setName("K");
+	decl->setCallingConv(llvm::CallingConv::Tail);
 
 	return decl;
 }

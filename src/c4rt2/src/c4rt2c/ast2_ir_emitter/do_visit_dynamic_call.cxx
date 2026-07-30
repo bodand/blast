@@ -42,6 +42,8 @@
 
 #include <libassert/assert.hpp>
 
+#include "already_thunk_attribute.hxx"
+
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 	obj.callee()->accept(*this);
@@ -60,5 +62,10 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 	});
 
 	const auto apply = _runtime.make_apply_thunk(args);
-	obj.emplace_attribute<c4c::llvm_value_attribute>("value", apply);
+
+	const auto expr = active_expression();
+	ASSERT(expr);
+
+	expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
+	expr->emplace_attribute<already_thunk_attribute>("thunk?");
 }

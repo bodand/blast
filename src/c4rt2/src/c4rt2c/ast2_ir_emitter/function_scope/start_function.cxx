@@ -38,14 +38,3 @@
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 #include <c4rt2c/llvm_value_attribute.hxx>
-
-void
-c4rt2c::ast2_ir_emitter::function_scope::start_function(llvm::Function* fn) {
-	if (!_started_by) return;
-
-	continue_at(fn->getArg(1));
-	_started_by->emplace_attribute<c4c::llvm_function_attribute>(
-		"function",
-		fn
-	);
-}

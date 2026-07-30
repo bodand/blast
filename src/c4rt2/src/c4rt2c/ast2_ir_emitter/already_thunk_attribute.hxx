@@ -28,19 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-29.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/last_scope --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/already_thunk_attribute --
  *   
  */
+#ifndef BLAST_ALREADY_THUNK_ATTRIBUTE_HXX
+#define BLAST_ALREADY_THUNK_ATTRIBUTE_HXX
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4/tags/attributable.hxx>
 
-#include <libassert/assert.hpp>
+struct already_thunk_attribute : c4::ast2::tags::typed_attribute<bool> {
+	template<class... Args>
+	explicit
+	already_thunk_attribute(Args...)
+		: typed_attribute{true} { }
+};
 
-c4rt2c::ast2_ir_emitter::function_scope&
-c4rt2c::ast2_ir_emitter::last_scope() {
-	ASSERT(!_scopes.empty(), "no function scope to return");
-
-	return _scopes.back();
-}
+#endif

@@ -181,8 +181,6 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/do_visit_unary_op_call.cxx
             src/c4rt2c/ast2_ir_emitter/emit_function_call.cxx
             src/c4rt2c/ast2_ir_emitter/finalize.cxx
-            src/c4rt2c/ast2_ir_emitter/last_scope.cxx
-            src/c4rt2c/ast2_ir_emitter/resolve_symbol.cxx
             src/c4rt2c/ast2_ir_emitter/thunked_symbol.cxx
 
             src/c4rt2c/ast2_ir_emitter/function_scope/continue_at.cxx
@@ -195,11 +193,6 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/name_manager/lambda_name.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/mangle_symbol_stack.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/pop.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/push.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/push_lambda.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/qualify_name_globally.cxx
-            src/c4rt2c/ast2_ir_emitter/name_manager/root.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
 
             include/c4rt2c/runtime_fn.hxx
@@ -237,6 +230,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/set_datum_value.cxx
             src/c4rt2c/runtime_emitter/set_thunk_args.cxx
             src/c4rt2c/runtime_emitter/tail_call.cxx
+            src/c4rt2c/ast2_ir_emitter/emit_named_function.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

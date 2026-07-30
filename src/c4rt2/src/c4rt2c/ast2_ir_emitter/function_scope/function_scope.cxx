@@ -39,21 +39,3 @@
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
-
-c4rt2c::ast2_ir_emitter::function_scope::function_scope(
-	name_manager* manager,
-	std::string qualified_name,
-	const c4::ast2::let_expression* started_by
-)
-	: _qualified_name{std::move(qualified_name)}
-	, _manager{manager}
-	, _started_by{started_by} {
-	ASSERT(!_qualified_name.empty(), "name must not be empty");
-	ASSERT(_manager, "manager must not be null");
-	if (_qualified_name == "_c4_main" || _qualified_name.find("lambda") != std::string::npos) {
-		_owning = _qualified_name != "_c4_main";
-	}
-	else {
-		ASSERT(_started_by, "started_by must not be null");
-	}
-}

@@ -35,11 +35,3 @@
  */
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
-
-void
-c4rt2c::ast2_ir_emitter::function_scope::definition(llvm::BasicBlock* define,
-                                                    builder_type* ir_builder) {
-	_ir_builder = ir_builder;
-	_ip = _ir_builder->saveIP();
-	_ir_builder->SetInsertPoint(define);
-}

@@ -43,15 +43,71 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
+#include "../../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/ExecutionEngine/GenericValue.h"
+
 namespace {
-	template<class... Args>
+	struct void_tag { };
+
+	struct ptr_tag { };
+
+	struct double_tag { };
+
+	template<size_t S>
+	struct i_tag { };
+
+	using i64_tag = i_tag<64>;
+	using i32_tag = i_tag<32>;
+
+	template<class T>
+	struct type;
+
+	template<>
+	struct type<void_tag> {
+		static llvm::Type*
+		get(llvm::LLVMContext& ctx) {
+			return llvm::Type::getVoidTy(ctx);
+		}
+	};
+
+	template<>
+	struct type<ptr_tag> {
+		static llvm::PointerType*
+		get(llvm::LLVMContext& ctx) {
+			return llvm::PointerType::get(ctx, 0);
+		}
+	};
+
+	template<>
+	struct type<double_tag> {
+		static llvm::Type*
+		get(llvm::LLVMContext& ctx) {
+			return llvm::Type::getDoubleTy(ctx);
+		}
+	};
+
+	template<size_t S>
+	struct type<i_tag<S>> {
+		static llvm::IntegerType*
+		get(llvm::LLVMContext& ctx) {
+			return llvm::IntegerType::get(ctx, S);
+		}
+	};
+
+	constexpr auto void_ = type<void_tag>{};
+	constexpr auto ptr = type<ptr_tag>{};
+	constexpr auto i64 = type<i64_tag>{};
+	constexpr auto i32 = type<i32_tag>{};
+	constexpr auto double_ = type<double_tag>{};
+
+	template<class R, class... Args>
 	c4rt2c::runtime_fn
 	make_rt_function(llvm::Module* module,
+	                 type<R>,
 	                 std::string_view name,
-	                 llvm::Type* ret, Args&&... args) {
+	                 type<Args>...) {
 		const auto fn_type = llvm::FunctionType::get(
-			ret,
-			{std::forward<Args>(args)...},
+			type<R>::get(module->getContext()),
+			{type<Args>::get(module->getContext())...},
 			false
 		);
 		const auto fn = llvm::Function::Create(
@@ -81,125 +137,41 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			false)
 	}
 	, _rt_allocate_array{
-		make_rt_function(
-			&_module,
-			"_c4_allocate_array",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64),
-			llvm::IntegerType::get(_context, 64))
+		make_rt_function(&_module, ptr, "_c4_allocate_array", i64, i64)
 	}
-	, _rt_apply{
-		make_rt_function(
-			&_module,
-			"_c4_apply",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_apply2{
-		make_rt_function(
-			&_module,
-			"_c4_apply2",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
+	, _rt_apply{make_rt_function(&_module, void_, "_c4_apply", ptr, ptr)}
+	, _rt_apply2{make_rt_function(&_module, void_, "_c4_apply2", ptr, ptr)}
 	, _rt_complete_thunk{
-		make_rt_function(
-			&_module,
-			"_c4_complete_thunk",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
+		make_rt_function(&_module, void_, "_c4_complete_thunk", ptr, ptr)
 	}
-	, _rt_evaluate{
-		make_rt_function(
-			&_module,
-			"_c4_evaluate",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
+	, _rt_evaluate{make_rt_function(&_module, void_, "_c4_evaluate", ptr, ptr)}
 	, _rt_make_datum_block{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_block",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
+		make_rt_function(&_module, ptr, "_c4_make_datum_block", ptr)
 	}
 	, _rt_make_datum_float64{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_float64",
-			llvm::PointerType::get(_context, 0),
-			builder.getFloatTy())
+		make_rt_function(&_module, ptr, "_c4_make_datum_float64", double_)
 	}
 	, _rt_make_datum_int64{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_int64",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
+		make_rt_function(&_module, ptr, "_c4_make_datum_int64", i64)
 	}
 	, _rt_make_datum_str{
-		make_rt_function(
-			&_module,
-			"_c4_make_datum_str",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
+		make_rt_function(&_module, ptr, "_c4_make_datum_str", ptr, i64)
 	}
-	, _rt_make_thunk{
-		make_rt_function(
-			&_module,
-			"_c4_make_thunk",
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_seq{
-		make_rt_function(
-			&_module,
-			"_c4_seq",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
-	, _rt_seq2{
-		make_rt_function(
-			&_module,
-			"_c4_seq2",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0))
-	}
+	, _rt_make_thunk{make_rt_function(&_module, ptr, "_c4_make_thunk", ptr)}
+	, _rt_seq{make_rt_function(&_module, void_, "_c4_seq", ptr, ptr)}
+	, _rt_seq2{make_rt_function(&_module, void_, "_c4_seq2", ptr, ptr)}
 	, _rt_set_thunk_args{
-		make_rt_function(
-			&_module,
-			"_c4_set_thunk_args",
-			llvm::Type::getVoidTy(_context),
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 32))
+		make_rt_function(&_module, void_, "_c4_set_thunk_args", ptr, ptr, i32)
 	}
 	, _rt_merge_argv{
-		make_rt_function(
-			&_module,
-			"_c4_merge_argv", // ptr(ptr, i32, ptr)
-			llvm::PointerType::get(_context, 0),
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 32),
-			llvm::PointerType::get(_context, 0))
+		make_rt_function(&_module, ptr, "_c4_merge_argv", ptr, i32, ptr)
 	}
 	, _gc_malloc{
-		make_rt_function(
-			&_module,
-			"GC_malloc",
-			llvm::PointerType::get(_context, 0),
-			llvm::IntegerType::get(_context, 64))
+		make_rt_function(&_module, ptr, "GC_malloc", i64)
 	} {
-	int32_t = llvm::IntegerType::get(_context, 32);
-	int64_t = llvm::IntegerType::get(_context, 64);
-	ptr_t = llvm::PointerType::get(_context, 0);
+	int32_t = i32.get(_context);
+	int64_t = i64.get(_context);
+	ptr_t = ptr.get(_context);
 
 	datum_t = llvm::StructType::create(
 		_context, {
@@ -306,23 +278,23 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 		const auto thunk_type = get_datum_type(thunk);
 
-		const auto switch_ = builder.CreateSwitch(thunk_type, error, 2); {
-			const auto ip = builder.saveIP();
-			builder.SetInsertPoint(error);
-
-			builder.CreateCall(trap);
-			builder.CreateUnreachable();
-
-			builder.restoreIP(ip);
-		}
-
-		switch_->addCase(builder.getInt32(datum_type_int64), eval_done); {
+		const auto switch_ = builder.CreateSwitch(thunk_type, eval_done, 6); {
 			const auto ip = builder.saveIP();
 			builder.SetInsertPoint(eval_done);
 
 			const auto cont_fn = builder.CreateAlignedLoad(ptr_t, K, llvm::Align(8), "cont_fn");
 			tail_call(cont_fn, K, thunk);
 			builder.CreateRetVoid();
+
+			builder.restoreIP(ip);
+		}
+
+		switch_->addCase(builder.getInt32(datum_type_immediate), error); {
+			const auto ip = builder.saveIP();
+			builder.SetInsertPoint(error);
+
+			builder.CreateCall(trap);
+			builder.CreateUnreachable();
 
 			builder.restoreIP(ip);
 		}
@@ -346,6 +318,28 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		}
 	});
 
+	_rt_make_datum_block.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto val = with_name(args[0], "blk");
+
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+
+		set_datum_type(memory, builder.getInt32(datum_type_block));
+		set_datum_value(memory, val);
+
+		return memory;
+	});
+
+	_rt_make_datum_float64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto val = with_name(args[0], "fval");
+
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+
+		set_datum_type(memory, builder.getInt32(datum_type_float64));
+		set_datum_value(memory, val);
+
+		return memory;
+	});
+
 	_rt_make_datum_int64.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		const auto val = with_name(args[0], "ival");
 
@@ -353,6 +347,28 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 		set_datum_type(memory, builder.getInt32(datum_type_int64));
 		set_datum_value(memory, val);
+
+		return memory;
+	});
+
+	_rt_make_datum_str.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto val = with_name(args[0], "str");
+		const auto val_sz = with_name(args[1], "str_sz");
+
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+
+		const auto zero_size = builder.CreateAdd(val_sz,
+		                                         builder.getInt64(1),
+		                                         "zero_size", true);
+		const auto cpy = with_name(allocate(zero_size), "cpy");
+		builder.CreateMemCpy(cpy, llvm::Align(1), val, llvm::Align(1), val_sz);
+
+		const auto end = builder.CreateGEP(ptr_t, cpy, val_sz, "end");
+		builder.CreateStore(builder.getInt8(0), end);
+
+		set_datum_type(memory, builder.getInt32(datum_type_string));
+		set_datum_value(memory, val);
+		set_datum_argv(memory, val_sz);
 
 		return memory;
 	});

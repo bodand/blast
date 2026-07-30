@@ -126,6 +126,9 @@ namespace c4rt2c {
 		constexpr static int datum_type_int64 = 0;
 		constexpr static int datum_type_thunk = 1;
 		constexpr static int datum_type_immediate = 2;
+		constexpr static int datum_type_float64 = 3;
+		constexpr static int datum_type_string = 4;
+		constexpr static int datum_type_block = 5;
 
 		constexpr static int datum_field_type = 0;
 		constexpr static int datum_field_argv_sz = 1;
