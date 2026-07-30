@@ -95,11 +95,17 @@ namespace {
 	};
 
 	constexpr auto void_ = type<void_tag>{};
+	#define TYPE_void void_,
 	constexpr auto ptr = type<ptr_tag>{};
+	#define TYPE_ptr ptr,
 	constexpr auto i64 = type<i64_tag>{};
+	#define TYPE_i64 i64,
 	constexpr auto i32 = type<i32_tag>{};
+	#define TYPE_i32 i32,
 	constexpr auto i8 = type<i8_tag>{};
+	#define TYPE_i8 i8,
 	constexpr auto double_ = type<double_tag>{};
+	#define TYPE_double double_,
 
 	template<class R, class... Args>
 	c4rt2c::runtime_fn
@@ -123,6 +129,23 @@ namespace {
 	}
 }
 
+#define STRIPPER(...) __VA_OPT__(,) __VA_ARGS__ RPAREN }
+
+#define PASS(x) x
+#define LPAREN (
+#define RPAREN )
+
+#define str_I(x) #x
+#define str(x) str_I(x)
+
+#define cat_I(x, y) x ## y
+#define cat(x, y) cat_I(x, y)
+
+#define fn_II(_, fn) cat(_rt_, fn)
+#define fn_I(t, fn) t, str(cat(_c4_, fn))
+#define fn(tfn) PASS(fn_II LPAREN TYPE_##tfn RPAREN) { make_rt_function LPAREN &_module, PASS(fn_I LPAREN TYPE_##tfn RPAREN) STRIPPER
+
+
 c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
                                          llvm::Module& module,
                                          llvm::IRBuilder<>& builder)
@@ -138,39 +161,21 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			},
 			false)
 	}
-	, _rt_allocate_array{
-		make_rt_function(&_module, ptr, "_c4_allocate_array", i64, i64)
-	}
-	, _rt_apply{make_rt_function(&_module, void_, "_c4_apply", ptr, ptr)}
-	, _rt_apply2{make_rt_function(&_module, void_, "_c4_apply2", ptr, ptr)}
-	, _rt_complete_thunk{
-		make_rt_function(&_module, void_, "_c4_complete_thunk", ptr, ptr)
-	}
-	, _rt_evaluate{make_rt_function(&_module, void_, "_c4_evaluate", ptr, ptr)}
-	, _rt_make_datum_block{
-		make_rt_function(&_module, ptr, "_c4_make_datum_block", ptr)
-	}
-	, _rt_make_datum_float64{
-		make_rt_function(&_module, ptr, "_c4_make_datum_float64", double_)
-	}
-	, _rt_make_datum_int64{
-		make_rt_function(&_module, ptr, "_c4_make_datum_int64", i64)
-	}
-	, _rt_make_datum_nil{
-		make_rt_function(&_module, ptr, "_c4_make_datum_nil")
-	}
-	, _rt_make_datum_str{
-		make_rt_function(&_module, ptr, "_c4_make_datum_str", ptr, i64)
-	}
-	, _rt_make_thunk{make_rt_function(&_module, ptr, "_c4_make_thunk", ptr)}
-	, _rt_seq{make_rt_function(&_module, void_, "_c4_seq", ptr, ptr)}
-	, _rt_seq2{make_rt_function(&_module, void_, "_c4_seq2", ptr, ptr)}
-	, _rt_set_thunk_args{
-		make_rt_function(&_module, void_, "_c4_set_thunk_args", ptr, ptr, i32)
-	}
-	, _rt_merge_argv{
-		make_rt_function(&_module, ptr, "_c4_merge_argv", ptr, i32, ptr)
-	}
+	, fn(ptr allocate_array)(i64, i64)
+	, fn(void apply)(ptr, ptr)
+	, fn(void apply2)(ptr, ptr)
+	, fn(void complete_thunk)(ptr, ptr)
+	, fn(void evaluate)(ptr, ptr)
+	, fn(ptr make_datum_block)(ptr)
+	, fn(ptr make_datum_float64)(double_)
+	, fn(ptr make_datum_int64)(i64)
+	, fn(ptr make_datum_nil)()
+	, fn(ptr make_datum_str)(ptr, i64)
+	, fn(ptr make_thunk)(ptr)
+	, fn(ptr seq)(ptr, ptr)
+	, fn(ptr seq2)(ptr, ptr)
+	, fn(void set_thunk_args)(ptr, ptr, i32)
+	, fn(ptr merge_argv)(ptr, i32, ptr)
 	, _gc_malloc{
 		make_rt_function(&_module, ptr, "GC_malloc", i64)
 	} {

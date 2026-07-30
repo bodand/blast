@@ -165,10 +165,6 @@ namespace c4::p2 {
 		                 const ast2::let_expression* memory);
 
 		ast2::expression*
-		parse_expression_of_let(const ast2::symbol& symbol,
-		                        ast2::let_expression* let);
-
-		ast2::expression*
 		parse_fn_let();
 
 		ast2::expression*
@@ -203,6 +199,10 @@ namespace c4::p2 {
 		promised_symbols() const;
 
 	private:
+		ast2::expression*
+		parse_expression_of_let(const ast2::symbol& symbol,
+		                        ast2::let_expression* let);
+
 		bool
 		parse_associativity_indicator(std::string_view op);
 
