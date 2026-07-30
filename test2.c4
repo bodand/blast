@@ -1,0 +1,37 @@
+let global_var1 123
+let global_var2 readln
+
+let f/2 { |a b| a + b * a }
+
+let bar/2 { |he ha| he }
+
+let xd/2 { |a b| a * b }
+
+let lmao xd 1 1
+
+let true \{ |t f| t }
+let else/1 \|x| x
+
+let selfmul/1 { |x|
+    let mul/2 { |a b|
+        if b == 0 0
+        if b == 1 a
+        a + mul a (b - 1)
+    }
+
+    mul x x
+}
+
+let foo {
+    let x 1 + readln
+    let serial/1
+    { |y|
+        print x
+        print y
+        print global_var1
+    }
+
+    serial 45
+}
+
+&(else true)/0

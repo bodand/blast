@@ -240,7 +240,6 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto value = with_name(args[1], "value");
 
 		const auto callee = get_datum_value(value, ptr_t);
-		const auto dyn = with_name(make_thunk(callee), "dyn");
 
 		const auto argv = get_datum_argv(value);
 		const auto argv_sz = get_datum_argv_sz(value);
@@ -250,9 +249,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 		const auto new_args = with_name(merge_argv(argv, argv_sz, callee_args), "new_args");
 
-		set_thunk_args(dyn, new_args, argv_sz);
-
-		tail_call(_rt_evaluate, dyn, K);
+		tail_call(callee, new_args, K);
 	});
 
 	_rt_complete_thunk.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
@@ -422,7 +419,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 		const auto next = get_completion_thunk(self);
 		const auto K = get_completion_K(self);
 
-		tail_call(_rt_evaluate, K, next);
+		tail_call(_rt_evaluate, next, K);
 	});
 
 	_rt_set_thunk_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {

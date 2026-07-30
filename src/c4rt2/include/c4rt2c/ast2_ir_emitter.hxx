@@ -92,7 +92,7 @@ namespace c4rt2c {
 		void
 		declare_symbols(const c4::ast2::ast_context& ctx);
 
-		void finalize() const;
+		void finalize();
 
 	private:
 		llvm::FunctionPassManager& _pass_manager;
@@ -101,6 +101,7 @@ namespace c4rt2c {
 		llvm::Module& _module;
 		builder_type& _builder;
 		runtime_emitter _runtime;
+		llvm::Value* _mainK;
 		seq_builder _seq_builder;
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
@@ -114,9 +115,6 @@ namespace c4rt2c {
 
 		void
 		emit_named_function(const c4::ast2::block& block);
-
-		void
-		emit_anonymous_function(const c4::ast2::block& block);
 
 		struct name_manager {
 			std::string
@@ -142,7 +140,7 @@ namespace c4rt2c {
 			std::size_t _lambda_counter{};
 		} _name_manager{};
 
-		llvm::Value*
+		[[nodiscard]] llvm::Value*
 		allocate_argv(std::size_t count) const;
 
 		[[nodiscard]] llvm::Function*

@@ -36,7 +36,6 @@
 
 #include <c4rt2c/seq_node.hxx>
 
-inline
 c4rt2c::seq_pair::seq_pair(std::unique_ptr<seq_node>&& left,
                            std::unique_ptr<seq_node>&& right)
 	: _left{std::move(left)}

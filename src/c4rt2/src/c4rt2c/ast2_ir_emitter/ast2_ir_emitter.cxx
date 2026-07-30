@@ -48,7 +48,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	, _builder{builder}
 	, _runtime{context, module, builder} {
 	const auto c4_main_ty = llvm::FunctionType::get(
-		llvm::IntegerType::get(_context, 32),
+		llvm::Type::getVoidTy(_context),
 		{
 			llvm::PointerType::get(_context, 0),
 			llvm::PointerType::get(_context, 0)
@@ -60,7 +60,8 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 		"_c4_main",
 		_module
 	);
+	c4_main->setCallingConv(llvm::CallingConv::Tail);
 	c4_main->getArg(0)->setName("argv");
-	c4_main->getArg(1)->setName("K");
+	(_mainK = c4_main->getArg(1))->setName("K");
 	_builder.SetInsertPoint(llvm::BasicBlock::Create(_context, "entry", c4_main));
 }

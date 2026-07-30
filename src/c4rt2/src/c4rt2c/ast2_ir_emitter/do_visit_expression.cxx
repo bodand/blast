@@ -43,4 +43,10 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::expression& obj) {
 	_expression_stack.push_back(&obj);
 	obj.accept_skip_self(*this);
 	_expression_stack.pop_back();
+
+	if (!_expression_stack.empty()) return;
+
+	const auto value = obj.attribute_value<llvm::Value*>("value");
+	if (!value) return;
+	_seq_builder.push(*value);
 }

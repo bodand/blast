@@ -28,17 +28,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-30.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/seq_builder/seq_builder --
  *   
  */
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/seq_builder.hxx>
+#include <c4rt2c/seq_node.hxx>
 
-void
-c4rt2c::ast2_ir_emitter::finalize() {
-	const auto seq = _seq_builder.build(_builder, _runtime);
-	_runtime.evaluate(seq, _mainK);
-	_builder.CreateRetVoid();
-}
+c4rt2c::seq_builder::~seq_builder() = default;

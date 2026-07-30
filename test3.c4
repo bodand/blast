@@ -1,4 +1,4 @@
-let mkadder/1 { |x| { |y| x + y } }
+#let mkadder/1 { |x| { |y| x + y } }
 
 let true { { |t f| t } }
 

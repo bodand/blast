@@ -54,6 +54,7 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const;
 
+		~seq_builder();
 	private:
 		std::unique_ptr<seq_node> _root;
 		std::unique_ptr<seq_node>* _last;
