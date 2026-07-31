@@ -77,20 +77,24 @@ c4::ast2::let_expression::value_constant() const noexcept {
 	return _value->constant_evaluated(std::array{_symbol});
 }
 
-const c4::ast2::expression&
+const c4::ast2::expression*
 c4::ast2::let_expression::value() const {
-	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-	return *_value;
+	return _value;
 }
 
-c4::ast2::expression&
+c4::ast2::expression*
 c4::ast2::let_expression::value() {
-	DEBUG_ASSERT(_value != nullptr, "let-expression's value is not set", _symbol);
-	return *_value;
+	return _value;
 }
 
 bool
 c4::ast2::let_expression::introduces_variable() const noexcept {
+	// let native produces two let-s: one with a symbol set to native. This
+	// produces the pure cdecl function, whereas the one simply without a value
+	// is a C4 function that jumps to a continuation to force arg evaluation to
+	// then call the cdecl function.
+	if (_symbol.native() || !_value) return false;
+
 	if (_value->true_closure()) return false;
 	if (_value->invocable_with()) return false;
 	return true;

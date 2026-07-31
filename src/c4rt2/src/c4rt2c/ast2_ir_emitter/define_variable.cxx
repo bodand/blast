@@ -47,14 +47,11 @@ c4rt2c::ast2_ir_emitter::define_variable(const c4::ast2::let_expression& let) {
 	DEBUG_ASSERT(let.introduces_variable(), "let does not introduce var", let);
 	if (let.global_symbol()) return;
 
-	// const auto ptr_t = llvm::PointerType::get(_context, 0);
-	// const auto var = _builder.CreateAlloca(ptr_t, nullptr, let.symbol().name());
+	const auto let_value = let.value();
+	ASSERT(let_value, "var symbol must have expression");
 
-	let.value().accept(*this);
-	const auto val = let.value().attribute_value<llvm::Value*>("value");
+	let_value->accept(*this);
+	const auto val = let_value->attribute_value<llvm::Value*>("value");
 	ASSERT(val, "symbol didn't get defined to value", let.symbol().name(), let);
 	(*val)->setName(let.symbol().name());
-
-	// _builder.CreateStore(*val, var);
-	// let.emplace_attribute<c4c::llvm_value_attribute>("value", var);
 }

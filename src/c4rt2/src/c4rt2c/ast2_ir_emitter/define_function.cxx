@@ -59,6 +59,10 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	const auto fn = let.attribute_value<llvm::Function*>("function");
 	ASSERT(fn, "function attribute must not be null", let.symbol());
 
+	// XXX ignore C bridges for now
+	const auto val = let.value();
+	if (!val) return;
+
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
 
@@ -83,8 +87,8 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 		(*fn)->setMetadata("fn.args", meta_node);
 	}
 
-	if (const auto closures = let.value().closure_symbols();
-		let.value().true_closure()) {
+	if (const auto closures = val->closure_symbols();
+		val->true_closure()) {
 		llvm::SmallVector<llvm::Value*, 4> closure_args;
 		llvm::SmallVector<llvm::Metadata*, 4> closure_names;
 		closure_names.reserve(closure_sz = closures.size());

@@ -80,10 +80,10 @@ namespace c4::ast2 {
 		[[nodiscard]] symbol
 		symbol() const { return _symbol; }
 
-		[[nodiscard]] const struct expression&
+		[[nodiscard]] const ast2::expression*
 		value() const;
 
-		[[nodiscard]] struct expression&
+		[[nodiscard]] ast2::expression*
 		value();
 
 		std::string_view

@@ -190,7 +190,11 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 		_os << "\b\b\033[0m]";
 	}
 	_os << " \n" << std::string(2U * ++_depth, ' ');
-	obj.value().accept(*this);
+	if (const auto val = obj.value()) {
+		val->accept(*this);
+	} else {
+		_os << ";";
+	}
 	--_depth;
 	_os << "}";
 }

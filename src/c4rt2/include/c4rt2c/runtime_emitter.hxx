@@ -209,6 +209,7 @@ namespace c4rt2c {
 		runtime_fn _rt_apply2;             // void apply2(completion* self, datum* val)
 		runtime_fn _rt_complete_thunk;     // void complete_thunk(datum* thunk, fn K)
 		runtime_fn _rt_evaluate;           // void evaluate(datum* thunk, fn K)
+		runtime_fn _rt_force_args2;        // void evaluate(completion* self, datum* val)
 		runtime_fn _rt_make_datum_block;   // datum* make_datum_block(fn anon)
 		runtime_fn _rt_make_datum_float64; // datum* make_datum_float64(f64 val)
 		runtime_fn _rt_make_datum_int64;   // datum* make_datum_int64(i64 val)

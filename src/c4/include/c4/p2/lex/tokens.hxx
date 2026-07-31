@@ -350,6 +350,7 @@ namespace c4::p2::tokens {
 
 		ampersand,    // &(
 		arity_marker, // )/1
+		semicolon,    // ;
 		lparen,       // (
 		rparen,       // )
 		lbrace,       // {

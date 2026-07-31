@@ -60,9 +60,11 @@ c4rt2c::ast2_ir_emitter::define_global_var(const c4::ast2::let_expression* gsym)
 	const auto var_name = _name_manager.mangle_symbol(gsym->symbol());
 	var->setName(var_name);
 
-	gsym->value().accept(*this);
+	const auto let_value = gsym->value();
+	ASSERT(let_value, "var symbol must have expression");
+	let_value->accept(*this);
 	gsym->emplace_attribute<needs_loading_attribute>("needs-loading?", true);
-	const auto val = gsym->value().attribute_value<llvm::Value*>("value");
+	const auto val = let_value->attribute_value<llvm::Value*>("value");
 	ASSERT(val, "symbol didn't get defined to value", var_name, gsym);
 
 	_builder.CreateStore(*val, var);

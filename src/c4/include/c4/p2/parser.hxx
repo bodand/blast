@@ -145,7 +145,7 @@ namespace c4::p2 {
 		parse_string_literal();
 
 		ast2::symbol
-		parse_symbol();
+		parse_symbol(bool advance = true);
 
 		ast2::symbol
 		parse_op_symbol();
@@ -215,6 +215,12 @@ namespace c4::p2 {
 
 		ast2::expression*
 		parse_operator_precedence(ast2::expression* lhs, unsigned precedence);
+
+		[[nodiscard]] position
+		current_position() const {
+			return std::visit(std::mem_fn(&tokens::token_base::token_position),
+			                  _current);
+		}
 
 		struct parser_symbol {
 			std::string_view name;

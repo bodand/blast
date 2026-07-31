@@ -167,16 +167,16 @@ c4::p2::parser::parse_string_literal() {
 }
 
 c4::ast2::symbol
-c4::p2::parser::parse_symbol() {
+c4::p2::parser::parse_symbol(const bool advance) {
 	const auto symbol = expect_token<tokens::symbol>();
 	if (symbol) {
-		next_relevant();
+		if (advance) next_relevant();
 		return ast2::symbol::from_token(*symbol);
 	}
 
 	const auto bare_symbol = expect_token<tokens::bare_symbol>();
 	if (bare_symbol) {
-		next_relevant();
+		if (advance) next_relevant();
 		return ast2::symbol::from_token(*bare_symbol);
 	}
 
@@ -312,7 +312,7 @@ c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
 
 c4::ast2::expression*
 c4::p2::parser::parse_fn_let(const bool native) {
-	const auto symbol = parse_symbol();
+	const auto symbol = parse_symbol(false);
 	const auto let = _context.build_let_expression(
 		symbol.position(),
 		symbol,
@@ -321,9 +321,45 @@ c4::p2::parser::parse_fn_let(const bool native) {
 
 	declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
 	if (native) {
+		if (!expect_token<tokens::symbol>()) {
+			_diag.warning(current_position(),
+			              "native function `{}/{}' is declared with bare symbol (without arity)",
+			              symbol.name(),
+			              symbol.base_arity())
+			     .note("consider using {}/0", symbol.name());
+		}
+
 		let->emplace_attribute<native_attachment>("native",
 		                                          symbol.with_native());
+		next_relevant();
+
+		if (!expect_token<tokens::semicolon>()) {
+			_diag.error(let->position(),
+			            "function `{}/{}' is marked as `native' but given definition",
+			            symbol.name(),
+			            symbol.base_arity())
+			     .note(current_position(),
+			           "expected `;' to follow declaration");
+		}
+		next_relevant(); // skip semicolon
+
+		if (_within_block) {
+			let->emplace_attribute<nested_symbol_attribute>("nested-in", _within_block);
+			_diag.error(let->position(),
+			            "function `{}/{}' is marked as `native' but is nested",
+			            symbol.name(),
+			            symbol.base_arity())
+			     .note(_within_block->position(), "enclosing block is here")
+			     .when(_within_let)
+			     .note(_within_let->position(), "nested within this let");
+		}
+
+		std::vector symbol_stack{symbol};
+		let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
+
+		return _context.build_expression(let);
 	}
+	next_relevant(); // advance manually because we did not ask parse_symbol to
 
 	const auto expr = parse_expression_of_let(symbol, let);
 
