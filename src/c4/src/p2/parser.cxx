@@ -113,6 +113,12 @@ namespace {
 		nested_symbol_attribute(c4::ast2::block* blk)
 			: typed_attribute(blk) { }
 	};
+
+	struct native_attachment : c4::ast2::tags::typed_attribute<c4::ast2::symbol> {
+		explicit
+		native_attachment(c4::ast2::symbol&& sym)
+			: typed_attribute(sym) { }
+	};
 }
 
 c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
@@ -305,14 +311,19 @@ c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
 }
 
 c4::ast2::expression*
-c4::p2::parser::parse_fn_let() {
+c4::p2::parser::parse_fn_let(const bool native) {
 	const auto symbol = parse_symbol();
 	const auto let = _context.build_let_expression(
 		symbol.position(),
 		symbol,
 		nullptr
 	);
+
 	declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
+	if (native) {
+		let->emplace_attribute<native_attachment>("native",
+		                                          symbol.with_native());
+	}
 
 	const auto expr = parse_expression_of_let(symbol, let);
 
@@ -341,16 +352,19 @@ c4::p2::parser::parse_let_expression() {
 		report_failure(_diag, let);
 	next_relevant();
 
-	// Symbol declaration happens immediately after parsing the symbol: this is
-	// required to allow recursion. If symbol was declared at the end of the
-	// let expression, the expression parsing after this could not refer to it
-	// this is true for normal symbols as well as operator symbols
+	bool native = false;
+	if (const auto bare_symbol = expect_token<tokens::bare_symbol>()) {
+		if (bare_symbol->name() == "native") {
+			native = true;
+			next_relevant();
+		}
+	}
 
 	if (expect_token<tokens::operator_symbol>()
 	    || expect_token<tokens::fn_operator>())
 		return parse_operator_let();
 
-	return parse_fn_let();
+	return parse_fn_let(native);
 }
 
 
@@ -475,7 +489,7 @@ namespace {
 		alignas(c4::position) std::byte data[sizeof(c4::position)];
 
 		const bool found_pos = (
-			(args && (new (data) c4::position(args->token_position()), true)) || ...
+			(args && (new(data) c4::position(args->token_position()), true)) || ...
 		);
 		if (found_pos) return *reinterpret_cast<c4::position*>(data);
 

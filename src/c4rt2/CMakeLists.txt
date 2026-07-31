@@ -250,6 +250,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/seq_builder/push.cxx
             src/c4rt2c/seq_builder/build.cxx
             src/c4rt2c/seq_builder/~seq_builder.cxx
+            src/c4rt2c/ast2_ir_emitter/define_native_function.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

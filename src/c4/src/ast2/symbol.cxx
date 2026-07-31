@@ -115,7 +115,10 @@ c4::ast2::symbol::with_arity(const unsigned arity) const {
 }
 
 std::string
-c4::ast2::symbol::mangle() const { return mangle_symbol(_name, _arity); }
+c4::ast2::symbol::mangle() const {
+	if (native()) return std::string(_name);
+	return mangle_symbol(_name, _arity);
+}
 
 bool
 c4::ast2::symbol::captured() const noexcept {

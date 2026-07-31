@@ -165,7 +165,7 @@ namespace c4::p2 {
 		                 const ast2::let_expression* memory);
 
 		ast2::expression*
-		parse_fn_let();
+		parse_fn_let(bool native);
 
 		ast2::expression*
 		parse_let_expression();
@@ -221,7 +221,8 @@ namespace c4::p2 {
 			ast2::tags::referable* referee;
 			unsigned arity;
 			unsigned precedence; // Set only on operators
-			bool right_assoc;    // Set only on operators
+			bool native = false;
+			bool right_assoc; // Set only on operators
 
 			parser_symbol(const std::string_view& name_,
 			              const unsigned arity_,
@@ -240,6 +241,7 @@ namespace c4::p2 {
 
 			[[nodiscard]] bool
 			operator==(const ast2::symbol& sym) const noexcept {
+				if (native) return false;
 				return sym.name() == name;
 			}
 		};

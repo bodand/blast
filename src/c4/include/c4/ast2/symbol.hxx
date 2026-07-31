@@ -148,10 +148,21 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		constant_evaluated(std::span<const symbol>) const noexcept { return true; }
 
+		[[nodiscard]] bool
+		native() const { return _native; }
+
+		[[nodiscard]] symbol
+		with_native(const bool native = true) const {
+			auto cpy = *this;
+			cpy._native = native;
+			return cpy;
+		}
+
 	private:
 		mutable tags::referable* _references{};
 		std::string_view _name;
 		unsigned _arity;
+		bool _native = false;
 	};
 }
 

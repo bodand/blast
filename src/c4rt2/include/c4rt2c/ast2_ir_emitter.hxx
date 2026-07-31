@@ -171,6 +171,9 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::Function*
 		declare_function(std::string_view name);
 
+		llvm::Function*
+		declare_native_function(const c4::ast2::symbol& symbol);
+
 		[[nodiscard]] std::pair<bool, llvm::Value*>
 		thunked_symbol(const c4::ast2::symbol& sym) const;
 

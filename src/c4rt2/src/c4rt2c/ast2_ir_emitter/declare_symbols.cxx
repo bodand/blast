@@ -54,6 +54,11 @@ c4rt2c::ast2_ir_emitter::declare_symbols(const c4::ast2::ast_context& ctx) {
 		const auto name = _name_manager.mangle_symbol_stack(*stck);
 
 		if (gsym->introduces_function()) {
+			if (const auto native = gsym->attribute_value<c4::ast2::symbol>("native")) {
+				const auto native_decl = declare_native_function(*native);
+				gsym->emplace_attribute<c4c::llvm_function_attribute>("native-function", native_decl);
+			}
+
 			const auto decl = declare_function(name);
 			gsym->emplace_attribute<c4c::llvm_function_attribute>("function", decl);
 			continue;

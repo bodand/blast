@@ -28,30 +28,40 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-31.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/define_native_function --
  *   
  */
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <c4/ast2/symbol.hxx>
 
-#include <c4rt2c/runtime_fn.hxx>
+#include <c4rt2c/ast2_ir_emitter.hxx>
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
+llvm::Function*
+c4rt2c::ast2_ir_emitter::declare_native_function(const c4::ast2::symbol& symbol) {
+	llvm::SmallVector<llvm::Type*, 8> args;
+	args.reserve(symbol.base_arity());
+
+	const auto ptr_t = llvm::PointerType::get(_context, 0);
+	std::generate_n(std::back_inserter(args), symbol.base_arity(), [&]() {
+		return ptr_t;
+	});
+
+	const auto fn = llvm::Function::Create(llvm::FunctionType::get(ptr_t, args, false),
+	                                       llvm::Function::ExternalLinkage,
+	                                       symbol.name(),
+	                                       _module);
+	fn->setCallingConv(llvm::CallingConv::C);
+	fn->addRetAttr(llvm::Attribute::NoUndef);
+	fn->addRetAttr(llvm::Attribute::NonNull);
 	fn->addFnAttr(llvm::Attribute::NoUnwind);
+	fn->addFnAttr(llvm::Attribute::NoFree);
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+	std::ranges::for_each(fn->args(), [&](auto& arg) {
+		arg.addAttr(llvm::Attribute::NonNull);
+		arg.addAttr(llvm::Attribute::NoUndef);
+	});
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
-	}
-
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
+	return fn;
 }

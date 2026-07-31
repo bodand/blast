@@ -34,6 +34,7 @@
  *   
  */
 
+#include <numeric>
 #include <span>
 #include <string>
 
@@ -43,14 +44,36 @@
 
 #include <fmt/format.h>
 
-std::string
-c4rt2c::ast2_ir_emitter::name_manager::mangle_symbol_stack(
-     const std::span<const c4::ast2::symbol> symbols) {
-	auto result = fmt::format("q{}", symbols.size());
+#include <libassert/assert.hpp>
 
-	for (const auto& sym : symbols) {
-		result += sym.mangle();
+namespace {
+	std::string
+	mangle_stack(std::span<const c4::ast2::symbol> symbols) {
+		return std::accumulate(
+			       symbols.begin(),
+			       symbols.end(),
+			       fmt::format("q{}", symbols.size()),
+			       []<typename TAcc>(TAcc&& acc, const auto& sym) {
+				       return std::forward<TAcc>(acc) + sym.mangle();
+			       })
+		       + "E";
 	}
 
-	return result + "E";
+	std::string
+	maybe_unmangled_single(const std::span<const c4::ast2::symbol> symbols) {
+		const auto& sym = symbols.front();
+		if (sym.native()) return sym.mangle();
+
+		return fmt::format("q1N{}E", sym.mangle());
+	}
+}
+
+std::string
+c4rt2c::ast2_ir_emitter::name_manager::mangle_symbol_stack(
+	const std::span<const c4::ast2::symbol> symbols
+) {
+	ASSERT(!symbols.empty(), "symbol stack is empty");
+
+	if (symbols.size() == 1) return maybe_unmangled_single(symbols);
+	return mangle_stack(symbols);
 }

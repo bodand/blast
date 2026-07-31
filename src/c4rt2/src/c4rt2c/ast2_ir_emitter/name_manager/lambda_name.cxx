@@ -40,5 +40,5 @@
 
 std::string
 c4rt2c::ast2_ir_emitter::name_manager::lambda_name() {
-	return fmt::format("lambda{}", _lambda_counter++);
+	return fmt::format("L#{}", _lambda_counter++);
 }

@@ -50,7 +50,7 @@ c4rt2c::ast2_ir_emitter::init(const fs::path& fname) {
 
 	_module.addModuleFlag(llvm::Module::Warning, "Debug Info Version", llvm::DEBUG_METADATA_VERSION);
 	_cu = _di_builder->createCompileUnit(
-		dwf::DW_LANG_C, // XXX is this ok?
+		dwf::DW_LANG_Haskell, // XXX is this ok?
 		_di_builder->createFile(filename, directory),
 		"c4c",
 		false,

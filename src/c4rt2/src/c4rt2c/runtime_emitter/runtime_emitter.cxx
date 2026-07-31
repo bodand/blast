@@ -172,13 +172,28 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(ptr make_datum_nil)()
 	, fn(ptr make_datum_str)(ptr, i64)
 	, fn(ptr make_thunk)(ptr)
-	, fn(ptr seq)(ptr, ptr)
-	, fn(ptr seq2)(ptr, ptr)
+	, fn(void seq)(ptr, ptr)
+	, fn(void seq2)(ptr, ptr)
 	, fn(void set_thunk_args)(ptr, ptr, i32)
 	, fn(ptr merge_argv)(ptr, i32, ptr)
 	, _gc_malloc{
 		make_rt_function(&_module, ptr, "GC_malloc", i64)
 	} {
+	_gc_malloc.fn->addRetAttr(llvm::Attribute::NoAlias);
+	_gc_malloc.fn->addFnAttr(llvm::Attribute::NoInline);
+	_gc_malloc.fn->addFnAttr(llvm::Attribute::NoUnwind);
+	_gc_malloc.fn->addFnAttr(llvm::Attribute::WillReturn);
+	_gc_malloc.fn->addFnAttr(
+		llvm::Attribute::getWithAllocSizeArgs(_context, 0, {})
+	);
+
+	constexpr auto allocation_flags = static_cast<std::int64_t>(
+		llvm::AllocFnKind::Alloc | llvm::AllocFnKind::Zeroed
+	);
+	_gc_malloc.fn->addFnAttr(llvm::Attribute::get(
+		_context, llvm::Attribute::AllocKind, allocation_flags
+	));
+
 	int8_t = i8.get(_context);
 	int32_t = i32.get(_context);
 	int64_t = i64.get(_context);
@@ -225,6 +240,14 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			return memory;
 		}
 	});
+	_rt_allocate_array.fn->addRetAttr(llvm::Attribute::NoAlias);
+	_rt_allocate_array.fn->addFnAttr(llvm::Attribute::WillReturn);
+	_rt_allocate_array.fn->addFnAttr(
+		llvm::Attribute::getWithAllocSizeArgs(_context, 1, 0)
+	);
+	_rt_allocate_array.fn->addFnAttr(llvm::Attribute::get(
+		_context, llvm::Attribute::AllocKind, allocation_flags
+	));
 
 	_rt_apply.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
 		const auto argv = with_name(args[0], "argv");

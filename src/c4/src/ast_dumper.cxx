@@ -171,7 +171,12 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 		}
 	}
 	else {
-		_os << "\033[2;34m(fn)\033[m ";
+		if (obj.attribute_value<ast2::symbol>("native")) {
+			_os << "\033[2;34m(native)\033[m ";
+		}
+		else {
+			_os << "\033[2;34m(fn)\033[m ";
+		}
 	}
 
 	_os << "\033[3m";

@@ -202,7 +202,7 @@ main(int argc, const char** argv) {
 	parser.declare_symbol("blk_empty", 1, nullptr);
 	parser.declare_symbol("nil_block", 0, nullptr);
 	parser.declare_symbol("cat", 2, nullptr);
-	parser.declare_symbol("readln", 0, nullptr);
+	// parser.declare_symbol("readln", 0, nullptr);
 
 	try {
 		const auto script = parser.parse_script();

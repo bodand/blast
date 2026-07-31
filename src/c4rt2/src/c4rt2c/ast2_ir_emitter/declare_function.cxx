@@ -49,8 +49,15 @@ c4rt2c::ast2_ir_emitter::declare_function(const std::string_view name) {
 		_module
 	);
 	decl->getArg(0)->setName("argv");
+	decl->getArg(0)->addAttr(llvm::Attribute::NoUndef);
+	decl->getArg(0)->addAttr(llvm::Attribute::getWithAlignment(_context, llvm::Align(8)));
 	decl->getArg(1)->setName("K");
+	decl->getArg(1)->addAttr(llvm::Attribute::NoUndef);
+	decl->getArg(1)->addAttr(llvm::Attribute::getWithAlignment(_context, llvm::Align(8)));
+
 	decl->setCallingConv(llvm::CallingConv::Tail);
+	decl->addFnAttr(llvm::Attribute::NoUnwind);
+	decl->addFnAttr(llvm::Attribute::NoFree);
 
 	return decl;
 }
