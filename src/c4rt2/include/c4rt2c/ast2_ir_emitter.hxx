@@ -178,6 +178,9 @@ namespace c4rt2c {
 		thunked_symbol(const c4::ast2::symbol& sym) const;
 
 		void
+		define_bridge_function(const c4::ast2::let_expression& let);
+
+		void
 		define_function(const c4::ast2::let_expression& let);
 
 		void

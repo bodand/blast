@@ -28,32 +28,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-01.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/c4rt2/src/c4rt3/c4_datum_from_int64 --
  *   
  */
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <assert.h>
+#include <errno.h>
 
-#include <c4rt2c/runtime_fn.hxx>
+#include <gc/gc.h>
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+#include <c4rt3/c4rt.h>
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+#include "internal_type.h"
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
-	}
+int
+c4_datum_from_int64(const int64_t val,
+                    c4_datum* out) {
+	assert(out && "out must not be null");
 
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
+	struct c4_datum_t* d = GC_NEW(struct c4_datum_t);
+	if (!d) return -(errno = ENOMEM);
+
+	d->type = C4_Integer;
+	datum_int(d) = val;
+
+	*out = d;
+	return 0;
 }

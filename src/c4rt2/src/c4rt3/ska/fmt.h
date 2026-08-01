@@ -28,32 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-01.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
- *   
+ * src/c4rt2/src/c4rt3/ska/fmt --
+ *   A special header file providing the functionality within the skalibs
+ *   files used for integer formatting.
  */
+#ifndef BLAST_FMT_H
+#define BLAST_FMT_H
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#include <c4rt2c/runtime_fn.hxx>
+#define UINT64_FMT 21
+#define UINT64_XFMT 17
+#define INT64_FMT 22
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+size_t
+int64_fmt_generic(char* fmt, int64_t d, uint8_t base);
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+size_t
+uint64_fmt_generic(char* fmt, uint64_t d, uint8_t base);
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
-	}
-
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
-}
+#endif

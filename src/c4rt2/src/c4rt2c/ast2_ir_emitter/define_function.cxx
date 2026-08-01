@@ -59,12 +59,15 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	const auto fn = let.attribute_value<llvm::Function*>("function");
 	ASSERT(fn, "function attribute must not be null", let.symbol());
 
-	// XXX ignore C bridges for now
-	const auto val = let.value();
-	if (!val) return;
-
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
+
+	const auto val = let.value();
+	if (!val) {
+		define_bridge_function(let);
+		_builder.CreateRetVoid();
+		return;
+	}
 
 	const auto body = let.function_body();
 	body->emplace_attribute<c4c::llvm_value_attribute>("argv", (*fn)->getArg(0));

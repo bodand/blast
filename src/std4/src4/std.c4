@@ -1,0 +1,35 @@
+let true \{ |t f| &(t)/0 }
+let false \{ |t f| &(f)/0 }
+
+let if/3 { |c t f| &(c)/2 t f }
+
+let native primitive_add/2;
+let native primitive_sub/2;
+let native primitive_mul/2;
+let native primitive_div/2;
+let native primitive_mod/2;
+
+let (+)/2 left 10 { |a b| primitive_add a b }
+let (-)/2 left 10 { |a b| primitive_sub a b }
+let (*)/2 left 10 { |a b| primitive_mul a b }
+let (/)/2 left 10 { |a b| primitive_div a b }
+let (%)/2 left 10 { |a b| primitive_mod a b }
+
+let native primitive_eq/2;
+let native primitive_ne/2;
+let native primitive_lt/2;
+let native primitive_le/2;
+let native primitive_gt/2;
+let native primitive_ge/2;
+
+let (==)/2 left 10 { |a b| primitive_eq a b }
+let (!=)/2 left 10 { |a b| primitive_ne a b }
+let (<)/2 left 10 { |a b| primitive_lt a b }
+let (<=)/2 left 10 { |a b| primitive_le a b }
+let (>)/2 left 10 { |a b| primitive_gt a b }
+let (>=)/2 left 10 { |a b| primitive_ge a b }
+
+let native io_print/1;
+let native io_println/1;
+
+let native io_readln/0;

@@ -14,14 +14,7 @@
     "pcre2",
     "catch2",
     "bdwgc",
-    {
-      "name": "mimalloc",
-      "default-features": false,
-      "features": [
-        "asm",
-        "secure"
-      ]
-    },
+    "ryu",
     {
       "name": "llvm",
       "default-features": false,

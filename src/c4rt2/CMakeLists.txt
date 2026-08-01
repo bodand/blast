@@ -39,118 +39,60 @@
 #   be used by c4c and c4 when generating LLVM IR.
 #   Most code is ported over from c4rt.
 
-include(CheckTypeSize)
+set(rt_bridge_llvm
+    src/c4rt3/c4int_datum_true.ll
+    src/c4rt3/c4int_datum_false.ll
+    )
+set(rt_bridge_obj ""
+    src/c4rt3/c4_datum_from_boolean.c)
 
-set(clang-tools-location-hint)
-set(INC_MIMALLOC)
-if (IS_DIRECTORY "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}")
-    set(clang-tools-location-hint
-        "HINTS"
-        "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/tools/llvm/")
-    set(INC_MIMALLOC
-        "-I${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include")
-endif ()
+foreach(src IN LISTS rt_bridge_llvm)
+    cmake_path(GET src FILENAME srcbase)
+    set(obj "${CMAKE_CURRENT_BINARY_DIR}/${srcbase}.o")
 
-find_program(CLANG_EXEC clang
-             NAMES clang clang-cl
-             ${clang-tools-location-hint}
-             DOC "Clang: used to generate LLVM bitcode from C code"
-             REQUIRED)
-find_program(CLANGXX_EXEC clang++
-             NAMES clang++ clang-cl
-             ${clang-tools-location-hint}
-             DOC "Clang++: used to generate LLVM bitcode from C++ code"
-             REQUIRED)
-find_program(OPT_EXEC opt
-             ${clang-tools-location-hint}
-             DOC "LLVM optimizer for optimizing bitcode in release mode"
-             REQUIRED)
-find_program(LLVM_LINK_EXEC llvm-link
-             ${clang-tools-location-hint}
-             DOC "Tool to use for merging LLVM bitcode files"
-             REQUIRED)
+    add_custom_command(
+        OUTPUT ${obj}
+        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc
+                -filetype=obj
+                -relocation-model=pic
+                -O3
+                ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+                -o ${obj}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+        COMMENT "Compiling LLVM IR ${srcbase}.ll"
+    )
 
-set(opt $<CONFIG:Release,RelWithDebInfo,MinSizeRel>)
-function(compile_into_bitcode in CC)
-    set(out "${in}.bc")
-    set(optim "${out}.opt")
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/dynamic_call_hacks.h"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/include/c4rt2/c4rt_package_versions.h"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/src/c4rt2/package.1.h"
-                       COMMAND "${CC}" -c -emit-llvm
-                       -fvisibility=hidden -g
-                       -DC4RT2_STATIC
-                       -D_CRT_NONSTDC_NO_DEPRECATE
-                       -D_CRT_SECURE_NO_WARNINGS
-                       ${ARGN}
-                       $<${opt}:-DNDEBUG>
-                       -I "${CMAKE_CURRENT_BINARY_DIR}"
-                       -I "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                       -o "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       "${CMAKE_CURRENT_SOURCE_DIR}/${in}"
-                       VERBATIM)
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${optim}"
-                       DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       COMMAND "$<IF:${opt},${OPT_EXEC},cmake>"
-                       $<IF:${opt},--tailcallopt,-E>
-                       $<IF:${opt},--hot-cold-split,cat>
-                       "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       "$<IF:${opt},-p,${CMAKE_CURRENT_SOURCE_DIR}/src/empty.txt>"
-                       "$<IF:${opt},default<O3$<ANGLE-R>,${CMAKE_CURRENT_SOURCE_DIR}/src/empty.txt>"
-                       $<IF:${opt},-o,$<ANGLE-R>> "${CMAKE_CURRENT_BINARY_DIR}/${optim}"
-                       VERBATIM)
-endfunction()
+    list(APPEND rt_bridge_obj ${obj})
+endforeach()
 
-function(link_bitcode out)
-    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       DEPENDS "$<LIST:TRANSFORM,${ARGN},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>"
-                       COMMAND "${LLVM_LINK_EXEC}" -o "${CMAKE_CURRENT_BINARY_DIR}/${out}"
-                       "$<LIST:TRANSFORM,${ARGN},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>"
-                       VERBATIM
-                       COMMAND_EXPAND_LISTS)
-endfunction()
+add_library(c4rt3 STATIC
+            include/c4rt3/c4rt.h
+            src/c4rt3/c4_datum_type_of.c
+            src/c4rt3/c4_datum_is_nil.c
+            src/c4rt3/c4_datum_get_int64.c
+            src/c4rt3/c4_datum_get_double.c
+            src/c4rt3/c4_datum_get_string.c
+            src/c4rt3/c4_datum_coerce_int64.c
+            src/c4rt3/c4_datum_coerce_double.c
+            src/c4rt3/c4_datum_coerce_string.c
+            src/c4rt3/c4_datum_from_string_sz.c
+            src/c4rt3/c4_datum_from_int64.c
+            src/c4rt3/c4_datum_from_double.c
+            src/c4rt3/c4_datum_from_nil.c
 
-check_type_size(void* PVOID_SIZE BUILTIN_TYPES_ONLY LANGUAGE C)
+            src/c4rt3/internal_type.h
+            ${rt_bridge_obj}
 
-set(C4RT2_USE_MIMALLOC NO)
-configure_file(src/dll-config.in.h dll-config.h @ONLY)
-
-add_library(c4rt2-core OBJECT
-            $<$<PLATFORM_ID:Windows>:src/c4rt2/DllMain.c>
-            src/c4rt2/c4rt_check.cxx
-            include/c4rt2/c4rt.h
-            src/c4rt2/c4rt.c
-            include/c4rt2/package.h
-            src/c4rt2/package.c
-            include/c4rt2/c4rt_package_versions.h
-            src/c4rt2/package.1.h
-            src/c4rt2/package.1.c
-            include/c4rt2/datum.h
-            src/c4rt2/datum.c
-            include/c4rt2/datum_type.h
-            include/c4rt2/package_type.h
-            src/c4rt2/dynamic_call_hacks.h
+            src/c4rt3/ska/fmt.h
+            src/c4rt3/ska/int64_fmt_generic.c
+            src/c4rt3/ska/uint64_fmt_generic.c
+            src/c4rt3/c4_datum_cmp.c
             )
-
-target_include_directories(c4rt2-core
+target_include_directories(c4rt3
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_compile_definitions(c4rt2-core PRIVATE $<BUILD_INTERFACE:C4RT2_EXPORTS>)
-
-add_library(c4rt2 SHARED)
-target_link_libraries(c4rt2 PUBLIC c4rt2-core BDWgc::gc)
-
-add_library(c4rt2-internal STATIC)
-target_link_libraries(c4rt2-internal PUBLIC c4rt2-core)
-
-# Static compile into LLVM bitcode used by both c4c and c4j for generated C4 code
-compile_into_bitcode(src/c4rt2/c4rt.c "${CLANG_EXEC}" ${INC_MIMALLOC})
-compile_into_bitcode(src/c4rt2/package.1.c "${CLANG_EXEC}" ${INC_MIMALLOC})
-compile_into_bitcode(src/c4rt2/package.c "${CLANG_EXEC}" ${INC_MIMALLOC})
-compile_into_bitcode(src/c4rt2/datum.c "${CLANG_EXEC}" ${INC_MIMALLOC})
+target_link_libraries(c4rt3 PUBLIC BDWgc::gc RYU::ryu)
 
 add_library(c4rt2c STATIC
             include/c4rt2c/llvm_value_attribute.hxx
@@ -251,10 +193,14 @@ add_library(c4rt2c STATIC
             src/c4rt2c/seq_builder/build.cxx
             src/c4rt2c/seq_builder/~seq_builder.cxx
             src/c4rt2c/ast2_ir_emitter/define_native_function.cxx
+            src/c4rt2c/ast2_ir_emitter/define_bridge_function.cxx
+            src/c4rt2c/runtime_emitter/continue_with.cxx
+            src/c4rt2c/runtime_emitter/unpack_argv.cxx
+            src/c4rt2c/runtime_emitter/make_forces_blob.cxx
+            src/c4rt2c/runtime_emitter/force_args.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC
-                      c4rt2-internal
                       c4-mio
                       PRIVATE
                       c4

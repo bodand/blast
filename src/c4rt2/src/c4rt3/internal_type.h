@@ -28,32 +28,39 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-31.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
- *   
+ * src/c4rt2/src/c4rt3/internal_type --
+ *   Defines the PImpl's implementation part to be used within c4rt3. MUST BE
+ *   KEPT IN ORDER WITH c4rt2c's LLVM IR structure and its usage.
  */
+#ifndef BLAST_INTERNAL_TYPE_H
+#define BLAST_INTERNAL_TYPE_H
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <c4rt3/c4rt.h>
 
-#include <c4rt2c/runtime_fn.hxx>
+struct c4_datum_t {
+	int32_t type;
+	int32_t argv_sz;
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+	union {
+		void* val_ptr;
+		int64_t val_int64;
+		double val_float64;
+	};
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+	union {
+		struct c4_datum_t** argv;
+		uint64_t str_sz;
+	};
+};
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
-	}
+#define datum_blk(d) ((d)->val_ptr)
+#define datum_str(d) ((d)->val_ptr)
+#define datum_int(d) ((d)->val_int64)
+#define datum_flt(d) ((d)->val_float64)
 
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
-}
+#define datum_str_sz(d) ((d)->str_sz)
+#define datum_sstr(d) datum_str(d), datum_str_sz(d)
+
+#endif

@@ -28,32 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-01.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/std4/src/std/primitive_cmp --
  *   
  */
+#ifndef BLAST_PRIMITIVE_CMP_H
+#define BLAST_PRIMITIVE_CMP_H
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
-
-#include <c4rt2c/runtime_fn.hxx>
-
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
-
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
-
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
+#define c4_primitive_cmp(p, op) \
+	c4_let_native(primitive_eq)(c4_datum a, c4_datum b) { \
+		const bool rel = c4_datum_cmp(a, b) op 0; \
+		c4_datum d; \
+	\
+		assert(c4_datum_from_boolean(rel, &d) == 0); \
+		return d; \
 	}
 
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
-}
+#endif

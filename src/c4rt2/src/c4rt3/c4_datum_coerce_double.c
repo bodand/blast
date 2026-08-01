@@ -28,32 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-01.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/c4rt2/src/c4rt3/c4_datum_coerce_double --
  *   
  */
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <float.h>
+#include <c4rt3/c4rt.h>
 
-#include <c4rt2c/runtime_fn.hxx>
+#include "internal_type.h"
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+int
+c4_datum_coerce_double(const c4_datum datum, double* const out) {
+	if (!out) return 0;
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
-
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
+	switch (c4_datum_type_of(datum)) {
+	case C4_Float:
+		return c4_datum_get_double(datum, out);
+	case C4_Nil:
+		*out = NAN;
+		break;
+	case C4_Integer:
+		*out = (double) datum_int(datum);
+		break;
+	case C4_String:
+		*out = (double) datum_str_sz(datum);
+		break;
+	case C4_Thunk:
+	case C4_Block:
+		*out = (double)(int64_t) datum_blk(datum);
+		break;
 	}
 
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
+	return 0;
 }

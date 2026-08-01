@@ -50,7 +50,7 @@ c4rt2c::ast2_ir_emitter::declare_native_function(const c4::ast2::symbol& symbol)
 
 	const auto fn = llvm::Function::Create(llvm::FunctionType::get(ptr_t, args, false),
 	                                       llvm::Function::ExternalLinkage,
-	                                       symbol.name(),
+	                                       symbol.mangle(),
 	                                       _module);
 	fn->setCallingConv(llvm::CallingConv::C);
 	fn->addRetAttr(llvm::Attribute::NoUndef);

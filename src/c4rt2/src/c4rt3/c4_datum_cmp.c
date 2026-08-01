@@ -28,32 +28,53 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-01.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/c4rt2/src/c4rt3/c4_datum_cmp --
  *   
  */
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <string.h>
 
-#include <c4rt2c/runtime_fn.hxx>
+#include <c4rt3/c4rt.h>
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+#include "internal_type.h"
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+static int
+int_cmp(const int64_t a, const int64_t b) {
+	return a - b;
+}
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
+static int
+float_cmp(const double a, const double b) {
+	return a - b;
+}
+
+static int
+string_cmp(const char* const a, const char* const b) {
+	return strcmp(a, b);
+}
+
+static int
+pointer_cmp(const void* const a, const void* const b) {
+	return (int)((intptr_t)a - (intptr_t)b);
+}
+
+int
+c4_datum_cmp(const c4_datum a, const c4_datum b) {
+	const c4_datum_type a_type = a->type;
+	const c4_datum_type b_type = b->type;
+
+	if (a_type != b_type) return a_type - b_type;
+
+	switch (a_type) {
+	case C4_Integer: return int_cmp(datum_int(a), datum_int(b));
+	case C4_Float: return float_cmp(datum_flt(a), datum_flt(b));
+	case C4_String: return string_cmp(datum_str(a), datum_str(b));
+	case C4_Nil: return 0;
+	case C4_Thunk:
+	case C4_Block:
+		return pointer_cmp(datum_blk(a), datum_blk(b));
 	}
-
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
+	return 0;
 }

@@ -116,7 +116,7 @@ c4::ast2::symbol::with_arity(const unsigned arity) const {
 
 std::string
 c4::ast2::symbol::mangle() const {
-	if (native()) return std::string(_name);
+	if (native()) return fmt::format("c4sym_{}", _name);
 	return mangle_symbol(_name, _arity);
 }
 

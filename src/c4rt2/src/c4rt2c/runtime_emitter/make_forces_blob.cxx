@@ -28,32 +28,49 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-07-31.
  *
- * src/c4rt2/src/c4rt2c/runtime_fn/define --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/make_forces_blobú --
  *   
  */
 
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/LLVMContext.h>
+#include <c4rt2c/runtime_emitter.hxx>
 
-#include <c4rt2c/runtime_fn.hxx>
+llvm::Value*
+c4rt2c::runtime_emitter::make_forces_blob(llvm::Value* argv,
+                                          llvm::Value* argv_sz,
+                                          llvm::Function* trampoline) const {
+	const auto forces = with_name(allocate(4 + 4 + 8 + 8), "forces");
 
-llvm::BasicBlock*
-c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+	const auto to_force_addr = _builder.CreateStructGEP(
+		args_force_t, forces, args_force_field_to_force,
+		{forces->getName(), ".to_force.addr"});
+	_builder.CreateAlignedStore(argv_sz, to_force_addr, llvm::Align(4));
 
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+	const auto argv_sz_addr = _builder.CreateStructGEP(
+		args_force_t, forces, args_force_field_argv_sz,
+		{forces->getName(), ".argv_sz.addr"});
+	_builder.CreateAlignedStore(argv_sz, argv_sz_addr, llvm::Align(4));
 
-	for (auto& arg : fn->args()) {
-		if (arg.getType() == ptr_t) {
-			arg.addAttr(llvm::Attribute::NoUndef);
-			arg.addAttr(llvm::Attribute::getWithAlignment(ctx, llvm::Align(8)));
-		}
-	}
+	const auto native_addr = _builder.CreateStructGEP(
+		args_force_t, forces, args_force_field_native,
+		{forces->getName(), ".native.addr"});
+	_builder.CreateAlignedStore(trampoline, native_addr, llvm::Align(8));
 
-	return llvm::BasicBlock::Create(ctx, "rt_entry", fn);
+	const auto argv_addr = _builder.CreateStructGEP(
+		args_force_t, forces, args_force_field_argv,
+		{forces->getName(), ".argv.addr"});
+	_builder.CreateAlignedStore(argv, argv_addr, llvm::Align(8));
+
+	return forces;
+}
+
+llvm::Value*
+c4rt2c::runtime_emitter::make_forces_blob(llvm::Value* argv,
+                                          const std::uint32_t argv_sz,
+                                          llvm::Function* trampoline) const {
+	return make_forces_blob(
+		argv,
+		llvm::ConstantInt::get(_context, llvm::APInt(32, argv_sz)),
+		trampoline);
 }

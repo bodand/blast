@@ -133,7 +133,6 @@ add_library(c4
 
 target_link_libraries(c4
                       PUBLIC
-                      c4rt2
                       fmt::fmt
                       PRIVATE
                       internal-warnings

@@ -59,7 +59,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	}
 	const auto name = _name_manager.lambda_name();
 	const auto decl = declare_function(name);
-	decl->setVisibility(llvm::GlobalValue::HiddenVisibility);
+	decl->setLinkage(llvm::GlobalValue::PrivateLinkage);
 
 	//
 	{

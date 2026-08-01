@@ -105,6 +105,12 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::Value*
 		make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const;
 
+		[[nodiscard]] llvm::Value*
+		make_forces_blob(llvm::Value* argv, llvm::Value* argv_sz, llvm::Function* trampoline) const;
+
+		[[nodiscard]] llvm::Value*
+		make_forces_blob(llvm::Value* argv, std::uint32_t argv_sz, llvm::Function* trampoline) const;
+
 		llvm::Value*
 		merge_argv(llvm::Value* argv1, llvm::Value* argv1_sz, llvm::Value* argv2) const;
 
@@ -113,6 +119,15 @@ namespace c4rt2c {
 
 		void
 		set_thunk_args(llvm::Value* thunk, llvm::Value* argv, uint32_t argv_sz) const;
+
+		void
+		continue_with(llvm::Value* K, llvm::Value* ret) const;
+
+		void
+		force_args(llvm::Value* forces, llvm::Value* K) const;
+
+		llvm::SmallVector<llvm::Value*, 4>
+		unpack_argv(llvm::Value* forces, std::uint32_t argv_sz) const;
 
 	private:
 		llvm::LLVMContext& _context;
@@ -126,6 +141,7 @@ namespace c4rt2c {
 
 		llvm::StructType* datum_t;
 		llvm::StructType* completion_t;
+		llvm::StructType* args_force_t;
 
 		constexpr static int datum_type_int64 = 0;
 		constexpr static int datum_type_thunk = 1;
@@ -143,6 +159,11 @@ namespace c4rt2c {
 		constexpr static int completion_field_self = 0;
 		constexpr static int completion_field_thunk = 1;
 		constexpr static int completion_field_K = 2;
+
+		constexpr static int args_force_field_to_force = 0;
+		constexpr static int args_force_field_argv_sz = 1;
+		constexpr static int args_force_field_native = 2;
+		constexpr static int args_force_field_argv = 3;
 
 		template<class T>
 		static T*
@@ -209,7 +230,8 @@ namespace c4rt2c {
 		runtime_fn _rt_apply2;             // void apply2(completion* self, datum* val)
 		runtime_fn _rt_complete_thunk;     // void complete_thunk(datum* thunk, fn K)
 		runtime_fn _rt_evaluate;           // void evaluate(datum* thunk, fn K)
-		runtime_fn _rt_force_args2;        // void evaluate(completion* self, datum* val)
+		runtime_fn _rt_force_args;         // void force_args(args_force* forces, fn K)
+		runtime_fn _rt_force_args2;        // void force_args2(completion* self, datum* val)
 		runtime_fn _rt_make_datum_block;   // datum* make_datum_block(fn anon)
 		runtime_fn _rt_make_datum_float64; // datum* make_datum_float64(f64 val)
 		runtime_fn _rt_make_datum_int64;   // datum* make_datum_int64(i64 val)

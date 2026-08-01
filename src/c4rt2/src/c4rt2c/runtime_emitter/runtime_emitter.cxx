@@ -166,6 +166,8 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(void apply2)(ptr, ptr)
 	, fn(void complete_thunk)(ptr, ptr)
 	, fn(void evaluate)(ptr, ptr)
+	, fn(void force_args)(ptr, ptr)
+	, fn(void force_args2)(ptr, ptr)
 	, fn(ptr make_datum_block)(ptr)
 	, fn(ptr make_datum_float64)(double_)
 	, fn(ptr make_datum_int64)(i64)
@@ -213,6 +215,14 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			ptr_t, // thunk
 			ptr_t  // K
 		}, "c4_completion_t");
+
+	args_force_t = llvm::StructType::create(
+		_context, {
+			int32_t, // to_force
+			int32_t, // argv_sz
+			ptr_t,   // native trampoline fn
+			ptr_t    // argv ptr
+		});
 
 	const auto trap = llvm::Intrinsic::getDeclaration(&module, llvm::Intrinsic::trap);
 
@@ -364,6 +374,93 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 
 			tail_call(func, argv, completer);
 		}
+	});
+
+	_rt_force_args.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto forces = with_name(args[0], "forces");
+		const auto K = with_name(args[1], "K");
+
+		const auto done = llvm::BasicBlock::Create(_context, "rt_force_done",
+		                                           _rt_force_args.fn);
+		const auto force_next = llvm::BasicBlock::Create(_context, "rt_force_next",
+		                                                 _rt_force_args.fn);
+
+		const auto rem_addr = _builder.CreateStructGEP(args_force_t,
+		                                               forces,
+		                                               args_force_field_to_force,
+		                                               "forces.rem.addr");
+		const auto rem = _builder.CreateLoad(int32_t, rem_addr, "rem");
+
+		const auto zeroed = _builder.CreateICmp(llvm::CmpInst::ICMP_EQ, rem, _builder.getInt32(0));
+		_builder.CreateCondBr(zeroed, done, force_next);
+
+		// remaining is zero -> done
+		{
+			_builder.SetInsertPoint(done);
+			const auto native_addr = _builder.CreateStructGEP(args_force_t,
+			                                                  forces,
+			                                                  args_force_field_native,
+			                                                  "forces.native.addr");
+			const auto native_fn = _builder.CreateAlignedLoad(ptr_t, native_addr,
+			                                                  llvm::Align(8),
+			                                                  "forces.native");
+			tail_call(native_fn, forces, K);
+			_builder.CreateRetVoid();
+		}
+
+		// non-zero -> at least one thunk in argv should be evaled
+		{
+			_builder.SetInsertPoint(force_next);
+			const auto cont = with_name(allocate(8 + 8 + 8), "cont");
+			set_completion_self(cont, _rt_force_args2.fn);
+			set_completion_K(cont, K);
+			set_completion_thunk(cont, forces);
+
+			const auto argv_addr = _builder.CreateStructGEP(args_force_t, forces,
+			                                                args_force_field_argv,
+			                                                "forces.argv.addr");
+			const auto argv = _builder.CreateAlignedLoad(ptr_t, argv_addr,
+			                                             llvm::Align(8),
+			                                             "forces.argv");
+
+			const auto index = _builder.CreateSub(rem, _builder.getInt32(1), "argv.idx");
+			const auto arg_addr = _builder.CreateGEP(ptr_t, argv, index, "arg.addr");
+
+			const auto arg = _builder.CreateAlignedLoad(ptr_t, arg_addr,
+			                                            llvm::Align(8), "arg");
+
+			tail_call(_rt_evaluate, arg, cont);
+			// implicit ret void
+		}
+	});
+
+	_rt_force_args2.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
+		const auto self = with_name(args[0], "self");
+		const auto evaled = with_name(args[1], "evaled");
+
+		const auto K = get_completion_K(self);
+		const auto forces = get_completion_thunk(self);
+
+		const auto rem_addr = _builder.CreateStructGEP(args_force_t,
+		                                               forces,
+		                                               args_force_field_to_force,
+		                                               "forces.rem.addr");
+		const auto rem = _builder.CreateAlignedLoad(int32_t, rem_addr,
+		                                            llvm::Align(4), "rem");
+		const auto index = _builder.CreateSub(rem, _builder.getInt32(1), "argv.idx");
+		_builder.CreateAlignedStore(index, rem_addr, llvm::Align(4));
+
+		const auto argv_addr = _builder.CreateStructGEP(args_force_t, forces,
+		                                                args_force_field_argv,
+		                                                "forces.argv.addr");
+		const auto argv = _builder.CreateAlignedLoad(ptr_t, argv_addr,
+		                                             llvm::Align(8),
+		                                             "forces.argv");
+
+		const auto arg_addr = _builder.CreateGEP(ptr_t, argv, index, "arg.addr");
+		_builder.CreateAlignedStore(evaled, arg_addr, llvm::Align(8));
+
+		tail_call(_rt_force_args, forces, K);
 	});
 
 	_rt_make_datum_block.define(_context, builder, [&](const std::span<llvm::Argument*> args) {
