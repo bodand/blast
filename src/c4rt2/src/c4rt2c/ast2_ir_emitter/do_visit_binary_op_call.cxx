@@ -37,9 +37,10 @@
 #include <c4/ast2/op_call.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/fn_call_gen.hxx>
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::binary_op_call& obj) {
-	emit_function_call(obj.op(), obj.args());
+	immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
+	emit_function_call(&builder);
 }
-

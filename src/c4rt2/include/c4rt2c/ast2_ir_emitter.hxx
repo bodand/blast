@@ -48,6 +48,8 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
 
+#include "fn_call_gen.hxx"
+
 namespace llvm {
 	class Module;
 	class LLVMContext;
@@ -66,8 +68,8 @@ namespace c4rt2c {
 		ast2_ir_emitter(llvm::LLVMContext& context,
 		                llvm::Module& module,
 		                builder_type& builder,
-		                llvm::FunctionPassManager& pass_manager,
-		                llvm::FunctionAnalysisManager& fna_manager);
+		                runtime_emitter&& rt
+		);
 
 		void do_visit(const c4::ast2::binary_op_call& obj) override;
 
@@ -101,9 +103,10 @@ namespace c4rt2c {
 		void
 		finalize();
 
+		llvm::Module&
+		module() const noexcept { return _module; }
+
 	private:
-		llvm::FunctionPassManager& _pass_manager;
-		llvm::FunctionAnalysisManager& _fna_manager;
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
 		builder_type& _builder;
@@ -117,26 +120,14 @@ namespace c4rt2c {
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
 
-		// struct dbginfo {
 		llvm::DICompileUnit* _cu;
 		llvm::DIFile* _file;
-
-		llvm::DIType* _ptr_t;
-
-		llvm::DIType*
-		get_type();
-
-		llvm::DISubroutineType*
-		fn_type(size_t cls_size, size_t argv_sz);
-
-		// } dbg;
 
 		const c4::ast2::expression*
 		active_expression();
 
 		void
-		emit_function_call(const c4::ast2::symbol& symbol,
-		                   std::span<const c4::ast2::expression* const> args);
+		emit_function_call(fn_call_gen* builder);
 
 		void
 		emit_named_function(const c4::ast2::block& block);

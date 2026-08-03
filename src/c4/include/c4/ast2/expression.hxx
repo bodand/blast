@@ -103,9 +103,6 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		closure() const noexcept { return !_closure_symbols.empty(); }
 
-		[[nodiscard]] bool
-		loose_closure() const noexcept;
-
 		[[nodiscard]] std::span<const symbol>
 		closure_symbols() const noexcept { return _closure_symbols; }
 
@@ -158,6 +155,17 @@ namespace c4::ast2 {
 					}
 					else {
 						return x.constant_evaluated(skips);
+					}
+				}, _value);
+		}
+
+		void
+		tail_call() {
+			std::visit(
+				[]<typename T0>(T0& x) {
+					if constexpr (std::convertible_to<std::remove_cvref_t<T0>,
+					                                  tags::call_expr*>) {
+						x->tail_call(true);
 					}
 				}, _value);
 		}

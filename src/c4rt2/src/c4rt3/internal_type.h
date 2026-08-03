@@ -40,7 +40,7 @@
 #include <c4rt3/c4rt.h>
 
 struct c4_datum_t {
-	int32_t type;
+	c4_datum_type type;
 	int32_t argv_sz;
 
 	union {

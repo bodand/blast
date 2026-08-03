@@ -48,9 +48,10 @@ c4rt2c::runtime_emitter::unpack_argv(llvm::Value* forces,
 		ptr_t, argv_addr, llvm::Align(8), {forces->getName(), ".argv"});
 
 	std::generate_n(std::back_inserter(args), argv_sz, [&, i=0]() mutable {
-		const auto addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(i));
+		const auto addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(i++));
 		return _builder.CreateAlignedLoad(ptr_t, addr, llvm::Align(8));
 	});
 
 	return args;
 }
+

@@ -70,11 +70,6 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	}
 
 	const auto body = let.function_body();
-	body->emplace_attribute<c4c::llvm_value_attribute>("argv", (*fn)->getArg(0));
-	body->emplace_attribute<c4c::llvm_value_attribute>("K", (*fn)->getArg(1));
-	body->accept(*this);
-
-	_builder.CreateRetVoid();
 
 	size_t argv_sz = 0;
 	size_t closure_sz = 0;
@@ -131,10 +126,17 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 		(*fn)->getName(),
 		_file,
 		pos.row_number,
-		fn_type(closure_sz, argv_sz),
+		_runtime.fn_type(closure_sz, argv_sz),
 		pos.row_number,
 		llvm::DINode::FlagPrototyped,
 		llvm::DISubprogram::SPFlagDefinition
 	);
 	(*fn)->setSubprogram(sub);
+	scope.push_dbg(llvm::DILocation::get(_context, pos.row_number, pos.col_number, sub));
+
+	body->emplace_attribute<c4c::llvm_value_attribute>("argv", (*fn)->getArg(0));
+	body->emplace_attribute<c4c::llvm_value_attribute>("K", (*fn)->getArg(1));
+	body->accept(*this);
+
+	_builder.CreateRetVoid();
 }

@@ -34,12 +34,12 @@
  *   
  */
 
+#include <iostream>
 #include <c4/ast2/symbol.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <llvm/IR/Function.h>
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
 
 #include <libassert/assert.hpp>
@@ -47,17 +47,8 @@
 std::pair<bool, llvm::Value*>
 c4rt2c::ast2_ir_emitter::thunked_symbol(const c4::ast2::symbol& sym) const {
 	const auto ref = sym.references();
-	if (!ref) {
-		const auto fname = name_manager::global_name(sym);
-
-		auto fn = _module.getOrInsertFunction(fname,
-		                                      _runtime.function_type());
-		_module.getFunction(fname)->setCallingConv(llvm::CallingConv::Tail);
-
-		auto thunk = _runtime.make_thunk(fn.getCallee());
-		thunk->setName({sym.name(), ".thunk"});
-		return {true, thunk};
-	}
+	ASSERT(ref, "symbol must have references",
+	       sym.name(), sym.base_arity());
 
 	const auto fn_attr = ref->attribute_value<llvm::Function*>("function");
 	const auto val_attr = ref->attribute_value<llvm::Value*>("value");

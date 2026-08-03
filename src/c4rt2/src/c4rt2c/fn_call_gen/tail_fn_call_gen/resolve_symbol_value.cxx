@@ -28,23 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
+ * src/c4rt2/src/c4rt2c/fn_call_gen/tail_fn_call_gen/resolve_symbol_value --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
-	}
+#include <c4rt2c/fn_call_gen.hxx>
 
-#endif
+llvm::Value*
+c4rt2c::tail_fn_call_gen::
+resolve_symbol_value(const c4::ast2::symbol& symbol) {
+	if (const auto generic = direct_fn_call_gen::resolve_symbol_value(symbol))
+		return generic;
+
+	const auto fn_attr = refer()->attribute_value<llvm::Function*>("function");
+	return *fn_attr;
+}
+

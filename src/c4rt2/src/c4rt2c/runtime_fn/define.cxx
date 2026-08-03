@@ -44,7 +44,7 @@ c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
 	fn->setCallingConv(llvm::CallingConv::Tail);
 	fn->addFnAttr(llvm::Attribute::NoUnwind);
 	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setLinkage(llvm::GlobalValue::InternalLinkage);
+	fn->setVisibility(llvm::GlobalValue::HiddenVisibility);
 
 	const auto ptr_t = llvm::PointerType::get(ctx, 0);
 

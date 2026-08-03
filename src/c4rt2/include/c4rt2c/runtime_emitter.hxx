@@ -44,6 +44,7 @@
 #include <llvm/IR/IRBuilder.h>
 
 namespace llvm {
+	class DIBuilder;
 	class FunctionType;
 	class LLVMContext;
 	class Module;
@@ -52,7 +53,9 @@ namespace llvm {
 
 namespace c4rt2c {
 	struct runtime_emitter {
-		runtime_emitter(llvm::LLVMContext& ctx, llvm::Module& module, llvm::IRBuilder<>& builder);
+		runtime_emitter(llvm::LLVMContext& ctx,
+		                llvm::Module& module,
+		                llvm::IRBuilder<>& builder);
 
 		[[nodiscard]] llvm::FunctionType*
 		function_type() const { return _function_type; }
@@ -129,6 +132,17 @@ namespace c4rt2c {
 		llvm::SmallVector<llvm::Value*, 4>
 		unpack_argv(llvm::Value* forces, std::uint32_t argv_sz) const;
 
+		void
+		set_debug_trace(const bool debug_trace) {
+			debug.break_tco = debug_trace;
+		}
+
+		void
+		init(llvm::DIBuilder* dib, llvm::DICompileUnit* cu);
+
+		llvm::DISubroutineType*
+		fn_type(size_t cls_size, size_t argv_sz) const;
+
 	private:
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
@@ -142,6 +156,22 @@ namespace c4rt2c {
 		llvm::StructType* datum_t;
 		llvm::StructType* completion_t;
 		llvm::StructType* args_force_t;
+
+		struct debug {
+			bool break_tco{};
+		} debug{};
+
+		llvm::DIDerivedType* _dbg_ptr_t;
+		llvm::DIBasicType* _dbg_int8_t;
+		llvm::DIBasicType* _dbg_argv_size_t;
+		llvm::DIBasicType* _dbg_int64_t;
+		llvm::DIBasicType* _dbg_size_t;
+		llvm::DIBasicType* _dbg_uint32_t;
+		llvm::DIBasicType* _dbg_uint64_t;
+		llvm::DIDerivedType* _dbg_charptr_t;
+		llvm::DIBasicType* _dbg_float64_t;
+		llvm::DIDerivedType* _dbg_datum_ptr;
+		llvm::DIBuilder* _di_builder;
 
 		constexpr static int datum_type_int64 = 0;
 		constexpr static int datum_type_thunk = 1;
@@ -157,7 +187,7 @@ namespace c4rt2c {
 		constexpr static int datum_field_argv = 3;
 
 		constexpr static int completion_field_self = 0;
-		constexpr static int completion_field_thunk = 1;
+		constexpr static int completion_field_payload = 1;
 		constexpr static int completion_field_K = 2;
 
 		constexpr static int args_force_field_to_force = 0;
@@ -200,7 +230,7 @@ namespace c4rt2c {
 		get_completion_self(llvm::Value* c) const;
 
 		llvm::Value*
-		get_completion_thunk(llvm::Value* c) const;
+		get_completion_payload(llvm::Value* c) const;
 
 		llvm::Value*
 		get_completion_K(llvm::Value* c) const;
@@ -209,7 +239,7 @@ namespace c4rt2c {
 		set_completion_self(llvm::Value* c, llvm::Value* self) const;
 
 		void
-		set_completion_thunk(llvm::Value* c, llvm::Value* thunk) const;
+		set_completion_payload(llvm::Value* c, llvm::Value* thunk) const;
 
 		void
 		set_completion_K(llvm::Value* c, llvm::Value* K) const;
@@ -219,6 +249,9 @@ namespace c4rt2c {
 
 		void
 		tail_call(llvm::FunctionCallee callee, llvm::Value* args, llvm::Value* K) const;
+
+		void
+		set_tailkind(llvm::CallInst* call) const;
 
 		/// The universal function type to allow unrestricted
 		/// tail-calls. It is void(ptr, ptr), where the first is an array

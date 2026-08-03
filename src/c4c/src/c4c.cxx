@@ -133,6 +133,7 @@ main(int argc, const char** argv) {
 	std::string dump_type;
 	bool show_help = false;
 	bool no_color_output = true;
+	bool debug_trace = false;
 
 	const auto cli = lyra::cli()
 	                 | lyra::arg(src_path, "source")("The C4 source file to compile.").required()
@@ -149,6 +150,10 @@ main(int argc, const char** argv) {
 	                 ).choices("AST", "IR", "ASM")
 	                 | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
 		                 "The target triplet to produce the binary for."
+	                 )
+	                 | lyra::opt(debug_trace)["-D"]["--debug-trace"](
+		                 "Generate code to bypass TCO allowing manual debugging,"
+		                 "while breaking guarantees of computability"
 	                 )
 	                 | lyra::opt(no_color_output)["-C"]["--no-color"](
 		                 "Disable color diagnostic output to STDERR. (Not yet implemented.)"
@@ -179,30 +184,6 @@ main(int argc, const char** argv) {
 	c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
 	c4::diagnostics_engine diagnostics_engine{stderr, !no_color_output};
 	c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
-
-	parser.declare_binop("+", 4, false);
-	parser.declare_binop("-", 4, false);
-	parser.declare_binop("*", 5, false);
-	parser.declare_binop("/", 5, false);
-	parser.declare_binop("^", 5, true);
-	parser.declare_binop("==", 3, true);
-
-	parser.declare_binop("<<", 6, false);
-	parser.declare_binop(">>", 5, true);
-
-	parser.declare_uniop("~");
-	parser.declare_uniop("+");
-	parser.declare_uniop("!");
-
-	parser.declare_symbol("print", 1, nullptr);
-	parser.declare_symbol("println", 1, nullptr);
-	// parser.declare_symbol("if", 3, nullptr);
-	parser.declare_symbol("int", 1, nullptr);
-	parser.declare_symbol("str_empty", 1, nullptr);
-	parser.declare_symbol("blk_empty", 1, nullptr);
-	parser.declare_symbol("nil_block", 0, nullptr);
-	parser.declare_symbol("cat", 2, nullptr);
-	// parser.declare_symbol("readln", 0, nullptr);
 
 	try {
 		const auto script = parser.parse_script();
@@ -254,7 +235,10 @@ main(int argc, const char** argv) {
 		pass_builder.registerFunctionAnalyses(fn_am);
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
-		c4rt2c::ast2_ir_emitter ir(context, module, builder, fn_pm, fn_am);
+		c4rt2c::runtime_emitter rt_emitter(context, module, builder);
+		rt_emitter.set_debug_trace(debug_trace);
+
+		c4rt2c::ast2_ir_emitter ir(context, module, builder, std::move(rt_emitter));
 		ir.init(src_path);
 
 		ir.declare_symbols(ast_context);

@@ -28,23 +28,30 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
+ * src/c4rt2/src/c4rt2c/fn_call_gen/immediate_fn_call_gen/finalize --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
-	}
+#include <tuple>
 
-#endif
+#include <c4/ast2/expression.hxx>
+
+#include <c4rt2c/fn_call_gen.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
+
+#include "../../ast2_ir_emitter/already_thunk_attribute.hxx"
+
+void
+c4rt2c::immediate_fn_call_gen::
+finalize(llvm::Value* fn,
+         llvm::Value* argv,
+         const std::size_t argv_sz,
+         const c4::ast2::expression& expr) {
+	if (argv) _rt.set_thunk_args(fn, argv, argv_sz);
+
+	expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+	std::ignore = expr.emplace_attribute<already_thunk_attribute>("thunk?");
+}

@@ -51,6 +51,7 @@
 #include <libassert/assert.hpp>
 
 #include "already_thunk_attribute.hxx"
+#include "../../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/IR/Verifier.h"
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
@@ -61,7 +62,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	const auto decl = declare_function(name);
 	decl->setLinkage(llvm::GlobalValue::PrivateLinkage);
 
-	//
+	// build the lambda body
 	{
 		scoped_scope scope(_builder);
 		_builder.SetInsertPoint(define(decl));
@@ -71,6 +72,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 		emit_named_function(obj);
 
 		_builder.CreateRetVoid();
+		llvm::verifyFunction(*decl, &llvm::errs());
 	}
 
 	const auto expr = active_expression();

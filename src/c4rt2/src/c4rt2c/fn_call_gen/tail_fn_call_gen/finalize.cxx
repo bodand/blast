@@ -28,23 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
+ * src/c4rt2/src/c4rt2c/fn_call_gen/tail_fn_call_gen/finalize --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
-	}
+#include <c4/ast2/expression.hxx>
 
-#endif
+#include <c4rt2c/fn_call_gen.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
+
+namespace {
+	struct callee_pair_attribute : c4::ast2::tags::typed_attribute<std::pair<llvm::Value*, llvm::Value*>> {
+		explicit
+		callee_pair_attribute(llvm::Value* argv, llvm::Value* argv_sz)
+			: typed_attribute{std::make_pair(argv, argv_sz)} { }
+	};
+}
+
+void
+c4rt2c::tail_fn_call_gen::
+finalize(llvm::Value* fn,
+         llvm::Value* argv,
+         const std::size_t argv_sz,
+         const c4::ast2::expression& expr) {
+	const auto argv_sz_val = _builder.getInt32(argv_sz);
+
+	expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+	expr.emplace_attribute<callee_pair_attribute>("tail_args", argv, argv_sz_val);
+}

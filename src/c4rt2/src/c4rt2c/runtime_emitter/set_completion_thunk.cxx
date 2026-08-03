@@ -37,7 +37,10 @@
 #include <c4rt2c/runtime_emitter.hxx>
 
 void
-c4rt2c::runtime_emitter::set_completion_thunk(llvm::Value* c, llvm::Value* thunk) const {
-	const auto addr = _builder.CreateStructGEP(completion_t, c, completion_field_thunk, {c->getName(), ".thunk.addr"});
+c4rt2c::runtime_emitter::set_completion_payload(llvm::Value* c,
+                                                llvm::Value* thunk) const {
+	const auto addr = _builder.CreateStructGEP(completion_t, c,
+	                                           completion_field_payload,
+	                                           {c->getName(), ".payload.addr"});
 	_builder.CreateAlignedStore(thunk, addr, llvm::Align(8));
 }

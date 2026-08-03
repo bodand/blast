@@ -28,23 +28,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
+ * src/c4rt2/src/c4rt2c/fn_call_gen/direct_fn_call_gen/resolve_symbol_value --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
+#include <c4rt2c/fn_call_gen.hxx>
+
+#include <libassert/assert.hpp>
+
+llvm::Value*
+c4rt2c::direct_fn_call_gen::
+resolve_symbol_value(const c4::ast2::symbol& symbol) {
+	const auto ref = refer();
+
+	if (ref->introduces_variable()) {
+		const auto val_attr = ref->attribute_value<llvm::Value*>("value");
+		ASSERT(val_attr, "value attribute must not be null on variable",
+				 ref, symbol.name(), symbol.base_arity());
+		return *val_attr;
 	}
 
-#endif
+	const auto fn_attr = ref->attribute_value<llvm::Function*>("function");
+	ASSERT(fn_attr, "function attribute must not be null on function",
+			 ref, symbol.name(), symbol.base_arity());
+
+	if (ref->thunk()) {
+		return *fn_attr;
+	}
+
+	return nullptr;
+}

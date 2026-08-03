@@ -39,11 +39,13 @@
 
 #include "internal_type.h"
 
+#define C4_Blackhole 2
+
 c4_datum_type
 c4_datum_type_of(const c4_datum datum) {
 	const c4_datum_type type = datum->type;
 	assert(type <= C4_Nil && "type out of range");
-	assert(type != 2 && "blackholeeeeeeeeee....");
+	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
 
 	return type;
 }

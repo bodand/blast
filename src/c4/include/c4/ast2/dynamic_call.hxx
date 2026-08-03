@@ -41,6 +41,7 @@
 #include <c4/ast2/ast_node.hxx>
 
 #include <c4/tags/attributable.hxx>
+#include <c4/tags/call_expr.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
@@ -50,7 +51,8 @@ namespace c4::ast2 {
 	struct dynamic_call final : ast_node
 	                            , tags::visitable
 	                            , tags::source_positioned
-	                            , tags::attributable {
+	                            , tags::attributable
+	                            , tags::call_expr {
 		dynamic_call(const c4::position& position,
 		             expression* callee,
 		             std::vector<expression*>&& args);

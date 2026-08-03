@@ -32,4 +32,4 @@ let (>=)/2 left 10 { |a b| primitive_ge a b }
 let native io_print/1;
 let native io_println/1;
 
-let native io_readln/0;
+#let native io_readln/0;

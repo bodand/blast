@@ -40,9 +40,7 @@ void
 c4rt2c::runtime_emitter::tail_call(llvm::Value* callee,
                                    llvm::Value* args,
                                    llvm::Value* K) const {
-	const auto call = _builder.CreateCall(_function_type, callee, {args, K});
-	call->setCallingConv(llvm::CallingConv::Tail);
-	call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	tail_call(llvm::FunctionCallee(_function_type, callee), args, K);
 }
 
 void
@@ -51,5 +49,5 @@ c4rt2c::runtime_emitter::tail_call(const llvm::FunctionCallee callee,
                                    llvm::Value* K) const {
 	const auto call = _builder.CreateCall(callee, {args, K});
 	call->setCallingConv(llvm::CallingConv::Tail);
-	call->setTailCallKind(llvm::CallInst::TCK_MustTail);
+	set_tailkind(call);
 }

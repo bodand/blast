@@ -28,23 +28,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
- *   
+ * src/c4/include/c4/tags/call_expr --
+ *   A tag to mark AST elements which are function calls: can denote if they are
+ *   in tail-call position which is used in codegen.
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
+#ifndef BLAST_CALL_EXPR_HXX
+#define BLAST_CALL_EXPR_HXX
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
-	}
+namespace c4::ast2::tags {
+	struct call_expr {
+		virtual ~call_expr() = default;
+
+		// [[nodiscard]] virtual symbol
+		// sym() const noexcept = 0;
+
+		constexpr void
+		tail_call(const bool val) noexcept {
+			_tail_call = val;
+		}
+
+		[[nodiscard]] constexpr bool
+		tail_call() const noexcept {
+			return _tail_call;
+		}
+
+	private:
+		bool _tail_call{false};
+	};
+}
 
 #endif

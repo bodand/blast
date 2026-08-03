@@ -34,8 +34,6 @@
 #   C4 basic standard library utilities.
 
 add_library(std4 STATIC
-
-
             src/std/primitive_op.h
             src/std/primitive_add.c
             src/std/primitive_sub.c
@@ -50,7 +48,9 @@ add_library(std4 STATIC
             src/std/primitve_ne.c
             src/std/primitve_gt.c
             src/std/primitve_ge.c
+
             src/std/io_print.c
+            src/std/io_println.c
             )
 
 target_link_libraries(std4 PRIVATE c4rt3)

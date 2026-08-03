@@ -42,6 +42,7 @@
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
+#include <c4/tags/call_expr.hxx>
 
 namespace c4::ast2 {
 	struct expression;
@@ -49,7 +50,8 @@ namespace c4::ast2 {
 	struct binary_op_call final : ast_node
 	                              , tags::visitable
 	                              , tags::source_positioned
-	                              , tags::attributable {
+	                              , tags::attributable
+	                              , tags::call_expr {
 		binary_op_call(const c4::position& position,
 		               const symbol& op,
 		               expression* left,
@@ -70,7 +72,7 @@ namespace c4::ast2 {
 		operator=(binary_op_call&& other) noexcept = delete;
 
 		[[nodiscard]] symbol
-		op() const noexcept { return _op; }
+		sym() const noexcept { return _op; }
 
 		[[nodiscard]] const expression&
 		left() const noexcept;
@@ -95,7 +97,8 @@ namespace c4::ast2 {
 	struct unary_op_call final : ast_node
 	                             , tags::visitable
 	                             , tags::source_positioned
-	                             , tags::attributable {
+	                             , tags::attributable
+	                             , tags::call_expr {
 		unary_op_call(const c4::position& position,
 		              const symbol& op,
 		              expression* operand);
@@ -105,7 +108,8 @@ namespace c4::ast2 {
 		unary_op_call&
 		operator=(const unary_op_call& cp) = delete;
 
-		std::span<const expression* const> args() const {
+		[[nodiscard]] std::span<const expression* const>
+		args() const {
 			return std::span(&_operand, 1);
 		}
 
@@ -115,7 +119,7 @@ namespace c4::ast2 {
 		operator=(unary_op_call&&) noexcept = delete;
 
 		[[nodiscard]] symbol
-		op() const noexcept { return _op; }
+		sym() const noexcept { return _op; }
 
 		[[nodiscard]] const expression&
 		operand() const noexcept;

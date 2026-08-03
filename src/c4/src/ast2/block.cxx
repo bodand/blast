@@ -157,6 +157,9 @@ c4::ast2::block::expressions() const {
 void
 c4::ast2::block::expressions(std::vector<expression*>&& expressions) {
 	_expressions = std::move(expressions);
+	if (!_expressions.empty()) {
+		_expressions.back()->tail_call();
+	}
 }
 
 bool

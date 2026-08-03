@@ -58,6 +58,8 @@ c4rt2c::ast2_ir_emitter::init(const fs::path& fname) {
 		0
 	);
 
+	_runtime.init(_di_builder.get(), _cu);
+
 	_file = _di_builder->createFile(
 		_cu->getFilename(),
 		_cu->getDirectory());
@@ -68,10 +70,12 @@ c4rt2c::ast2_ir_emitter::init(const fs::path& fname) {
 		"_c4_main",
 		_file,
 		0,
-		fn_type(0, 0),
+		_runtime.fn_type(0, 0),
 		0,
 		llvm::DINode::FlagArtificial,
 		llvm::DISubprogram::SPFlagDefinition
 	);
 	_c4_main->setSubprogram(sub);
+	_builder.SetCurrentDebugLocation(
+		llvm::DILocation::get(_context, 0, 0, sub));
 }

@@ -43,27 +43,26 @@ set(rt_bridge_llvm
     src/c4rt3/c4int_datum_true.ll
     src/c4rt3/c4int_datum_false.ll
     )
-set(rt_bridge_obj ""
-    src/c4rt3/c4_datum_from_boolean.c)
+set(rt_bridge_obj "")
 
-foreach(src IN LISTS rt_bridge_llvm)
+foreach (src IN LISTS rt_bridge_llvm)
     cmake_path(GET src FILENAME srcbase)
     set(obj "${CMAKE_CURRENT_BINARY_DIR}/${srcbase}.o")
 
     add_custom_command(
-        OUTPUT ${obj}
-        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc
-                -filetype=obj
-                -relocation-model=pic
-                -O3
-                ${CMAKE_CURRENT_SOURCE_DIR}/${src}
-                -o ${obj}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src}
-        COMMENT "Compiling LLVM IR ${srcbase}.ll"
-    )
+            OUTPUT ${obj}
+            COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc
+            -filetype=obj
+            -relocation-model=pic
+            -O3
+            ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+            -o ${obj}
+            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${src}
+            COMMENT "Compiling LLVM IR ${srcbase}.ll"
+            )
 
     list(APPEND rt_bridge_obj ${obj})
-endforeach()
+endforeach ()
 
 add_library(c4rt3 STATIC
             include/c4rt3/c4rt.h
@@ -75,6 +74,7 @@ add_library(c4rt3 STATIC
             src/c4rt3/c4_datum_coerce_int64.c
             src/c4rt3/c4_datum_coerce_double.c
             src/c4rt3/c4_datum_coerce_string.c
+            src/c4rt3/c4_datum_from_boolean.c
             src/c4rt3/c4_datum_from_string_sz.c
             src/c4rt3/c4_datum_from_int64.c
             src/c4rt3/c4_datum_from_double.c
@@ -140,7 +140,10 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/name_manager/string_name.cxx
 
             include/c4rt2c/runtime_fn.hxx
+            src/c4rt2c/runtime_fn/arg.cxx
             src/c4rt2c/runtime_fn/define.cxx
+            src/c4rt2c/runtime_fn/file_scoped.cxx
+            src/c4rt2c/runtime_fn/~runtime_fn_debug_info_builder.cxx
 
             include/c4rt2c/scoped_scope.hxx
 
@@ -198,6 +201,18 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/unpack_argv.cxx
             src/c4rt2c/runtime_emitter/make_forces_blob.cxx
             src/c4rt2c/runtime_emitter/force_args.cxx
+            src/c4rt2c/runtime_emitter/set_tailkind.cxx
+            src/c4rt2c/runtime_emitter/init.cxx
+            src/c4rt2c/runtime_emitter/fn_type.cxx
+
+            include/c4rt2c/fn_call_gen.hxx
+            src/c4rt2c/fn_call_gen/immediate_fn_call_gen/resolve_symbol_value.cxx
+            src/c4rt2c/fn_call_gen/direct_fn_call_gen/build.cxx
+            src/c4rt2c/fn_call_gen/direct_fn_call_gen/refer.cxx
+            src/c4rt2c/fn_call_gen/immediate_fn_call_gen/finalize.cxx
+            src/c4rt2c/fn_call_gen/direct_fn_call_gen/resolve_symbol_value.cxx
+            src/c4rt2c/fn_call_gen/tail_fn_call_gen/resolve_symbol_value.cxx
+            src/c4rt2c/fn_call_gen/tail_fn_call_gen/finalize.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

@@ -38,18 +38,13 @@
 
 c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
                                          llvm::Module& module,
-                                         llvm::IRBuilder<llvm::ConstantFolder, llvm::IRBuilderDefaultInserter>& builder,
-                                         llvm::FunctionPassManager& pass_manager,
-                                         llvm::FunctionAnalysisManager& fna_manager)
-	: _pass_manager{pass_manager}
-	, _fna_manager{fna_manager}
-	, _context{context}
+                                         llvm::IRBuilder<>& builder,
+                                         runtime_emitter&& rt)
+	: _context{context}
 	, _module{module}
 	, _builder{builder}
 	, _di_builder{std::make_unique<llvm::DIBuilder>(module)}
-	, _runtime{context, module, builder}
-// , dbg{}
-{
+	, _runtime{rt} {
 	const auto c4_main_ty = llvm::FunctionType::get(
 		llvm::Type::getVoidTy(_context),
 		{

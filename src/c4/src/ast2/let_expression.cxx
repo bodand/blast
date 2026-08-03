@@ -73,7 +73,7 @@ c4::ast2::let_expression::value_constant() const noexcept {
 	// TODO: this is triggered by recursion, returning false possibly inhibits
 	//		some constant calculations that could take place, or even introduces
 	//		closures in referencing code
-	if (!_value) return false;
+	if (!_value) return true;
 	return _value->constant_evaluated(std::array{_symbol});
 }
 
@@ -89,10 +89,6 @@ c4::ast2::let_expression::value() {
 
 bool
 c4::ast2::let_expression::introduces_variable() const noexcept {
-	// let native produces two let-s: one with a symbol set to native. This
-	// produces the pure cdecl function, whereas the one simply without a value
-	// is a C4 function that jumps to a continuation to force arg evaluation to
-	// then call the cdecl function.
 	if (_symbol.native() || !_value) return false;
 
 	if (_value->true_closure()) return false;

@@ -35,6 +35,7 @@
  */
 
 #include <algorithm>
+#include <iostream>
 
 #include <c4/ast2/block.hxx>
 #include <c4/ast2/expression.hxx>
@@ -52,11 +53,28 @@ namespace {
 		llvm::Value* _val;
 		const c4::ast2::tags::attributable* attr_holder;
 
+		attr_restorer(const attr_restorer&) = delete;
+
+		attr_restorer&
+		operator=(const attr_restorer&) = delete;
+
+		attr_restorer(attr_restorer&& mv) noexcept
+			: _val{std::exchange(mv._val, nullptr)}
+			, attr_holder{std::exchange(mv.attr_holder, nullptr)} { }
+
+		attr_restorer&
+		operator=(attr_restorer&& mv) noexcept {
+			_val = std::exchange(mv._val, nullptr);
+			attr_holder = std::exchange(mv.attr_holder, nullptr);
+			return *this;
+		}
+
 		attr_restorer(const c4::ast2::tags::attributable* arg, llvm::Value* val)
 			: _val(val)
 			, attr_holder{arg} { }
 
 		~attr_restorer() {
+			if (!attr_holder) return;
 			attr_holder->emplace_attribute<c4c::llvm_value_attribute>("value", _val);
 		}
 	};
@@ -84,8 +102,8 @@ c4rt2c::ast2_ir_emitter::emit_named_function(const c4::ast2::block& block) {
 			llvm::ConstantInt::get(_context, llvm::APInt(64, argv_i++)));
 		const auto val = _builder.CreateLoad(ptr_t, addr, sym.name());
 
-		if (const auto last = ref->attribute_value<llvm::Value*>("value"))
-			restorer_holder.emplace_back(ref, *last);
+		if (ref->attribute_value<llvm::Value*>("value"))
+			restorer_holder.emplace_back(ref, *ref->attribute_value<llvm::Value*>("value"));
 		ref->emplace_attribute<c4c::llvm_value_attribute>("value", val);
 	}
 

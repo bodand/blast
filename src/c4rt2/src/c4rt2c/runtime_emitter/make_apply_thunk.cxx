@@ -34,6 +34,8 @@
  *   
  */
 
+#include <algorithm>
+
 #include <c4rt2c/runtime_emitter.hxx>
 
 llvm::Value*

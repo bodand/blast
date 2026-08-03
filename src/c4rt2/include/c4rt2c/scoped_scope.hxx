@@ -40,17 +40,27 @@
 
 namespace c4rt2c {
 	struct scoped_scope {
-		scoped_scope(llvm::IRBuilder<>& builder)
+		explicit scoped_scope(llvm::IRBuilder<>& builder)
 			: _ip(builder.saveIP())
-			, _builder(&builder) { }
+			, _builder(&builder)
+			, _dbg_loc(_builder->getCurrentDebugLocation()) {
+			_builder->SetCurrentDebugLocation(llvm::DebugLoc());
+		}
 
 		~scoped_scope() {
 			_builder->restoreIP(_ip);
+			if (_dbg_loc) _builder->SetCurrentDebugLocation(_dbg_loc);
+		}
+
+		void
+		push_dbg(const llvm::DILocation* loc) const {
+			_builder->SetCurrentDebugLocation(loc);
 		}
 
 	private:
 		llvm::IRBuilder<>::InsertPoint _ip;
 		llvm::IRBuilder<>* _builder;
+		llvm::DILocation* _dbg_loc = nullptr;
 	};
 }
 

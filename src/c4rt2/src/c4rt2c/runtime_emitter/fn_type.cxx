@@ -28,23 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-03.
  *
- * src/std4/src/std/primitive_op --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/fn_type --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		int64_t a_int, b_int; \
-		c4_datum_coerce_int64(a, &a_int); \
-		c4_datum_coerce_int64(b, &b_int); \
-\
-		c4_datum ret; \
-		c4_datum_from_int64((a_int op b_int), &ret); \
-		return ret; \
-	}
+#include <c4rt2c/runtime_emitter.hxx>
 
-#endif
+llvm::DISubroutineType*
+c4rt2c::runtime_emitter::fn_type(const size_t cls_size,
+                                 const size_t argv_sz) const {
+	llvm::SmallVector<llvm::Metadata*, 8> params;
+	params.reserve(1 + cls_size + argv_sz);
+
+	const auto type = _dbg_datum_ptr;
+
+	params.push_back(type);
+	std::generate_n(std::back_inserter(params), cls_size + argv_sz, [&] { return type; });
+
+	return _di_builder->createSubroutineType(
+		_di_builder->getOrCreateTypeArray(params)
+	);
+}

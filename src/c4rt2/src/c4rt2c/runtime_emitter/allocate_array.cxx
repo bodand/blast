@@ -42,14 +42,18 @@
 #include <llvm/IR/Value.h>
 
 llvm::Value*
-c4rt2c::runtime_emitter::allocate_array(llvm::Value* count, llvm::Value* size) const {
+c4rt2c::runtime_emitter::
+allocate_array(llvm::Value* count, llvm::Value* size) const {
 	const auto call = _builder.CreateCall(_rt_allocate_array, {count, size});
 	call->setCallingConv(llvm::CallingConv::Tail);
 	return call;
 }
 
 llvm::Value*
-c4rt2c::runtime_emitter::allocate_array(const std::size_t count, const std::size_t size) const {
+c4rt2c::runtime_emitter::
+allocate_array(const std::size_t count, const std::size_t size) const {
+	// if (count == 0) return llvm::ConstantPointerNull::get(ptr_t);
+
 	return allocate_array(
 		llvm::ConstantInt::get(_context, llvm::APInt(64, count)),
 		llvm::ConstantInt::get(_context, llvm::APInt(64, size)));

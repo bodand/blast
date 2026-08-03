@@ -39,6 +39,8 @@
 
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
+
+#include <c4/tags/call_expr.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
@@ -51,7 +53,8 @@ namespace c4::ast2 {
 	struct fn_call final : ast_node
 	                       , tags::visitable
 	                       , tags::attributable
-	                       , tags::source_positioned {
+	                       , tags::source_positioned
+	                       , tags::call_expr {
 		fn_call(const c4::position& position,
 		        const symbol& sym,
 		        std::vector<expression*>&& args);
@@ -67,7 +70,7 @@ namespace c4::ast2 {
 		operator=(fn_call&& mv) noexcept = delete;
 
 		[[nodiscard]] symbol
-		sym() const { return _sym; }
+		sym() const noexcept { return _sym; }
 
 		[[nodiscard]] std::span<const expression* const>
 		args() const;

@@ -86,6 +86,9 @@ c4::ast_dumper::do_visit(const ast2::dynamic_call& obj) {
 	_os << "\033[1;3m(\033[m";
 	obj.callee()->accept(*this);
 
+	if (obj.tail_call()) {
+		_os << "\033[2m!tail\033[m";
+	}
 
 	auto expressions = obj.args();
 	if (expressions.empty()) {
@@ -141,6 +144,10 @@ c4::ast_dumper::do_visit(const ast2::fn_call& obj) {
 	_os << "\033[1m(";
 	obj.sym().accept(*this);
 	_os << "\033[m";
+
+	if (obj.tail_call()) {
+		_os << "\033[2m!tail\033[m";
+	}
 
 	auto expressions = obj.args();
 	if (expressions.empty()) {
@@ -202,8 +209,12 @@ c4::ast_dumper::do_visit(const ast2::let_expression& obj) {
 void
 c4::ast_dumper::do_visit(const ast2::binary_op_call& obj) {
 	_os << "\033[1m(";
-	obj.op().accept(*this);
+	obj.sym().accept(*this);
 	_os << "\033[m";
+
+	if (obj.tail_call()) {
+		_os << "\033[2m!tail\033[m";
+	}
 
 	_os << "\n" << std::string(2U * ++_depth, ' ');
 	obj.left().accept(*this);
@@ -217,8 +228,12 @@ c4::ast_dumper::do_visit(const ast2::binary_op_call& obj) {
 void
 c4::ast_dumper::do_visit(const ast2::unary_op_call& obj) {
 	_os << "\033[1m(";
-	obj.op().accept(*this);
+	obj.sym().accept(*this);
 	_os << "\033[m";
+
+	if (obj.tail_call()) {
+		_os << "\033[2m!tail\033[m";
+	}
 
 	_os << "\n" << std::string(2U * ++_depth, ' ');
 	obj.operand().accept(*this);

@@ -37,7 +37,7 @@
 #define BLAST_PRIMITIVE_CMP_H
 
 #define c4_primitive_cmp(p, op) \
-	c4_let_native(primitive_eq)(c4_datum a, c4_datum b) { \
+	c4_let_native(p)(c4_datum a, c4_datum b) { \
 		const bool rel = c4_datum_cmp(a, b) op 0; \
 		c4_datum d; \
 	\

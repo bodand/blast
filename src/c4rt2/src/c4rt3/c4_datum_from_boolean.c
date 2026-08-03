@@ -41,16 +41,16 @@
 #include "internal_type.h"
 
 c4_extern c4_datum
-c4_datum_true(void);
+c4int_datum_true(void);
 
 c4_extern c4_datum
-c4_datum_false(void);
+c4int_datum_false(void);
 
 int
 c4_datum_from_boolean(const bool val,
                       c4_datum* out) {
 	assert(out && "out must not be null");
 
-	*out = val ? c4_datum_true() : c4_datum_false();
+	*out = val ? c4int_datum_true() : c4int_datum_false();
 	return 0;
 }

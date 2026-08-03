@@ -40,9 +40,7 @@
 llvm::Value*
 c4rt2c::seq_pair::build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const {
 	const auto seq_left = _left->build(builder, rt);
-	seq_left->setName("seql");
 	const auto seq_right = _right->build(builder, rt);
-	seq_right->setName("seqr");
 
 	return rt.make_seq_thunk(seq_left, seq_right);
 }
