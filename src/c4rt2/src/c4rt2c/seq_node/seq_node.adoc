@@ -1,0 +1,67 @@
+= seq_node logic
+
+The seq_node classes behave a bit weird to figure out how to ensure proper tail-calls in the generated IR without ending up in memory-leak in infinite recursion.
+This method also reduces GC pressure when not in a recursion.
+
+Normally a call-like expression can tell about itself if it is in tail-call position.
+But this is not really useful, because the seq construction ends up actually pushing the tail-call to the deepest node in this seq-tree.
+E.g.
+
+----
+let func {
+    call1
+    call2
+    call3
+}
+----
+
+In this order, assuming 0-arity call__n__ functions, call3 is in tail-call position, which can be seen in the AST if we dump it.
+The !tail marker is appended to it.
+
+----
+{expr
+  {let(fn) func/0->0x55e3be549d60 @0x55e3be549d60 [func]
+    {expr @0x55e3be549d60
+      {lambda
+        {expr [call1/0->0x55e3be5486f0]
+          (call1/0->0x55e3be5486f0)}
+        {expr [call2/0->0x55e3be548df0]
+          (call2/0->0x55e3be548df0)}
+        {expr [call3/0->0x55e3be549560]
+          (call3/0->0x55e3be549560!tail)}}}}}
+----
+
+However, the block's seq-tree does not look like this.
+It needs to expand this linear call into a tree built from 2-tuples.
+This ends up with something like this (which cannot be directly dumped).
+
+----
+(seq-pair
+    (seq-leaf call1)
+    (seq-pair
+        (seq-leaf call2)
+        (seq-leaf call3))))
+----
+
+Now, of course, call3 being a tail-call has been lost to time, because it is not called as a tail-call.
+What we need is to propagate the tail-call to the root of the tree such that the outermost _c4_seq can be called in-tail call position.
+
+An outermost seq-pair is always a tail-call because of this.
+
+== seq_tail_leaf
+
+There is a special node called `seq_tail_leaf`.
+This implements a special-case when a block consists of only a single call.
+Because there is no outermost (for the lack of any) seq-pair that could act as the tail-call, this node-type handles this for single instances.
+
+They are built when the initial nil node is pushed with an expression that does not produce a thunk from itself.
+This means it was annotated with `!tail` and it knows, so it just sets up the argv and pushes the direct call forward.
+The extra values needed to be held are held by the special tail leaf.
+
+== seq_nil
+
+The `seq_nil` node represents a block that is empty (`{}`) which always produces a `nil` value.
+(That is a nil is endemic: it always produces itself.)
+
+This means a nil-producing block is always in tail-call position, since it is representative of the whole block.
+So it always constructs a direct continuation call with a new nil datum.

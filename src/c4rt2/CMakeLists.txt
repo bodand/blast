@@ -213,6 +213,14 @@ add_library(c4rt2c STATIC
             src/c4rt2c/fn_call_gen/direct_fn_call_gen/resolve_symbol_value.cxx
             src/c4rt2c/fn_call_gen/tail_fn_call_gen/resolve_symbol_value.cxx
             src/c4rt2c/fn_call_gen/tail_fn_call_gen/finalize.cxx
+            src/c4rt2c/seq_node/seq_leaf/build_call.cxx
+            src/c4rt2c/seq_node/seq_pair/build_call.cxx
+            src/c4rt2c/seq_node/seq_nil/build_call.cxx
+            src/c4rt2c/seq_node/seq_tail_leaf/push.cxx
+            src/c4rt2c/seq_node/seq_tail_leaf/build.cxx
+            src/c4rt2c/seq_node/seq_tail_leaf/build_call.cxx
+            src/c4rt2c/runtime_emitter/tail_seq.cxx
+            src/c4rt2c/runtime_emitter/make_seq_argv.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

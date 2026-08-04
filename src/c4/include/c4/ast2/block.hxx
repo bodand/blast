@@ -62,9 +62,7 @@ namespace c4::ast2 {
 	struct block_argument final : tags::referable
 	                            , ast_node {
 		explicit
-		block_argument(symbol symbol)
-			: referable(symbol.position())
-			, _symbol{std::move(symbol)} { }
+		block_argument(symbol symbol);
 
 		block_argument(block_argument&) = delete;
 

@@ -38,6 +38,7 @@
 #include <c4rt2c/seq_node.hxx>
 
 llvm::Value*
-c4rt2c::seq_nil::build(llvm::IRBuilder<>&, runtime_emitter& rt) const {
+c4rt2c::seq_nil::
+build(llvm::IRBuilder<>&, runtime_emitter& rt) const {
 	return rt.make_datum_nil();
 }

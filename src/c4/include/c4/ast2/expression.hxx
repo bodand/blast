@@ -160,12 +160,12 @@ namespace c4::ast2 {
 		}
 
 		void
-		tail_call() {
+		tail_call(const bool value = true) const {
 			std::visit(
-				[]<typename T0>(T0& x) {
+				[value]<typename T0>(T0& x) {
 					if constexpr (std::convertible_to<std::remove_cvref_t<T0>,
 					                                  tags::call_expr*>) {
-						x->tail_call(true);
+						x->tail_call(value);
 					}
 				}, _value);
 		}

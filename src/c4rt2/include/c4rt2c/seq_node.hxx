@@ -40,18 +40,31 @@
 
 #include <llvm/IR/IRBuilder.h>
 
+namespace c4::ast2 {
+	struct expression;
+}
+
 namespace c4rt2c {
+	struct ast2_ir_emitter;
 	struct runtime_emitter;
 
 	struct seq_node {
 		virtual std::unique_ptr<seq_node>
-		push(llvm::Value* val) = 0;
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) = 0;
+
+		virtual std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) = 0;
 
 		virtual std::unique_ptr<seq_node>*
 		last() { return nullptr; }
 
 		virtual llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const = 0;
+
+		virtual void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const = 0;
 
 		virtual ~seq_node() = default;
 	};
@@ -61,13 +74,21 @@ namespace c4rt2c {
 		         std::unique_ptr<seq_node>&& right);
 
 		std::unique_ptr<seq_node>
-		push(llvm::Value* val) override;
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) override;
 
 		[[nodiscard]] std::unique_ptr<seq_node>*
 		last() override;
 
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const override;
 
 	private:
 		std::unique_ptr<seq_node> _left;
@@ -78,21 +99,65 @@ namespace c4rt2c {
 		explicit seq_leaf(llvm::Value* value);
 
 		std::unique_ptr<seq_node>
-		push(llvm::Value* val) override;
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) override;
 
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const override;
 
 	private:
 		llvm::Value* _value;
 	};
 
-	struct seq_nil final : seq_node {
+	struct seq_tail_leaf final : seq_node {
+		explicit seq_tail_leaf(llvm::Value* value,
+		                       llvm::Value* argv,
+		                       llvm::Value* argv_sz)
+			: _value(value)
+			, _argv(argv)
+			, _argv_sz(argv_sz) { }
+
 		std::unique_ptr<seq_node>
-		push(llvm::Value* val) override;
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) override;
 
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const override;
+
+	private:
+		llvm::Value* _value;
+		llvm::Value* _argv;
+		llvm::Value* _argv_sz;
+	};
+
+	struct seq_nil final : seq_node {
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) override;
+
+		llvm::Value*
+		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const override;
 	};
 }
 

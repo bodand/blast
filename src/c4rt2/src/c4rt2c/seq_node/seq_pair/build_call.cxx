@@ -28,20 +28,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-03.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/seq_node/seq_pair/build_call --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
-
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
+#include <c4rt2c/seq_node.hxx>
 
 void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	_builder.CreateRetVoid();
+c4rt2c::seq_pair::
+build_call(llvm::IRBuilder<>& builder,
+           runtime_emitter& rt,
+           llvm::Value* K) const {
+	const auto left = _left->build(builder, rt);
+	const auto right = _right->build(builder, rt);
 
-	_di_builder->finalize();
+	auto& ctx = left->getContext();
+	const auto ptr_t = llvm::PointerType::get(ctx, 0);
+
+	const auto argv = rt.allocate_array(2, 8);
+	const auto addr0 = builder.CreateGEP(ptr_t, argv, {builder.getInt64(0)});
+	builder.CreateStore(left, addr0);
+
+	const auto addr1 = builder.CreateGEP(ptr_t, argv, {builder.getInt64(1)});
+	builder.CreateStore(right, addr1);
+
+	rt.tail_seq(left, right, K);
 }

@@ -40,22 +40,13 @@
 #include <c4rt2c/runtime_emitter.hxx>
 
 llvm::Value*
-c4rt2c::runtime_emitter::make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const {
-	const auto ptr_t = llvm::PointerType::get(_context, 0);
-
+c4rt2c::runtime_emitter::
+make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const {
 	const auto seq = make_thunk(_rt_seq.fn);
 	seq->setName("seq.thunk");
 
 	constexpr uint32_t argv_sz = 2;
-	const auto argv = allocate_array(argv_sz, 8);
-	argv->setName("seq.argv");
-
-	const auto addr0 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 0))});
-	_builder.CreateStore(thunk_left, addr0);
-
-	const auto addr1 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 1))});
-	_builder.CreateStore(thunk_right, addr1);
-
+	const auto argv = make_seq_argv(thunk_left, thunk_right);
 	set_thunk_args(seq, argv, argv_sz);
 
 	return seq;

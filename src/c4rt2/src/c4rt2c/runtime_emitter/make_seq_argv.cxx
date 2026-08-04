@@ -28,20 +28,27 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-04.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/make_seq_argv --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
 
-void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	_builder.CreateRetVoid();
+[[nodiscard]] llvm::Value*
+c4rt2c::runtime_emitter::
+make_seq_argv(llvm::Value* left, llvm::Value* right) const {
+	constexpr uint32_t argv_sz = 2;
+	const auto argv = allocate_array(argv_sz, 8);
+	argv->setName("seq.argv");
 
-	_di_builder->finalize();
+	const auto addr0 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 0))});
+	_builder.CreateStore(left, addr0);
+
+	const auto addr1 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 1))});
+	_builder.CreateStore(right, addr1);
+
+	return argv;
 }

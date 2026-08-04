@@ -31,7 +31,8 @@
  * Originally created: 2026-07-30.
  *
  * src/c4rt2/src/c4rt2c/seq_builder/seq_builder --
- *   
+ *   External definition of ~seq_builder because of node dtors not being
+ *   defined correctly in-case of in-line definition for the unique_ptr dtors.
  */
 
 #include <c4rt2c/seq_builder.hxx>

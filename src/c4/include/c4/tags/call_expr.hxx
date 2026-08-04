@@ -45,7 +45,7 @@ namespace c4::ast2::tags {
 		// sym() const noexcept = 0;
 
 		constexpr void
-		tail_call(const bool val) noexcept {
+		tail_call(const bool val) const noexcept {
 			_tail_call = val;
 		}
 
@@ -55,7 +55,7 @@ namespace c4::ast2::tags {
 		}
 
 	private:
-		bool _tail_call{false};
+		mutable bool _tail_call{false};
 	};
 }
 

@@ -34,9 +34,29 @@
  *   
  */
 
+#include <c4/ast2/expression.hxx>
+
+#include <c4rt2c/ast2_ir_emitter.hxx>
 #include <c4rt2c/seq_node.hxx>
 
+#include <libassert/assert.hpp>
+
 std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_nil::push(llvm::Value* val) {
-	return std::make_unique<seq_leaf>(val);
+c4rt2c::seq_nil::
+push(const c4::ast2::expression* val, ast2_ir_emitter& ir) {
+	val->accept(ir);
+	return push(val);
+}
+
+std::unique_ptr<c4rt2c::seq_node>
+c4rt2c::seq_nil::
+push(const c4::ast2::expression* val) {
+	const auto value = val->attribute_value<llvm::Value*>("value");
+	ASSERT(value, "expression not defined to value", val);
+
+	if (val->attribute_value<bool>("thunk?"))
+		return std::make_unique<seq_leaf>(*value);
+
+	const auto [args, args_sz] = *val->attribute_value<std::pair<llvm::Value*, llvm::Value*>>("tail_args");
+	return std::make_unique<seq_tail_leaf>(*value, args, args_sz);
 }

@@ -40,7 +40,12 @@
 
 #include <llvm/IR/IRBuilder.h>
 
+namespace c4::ast2 {
+	struct expression;
+}
+
 namespace c4rt2c {
+	struct ast2_ir_emitter;
 	struct runtime_emitter;
 	struct seq_node;
 	struct seq_nil;
@@ -49,12 +54,18 @@ namespace c4rt2c {
 		seq_builder();
 
 		void
-		push(llvm::Value* val);
+		push(const c4::ast2::expression* expr, ast2_ir_emitter& ir);
 
-		[[nodiscard]] llvm::Value*
-		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const;
+		void
+		push(const c4::ast2::expression* val);
+
+		void
+		build(llvm::IRBuilder<>& builder,
+		      runtime_emitter& rt,
+		      llvm::Value* K) const;
 
 		~seq_builder();
+
 	private:
 		std::unique_ptr<seq_node> _root;
 		std::unique_ptr<seq_node>* _last;

@@ -38,7 +38,8 @@
 #include <c4rt2c/seq_builder.hxx>
 #include <c4rt2c/seq_node.hxx>
 
-llvm::Value*
-c4rt2c::seq_builder::build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const {
-	return _root->build(builder, rt);
+void
+c4rt2c::seq_builder::
+build(llvm::IRBuilder<>& builder, runtime_emitter& rt, llvm::Value* K) const {
+	_root->build_call(builder, rt, K);
 }

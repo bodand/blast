@@ -34,11 +34,26 @@
  *   
  */
 
+#include <c4/ast2/expression.hxx>
+
 #include <c4rt2c/seq_builder.hxx>
 #include <c4rt2c/seq_node.hxx>
 
+namespace c4rt2c {
+	struct ast2_ir_emitter;
+}
+
 void
-c4rt2c::seq_builder::push(llvm::Value* val) {
+c4rt2c::seq_builder::
+push(const c4::ast2::expression* expr, ast2_ir_emitter& ir) {
+	auto next = (*_last)->push(expr, ir);
+	_last->swap(next);
+	if (const auto push_to = (*_last)->last()) _last = push_to;
+}
+
+void
+c4rt2c::seq_builder::
+push(const c4::ast2::expression* val) {
 	auto next = (*_last)->push(val);
 	_last->swap(next);
 	if (const auto push_to = (*_last)->last()) _last = push_to;

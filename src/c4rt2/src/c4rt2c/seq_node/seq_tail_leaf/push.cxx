@@ -28,20 +28,27 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-03.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/seq_node/seq_tail_leaf/push --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
+#include <c4/ast2/expression.hxx>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/seq_node.hxx>
+#include <libassert/assert.hpp>
 
-void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	_builder.CreateRetVoid();
+std::unique_ptr<c4rt2c::seq_node>
+c4rt2c::seq_tail_leaf::
+push(const c4::ast2::expression* val, ast2_ir_emitter& ir) {
+	ASSERT(false, "seq_tail_leaf cannot be pushed to", val);
+	return {};
+}
 
-	_di_builder->finalize();
+std::unique_ptr<c4rt2c::seq_node>
+c4rt2c::seq_tail_leaf::
+push(const c4::ast2::expression* val) {
+	ASSERT(false, "seq_tail_leaf cannot be pushed to", val);
+	return {};
 }

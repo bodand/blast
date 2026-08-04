@@ -43,6 +43,21 @@
 #include <libassert/assert.hpp>
 #include <utility>
 
+namespace {
+	struct bool_attribute final : c4::ast2::tags::typed_attribute<bool> {
+		explicit
+		bool_attribute()
+			: typed_attribute{true} { }
+	};
+}
+
+c4::ast2::block_argument::block_argument(ast2::symbol symbol)
+	: referable(symbol.position())
+	, _symbol{std::move(symbol)} {
+	// block arguments are always thunks
+	std::ignore = emplace_attribute<bool_attribute>("thunk?");
+}
+
 c4::ast2::block_args::block_args(const c4::position& position,
                                  const std::span<symbol> args)
 	: source_positioned{position}

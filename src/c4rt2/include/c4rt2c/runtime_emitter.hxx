@@ -108,6 +108,9 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::Value*
 		make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const;
 
+		void
+		tail_seq(llvm::Value* left, llvm::Value* right, llvm::Value* K) const;
+
 		[[nodiscard]] llvm::Value*
 		make_forces_blob(llvm::Value* argv, llvm::Value* argv_sz, llvm::Function* trampoline) const;
 
@@ -131,6 +134,12 @@ namespace c4rt2c {
 
 		llvm::SmallVector<llvm::Value*, 4>
 		unpack_argv(llvm::Value* forces, std::uint32_t argv_sz) const;
+
+		void
+		tail_call(llvm::Value* callee, llvm::Value* args, llvm::Value* K) const;
+
+		void
+		tail_call(llvm::FunctionCallee callee, llvm::Value* args, llvm::Value* K) const;
 
 		void
 		set_debug_trace(const bool debug_trace) {
@@ -245,13 +254,10 @@ namespace c4rt2c {
 		set_completion_K(llvm::Value* c, llvm::Value* K) const;
 
 		void
-		tail_call(llvm::Value* callee, llvm::Value* args, llvm::Value* K) const;
-
-		void
-		tail_call(llvm::FunctionCallee callee, llvm::Value* args, llvm::Value* K) const;
-
-		void
 		set_tailkind(llvm::CallInst* call) const;
+
+		[[nodiscard]] llvm::Value*
+		make_seq_argv(llvm::Value* left, llvm::Value* right) const;
 
 		/// The universal function type to allow unrestricted
 		/// tail-calls. It is void(ptr, ptr), where the first is an array

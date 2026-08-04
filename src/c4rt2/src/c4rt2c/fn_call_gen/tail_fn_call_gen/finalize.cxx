@@ -38,6 +38,9 @@
 
 #include <c4rt2c/fn_call_gen.hxx>
 #include <c4rt2c/llvm_value_attribute.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
+
+#include "../../ast2_ir_emitter/already_thunk_attribute.hxx"
 
 namespace {
 	struct callee_pair_attribute : c4::ast2::tags::typed_attribute<std::pair<llvm::Value*, llvm::Value*>> {
@@ -53,8 +56,15 @@ finalize(llvm::Value* fn,
          llvm::Value* argv,
          const std::size_t argv_sz,
          const c4::ast2::expression& expr) {
-	const auto argv_sz_val = _builder.getInt32(argv_sz);
-
 	expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+
+	if (refer()->thunk()) {
+		if (argv) _rt.set_thunk_args(fn, argv, argv_sz);
+
+		std::ignore = expr.emplace_attribute<already_thunk_attribute>("thunk?");
+		return;
+	}
+
+	const auto argv_sz_val = _builder.getInt32(argv_sz);
 	expr.emplace_attribute<callee_pair_attribute>("tail_args", argv, argv_sz_val);
 }

@@ -123,14 +123,8 @@ c4rt2c::ast2_ir_emitter::emit_named_function(const c4::ast2::block& block) {
 
 	seq_builder builder;
 	std::ranges::for_each(block.expressions(), [&](const auto& expr) {
-		expr->accept(*this);
-		const auto val = expr->template attribute_value<llvm::Value*>("value");
-		if (!val) return;
-
-		builder.push(*val);
+		builder.push(expr, *this);
 	});
 
-	const auto seq = builder.build(_builder, _runtime);
-
-	_runtime.evaluate(seq, *K);
+	builder.build(_builder, _runtime, *K);
 }

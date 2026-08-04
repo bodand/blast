@@ -28,20 +28,20 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-03.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/seq_node/seq_nil/build_call --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
-
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
+#include <c4rt2c/seq_node.hxx>
 
 void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	_builder.CreateRetVoid();
-
-	_di_builder->finalize();
+c4rt2c::seq_nil::
+build_call(llvm::IRBuilder<>& builder,
+           runtime_emitter& rt,
+           llvm::Value* K) const {
+	const auto val = build(builder, rt);
+	rt.continue_with(K, val);
 }

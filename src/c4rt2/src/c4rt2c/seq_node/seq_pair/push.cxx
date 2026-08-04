@@ -37,7 +37,13 @@
 #include <c4rt2c/seq_node.hxx>
 
 std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_pair::push(llvm::Value* val) {
-	return _right->push(val);
+c4rt2c::seq_pair::
+push(const c4::ast2::expression* val, ast2_ir_emitter& ir) {
+	return _right->push(val, ir);
 }
 
+std::unique_ptr<c4rt2c::seq_node>
+c4rt2c::seq_pair::
+push(const c4::ast2::expression* val) {
+	return _right->push(val);
+}
