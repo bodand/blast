@@ -41,5 +41,5 @@ c4rt2c::runtime_emitter::
 tail_seq(llvm::Value* left, llvm::Value* right, llvm::Value* K) const {
 	const auto argv = make_seq_argv(left, right);
 
-	tail_call(_rt_seq, argv, K);
+	tail_call(_rt_seq_tt, argv, K);
 }

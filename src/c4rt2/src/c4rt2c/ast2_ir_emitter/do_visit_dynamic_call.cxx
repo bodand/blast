@@ -44,6 +44,14 @@
 
 #include "already_thunk_attribute.hxx"
 
+namespace {
+	struct callee_pair_attribute : c4::ast2::tags::typed_attribute<std::pair<llvm::Value*, llvm::Value*>> {
+		explicit
+		callee_pair_attribute(llvm::Value* argv, llvm::Value* argv_sz)
+			: typed_attribute{std::make_pair(argv, argv_sz)} { }
+	};
+}
+
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 	obj.callee()->accept(*this);
@@ -52,6 +60,8 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 
 	llvm::SmallVector<llvm::Value*, 8> args;
 	args.reserve(obj.args().size() + 1);
+	ASSERT(obj.args().size() <= UINT32_MAX,
+	       "way too many arguments for dynamic call", obj.args().size());
 
 	args.push_back(*callee_val);
 	std::ranges::transform(obj.args(), std::back_inserter(args), [&, this](const auto& arg) {
@@ -61,11 +71,28 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 		return *arg_val;
 	});
 
-	const auto apply = _runtime.make_apply_thunk(args);
-
 	const auto expr = active_expression();
 	ASSERT(expr);
 
-	expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
-	expr->emplace_attribute<already_thunk_attribute>("thunk?");
+	if (obj.tail_call()) {
+		const auto apply = _runtime.apply_fn();
+		const auto ptr_t = _builder.getPtrTy();
+
+		const auto argv = _runtime.allocate_array(args.size(), 8);
+		std::ranges::for_each(args, [&, this, i = 0](const auto& arg) mutable {
+			const auto addr = _builder.CreateGEP(ptr_t, argv,
+															 _builder.getInt64(i++));
+			_builder.CreateAlignedStore(arg, addr, llvm::Align(8));
+		});
+
+		expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
+		const auto argv_sz = _builder.getInt32(args.size());
+		expr->emplace_attribute<callee_pair_attribute>("tail_args", argv, argv_sz);
+	}
+	else {
+		const auto apply = _runtime.make_apply_thunk(args);
+
+		expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
+		expr->emplace_attribute<already_thunk_attribute>("thunk?");
+	}
 }

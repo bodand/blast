@@ -41,6 +41,12 @@
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::binary_op_call& obj) {
-	immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-	emit_function_call(&builder);
+	if (obj.tail_call()) {
+		tail_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
+		emit_function_call(&builder);
+	}
+	else {
+		immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
+		emit_function_call(&builder);
+	}
 }

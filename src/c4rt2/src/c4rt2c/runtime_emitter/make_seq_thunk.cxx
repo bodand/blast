@@ -42,7 +42,7 @@
 llvm::Value*
 c4rt2c::runtime_emitter::
 make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const {
-	const auto seq = make_thunk(_rt_seq.fn);
+	const auto seq = make_thunk(_rt_seq_tt.fn);
 	seq->setName("seq.thunk");
 
 	constexpr uint32_t argv_sz = 2;

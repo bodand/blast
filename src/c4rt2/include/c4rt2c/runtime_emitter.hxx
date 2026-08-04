@@ -152,6 +152,9 @@ namespace c4rt2c {
 		llvm::DISubroutineType*
 		fn_type(size_t cls_size, size_t argv_sz) const;
 
+		llvm::Function*
+		apply_fn() const noexcept { return _rt_apply.fn; }
+
 	private:
 		llvm::LLVMContext& _context;
 		llvm::Module& _module;
@@ -277,8 +280,8 @@ namespace c4rt2c {
 		runtime_fn _rt_make_datum_nil;     // datum* make_datum_nil()
 		runtime_fn _rt_make_datum_str;     // datum* make_datum_str(char* val)
 		runtime_fn _rt_make_thunk;         // datum* make_thunk(fn namedfn)
-		runtime_fn _rt_seq;                // datum* seq(datum* thunks, fn K)
-		runtime_fn _rt_seq2;               // datum* seq2(completion* self, datum* val)
+		runtime_fn _rt_seq_tt;                // datum* seq(datum* thunks, fn K)
+		runtime_fn _rt_seq_tt2;               // datum* seq2(completion* self, datum* val)
 		runtime_fn _rt_set_thunk_args;     // void set_thunk_args(datum* datum,
 		;                                  //                     datum* argv, i32 argv_sz)
 		runtime_fn _rt_merge_argv;         // datum* merge_argv(datum* argv1, i32 argv1_sz,

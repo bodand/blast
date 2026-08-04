@@ -576,11 +576,11 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		return memory;
 	});
 
-	_rt_seq.dbg(dib).file_scoped(rt_file)
-	       .name("_c4_seq")
+	_rt_seq_tt.dbg(dib).file_scoped(rt_file)
+	       .name("_c4_seq_tt")
 	       .arg("thunks", argv_ptr)
 	       .arg("K", completion_ptr);
-	_rt_seq.define(_builder, [&](const std::span<llvm::Argument*> args) {
+	_rt_seq_tt.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto thunks = args[0];
 		const auto K = args[1];
 
@@ -592,18 +592,18 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 
 		const auto cont = with_name(allocate(8 + 8 + 8), "cont");
 
-		set_completion_self(cont, _rt_seq2.fn);
+		set_completion_self(cont, _rt_seq_tt2.fn);
 		set_completion_payload(cont, right);
 		set_completion_K(cont, K);
 
 		tail_call(_rt_evaluate, left, cont);
 	});
 
-	_rt_seq2.dbg(dib).file_scoped(rt_file)
-	        .name("_c4_seq2")
+	_rt_seq_tt2.dbg(dib).file_scoped(rt_file)
+	        .name("_c4_seq_tt2")
 	        .arg("self", completion_ptr)
 	        .arg("_evaled", datum_ptr);
-	_rt_seq2.define(_builder, [&](const std::span<llvm::Argument*> args) {
+	_rt_seq_tt2.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto self = args[0];
 
 		const auto next = get_completion_payload(self);

@@ -50,6 +50,10 @@
 
 #include "fn_call_gen.hxx"
 
+namespace c4::ast2::tags {
+	struct tailable;
+}
+
 namespace llvm {
 	class Module;
 	class LLVMContext;
