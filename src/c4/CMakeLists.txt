@@ -110,6 +110,8 @@ add_library(c4
             include/c4/tags/referable.hxx
             src/tags/referable.cxx
 
+            include/c4/tags/tailable.hxx
+
             # Visitor
             include/c4/visitor/typeid.hxx
             src/visitor/typeid.cxx
@@ -129,7 +131,6 @@ add_library(c4
             include/c4/fmt.hxx
 
             include/c4/ast2/fwd.hxx
-            include/c4/tags/call_expr.hxx
             )
 
 target_link_libraries(c4

@@ -42,7 +42,7 @@
 #include <c4/tags/attributable.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
-#include <c4/tags/call_expr.hxx>
+#include <c4/tags/tailable.hxx>
 
 namespace c4::ast2 {
 	struct expression;
@@ -51,7 +51,7 @@ namespace c4::ast2 {
 	                              , tags::visitable
 	                              , tags::source_positioned
 	                              , tags::attributable
-	                              , tags::call_expr {
+	                              , tags::tailable {
 		binary_op_call(const c4::position& position,
 		               const symbol& op,
 		               expression* left,
@@ -98,7 +98,7 @@ namespace c4::ast2 {
 	                             , tags::visitable
 	                             , tags::source_positioned
 	                             , tags::attributable
-	                             , tags::call_expr {
+	                             , tags::tailable {
 		unary_op_call(const c4::position& position,
 		              const symbol& op,
 		              expression* operand);

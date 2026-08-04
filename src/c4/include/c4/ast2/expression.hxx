@@ -164,8 +164,12 @@ namespace c4::ast2 {
 			std::visit(
 				[value]<typename T0>(T0& x) {
 					if constexpr (std::convertible_to<std::remove_cvref_t<T0>,
-					                                  tags::call_expr*>) {
+					                                  tags::tailable*>) {
 						x->tail_call(value);
+					}
+					else if constexpr (std::convertible_to<std::remove_cvref_t<T0>,
+					                                       tags::tailable>) {
+						x.tail_call(value);
 					}
 				}, _value);
 		}

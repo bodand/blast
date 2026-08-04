@@ -38,9 +38,11 @@
 
 #include <optional>
 
+#include <c4/tags/tailable.hxx>
+
 namespace c4::ast2::tags {
 	template<class Self>
-	struct literal_from_token {
+	struct literal_from_token : tailable {
 		template<class Token>
 		[[nodiscard]] static Self
 		from_token(const Token& tok) {

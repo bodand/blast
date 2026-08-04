@@ -89,16 +89,19 @@ namespace c4 {
 		void
 		do_visit(const ast2::integer_literal& obj) override {
 			_os << obj.value();
+			if (obj.tail_call()) _os << "\033[2m!tail\033[m";
 		}
 
 		void
 		do_visit(const ast2::float_literal& obj) override {
 			_os << obj.value();
+			if (obj.tail_call()) _os << "\033[2m!tail\033[m";
 		}
 
 		void
 		do_visit(const ast2::string_literal& obj) override {
 			_os << std::quoted(obj.value());
+			if (obj.tail_call()) _os << "\033[2m!tail\033[m";
 		}
 
 		explicit

@@ -65,7 +65,7 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	const auto val = let.value();
 	if (!val) {
 		define_bridge_function(let);
-		_builder.CreateRetVoid();
+		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 		return;
 	}
 
@@ -138,5 +138,5 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	body->emplace_attribute<c4c::llvm_value_attribute>("K", (*fn)->getArg(1));
 	body->accept(*this);
 
-	_builder.CreateRetVoid();
+	if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 }

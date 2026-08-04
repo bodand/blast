@@ -38,11 +38,8 @@
 #define BLAST_CALL_EXPR_HXX
 
 namespace c4::ast2::tags {
-	struct call_expr {
-		virtual ~call_expr() = default;
-
-		// [[nodiscard]] virtual symbol
-		// sym() const noexcept = 0;
+	struct tailable {
+		virtual ~tailable() = default;
 
 		constexpr void
 		tail_call(const bool val) const noexcept {

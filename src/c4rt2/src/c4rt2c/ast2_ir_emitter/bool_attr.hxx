@@ -28,41 +28,20 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-30.
+ * Originally created: 2026-08-04.
  *
- * src/c4rt2/src/c4rt2c/seq_node/seq_nil/push --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/bool_attr --
  *   
  */
+#ifndef BLAST_BOOL_ATTR_HXX
+#define BLAST_BOOL_ATTR_HXX
 
-#include <c4/ast2/expression.hxx>
+#include <c4/tags/attributable.hxx>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
-#include <c4rt2c/seq_node.hxx>
+struct bool_attr : c4::ast2::tags::typed_attribute<bool> {
+	explicit
+	bool_attr(const bool val)
+		: typed_attribute{val} { }
+};
 
-#include <libassert/assert.hpp>
-
-std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_nil::
-push(const c4::ast2::expression* val, ast2_ir_emitter& ir) {
-	val->accept(ir);
-	return push(val);
-}
-
-std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_nil::
-push(const c4::ast2::expression* val) {
-	const auto value = val->attribute_value<llvm::Value*>("value");
-	ASSERT(value, "expression not defined to value", val);
-
-	if (val->attribute_value<bool>("tail-literal?"))
-		return std::make_unique<seq_tail_leaf>(*value);
-
-	if (val->attribute_value<bool>("thunk?"))
-		return std::make_unique<seq_leaf>(*value);
-
-	const auto tail_args = val->attribute_value<std::pair<llvm::Value*, llvm::Value*>>("tail_args");
-	ASSERT(tail_args, "tail-positioned non-thunk, non-literal missing tail-call argument", val);
-
-	const auto [args, args_sz] = *tail_args;
-	return std::make_unique<seq_tail_leaf>(*value, args, args_sz);
-}
+#endif

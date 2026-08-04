@@ -35,6 +35,7 @@
  */
 #ifndef C4_AST2_BLOCK_HXX
 #define C4_AST2_BLOCK_HXX
+#include <c4/tags/tailable.hxx>
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -60,7 +61,7 @@ namespace c4::ast2 {
 	struct expression;
 
 	struct block_argument final : tags::referable
-	                            , ast_node {
+	                              , ast_node {
 		explicit
 		block_argument(symbol symbol);
 
@@ -94,8 +95,8 @@ namespace c4::ast2 {
 	};
 
 	struct block_args final : ast_node
-	                        , tags::visitable
-	                        , tags::source_positioned {
+	                          , tags::visitable
+	                          , tags::source_positioned {
 		block_args(const c4::position& position,
 		           std::span<symbol> args);
 
@@ -139,7 +140,8 @@ namespace c4::ast2 {
 	struct block final : ast_node
 	                     , tags::visitable
 	                     , tags::source_positioned
-	                     , tags::attributable {
+	                     , tags::attributable
+	                     , tags::tailable {
 		block(const c4::position& position,
 		      std::vector<expression*>&& expressions,
 		      block_args* args = nullptr);

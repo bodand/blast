@@ -51,6 +51,7 @@
 #include <libassert/assert.hpp>
 
 #include "already_thunk_attribute.hxx"
+#include "bool_attr.hxx"
 #include "../../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/IR/Verifier.h"
 
 void
@@ -71,7 +72,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 		obj.emplace_attribute<c4c::llvm_value_attribute>("K", decl->getArg(1));
 		emit_named_function(obj);
 
-		_builder.CreateRetVoid();
+		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 		llvm::verifyFunction(*decl, &llvm::errs());
 	}
 
@@ -103,4 +104,5 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 		datum_fn
 	);
 	expr->emplace_attribute<already_thunk_attribute>("thunk?");
+	if (obj.tail_call()) expr->emplace_attribute<bool_attr>("tail-literal?", true);
 }

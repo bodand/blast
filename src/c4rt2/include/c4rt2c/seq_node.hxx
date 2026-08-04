@@ -117,9 +117,10 @@ namespace c4rt2c {
 	};
 
 	struct seq_tail_leaf final : seq_node {
-		explicit seq_tail_leaf(llvm::Value* value,
-		                       llvm::Value* argv,
-		                       llvm::Value* argv_sz)
+		explicit
+		seq_tail_leaf(llvm::Value* value,
+		              llvm::Value* argv = nullptr,
+		              llvm::Value* argv_sz = nullptr)
 			: _value(value)
 			, _argv(argv)
 			, _argv_sz(argv_sz) { }

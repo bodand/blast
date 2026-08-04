@@ -41,7 +41,7 @@
 void
 c4rt2c::ast2_ir_emitter::finalize() {
 	_seq_builder.build(_builder, _runtime, _mainK);
-	_builder.CreateRetVoid();
+	if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 
 	_di_builder->finalize();
 }

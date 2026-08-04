@@ -39,11 +39,16 @@
 #include <c4rt2c/ast2_ir_emitter.hxx>
 #include <c4rt2c/llvm_value_attribute.hxx>
 
+#include "bool_attr.hxx"
+
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::string_literal& obj) {
 	const auto val = _runtime.make_datum_str(obj.value(), _name_manager.string_name());
 	val->setName("lit.str");
-	if (const auto expr = active_expression()) {
-		expr->emplace_attribute<c4c::llvm_value_attribute>("value", val);
-	}
+
+	const auto expr = active_expression();
+	if (!expr) return;
+
+	expr->emplace_attribute<c4c::llvm_value_attribute>("value", val);
+	if (obj.tail_call()) expr->emplace_attribute<bool_attr>("tail-literal?", true);
 }

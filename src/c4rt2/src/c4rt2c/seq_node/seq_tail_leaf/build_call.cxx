@@ -42,5 +42,10 @@ c4rt2c::seq_tail_leaf::
 build_call(llvm::IRBuilder<>& builder,
            runtime_emitter& rt,
            llvm::Value* K) const {
+	if (!_argv) {
+		rt.continue_with(K, _value);
+		return;
+	}
+
 	rt.tail_call(_value, _argv, K);
 }

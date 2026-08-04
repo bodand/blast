@@ -60,7 +60,14 @@ c4::ast_dumper::do_visit(const ast2::block_args& obj) {
 
 void
 c4::ast_dumper::do_visit(const ast2::block& obj) {
-	_os << "{\033[34mlambda\033[m ";
+	_os << "{\033[34mlambda\033[m";
+	if (obj.tail_call()) {
+		_os << "\033[2m!tail\033[m ";
+	}
+	else {
+		_os << " ";
+	}
+
 	if (obj.args()) {
 		obj.args()->accept(*this);
 		_os << " ";

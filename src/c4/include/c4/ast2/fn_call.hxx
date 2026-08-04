@@ -40,7 +40,7 @@
 #include <c4/ast2/ast_node.hxx>
 #include <c4/ast2/symbol.hxx>
 
-#include <c4/tags/call_expr.hxx>
+#include <c4/tags/tailable.hxx>
 #include <c4/tags/source_positioned.hxx>
 #include <c4/tags/visitable.hxx>
 
@@ -54,7 +54,7 @@ namespace c4::ast2 {
 	                       , tags::visitable
 	                       , tags::attributable
 	                       , tags::source_positioned
-	                       , tags::call_expr {
+	                       , tags::tailable {
 		fn_call(const c4::position& position,
 		        const symbol& sym,
 		        std::vector<expression*>&& args);
