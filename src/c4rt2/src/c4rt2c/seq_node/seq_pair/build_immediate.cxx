@@ -28,35 +28,25 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-05.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/do_visit_fn_call --
+ * src/c4rt2/src/c4rt2c/seq_node/seq_pair/build_immediate --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
+#include <c4rt2c/seq_node.hxx>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
-
-#include <libassert/assert.hpp>
-
-void
-c4rt2c::ast2_ir_emitter::
-do_visit(const c4::ast2::fn_call& obj) {
-	const auto expr = active_expression();
-	ASSERT(expr);
-
-	const bool try_unthunked =
-			expr->attribute_value<bool>("try-unthunked-call?").has_value();
-	if (obj.tail_call()) {
-		tail_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
+std::optional<c4rt2c::immediate_seq>
+c4rt2c::seq_pair::build_immediate(llvm::IRBuilder<>& builder,
+                                  runtime_emitter& rt) const {
+	const auto left_thunk = _left->build(builder, rt);
+	if (const auto imm = _right->build_immediate(builder, rt)) {
+		const auto argv = rt.make_seq_ti_argv(left_thunk, imm->fn, imm->argv);
+		return immediate_seq{.fn = rt.seq_ti(), .argv = argv};
 	}
-	else {
-		immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		// builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
-	}
+
+	const auto right_thunk = _right->build(builder, rt);
+	const auto argv = rt.make_seq_tt_argv(left_thunk, right_thunk);
+	return immediate_seq{.fn = rt.seq_tt(), .argv = argv};
 }

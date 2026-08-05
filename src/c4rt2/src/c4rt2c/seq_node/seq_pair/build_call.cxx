@@ -36,24 +36,15 @@
 
 #include <c4rt2c/runtime_emitter.hxx>
 #include <c4rt2c/seq_node.hxx>
+#include <libassert/assert.hpp>
 
 void
 c4rt2c::seq_pair::
 build_call(llvm::IRBuilder<>& builder,
            runtime_emitter& rt,
            llvm::Value* K) const {
-	const auto left = _left->build(builder, rt);
-	const auto right = _right->build(builder, rt);
+	const auto imm = build_immediate(builder, rt);
+	ASSERT(imm, "seq_pair is always immediate capable");
 
-	auto& ctx = left->getContext();
-	const auto ptr_t = llvm::PointerType::get(ctx, 0);
-
-	const auto argv = rt.allocate_array(2, 8);
-	const auto addr0 = builder.CreateGEP(ptr_t, argv, {builder.getInt64(0)});
-	builder.CreateStore(left, addr0);
-
-	const auto addr1 = builder.CreateGEP(ptr_t, argv, {builder.getInt64(1)});
-	builder.CreateStore(right, addr1);
-
-	rt.tail_seq(left, right, K);
+	rt.tail_call(imm->fn, imm->argv, K);
 }

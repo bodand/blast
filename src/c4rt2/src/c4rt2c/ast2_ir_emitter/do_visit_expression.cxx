@@ -44,6 +44,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::expression& obj) {
 	obj.accept_skip_self(*this);
 	_expression_stack.pop_back();
 
+	if (obj.attribute_value<bool>("skip-holding")) return;
 	if (!_expression_stack.empty()) return;
 	if (!obj.attribute_value<llvm::Value*>("value")) return;
 

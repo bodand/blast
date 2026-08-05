@@ -59,6 +59,11 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	const auto fn = let.attribute_value<llvm::Function*>("function");
 	ASSERT(fn, "function attribute must not be null", let.symbol());
 
+	const auto expr = active_expression();
+	ASSERT(expr);
+
+	expr->emplace_attribute<c4c::llvm_value_attribute>("value", *fn);
+
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
 

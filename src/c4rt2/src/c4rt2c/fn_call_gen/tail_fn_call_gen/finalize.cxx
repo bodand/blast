@@ -58,7 +58,7 @@ finalize(llvm::Value* fn,
          const c4::ast2::expression& expr) {
 	expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
 
-	if (refer()->thunk()) {
+	if (!try_unthunked()) {
 		if (argv) _rt.set_thunk_args(fn, argv, argv_sz);
 
 		std::ignore = expr.emplace_attribute<already_thunk_attribute>("thunk?");
@@ -67,4 +67,5 @@ finalize(llvm::Value* fn,
 
 	const auto argv_sz_val = _builder.getInt32(argv_sz);
 	expr.emplace_attribute<callee_pair_attribute>("tail_args", argv, argv_sz_val);
+	expr.emplace_attribute<c4c::llvm_value_attribute>("argv", argv);
 }

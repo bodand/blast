@@ -44,19 +44,24 @@ resolve_symbol_value(const c4::ast2::symbol& symbol) {
 	const auto ref = refer();
 
 	if (ref->introduces_variable()) {
+		try_unthunked(false); // A variable is always thunked
 		const auto val_attr = ref->attribute_value<llvm::Value*>("value");
 		ASSERT(val_attr, "value attribute must not be null on variable",
-				 ref, symbol.name(), symbol.base_arity());
+		       ref, symbol.name(), symbol.base_arity());
 		return *val_attr;
 	}
 
 	const auto fn_attr = ref->attribute_value<llvm::Function*>("function");
 	ASSERT(fn_attr, "function attribute must not be null on function",
-			 ref, symbol.name(), symbol.base_arity());
+	       ref, symbol.name(), symbol.base_arity());
 
 	if (ref->thunk()) {
+		try_unthunked(false); // Couldn't procure non-thunk value
 		return *fn_attr;
 	}
+	// If we go to here, we know fn_attr is a non-var, non-thunk so if we want
+	// that we can return it, otherwise we failed
+	if (try_unthunked()) return *fn_attr;
 
 	return nullptr;
 }

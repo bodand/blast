@@ -98,6 +98,14 @@ namespace c4rt2c {
 		llvm::Value*
 		build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) final;
 
+		[[nodiscard]] bool
+		try_unthunked() const { return _try_unthunked; }
+
+		void
+		try_unthunked(const bool try_unthunked) {
+			_try_unthunked = try_unthunked;
+		}
+
 	protected:
 		[[nodiscard]] virtual llvm::Value*
 		resolve_symbol_value(const c4::ast2::symbol& symbol) = 0;
@@ -127,6 +135,7 @@ namespace c4rt2c {
 		}
 
 		c4::ast2::symbol _symbol;
+		bool _try_unthunked{};
 
 		llvm::Value* _fn{};
 		llvm::Value* _argv{};

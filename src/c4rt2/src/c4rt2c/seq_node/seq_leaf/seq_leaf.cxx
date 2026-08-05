@@ -36,6 +36,6 @@
 
 #include <c4rt2c/seq_node.hxx>
 
-c4rt2c::seq_leaf::seq_leaf(llvm::Value* value)
-	: _value{value} { }
-
+c4rt2c::seq_leaf::seq_leaf(llvm::Value* value, llvm::Value* argv)
+	: _value{value}
+	, _argv{argv} { }

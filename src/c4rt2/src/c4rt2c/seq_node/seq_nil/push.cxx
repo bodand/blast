@@ -57,12 +57,13 @@ push(const c4::ast2::expression* val) {
 	if (val->attribute_value<bool>("tail-literal?"))
 		return std::make_unique<seq_tail_leaf>(*value);
 
-	if (val->attribute_value<bool>("thunk?"))
+	if (val->attribute_value<bool>("thunk?")
+	    || val->attribute_value<bool>("skip-holding"))
 		return std::make_unique<seq_leaf>(*value);
 
 	const auto tail_args = val->attribute_value<std::pair<llvm::Value*, llvm::Value*>>("tail_args");
 	ASSERT(tail_args, "tail-positioned non-thunk, non-literal missing tail-call argument", val);
 
 	const auto [args, args_sz] = *tail_args;
-	return std::make_unique<seq_tail_leaf>(*value, args, args_sz);
+	return std::make_unique<seq_tail_leaf>(*value, args);
 }

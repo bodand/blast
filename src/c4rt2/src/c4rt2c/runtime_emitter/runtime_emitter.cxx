@@ -174,6 +174,8 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(ptr make_datum_nil)()
 	, fn(ptr make_datum_str)(ptr, i64)
 	, fn(ptr make_thunk)(ptr)
+	, fn(void seq_ti)(ptr, ptr)
+	, fn(void seq_ti2)(ptr, ptr)
 	, fn(void seq_tt)(ptr, ptr)
 	, fn(void seq_tt2)(ptr, ptr)
 	, fn(void set_thunk_args)(ptr, ptr, i32)

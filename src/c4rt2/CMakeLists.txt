@@ -222,6 +222,10 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/tail_seq.cxx
             src/c4rt2c/runtime_emitter/make_seq_argv.cxx
             src/c4rt2c/ast2_ir_emitter/bool_attr.hxx
+            src/c4rt2c/seq_node/seq_pair/build_immediate.cxx
+            src/c4rt2c/seq_node/seq_tail_leaf/build_immediate.cxx
+            src/c4rt2c/runtime_emitter/make_seq_ti_argv.cxx
+            src/c4rt2c/seq_node/seq_leaf/build_immediate.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

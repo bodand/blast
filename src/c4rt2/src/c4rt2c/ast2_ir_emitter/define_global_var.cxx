@@ -38,8 +38,11 @@
 #include <c4/ast2/let_expression.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
+#include <c4rt2c/llvm_value_attribute.hxx>
 
 #include <libassert/assert.hpp>
+
+#include "bool_attr.hxx"
 
 namespace {
 	struct needs_loading_attribute : c4::ast2::tags::typed_attribute<bool> {
@@ -62,7 +65,10 @@ c4rt2c::ast2_ir_emitter::define_global_var(const c4::ast2::let_expression* gsym)
 
 	const auto let_value = gsym->value();
 	ASSERT(let_value, "var symbol must have expression");
+
+	let_value->emplace_attribute<bool_attr>("skip-holding", var);
 	let_value->accept(*this);
+
 	gsym->emplace_attribute<needs_loading_attribute>("needs-loading?", true);
 	const auto val = let_value->attribute_value<llvm::Value*>("value");
 	ASSERT(val, "symbol didn't get defined to value", var_name, gsym);

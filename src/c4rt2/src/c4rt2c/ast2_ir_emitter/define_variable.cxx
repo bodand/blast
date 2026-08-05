@@ -54,4 +54,10 @@ c4rt2c::ast2_ir_emitter::define_variable(const c4::ast2::let_expression& let) {
 	const auto val = let_value->attribute_value<llvm::Value*>("value");
 	ASSERT(val, "symbol didn't get defined to value", let.symbol().name(), let);
 	(*val)->setName(let.symbol().name());
+
+	const auto expr = active_expression();
+	ASSERT(expr);
+
+	let.emplace_attribute<c4c::llvm_value_attribute>("value", *val);
+	expr->emplace_attribute<c4c::llvm_value_attribute>("value", *val);
 }

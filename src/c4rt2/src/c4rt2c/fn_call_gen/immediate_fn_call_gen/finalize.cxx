@@ -50,8 +50,14 @@ finalize(llvm::Value* fn,
          llvm::Value* argv,
          const std::size_t argv_sz,
          const c4::ast2::expression& expr) {
-	if (argv) _rt.set_thunk_args(fn, argv, argv_sz);
+	if (try_unthunked()) {
+		expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+		expr.emplace_attribute<c4c::llvm_value_attribute>("argv", argv);
+	}
+	else {
+		if (argv) _rt.set_thunk_args(fn, argv, argv_sz);
 
-	expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
-	std::ignore = expr.emplace_attribute<already_thunk_attribute>("thunk?");
+		expr.emplace_attribute<c4c::llvm_value_attribute>("value", fn);
+		std::ignore = expr.emplace_attribute<already_thunk_attribute>("thunk?");
+	}
 }

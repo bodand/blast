@@ -43,6 +43,7 @@ resolve_symbol_value(const c4::ast2::symbol& symbol) {
 		return generic;
 
 	const auto fn_attr = refer()->attribute_value<llvm::Function*>("function");
+	try_unthunked(!refer()->thunk());
 	return *fn_attr;
 }
 

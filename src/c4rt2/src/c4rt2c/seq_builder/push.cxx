@@ -47,6 +47,8 @@ void
 c4rt2c::seq_builder::
 push(const c4::ast2::expression* expr, ast2_ir_emitter& ir) {
 	auto next = (*_last)->push(expr, ir);
+	if (!next) return;;
+
 	_last->swap(next);
 	if (const auto push_to = (*_last)->last()) _last = push_to;
 }

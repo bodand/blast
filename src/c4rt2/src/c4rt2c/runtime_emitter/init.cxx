@@ -275,6 +275,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		const auto value = args[1];
 
 		const auto K = get_completion_K(self);
+		set_completion_K(self, llvm::ConstantPointerNull::get(ptr_t));
 
 		const auto apply = llvm::BasicBlock::Create(_context, "rt_apply", _rt_apply2.fn);
 		const auto fallthrough = llvm::BasicBlock::Create(_context, "rt_fallthrough", _rt_apply2.fn);
@@ -297,6 +298,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 			const auto argv_sz = get_datum_argv_sz(value);
 
 			const auto callee_args = get_completion_payload(self); // hijacked ptr field
+			set_completion_payload(self, llvm::ConstantPointerNull::get(ptr_t));
 
 			const auto new_args = with_name(merge_argv(argv, argv_sz, callee_args), "new_args");
 
@@ -455,6 +457,9 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		const auto K = get_completion_K(self);
 		const auto forces = get_completion_payload(self);
 
+		set_completion_K(self, llvm::ConstantPointerNull::get(ptr_t));
+		set_completion_payload(self, llvm::ConstantPointerNull::get(ptr_t));
+
 		const auto rem_addr = _builder.CreateStructGEP(args_force_t,
 		                                               forces,
 		                                               args_force_field_to_force,
@@ -576,10 +581,54 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		return memory;
 	});
 
+	_rt_seq_ti.dbg(dib).file_scoped(rt_file)
+	          .name("_c4_seq_ti")
+	          .arg("thunk_imm", argv_ptr)
+	          .arg("K", completion_ptr);
+	_rt_seq_ti.define(_builder, [&](const std::span<llvm::Argument*> args) {
+		const auto thunk_imm = args[0];
+		const auto K = args[1];
+
+		const auto left_addr = _builder.CreateGEP(ptr_t, thunk_imm, _builder.getInt64(0), "left.addr");
+		const auto left = _builder.CreateLoad(ptr_t, left_addr, "left");
+
+		const auto right_addr = _builder.CreateGEP(ptr_t, thunk_imm, _builder.getInt64(1), "right.imm.addr");
+
+		const auto cont = with_name(allocate(8 + 8 + 8), "cont");
+
+		set_completion_self(cont, _rt_seq_ti2.fn);
+		set_completion_payload(cont, right_addr);
+		set_completion_K(cont, K);
+
+		evaluate(left, cont);
+	});
+
+	_rt_seq_ti2.dbg(dib).file_scoped(rt_file)
+	           .name("_c4_seq_ti2")
+	           .arg("self", completion_ptr)
+	           .arg("_evaled", datum_ptr);
+	_rt_seq_ti2.define(_builder, [&](const std::span<llvm::Argument*> args) {
+		const auto self = args[0];
+
+		const auto K = get_completion_K(self);
+		const auto right_addr = get_completion_payload(self);
+
+		set_completion_payload(self, llvm::ConstantPointerNull::get(ptr_t));
+		set_completion_K(self, llvm::ConstantPointerNull::get(ptr_t));
+
+		const auto fn = _builder.CreateLoad(ptr_t, right_addr, "right.fn");
+		const auto argv_addr = _builder.CreateGEP(ptr_t, right_addr,
+		                                          _builder.getInt64(1),
+		                                          "right.argv.addr");
+		const auto argv = _builder.CreateLoad(ptr_t, argv_addr, "right.argv");
+
+		tail_call(fn, argv, K);
+	});
+
 	_rt_seq_tt.dbg(dib).file_scoped(rt_file)
-	       .name("_c4_seq_tt")
-	       .arg("thunks", argv_ptr)
-	       .arg("K", completion_ptr);
+	          .name("_c4_seq_tt")
+	          .arg("thunks", argv_ptr)
+	          .arg("K", completion_ptr);
 	_rt_seq_tt.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto thunks = args[0];
 		const auto K = args[1];
@@ -600,14 +649,17 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	});
 
 	_rt_seq_tt2.dbg(dib).file_scoped(rt_file)
-	        .name("_c4_seq_tt2")
-	        .arg("self", completion_ptr)
-	        .arg("_evaled", datum_ptr);
+	           .name("_c4_seq_tt2")
+	           .arg("self", completion_ptr)
+	           .arg("_evaled", datum_ptr);
 	_rt_seq_tt2.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto self = args[0];
 
 		const auto next = get_completion_payload(self);
 		const auto K = get_completion_K(self);
+
+		set_completion_payload(self, llvm::ConstantPointerNull::get(ptr_t));
+		set_completion_K(self, llvm::ConstantPointerNull::get(ptr_t));
 
 		tail_call(_rt_evaluate, next, K);
 	});

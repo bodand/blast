@@ -48,6 +48,11 @@ namespace c4rt2c {
 	struct ast2_ir_emitter;
 	struct runtime_emitter;
 
+	struct immediate_seq {
+		llvm::Function* fn;
+		llvm::Value* argv;
+	};
+
 	struct seq_node {
 		virtual std::unique_ptr<seq_node>
 		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) = 0;
@@ -60,6 +65,10 @@ namespace c4rt2c {
 
 		virtual llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const = 0;
+
+		virtual std::optional<immediate_seq>
+		build_immediate(llvm::IRBuilder<>& builder,
+		                runtime_emitter& ir) const = 0;
 
 		virtual void
 		build_call(llvm::IRBuilder<>& builder,
@@ -85,6 +94,10 @@ namespace c4rt2c {
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
 
+		std::optional<immediate_seq>
+		build_immediate(llvm::IRBuilder<>& builder,
+		                runtime_emitter& rt) const override;
+
 		void
 		build_call(llvm::IRBuilder<>& builder,
 		           runtime_emitter& rt,
@@ -96,7 +109,8 @@ namespace c4rt2c {
 	};
 
 	struct seq_leaf final : seq_node {
-		explicit seq_leaf(llvm::Value* value);
+		explicit seq_leaf(llvm::Value* value,
+		                  llvm::Value* argv = nullptr);
 
 		std::unique_ptr<seq_node>
 		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
@@ -107,32 +121,9 @@ namespace c4rt2c {
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
 
-		void
-		build_call(llvm::IRBuilder<>& builder,
-		           runtime_emitter& rt,
-		           llvm::Value* K) const override;
-
-	private:
-		llvm::Value* _value;
-	};
-
-	struct seq_tail_leaf final : seq_node {
-		explicit
-		seq_tail_leaf(llvm::Value* value,
-		              llvm::Value* argv = nullptr,
-		              llvm::Value* argv_sz = nullptr)
-			: _value(value)
-			, _argv(argv)
-			, _argv_sz(argv_sz) { }
-
-		std::unique_ptr<seq_node>
-		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
-
-		std::unique_ptr<seq_node>
-		push(const c4::ast2::expression* val) override;
-
-		llvm::Value*
-		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+		std::optional<immediate_seq>
+		build_immediate(llvm::IRBuilder<>& builder, // TODO
+		                runtime_emitter& rt) const override;
 
 		void
 		build_call(llvm::IRBuilder<>& builder,
@@ -142,7 +133,40 @@ namespace c4rt2c {
 	private:
 		llvm::Value* _value;
 		llvm::Value* _argv;
-		llvm::Value* _argv_sz;
+	};
+
+	struct seq_tail_leaf final : seq_node {
+		explicit
+		seq_tail_leaf(llvm::Value* value,
+		              llvm::Value* argv = nullptr)
+			: _value(value)
+			, _argv(argv) { }
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val, ast2_ir_emitter& ir) override;
+
+		std::unique_ptr<seq_node>
+		push(const c4::ast2::expression* val) override;
+
+		llvm::Value*
+		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		std::optional<immediate_seq>
+		build_immediate(llvm::IRBuilder<>& builder,
+		                runtime_emitter& rt) const override;
+
+		void
+		build_call(llvm::IRBuilder<>& builder,
+		           runtime_emitter& rt,
+		           llvm::Value* K) const override;
+
+	private:
+		// states:
+		//		 literal: _argv is not set -> pass _value directly to K
+		//		 tail calls: _argv is set -> do tail call to _value(_argv_, K)
+
+		llvm::Value* _value;
+		llvm::Value* _argv;
 	};
 
 	struct seq_nil final : seq_node {
@@ -154,6 +178,10 @@ namespace c4rt2c {
 
 		llvm::Value*
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
+
+		std::optional<immediate_seq>
+		build_immediate(llvm::IRBuilder<>& builder,
+		                runtime_emitter& rt) const override { return {}; }
 
 		void
 		build_call(llvm::IRBuilder<>& builder,

@@ -91,7 +91,7 @@ bool
 c4::ast2::let_expression::introduces_variable() const noexcept {
 	if (_symbol.native() || !_value) return false;
 
-	if (_value->true_closure()) return false;
+	// if (_value->true_closure()) return false;
 	if (_value->invocable_with()) return false;
 	return true;
 }

@@ -28,35 +28,34 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-05.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/do_visit_fn_call --
+ * src/std4/src/extra/gc --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <stdio.h>
+#include <c4rt3/c4rt.h>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <gc/gc.h>
 
-#include <libassert/assert.hpp>
+c4_let_native(gc)() {
+	GC_gcollect();
 
-void
-c4rt2c::ast2_ir_emitter::
-do_visit(const c4::ast2::fn_call& obj) {
-	const auto expr = active_expression();
-	ASSERT(expr);
+	c4_datum out;
+	c4_datum_from_nil(&out);
+	return out;
+}
 
-	const bool try_unthunked =
-			expr->attribute_value<bool>("try-unthunked-call?").has_value();
-	if (obj.tail_call()) {
-		tail_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
-	}
-	else {
-		immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		// builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
-	}
+c4_let_native(gc_stat)() {
+	GC_gcollect();
+	GC_dump();
+
+	fprintf(stderr, "heap=%zu free=%zu live=%zu\n",
+	        GC_get_heap_size(), GC_get_free_bytes(),
+	        GC_get_heap_size() - GC_get_free_bytes());
+
+	c4_datum out;
+	c4_datum_from_nil(&out);
+	return out;
 }

@@ -39,8 +39,17 @@
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
+#include <libassert/assert.hpp>
+
+#include "bool_attr.hxx"
+
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::let_expression& obj) {
+	const auto expr = active_expression();
+	ASSERT(expr);
+
+	expr->emplace_attribute<bool_attr>("skip-holding", true);
+
 	if (obj.introduces_function()) return define_function(obj);
 	define_variable(obj);
 }

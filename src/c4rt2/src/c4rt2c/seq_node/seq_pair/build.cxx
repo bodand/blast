@@ -43,5 +43,5 @@ build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const {
 	const auto seq_left = _left->build(builder, rt);
 	const auto seq_right = _right->build(builder, rt);
 
-	return rt.make_seq_thunk(seq_left, seq_right);
+	return rt.make_seq_thunk_tt(seq_left, seq_right);
 }

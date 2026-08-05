@@ -171,7 +171,7 @@ target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
 add_subdirectory(src/c4rt2)
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
-add_subdirectory(src/c4i)
+#add_subdirectory(src/c4i)
 add_subdirectory(src/std4)
 
 add_subdirectory(test)

@@ -35,6 +35,7 @@
  */
 
 #include <algorithm>
+#include <iostream>
 
 #include <c4/ast2/expression.hxx>
 
@@ -52,10 +53,24 @@ build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {
 	_fn = resolve_symbol_value(_symbol);
 	ASSERT(_fn, "symbol is not defined", _symbol);
 
+	const auto layout = ir.module().getDataLayout();
+
 	// this for global variables
 	if (refer()->attribute_value<bool>("needs-loading?")) {
-		return _builder.CreateLoad(_builder.getPtrTy(0), _fn,
-		                           {_symbol.name(), ".load"});
+		_argv = nullptr;
+		_argv_sz = 0;
+
+		_fn = _builder.CreateLoad(_builder.getPtrTy(0), _fn,
+		                          {_symbol.name(), ".load"});
+
+		finalize(_fn, _argv, _argv_sz, expr);
+
+		return _fn;
+	}
+
+	if (refer()->introduces_variable()) {
+		finalize(_fn, _argv, _argv_sz, expr);
+		return _fn;
 	}
 
 	llvm::SmallVector<llvm::Value*, 4> closure_over;
@@ -63,7 +78,6 @@ build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {
 	_argv_sz = closure_over.size() + args_sz();
 	ASSERT(_argv_sz < UINT32_MAX, "way too much arguments for thunk");
 
-	const auto layout = ir.module().getDataLayout();
 	if (!refer()->thunk()) {
 		_argv = _rt.allocate_array(_argv_sz, layout.getPointerSize(0));
 		_argv->setName({_symbol.name(), ".argv"});
@@ -77,8 +91,6 @@ build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {
 		});
 	}
 
-	finalize(_fn, _argv, _argv_sz, expr);
-
 	std::ranges::for_each(args(), [&, i=_closure_args_sz](const auto& arg) mutable {
 		ASSERT(_argv, "argv array must be defined when arguments are passed");
 
@@ -91,9 +103,11 @@ build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {
 
 		auto value = arg->template attribute_value<llvm::Value*>("value");
 		ASSERT(value, "argument didn't get defined to value",
-				 _symbol.name(), arg);
+		       _symbol.name(), arg);
 		_builder.CreateStore(*value, addr);
 	});
+
+	finalize(_fn, _argv, _argv_sz, expr);
 
 	return _fn;
 }

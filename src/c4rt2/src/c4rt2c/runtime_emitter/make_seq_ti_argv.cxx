@@ -28,35 +28,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-05.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/do_visit_fn_call --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/make_seq_ti_argv --
  *   
  */
 
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/fn_call.hxx>
+#include <c4rt2c/runtime_emitter.hxx>
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+llvm::Value*
+c4rt2c::runtime_emitter::
+make_seq_ti_argv(llvm::Value* left_thunk,
+                 llvm::Function* fn,
+                 llvm::Value* fn_argv) const {
+	const auto layout = _module.getDataLayout();
 
-#include <libassert/assert.hpp>
+	const auto alignment = llvm::Align(layout.getPointerABIAlignment(0));
+	const auto argv = with_name(allocate_array(3, layout.getPointerSize(0)), "seq_ti.argv");
 
-void
-c4rt2c::ast2_ir_emitter::
-do_visit(const c4::ast2::fn_call& obj) {
-	const auto expr = active_expression();
-	ASSERT(expr);
+	const auto left_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(0));
+	_builder.CreateAlignedStore(left_thunk, left_addr, alignment);
 
-	const bool try_unthunked =
-			expr->attribute_value<bool>("try-unthunked-call?").has_value();
-	if (obj.tail_call()) {
-		tail_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
-	}
-	else {
-		immediate_fn_call_gen builder(_builder, _runtime, obj.sym(), obj.args());
-		// builder.try_unthunked(try_unthunked);
-		emit_function_call(&builder);
-	}
+	const auto fn_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(1));
+	_builder.CreateAlignedStore(fn, fn_addr, alignment);
+
+	const auto argv_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(2));
+	_builder.CreateAlignedStore(fn_argv, argv_addr, alignment);
+
+	return argv;
 }

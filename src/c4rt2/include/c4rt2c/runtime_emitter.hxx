@@ -106,7 +106,10 @@ namespace c4rt2c {
 		make_apply_thunk(std::span<llvm::Value*> args) const;
 
 		[[nodiscard]] llvm::Value*
-		make_seq_thunk(llvm::Value* thunk_left, llvm::Value* thunk_right) const;
+		make_seq_thunk_tt(llvm::Value* thunk_left, llvm::Value* thunk_right) const;
+
+		[[nodiscard]] llvm::Value*
+		make_seq_thunk_ti(llvm::Value* thunk_left, llvm::Value* imm_right) const;
 
 		void
 		tail_seq(llvm::Value* left, llvm::Value* right, llvm::Value* K) const;
@@ -154,6 +157,22 @@ namespace c4rt2c {
 
 		llvm::Function*
 		apply_fn() const noexcept { return _rt_apply.fn; }
+
+		llvm::Function*
+		seq_tt() const noexcept { return _rt_seq_tt.fn; }
+
+		llvm::Function*
+		seq_ti() const noexcept { return _rt_seq_ti.fn; }
+
+		llvm::Value*
+		make_seq_tt_argv(llvm::Value* left_thunk, llvm::Value* right_thunk) const {
+			return make_seq_argv(left_thunk, right_thunk);
+		}
+
+		llvm::Value*
+		make_seq_ti_argv(llvm::Value* left_thunk,
+		                 llvm::Function* fn,
+		                 llvm::Value* fn_argv) const;
 
 	private:
 		llvm::LLVMContext& _context;
@@ -280,8 +299,10 @@ namespace c4rt2c {
 		runtime_fn _rt_make_datum_nil;     // datum* make_datum_nil()
 		runtime_fn _rt_make_datum_str;     // datum* make_datum_str(char* val)
 		runtime_fn _rt_make_thunk;         // datum* make_thunk(fn namedfn)
-		runtime_fn _rt_seq_tt;                // datum* seq(datum* thunks, fn K)
-		runtime_fn _rt_seq_tt2;               // datum* seq2(completion* self, datum* val)
+		runtime_fn _rt_seq_ti;             // datum* seq_ti(datum* thunk_imm, fn K)
+		runtime_fn _rt_seq_ti2;            // datum* seq_ti2(completion* self, datum* val)
+		runtime_fn _rt_seq_tt;             // datum* seq_tt(datum* thunks, fn K)
+		runtime_fn _rt_seq_tt2;            // datum* seq_tt2(completion* self, datum* val)
 		runtime_fn _rt_set_thunk_args;     // void set_thunk_args(datum* datum,
 		;                                  //                     datum* argv, i32 argv_sz)
 		runtime_fn _rt_merge_argv;         // datum* merge_argv(datum* argv1, i32 argv1_sz,
