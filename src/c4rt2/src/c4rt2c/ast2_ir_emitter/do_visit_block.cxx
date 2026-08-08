@@ -85,7 +85,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 	const auto argv_sz = closed_over.size() + *obj.invocable_with();
 
 	const auto ptr_t = llvm::PointerType::get(_context, 0);
-	const auto argv = _runtime.allocate_array(argv_sz, 8);
+	const auto argv = _runtime.allocate_array(argv_sz, 8, "block-obj-closure");
 	std::ranges::for_each(closed_over, [&, this, i=0](const auto& sym) mutable {
 		const auto ref = sym.references();
 		ASSERT(ref);

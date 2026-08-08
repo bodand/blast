@@ -61,16 +61,16 @@ namespace c4rt2c {
 		function_type() const { return _function_type; }
 
 		[[nodiscard]] llvm::Value*
-		allocate(llvm::Value* size) const;
+		allocate(llvm::Value* size, std::string_view debug_loc) const;
 
 		[[nodiscard]] llvm::Value*
-		allocate(std::size_t size) const;
+		allocate(std::size_t size, std::string_view debug_loc) const;
 
 		[[nodiscard]] llvm::Value*
-		allocate_array(llvm::Value* count, llvm::Value* size) const;
+		allocate_array(llvm::Value* count, llvm::Value* size, std::string_view) const;
 
 		[[nodiscard]] llvm::Value*
-		allocate_array(std::size_t count, std::size_t size) const;
+		allocate_array(std::size_t count, std::size_t size, std::string_view) const;
 
 		void
 		complete_thunk(llvm::Value* self, llvm::Value* res) const;
@@ -150,6 +150,11 @@ namespace c4rt2c {
 		}
 
 		void
+		set_memory_debug(const bool memory_dbg) {
+			debug.debug_gc = memory_dbg;
+		}
+
+		void
 		init(llvm::DIBuilder* dib, llvm::DICompileUnit* cu);
 
 		llvm::DISubroutineType*
@@ -190,7 +195,13 @@ namespace c4rt2c {
 
 		struct debug {
 			bool break_tco{};
+			bool debug_gc{};
+
+			mutable std::unordered_map<std::string, llvm::Value*> gc_location_globals{};
 		} debug{};
+
+		llvm::Value*
+		get_debug_location(std::string_view name) const;
 
 		llvm::DIDerivedType* _dbg_ptr_t;
 		llvm::DIBasicType* _dbg_int8_t;
@@ -286,29 +297,32 @@ namespace c4rt2c {
 		/// to pointers as "argv" and the latter is the K continuation.
 		llvm::FunctionType* _function_type;
 
-		runtime_fn _rt_allocate_array;     // void* allocate_array(size, size)
-		runtime_fn _rt_apply;              // void apply(datum* thunk, fn K)
-		runtime_fn _rt_apply2;             // void apply2(completion* self, datum* val)
-		runtime_fn _rt_complete_thunk;     // void complete_thunk(datum* thunk, fn K)
-		runtime_fn _rt_evaluate;           // void evaluate(datum* thunk, fn K)
-		runtime_fn _rt_force_args;         // void force_args(args_force* forces, fn K)
-		runtime_fn _rt_force_args2;        // void force_args2(completion* self, datum* val)
-		runtime_fn _rt_make_datum_block;   // datum* make_datum_block(fn anon)
-		runtime_fn _rt_make_datum_float64; // datum* make_datum_float64(f64 val)
-		runtime_fn _rt_make_datum_int64;   // datum* make_datum_int64(i64 val)
-		runtime_fn _rt_make_datum_nil;     // datum* make_datum_nil()
-		runtime_fn _rt_make_datum_str;     // datum* make_datum_str(char* val)
-		runtime_fn _rt_make_thunk;         // datum* make_thunk(fn namedfn)
-		runtime_fn _rt_seq_ti;             // datum* seq_ti(datum* thunk_imm, fn K)
-		runtime_fn _rt_seq_ti2;            // datum* seq_ti2(completion* self, datum* val)
-		runtime_fn _rt_seq_tt;             // datum* seq_tt(datum* thunks, fn K)
-		runtime_fn _rt_seq_tt2;            // datum* seq_tt2(completion* self, datum* val)
-		runtime_fn _rt_set_thunk_args;     // void set_thunk_args(datum* datum,
-		;                                  //                     datum* argv, i32 argv_sz)
-		runtime_fn _rt_merge_argv;         // datum* merge_argv(datum* argv1, i32 argv1_sz,
-		;                                  //                   datum* argv2, i32 argv2_sz)
+		runtime_fn _rt_allocate_array;       // void* allocate_array(size, size)
+		runtime_fn _rt_allocate_array_debug; // void* allocate_array_debug(size, size, ptr dbg)
+		runtime_fn _rt_apply;                // void apply(datum* thunk, fn K)
+		runtime_fn _rt_apply2;               // void apply2(completion* self, datum* val)
+		runtime_fn _rt_complete_thunk;       // void complete_thunk(datum* thunk, fn K)
+		runtime_fn _rt_evaluate;             // void evaluate(datum* thunk, fn K)
+		runtime_fn _rt_force_args;           // void force_args(args_force* forces, fn K)
+		runtime_fn _rt_force_args2;          // void force_args2(completion* self, datum* val)
+		runtime_fn _rt_make_datum_block;     // datum* make_datum_block(fn anon)
+		runtime_fn _rt_make_datum_float64;   // datum* make_datum_float64(f64 val)
+		runtime_fn _rt_make_datum_int64;     // datum* make_datum_int64(i64 val)
+		runtime_fn _rt_make_datum_nil;       // datum* make_datum_nil()
+		runtime_fn _rt_make_datum_str;       // datum* make_datum_str(char* val)
+		runtime_fn _rt_make_thunk;           // datum* make_thunk(fn namedfn)
+		runtime_fn _rt_make_one_shot;        // datum* make_one_shot(fn namedfn)
+		runtime_fn _rt_seq_ti;               // datum* seq_ti(datum* thunk_imm, fn K)
+		runtime_fn _rt_seq_ti2;              // datum* seq_ti2(completion* self, datum* val)
+		runtime_fn _rt_seq_tt;               // datum* seq_tt(datum* thunks, fn K)
+		runtime_fn _rt_seq_tt2;              // datum* seq_tt2(completion* self, datum* val)
+		runtime_fn _rt_set_thunk_args;       // void set_thunk_args(datum* datum,
+		;                                    //                     datum* argv, i32 argv_sz)
+		runtime_fn _rt_merge_argv;           // datum* merge_argv(datum* argv1, i32 argv1_sz,
+		;                                    //                   datum* argv2, i32 argv2_sz)
 
 		runtime_fn _gc_malloc;
+		runtime_fn _gc_debug_malloc;
 	};
 }
 

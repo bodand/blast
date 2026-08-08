@@ -160,9 +160,6 @@ namespace c4rt2c {
 			std::size_t _lambda_counter{};
 		} _name_manager{};
 
-		[[nodiscard]] llvm::Value*
-		allocate_argv(std::size_t count) const;
-
 		[[nodiscard]] llvm::Function*
 		declare_function(std::string_view name);
 

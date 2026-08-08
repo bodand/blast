@@ -28,32 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-05.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/make_seq_ti_argv --
+ * src/std4/src/std/io_readln --
  *   
  */
 
-#include <c4rt2c/runtime_emitter.hxx>
+#include <assert.h>
+#include <c4rt3/c4rt.h>
 
-llvm::Value*
-c4rt2c::runtime_emitter::
-make_seq_ti_argv(llvm::Value* left_thunk,
-                 llvm::Function* fn,
-                 llvm::Value* fn_argv) const {
-	const auto layout = _module.getDataLayout();
+#include <stdio.h>
+#include <string.h>
 
-	const auto alignment = llvm::Align(layout.getPointerABIAlignment(0));
-	const auto argv = with_name(allocate_array(3, layout.getPointerSize(0), "seq-ti-argv"), "seq_ti.argv");
+c4_let_native(io_readln)() {
+	char buf[8192];
+	assert(fgets(buf, sizeof(buf), stdin) != NULL);
+	const size_t buf_sz = strcspn(buf, "\n");
 
-	const auto left_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(0));
-	_builder.CreateAlignedStore(left_thunk, left_addr, alignment);
-
-	const auto fn_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(1));
-	_builder.CreateAlignedStore(fn, fn_addr, alignment);
-
-	const auto argv_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(2));
-	_builder.CreateAlignedStore(fn_argv, argv_addr, alignment);
-
-	return argv;
+	c4_datum out;
+	assert(c4_datum_from_string_sz(buf, buf_sz, &out) >= 0);
+	return out;
 }

@@ -1,7 +1,10 @@
-let true \{ |t f| &(t)/0 }
-let false \{ |t f| &(f)/0 }
+let true \{ |t f| t }
+let false \{ |t f| f }
 
-let if/3 { |c t f| &(c)/2 t f }
+let if/3 { |c t f| &(&(c)/2 t f)/0 }
+let when/3 { |c t f| &(c)/2 t f }
+let then/1 \|x| x
+let else/1 \|x| x
 
 let native primitive_add/2;
 let native primitive_sub/2;
@@ -9,11 +12,11 @@ let native primitive_mul/2;
 let native primitive_div/2;
 let native primitive_mod/2;
 
-let (+)/2 left 10 { |a b| primitive_add a b }
-let (-)/2 left 10 { |a b| primitive_sub a b }
-let (*)/2 left 10 { |a b| primitive_mul a b }
-let (/)/2 left 10 { |a b| primitive_div a b }
-let (%)/2 left 10 { |a b| primitive_mod a b }
+let (+)/2 left 50 { |a b| primitive_add a b }
+let (-)/2 left 50 { |a b| primitive_sub a b }
+let (*)/2 left 60 { |a b| primitive_mul a b }
+let (/)/2 left 60 { |a b| primitive_div a b }
+let (%)/2 left 60 { |a b| primitive_mod a b }
 
 let native primitive_eq/2;
 let native primitive_ne/2;
@@ -22,14 +25,87 @@ let native primitive_le/2;
 let native primitive_gt/2;
 let native primitive_ge/2;
 
-let (==)/2 left 10 { |a b| primitive_eq a b }
-let (!=)/2 left 10 { |a b| primitive_ne a b }
-let (<)/2 left 10 { |a b| primitive_lt a b }
-let (<=)/2 left 10 { |a b| primitive_le a b }
-let (>)/2 left 10 { |a b| primitive_gt a b }
-let (>=)/2 left 10 { |a b| primitive_ge a b }
+let (==)/2 left 30 { |a b| primitive_eq a b }
+let (!=)/2 left 30 { |a b| primitive_ne a b }
+let (<)/2 left 40 { |a b| primitive_lt a b }
+let (<=)/2 left 40 { |a b| primitive_le a b }
+let (>)/2 left 40 { |a b| primitive_gt a b }
+let (>=)/2 left 40 { |a b| primitive_ge a b }
+let (!)/1 { |x| when x false true }
+
+let native str_cat/2;
 
 let native io_print/1;
 let native io_println/1;
+let native io_readln/0;
 
-#let native io_readln/0;
+let nil {}
+let is_nil/1 { |x| x == nil }
+
+let cons/2 { |x y| { |op| when op == 0 x y } }
+let (::)/2 right 40 { |x y| { |op| when op == 0 x y } }
+let (,)/2 right 40 { |x y| { |op| when op == 0 x y } }
+
+let car/1 \|x| &(x)/1 0
+let cdr/1 \|x| &(x)/1 1
+let cadr/1 \|x| &(cdr x)/1 0
+let cddr/1 \|x| &(cdr x)/1 1
+let caddr/1 \|x| &(cddr x)/1 0
+let cdddr/1 \|x| &(cddr x)/1 1
+
+let list_print_ex/3 { |list sep ending|
+    let head car list
+    let tail cdr list
+
+    when is_nil head nil
+    if is_nil car tail {
+        io_print head
+        io_print ending
+    }
+    else {
+        io_print head
+        io_print sep
+        list_print_ex tail sep ending
+    }
+}
+let list_print/1 { |list|
+    list_print_ex list ", " "
+"
+}
+
+let take/2 { |n l|
+    when n == 0 nil
+    cons car l take (n - 1) cdr l
+}
+
+let drop/2 { |n l|
+    when n == 0 l
+    when is_nil l nil
+    drop (n - 1) cdr l
+}
+
+let map/2 { |f l|
+    when is_nil l nil
+    cons &(f)/1 car l map f cdr l
+}
+
+let filter/2 { |f l|
+    let head car l
+    let tail cdr l
+
+    when is_nil l nil
+    when &(f)/1 head
+        cons head filter f tail
+        filter f tail
+}
+
+let for_each/2 { |l f|
+    let head car l
+    let tail cdr l
+
+    if is_nil l nil
+    {
+        &(f)/1 head
+        for_each tail f
+    }
+}

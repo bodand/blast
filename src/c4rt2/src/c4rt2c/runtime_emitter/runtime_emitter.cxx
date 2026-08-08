@@ -162,6 +162,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 			false)
 	}
 	, fn(ptr allocate_array)(i64, i64)
+	, fn(ptr allocate_array_debug)(i64, i64, ptr)
 	, fn(void apply)(ptr, ptr)
 	, fn(void apply2)(ptr, ptr)
 	, fn(void complete_thunk)(ptr, ptr)
@@ -174,6 +175,7 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(ptr make_datum_nil)()
 	, fn(ptr make_datum_str)(ptr, i64)
 	, fn(ptr make_thunk)(ptr)
+	, fn(ptr make_one_shot)(ptr)
 	, fn(void seq_ti)(ptr, ptr)
 	, fn(void seq_ti2)(ptr, ptr)
 	, fn(void seq_tt)(ptr, ptr)
@@ -182,6 +184,9 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(ptr merge_argv)(ptr, i32, ptr)
 	, _gc_malloc{
 		make_rt_function(&_module, ptr, "GC_malloc", i64)
+	}
+	, _gc_debug_malloc{
+		make_rt_function(&_module, ptr, "GC_debug_malloc", i64, ptr, i32)
 	} {
 	int8_t = i8.get(_context);
 	int32_t = i32.get(_context);

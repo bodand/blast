@@ -57,6 +57,7 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 	DEBUG_ASSERT(let.introduces_function(), "let does not introduce fn", let);
 
 	const auto fn = let.attribute_value<llvm::Function*>("function");
+	const bool fn_bool = (bool)fn;
 	ASSERT(fn, "function attribute must not be null", let.symbol());
 
 	const auto expr = active_expression();

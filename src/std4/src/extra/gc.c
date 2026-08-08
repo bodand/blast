@@ -34,10 +34,20 @@
  *   
  */
 
-#include <stdio.h>
 #include <c4rt3/c4rt.h>
 
+#include <stdio.h>
+#include <unistd.h>
+
 #include <gc/gc.h>
+
+c4_let_native(sleep)() {
+	sleep(1);
+
+	c4_datum out;
+	c4_datum_from_nil(&out);
+	return out;
+}
 
 c4_let_native(gc)() {
 	GC_gcollect();
@@ -49,11 +59,12 @@ c4_let_native(gc)() {
 
 c4_let_native(gc_stat)() {
 	GC_gcollect();
-	GC_dump();
 
 	fprintf(stderr, "heap=%zu free=%zu live=%zu\n",
 	        GC_get_heap_size(), GC_get_free_bytes(),
 	        GC_get_heap_size() - GC_get_free_bytes());
+
+	GC_dump();
 
 	c4_datum out;
 	c4_datum_from_nil(&out);

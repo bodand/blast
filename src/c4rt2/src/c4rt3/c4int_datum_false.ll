@@ -15,16 +15,9 @@ define ptr @c4int_datum_false() #2 {
 define private tailcc void @raw_false(ptr noundef align 8 %argv,
                                       ptr noundef align 8 %K) #1 {
 entry:
-  %0 = getelementptr ptr, ptr %argv, i64 0
-  %t = load ptr, ptr %0, align 8
   %1 = getelementptr ptr, ptr %argv, i64 1
   %f = load ptr, ptr %1, align 8
-  %apply.thunk = call tailcc ptr @_c4_make_thunk(ptr @_c4_apply)
-  %apply.argv = call tailcc ptr @_c4_allocate_array(i64 1, i64 8)
-  %2 = getelementptr ptr, ptr %apply.argv, i64 0
-  store ptr %f, ptr %2, align 8
-  call tailcc void @_c4_set_thunk_args(ptr %apply.thunk, ptr %apply.argv, i32 1)
-  musttail call tailcc void @_c4_evaluate(ptr %apply.thunk, ptr %K)
+  musttail call tailcc void @_c4_evaluate(ptr %f, ptr %K)
   ret void
 }
 

@@ -611,17 +611,20 @@ c4::p2::parser::parse_precedence(std::string_view op) {
 	const auto int_lit = expect_token<tokens::integer_literal>();
 	if (!int_lit) {
 		_diag.error(position_of(_current),
-		            "expected precedence value (0..10) found `{}'",
+		            "expected precedence value (0..{}) found `{}'",
+		            cfg_max_precedence,
 		            name_of(_current))
 		     .note("continuing to parse as if `{}' had precedence of 0", op);
 		return 0;
 	}
 
 	const auto uint = ast2::integer_literal::from_token(*int_lit);
-	if (uint.value() <= 10) return static_cast<unsigned>(uint.value());
+	const auto uvalue = static_cast<unsigned>(uint.value());
+	if (uvalue <= cfg_max_precedence) return uvalue;
 
 	_diag.error(uint.position(),
-	            "expected precedence value (0..10) found `{}'",
+	            "expected precedence value (0..{}) found `{}'",
+	            cfg_max_precedence,
 	            uint.value())
 	     .note("continuing to parse as if `{}' had precedence of 0",
 	           op);

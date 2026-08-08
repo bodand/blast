@@ -30,7 +30,7 @@
  *
  * Originally created: 2026-08-05.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/make_seq_ti_argv --
+ * src/c4rt2/src/c4rt2c/runtime_emitter/get_debug_location --
  *   
  */
 
@@ -38,22 +38,13 @@
 
 llvm::Value*
 c4rt2c::runtime_emitter::
-make_seq_ti_argv(llvm::Value* left_thunk,
-                 llvm::Function* fn,
-                 llvm::Value* fn_argv) const {
-	const auto layout = _module.getDataLayout();
+get_debug_location(const std::string_view name) const {
+	if (const auto it = debug.gc_location_globals.find(std::string(name));
+		it != debug.gc_location_globals.end()) {
+		return it->second;
+	}
 
-	const auto alignment = llvm::Align(layout.getPointerABIAlignment(0));
-	const auto argv = with_name(allocate_array(3, layout.getPointerSize(0), "seq-ti-argv"), "seq_ti.argv");
-
-	const auto left_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(0));
-	_builder.CreateAlignedStore(left_thunk, left_addr, alignment);
-
-	const auto fn_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(1));
-	_builder.CreateAlignedStore(fn, fn_addr, alignment);
-
-	const auto argv_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(2));
-	_builder.CreateAlignedStore(fn_argv, argv_addr, alignment);
-
-	return argv;
+	const auto val = _builder.CreateGlobalStringPtr(name);
+	debug.gc_location_globals.emplace(name, val);
+	return val;
 }

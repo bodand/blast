@@ -39,9 +39,12 @@
 
 #include "internal_type.h"
 
+#include "ska/scan.h"
+
 int
 c4_datum_coerce_int64(const c4_datum datum, int64_t* const out) {
 	if (!out) return 0;
+	*out = 0; // default fallback
 
 	switch (c4_datum_type_of(datum)) {
 	case C4_Integer:
@@ -53,7 +56,7 @@ c4_datum_coerce_int64(const c4_datum datum, int64_t* const out) {
 		*out = 0;
 		break;
 	case C4_String:
-		*out = datum_str_sz(datum);
+		int64_scan(datum_str(datum), out);
 		break;
 	case C4_Thunk:
 	case C4_Block:

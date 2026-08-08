@@ -38,15 +38,19 @@
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Value.h>
 
 llvm::Value*
-c4rt2c::runtime_emitter::allocate(llvm::Value* size) const {
-	return _builder.CreateCall(_gc_malloc, {size});
+c4rt2c::runtime_emitter::allocate(llvm::Value* size, const std::string_view debug_loc) const {
+	if (!debug.debug_gc) return _builder.CreateCall(_gc_malloc, {size});
+
+	const auto str_loc = get_debug_location(debug_loc);
+	const auto line = _builder.getInt32(0);
+
+	return _builder.CreateCall(_gc_debug_malloc, {size, str_loc, line});
 }
 
 llvm::Value*
-c4rt2c::runtime_emitter::allocate(const std::size_t size) const {
-	return allocate(llvm::ConstantInt::get(_context, llvm::APInt(64, size)));
+c4rt2c::runtime_emitter::allocate(const std::size_t size, const std::string_view debug_loc) const {
+	return allocate(_builder.getInt64(size), debug_loc);
 }

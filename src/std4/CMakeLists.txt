@@ -51,8 +51,10 @@ add_library(std4 STATIC
 
             src/std/io_print.c
             src/std/io_println.c
+            src/std/io_readln.c
 
             src/extra/gc.c
+            src/std/str_cat.c
             )
 
 target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)

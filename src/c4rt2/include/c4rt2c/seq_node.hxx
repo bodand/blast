@@ -122,7 +122,7 @@ namespace c4rt2c {
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
 
 		std::optional<immediate_seq>
-		build_immediate(llvm::IRBuilder<>& builder, // TODO
+		build_immediate(llvm::IRBuilder<>& builder,
 		                runtime_emitter& rt) const override;
 
 		void

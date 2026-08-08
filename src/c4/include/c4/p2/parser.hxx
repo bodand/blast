@@ -130,6 +130,8 @@ namespace c4::p2 {
 	}
 
 	struct parser {
+		constexpr static size_t cfg_max_precedence = 100;
+
 		explicit
 		parser(ast2::ast_context& context,
 		       diagnostics_engine& diagnostics_engine,

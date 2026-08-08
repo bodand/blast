@@ -78,7 +78,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 		const auto apply = _runtime.apply_fn();
 		const auto ptr_t = _builder.getPtrTy();
 
-		const auto argv = _runtime.allocate_array(args.size(), 8);
+		const auto argv = _runtime.allocate_array(args.size(), 8, "dynamic-tail-call");
 		std::ranges::for_each(args, [&, this, i = 0](const auto& arg) mutable {
 			const auto addr = _builder.CreateGEP(ptr_t, argv,
 															 _builder.getInt64(i++));
@@ -86,6 +86,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 		});
 
 		expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
+		expr->emplace_attribute<c4c::llvm_value_attribute>("argv", argv);
 		const auto argv_sz = _builder.getInt32(args.size());
 		expr->emplace_attribute<callee_pair_attribute>("tail_args", argv, argv_sz);
 	}

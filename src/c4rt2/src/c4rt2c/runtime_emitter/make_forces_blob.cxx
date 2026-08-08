@@ -40,7 +40,7 @@ llvm::Value*
 c4rt2c::runtime_emitter::make_forces_blob(llvm::Value* argv,
                                           llvm::Value* argv_sz,
                                           llvm::Function* trampoline) const {
-	const auto forces = with_name(allocate(4 + 4 + 8 + 8), "forces");
+	const auto forces = with_name(allocate(4 + 4 + 8 + 8, "force-blob"), "forces");
 
 	const auto to_force_addr = _builder.CreateStructGEP(
 		args_force_t, forces, args_force_field_to_force,

@@ -232,7 +232,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		{
 			_builder.SetInsertPoint(alloc_bb);
 			const auto mul = _builder.CreateNUWMul(count, size);
-			const auto memory = allocate(mul);
+			const auto memory = allocate(mul, "alloc-array-internal");
 			return memory;
 		}
 	});
@@ -242,6 +242,47 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		llvm::Attribute::getWithAllocSizeArgs(_context, 1, 0)
 	);
 	_rt_allocate_array.fn->addFnAttr(llvm::Attribute::get(
+		_context, llvm::Attribute::AllocKind, allocation_flags
+	));
+
+	_rt_allocate_array_debug.dbg(dib).file_scoped(rt_file)
+	                        .name("_c4_allocate_array_debug")
+	                        .returns(_dbg_ptr_t)
+	                        .arg("count", _dbg_size_t)
+	                        .arg("size", _dbg_size_t)
+	                        .arg("loc", _dbg_charptr_t);
+	_rt_allocate_array_debug.define(_builder, [&](const std::span<llvm::Argument*> args) {
+		const auto count = args[0];
+		const auto size = args[1];
+		const auto loc = args[2];
+
+		const auto cmp = _builder.CreateICmp(llvm::CmpInst::ICMP_EQ, count, _builder.getInt64(0));
+
+		const auto zero_bb = llvm::BasicBlock::Create(_context, "nonalloc", _rt_allocate_array_debug.fn);
+		const auto alloc_bb = llvm::BasicBlock::Create(_context, "alloc", _rt_allocate_array_debug.fn);
+		_builder.CreateCondBr(cmp, zero_bb, alloc_bb);
+
+		// do not allocate zero size
+		{
+			_builder.SetInsertPoint(zero_bb);
+			_builder.CreateRet(llvm::ConstantPointerNull::get(ptr_t));
+		}
+
+		// allocate
+		{
+			_builder.SetInsertPoint(alloc_bb);
+			const auto mul = _builder.CreateNUWMul(count, size);
+			const auto line = _builder.getInt32(0);
+			const auto memory = _builder.CreateCall(_gc_debug_malloc, {mul, loc, line});
+			return memory;
+		}
+	});
+	_rt_allocate_array_debug.fn->addRetAttr(llvm::Attribute::NoAlias);
+	_rt_allocate_array_debug.fn->addFnAttr(llvm::Attribute::WillReturn);
+	_rt_allocate_array_debug.fn->addFnAttr(
+		llvm::Attribute::getWithAllocSizeArgs(_context, 1, 0)
+	);
+	_rt_allocate_array_debug.fn->addFnAttr(llvm::Attribute::get(
 		_context, llvm::Attribute::AllocKind, allocation_flags
 	));
 
@@ -258,7 +299,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 
 		const auto argv_tail = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(1), "argv.tail");
 
-		const auto completer = with_name(allocate(8 + 8 + 8), "completer");
+		const auto completer = with_name(allocate(8 + 8 + 8, "apply-completer"), "completer");
 		set_completion_self(completer, _rt_apply2.fn);
 		set_completion_K(completer, K);
 		set_completion_payload(completer, argv_tail);
@@ -370,7 +411,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 
 			set_datum_type(thunk, _builder.getInt32(datum_type_immediate));
 
-			const auto completer = with_name(allocate(8 + 8 + 8), "completer");
+			const auto completer = with_name(allocate(8 + 8 + 8, "eval-completer"), "completer");
 
 			set_completion_self(completer, _rt_complete_thunk.fn);
 			set_completion_payload(completer, thunk);
@@ -423,7 +464,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		// non-zero -> at least one thunk in argv should be evaled
 		{
 			_builder.SetInsertPoint(force_next);
-			const auto cont = with_name(allocate(8 + 8 + 8), "cont");
+			const auto cont = with_name(allocate(8 + 8 + 8, "force-args-cont"), "cont");
 			set_completion_self(cont, _rt_force_args2.fn);
 			set_completion_K(cont, K);
 			set_completion_payload(cont, forces);
@@ -489,7 +530,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_rt_make_datum_block.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto val = args[0];
 
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-block"), "datum");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_block));
 		set_datum_value(memory, val);
@@ -504,7 +545,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_rt_make_datum_float64.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto val = args[0];
 
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-f64"), "datum");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_float64));
 		set_datum_value(memory, val);
@@ -519,7 +560,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_rt_make_datum_int64.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto val = args[0];
 
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-i64"), "datum");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_int64));
 		set_datum_value(memory, val);
@@ -531,7 +572,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	                  .name("_c4_make_datum_nil")
 	                  .returns(datum_ptr);
 	_rt_make_datum_nil.define(_builder, [&](const std::span<llvm::Argument*> args) {
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-nil"), "datum");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_nil));
 
@@ -547,12 +588,12 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		const auto str = args[0];
 		const auto str_sz = args[1];
 
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "datum");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-str"), "datum");
 
 		const auto zero_size = _builder.CreateAdd(str_sz,
 		                                          _builder.getInt64(1),
 		                                          "zero_size", true);
-		const auto cpy = with_name(allocate(zero_size), "cpy");
+		const auto cpy = with_name(allocate(zero_size, "str-cpy"), "cpy");
 		_builder.CreateMemCpy(cpy, llvm::Align(1), str, llvm::Align(1), str_sz);
 
 		const auto end = _builder.CreateGEP(int8_t, cpy, str_sz, "end");
@@ -572,7 +613,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_rt_make_thunk.define(_builder, [&](const std::span<llvm::Argument*> args) {
 		const auto callee = args[0];
 
-		const auto memory = with_name(allocate(4 + 4 + 8 + 8), "thunk");
+		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-thunk"), "thunk");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_thunk));
 		set_datum_value(memory, callee);
@@ -594,7 +635,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 
 		const auto right_addr = _builder.CreateGEP(ptr_t, thunk_imm, _builder.getInt64(1), "right.imm.addr");
 
-		const auto cont = with_name(allocate(8 + 8 + 8), "cont");
+		const auto cont = with_name(allocate(8 + 8 + 8, "seq-ti-cont"), "cont");
 
 		set_completion_self(cont, _rt_seq_ti2.fn);
 		set_completion_payload(cont, right_addr);
@@ -639,7 +680,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		const auto right_addr = _builder.CreateGEP(ptr_t, thunks, _builder.getInt64(1), "right.addr");
 		const auto right = _builder.CreateLoad(ptr_t, right_addr, "right");
 
-		const auto cont = with_name(allocate(8 + 8 + 8), "cont");
+		const auto cont = with_name(allocate(8 + 8 + 8, "seq-tt-cont"), "cont");
 
 		set_completion_self(cont, _rt_seq_tt2.fn);
 		set_completion_payload(cont, right);
@@ -693,7 +734,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 
 		const auto out = with_name(allocate_array(
 			                           big_sz,
-			                           _builder.getInt64(8)
+			                           _builder.getInt64(8), "merge-argv"
 		                           ), "out");
 
 		const auto init = llvm::BasicBlock::Create(_context, "init", _rt_merge_argv.fn);

@@ -17,14 +17,7 @@ define private tailcc void @raw_true(ptr noundef align 8 %argv,
 entry:
   %1 = getelementptr ptr, ptr %argv, i64 0
   %t = load ptr, ptr %1, align 8
-  %2 = getelementptr ptr, ptr %argv, i64 1
-  %f = load ptr, ptr %2, align 8
-  %apply.thunk = call tailcc ptr @_c4_make_thunk(ptr @_c4_apply)
-  %apply.argv = call tailcc ptr @_c4_allocate_array(i64 1, i64 8)
-  %3 = getelementptr ptr, ptr %apply.argv, i64 0
-  store ptr %t, ptr %3, align 8
-  call tailcc void @_c4_set_thunk_args(ptr %apply.thunk, ptr %apply.argv, i32 1)
-  musttail call tailcc void @_c4_evaluate(ptr %apply.thunk, ptr %K)
+  musttail call tailcc void @_c4_evaluate(ptr %t, ptr %K)
   ret void
 }
 

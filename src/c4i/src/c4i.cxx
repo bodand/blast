@@ -208,30 +208,6 @@ main(int argc, char** argv) {
 	c4::diagnostics_engine diagnostics_engine{stderr, false};
 	c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
 
-	parser.declare_binop("+", 4, false);
-	parser.declare_binop("-", 4, false);
-	parser.declare_binop("*", 5, false);
-	parser.declare_binop("/", 5, false);
-	parser.declare_binop("^", 5, true);
-	parser.declare_binop("==", 3, true);
-
-	parser.declare_binop("<<", 6, false);
-	parser.declare_binop(">>", 5, true);
-
-	parser.declare_uniop("~");
-	parser.declare_uniop("+");
-	parser.declare_uniop("!");
-
-	parser.declare_symbol("print", 1, nullptr);
-	parser.declare_symbol("println", 1, nullptr);
-	parser.declare_symbol("if", 3, nullptr);
-	parser.declare_symbol("int", 1, nullptr);
-	parser.declare_symbol("str_empty", 1, nullptr);
-	parser.declare_symbol("blk_empty", 1, nullptr);
-	parser.declare_symbol("nil_block", 0, nullptr);
-	parser.declare_symbol("cat", 2, nullptr);
-	parser.declare_symbol("readln", 0, nullptr);
-
 	try {
 		initialize_targets();
 		auto jit = jit::create();

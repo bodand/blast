@@ -41,7 +41,7 @@
 c4rt2c::runtime_emitter::
 make_seq_argv(llvm::Value* left, llvm::Value* right) const {
 	constexpr uint32_t argv_sz = 2;
-	const auto argv = allocate_array(argv_sz, 8);
+	const auto argv = allocate_array(argv_sz, 8, "seq-tt-argv");
 	argv->setName("seq.argv");
 
 	const auto addr0 = _builder.CreateGEP(ptr_t, argv, {llvm::ConstantInt::get(_context, llvm::APInt(64, 0))});

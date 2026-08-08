@@ -28,18 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/allocate_argv --
+ * src/std4/src/std/str_cat --
  *   
  */
 
-#include <c4rt2c/ast2_ir_emitter.hxx>
+#include <string.h>
 
-llvm::Value*
-c4rt2c::ast2_ir_emitter::allocate_argv(const std::size_t count) const {
-	const auto pointer_size = _module.getDataLayout().getPointerSize();
-	auto result = _runtime.allocate_array(count, pointer_size);
-	result->setName("argv");
-	return result;
+#include <c4rt3/c4rt.h>
+
+#include <gc/gc.h>
+
+c4_let_native(str_cat)(const c4_datum s1, const c4_datum s2) {
+	char* s1_str;
+	size_t s1_str_sz;
+	char* s2_str;
+	size_t s2_str_sz;
+	c4_datum_coerce_string(s1, &s1_str, &s1_str_sz);
+	c4_datum_coerce_string(s2, &s2_str, &s2_str_sz);
+
+	char* cat = GC_malloc(s1_str_sz + s2_str_sz + 1);
+	strcpy(cat, s1_str);
+	strcat(cat, s2_str);
+
+	c4_datum out;
+	c4_datum_from_string_sz(cat, s1_str_sz + s2_str_sz, &out);
+	return out;
 }

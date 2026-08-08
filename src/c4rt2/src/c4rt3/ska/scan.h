@@ -28,32 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-05.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/make_seq_ti_argv --
- *   
+ * src/c4rt2/src/c4rt3/ska/scan --
+ *   A special header file providing the functionality within the skalibs
+ *   files used for integer scanning.
  */
+#ifndef BLAST_SCAN_H
+#define BLAST_SCAN_H
 
-#include <c4rt2c/runtime_emitter.hxx>
+#include <stdint.h>
 
-llvm::Value*
-c4rt2c::runtime_emitter::
-make_seq_ti_argv(llvm::Value* left_thunk,
-                 llvm::Function* fn,
-                 llvm::Value* fn_argv) const {
-	const auto layout = _module.getDataLayout();
+size_t
+int64_scan_base_max(char const* s, int64_t* d, uint8_t base, uint64_t max);
 
-	const auto alignment = llvm::Align(layout.getPointerABIAlignment(0));
-	const auto argv = with_name(allocate_array(3, layout.getPointerSize(0), "seq-ti-argv"), "seq_ti.argv");
+size_t
+uint64_scan_base_max(char const* s, uint64_t* u, uint8_t base, uint64_t max);
 
-	const auto left_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(0));
-	_builder.CreateAlignedStore(left_thunk, left_addr, alignment);
+#define int64_scan(s, d) int64_scan_base_max(s, d, 10, INT64_MAX)
+#define uint64_scan(s, d) uint64_scan_base_max(s, d, 10, UINT64_MAX)
 
-	const auto fn_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(1));
-	_builder.CreateAlignedStore(fn, fn_addr, alignment);
-
-	const auto argv_addr = _builder.CreateGEP(ptr_t, argv, _builder.getInt64(2));
-	_builder.CreateAlignedStore(fn_argv, argv_addr, alignment);
-
-	return argv;
-}
+#endif

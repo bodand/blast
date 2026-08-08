@@ -43,7 +43,7 @@ set(rt_bridge_llvm
     src/c4rt3/c4int_datum_true.ll
     src/c4rt3/c4int_datum_false.ll
     )
-set(rt_bridge_obj "")
+set(rt_bridge_obj)
 
 foreach (src IN LISTS rt_bridge_llvm)
     cmake_path(GET src FILENAME srcbase)
@@ -79,6 +79,7 @@ add_library(c4rt3 STATIC
             src/c4rt3/c4_datum_from_int64.c
             src/c4rt3/c4_datum_from_double.c
             src/c4rt3/c4_datum_from_nil.c
+            src/c4rt3/c4_datum_cmp.c
 
             src/c4rt3/internal_type.h
             ${rt_bridge_obj}
@@ -86,13 +87,17 @@ add_library(c4rt3 STATIC
             src/c4rt3/ska/fmt.h
             src/c4rt3/ska/int64_fmt_generic.c
             src/c4rt3/ska/uint64_fmt_generic.c
-            src/c4rt3/c4_datum_cmp.c
+
+            src/c4rt3/ska/scan.h
+            src/c4rt3/ska/uint64_scan_base_max.c
+            src/c4rt3/ska/int64_scan_base_max.c
             )
 target_include_directories(c4rt3
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_link_libraries(c4rt3 PUBLIC BDWgc::gc RYU::ryu)
+target_link_libraries(c4rt3 PUBLIC BDWgc::gc BDWgc::cord RYU::ryu)
+#target_compile_definitions(c4rt3 PUBLIC GC_DEBUG)
 
 add_library(c4rt2c STATIC
             include/c4rt2c/llvm_value_attribute.hxx
@@ -104,7 +109,6 @@ add_library(c4rt2c STATIC
             include/c4rt2c/ast2_ir_emitter.hxx
             src/c4rt2c/ast2_ir_emitter/init.cxx
             src/c4rt2c/ast2_ir_emitter/active_expression.cxx
-            src/c4rt2c/ast2_ir_emitter/allocate_argv.cxx
             src/c4rt2c/ast2_ir_emitter/ast2_ir_emitter.cxx
             src/c4rt2c/ast2_ir_emitter/declare_function.cxx
             src/c4rt2c/ast2_ir_emitter/declare_symbols.cxx
@@ -226,6 +230,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/seq_node/seq_tail_leaf/build_immediate.cxx
             src/c4rt2c/runtime_emitter/make_seq_ti_argv.cxx
             src/c4rt2c/seq_node/seq_leaf/build_immediate.cxx
+            src/c4rt2c/runtime_emitter/get_debug_location.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

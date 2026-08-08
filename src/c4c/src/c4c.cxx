@@ -34,12 +34,15 @@
  *   
  */
 
+#include <system_error>
+#include <system_error>
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
 #include <fstream>
-#include <ranges>
-#include <utility>
+#include <iostream>
+#include <memory>
+#include <algorithm>
 
 #include <c4/ast_dumper.hxx>
 
@@ -57,6 +60,7 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Passes/PassBuilder.h>
@@ -133,7 +137,10 @@ main(int argc, const char** argv) {
 	std::string dump_type;
 	bool show_help = false;
 	bool no_color_output = true;
+	int opt_level = 0;
+
 	bool debug_trace = false;
+	bool debug_gc = false;
 
 	const auto cli = lyra::cli()
 	                 | lyra::arg(src_path, "source")("The C4 source file to compile.").required()
@@ -151,12 +158,18 @@ main(int argc, const char** argv) {
 	                 | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
 		                 "The target triplet to produce the binary for."
 	                 )
-	                 | lyra::opt(debug_trace)["-D"]["--debug-trace"](
+	                 | lyra::opt(debug_trace)["-gcall-trace"](
 		                 "Generate code to bypass TCO allowing manual debugging,"
-		                 "while breaking guarantees of computability"
+		                 "while breaking concepts of computability"
+	                 )
+	                 | lyra::opt(debug_gc)["-gdebug-gc-calls"](
+		                 "Call debug versions of GC allocators. May break things."
 	                 )
 	                 | lyra::opt(no_color_output)["-C"]["--no-color"](
 		                 "Disable color diagnostic output to STDERR. (Not yet implemented.)"
+	                 )
+	                 | lyra::opt(opt_level, "level")["-O"](
+		                 "Set optimization level. [0-3]"
 	                 )
 			//
 			;
@@ -172,6 +185,15 @@ main(int argc, const char** argv) {
 		std::cout << cli << std::endl;
 		return 1;
 	}
+
+	llvm::OptimizationLevel opt = llvm::OptimizationLevel::O0;
+	switch (std::max(std::min(opt_level, 3), 0)) {
+	case 0: break;
+	case 1: opt = llvm::OptimizationLevel::O1; break;
+	case 2: opt = llvm::OptimizationLevel::O2; break;
+	case 3: opt = llvm::OptimizationLevel::O3; break;
+	}
+
 
 	c4c::source_file src(src_path);
 	if (out_path.empty()) {
@@ -237,6 +259,7 @@ main(int argc, const char** argv) {
 
 		c4rt2c::runtime_emitter rt_emitter(context, module, builder);
 		rt_emitter.set_debug_trace(debug_trace);
+		rt_emitter.set_memory_debug(debug_gc);
 
 		c4rt2c::ast2_ir_emitter ir(context, module, builder, std::move(rt_emitter));
 		ir.init(src_path);
@@ -246,6 +269,15 @@ main(int argc, const char** argv) {
 
 		ir.finalize();
 
+		llvm::ModulePassManager mod_pm;
+		if (opt_level == 0) {
+			mod_pm = pass_builder.buildO0DefaultPipeline(opt);
+		}
+		else {
+			mod_pm = pass_builder.buildPerModuleDefaultPipeline(opt);
+		}
+		mod_pm.run(module, mod_am);
+
 		if (dump_type == "IR") {
 			std::string dump;
 			llvm::raw_string_ostream os(dump);
@@ -253,10 +285,25 @@ main(int argc, const char** argv) {
 			*open_outstream(out_path) << dump;
 			return 0;
 		}
+
+		std::error_code ec;
+		llvm::raw_fd_ostream out(out_path.string(), ec);
+		if (ec) throw std::system_error(ec);
+
+		llvm::legacy::PassManager pm;
+		const auto ftype = llvm::CodeGenFileType::ObjectFile;
+
+		if (machine->addPassesToEmitFile(pm, out, nullptr, ftype)) {
+			std::cerr << "\033[31mfatal:\033[0m target machine cannot produce object files. Bummer.\n";
+			return 100;
+		}
+
+		pm.run(module);
+		out.flush();
 	}
 	catch (const std::exception& e) {
-		std::cerr << "fatal: " << e.what() << "\n";
-		return 1;
+		std::cerr << "\033[31mfatal:\033[0m " << e.what() << "\n";
+		return 111;
 	}
 }
 
