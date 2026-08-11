@@ -168,7 +168,7 @@ target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS})
 target_include_directories(c4_llvm INTERFACE ${LLVM_INCLUDE_DIRS})
 target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
 
-add_subdirectory(src/cdb)
+#add_subdirectory(src/cdb)
 
 add_subdirectory(src/c4rt2)
 add_subdirectory(src/libarray)
