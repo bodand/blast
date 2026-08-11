@@ -294,7 +294,7 @@ namespace c4::p2::tokens {
 
 	struct string_literal final : literal_token<std::string_view> {
 		constexpr static std::string_view token_name = "string literal";
-		constexpr static std::string_view regex = R"(\A"[^"]*?")";
+		constexpr static std::string_view regex = R"(\A"[^"]*?"|\A'[^']*?')";
 		constexpr static auto can_match_newline = true;
 
 	private:

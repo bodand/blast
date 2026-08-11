@@ -54,9 +54,12 @@
 #include "../ext-type.hxx"
 #include "../gc_box.hxx"
 #include "../resource_dir.hxx"
+#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/clang/include/clang/Frontend/TextDiagnosticPrinter.h"
+#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/Support/Process.h"
 
-c4_let_native(blast_build_ast_single)(const c4_datum src,
-                                      const c4_datum flags) {
+c4_let_native(blast_build_ast_single_)(
+	const c4_datum src,
+	const c4_datum flags) {
 	c4_array flags_array;
 	c4_datum_get_array(flags, &flags_array);
 
@@ -89,6 +92,7 @@ c4_let_native(blast_build_ast_single)(const c4_datum src,
 
 	// XXX -- implement custom diagnostics handling
 	const auto diag_opts = llvm::makeIntrusiveRefCnt<clang::DiagnosticOptions>();
+	diag_opts->ShowColors = llvm::sys::Process::StandardErrHasColors();
 	const auto diags = clang::CompilerInstance::createDiagnostics(diag_opts.get());
 
 	const auto pch = std::make_shared<clang::PCHContainerOperations>();
@@ -99,6 +103,12 @@ c4_let_native(blast_build_ast_single)(const c4_datum src,
 		diags,
 		resource_dir()
 	);
+	if (!unit || unit->getDiagnostics().getNumErrors() > 0) {
+		c4_datum out;
+		c4_datum_from_nil(&out);
+		return out;
+	}
+
 	const auto gc_unit = bst::gc_box(std::move(unit));
 
 	c4_datum out;

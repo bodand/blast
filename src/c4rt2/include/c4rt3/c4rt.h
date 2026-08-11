@@ -53,6 +53,7 @@ enum c4_datum_type {
 	C4_Nil      = 6,
 	C4_External = 7
 };
+
 typedef enum c4_datum_type c4_datum_type;
 
 #define c4_native_prefix c4sym_
@@ -65,6 +66,12 @@ typedef enum c4_datum_type c4_datum_type;
 #else
 #  define c4_extern extern
 #endif
+
+#define c4_datum_get_external_typed(datum, type, type_id, out) do {            \
+		void* raw = NULL;                                                        \
+		c4_datum_get_external((datum), (type_id), &raw);                         \
+		*out = (type)raw;                                                        \
+	} while (0)
 
 #define c4_let_native(sym) \
 	c4_extern c4_datum \

@@ -42,6 +42,22 @@
 #include <gc/gc.h>
 
 namespace bst {
+	template<class T, class... Args>
+	T*
+	gc_new(Args&&... args) {
+		auto* gc_ptr = GC_NEW(T);
+		std::construct_at(gc_ptr, std::forward<Args>(args)...);
+
+		GC_REGISTER_FINALIZER(
+			gc_ptr,
+			+[](void* obj, void*) {
+				std::destroy_at(static_cast<T*>(obj));
+			},
+			nullptr, nullptr, nullptr);
+
+		return gc_ptr;
+	}
+
 	template<class T, class D>
 	T**
 	gc_box(std::unique_ptr<T, D>&& ptr) {
@@ -55,13 +71,14 @@ namespace bst {
 		auto** gc_ptr = GC_NEW_ATOMIC(T*);
 		*gc_ptr = ptr.release();
 
-		GC_REGISTER_FINALIZER(gc_ptr, [](void* obj, void* state) {
-			auto* ptr = static_cast<T**>(obj);
-			auto* finalizer = static_cast<struct finalizer*>(state);
-			finalizer->deleter(*ptr);
+		GC_REGISTER_FINALIZER(gc_ptr,
+		                      +[](void* obj, void* state) {
+			                      auto* ptr = static_cast<T**>(obj);
+			                      auto* finalizer = static_cast<struct finalizer*>(state);
+			                      finalizer->deleter(*ptr);
 
-			std::destroy_at(finalizer);
-		}, gc_state, nullptr, nullptr);
+			                      std::destroy_at(finalizer);
+		                      }, gc_state, nullptr, nullptr);
 
 		return gc_ptr;
 	}

@@ -28,42 +28,34 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-08.
+ * Originally created: 2026-08-11.
  *
- * src/std4/src/std/array --
+ * src/blast/src/blast/blast_make_diagnostic --
  *   
  */
-#ifndef BLAST_ARRAY_H
-#define BLAST_ARRAY_H
 
 #include <c4rt3/c4rt.h>
 
-struct c4_array_t {
-	c4_datum* data;
-	size_t len;
-	size_t cap;
-};
+#include <gc/gc.h>
 
-typedef struct c4_array_t* c4_array;
+#include "../ext-type.hxx"
+#include "../handler/diagnostic_handler.hxx"
 
-c4_extern uint32_t
-c4_array_external_typeid();
+c4_let_native(blast_make_diagnostic)(c4_datum binding, c4_datum message) {
+	char* binding_name;
+	size_t binding_name_sz;
+	c4_datum_coerce_string(binding, &binding_name, &binding_name_sz);
 
-c4_extern c4_array
-c4_array_new(size_t len);
+	char* message_str;
+	size_t message_str_sz;
+	c4_datum_coerce_string(message, &message_str, &message_str_sz);
 
-c4_extern c4_array
-c4_array_ensure(c4_array arr, size_t len);
+	const auto handler = GC_NEW(bst::diagnostic_handler);
+	std::construct_at(handler,
+		std::string_view(binding_name, binding_name_sz),
+		std::string_view(message_str, message_str_sz));
 
-c4_extern c4_array
-c4_array_ensure_more(c4_array arr, size_t len);
-
-#define \
-c4_datum_from_array(arr, out) \
-	c4_datum_from_external(arr, c4_array_external_typeid(), out)
-
-#define \
-c4_datum_get_array(datum, out) \
-	c4_datum_get_external_typed(datum, c4_array, c4_array_external_typeid(), out)
-
-#endif
+	c4_datum out;
+	c4_datum_from_handler(handler, &out);
+	return out;
+}

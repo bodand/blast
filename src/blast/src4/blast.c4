@@ -2,11 +2,33 @@
 
 let native blast_init_/1;
 let blast_init/1 { |builder| &(builder)/0 }
-let defaults/0 { { blast_init_ nil } }
+let defaults/0 \{ blast_init_ nil }
 let resource_dir/1 { |x| { blast_init_ x } }
 
-let native blast_build_ast_single/2;
+let native blast_build_ast_single_/2;
+let blast_build_ast_single/2 { |src flags|
+    blast_build_ast_single_ src list_to_array flags
+}
 
-#if 0
-let native blast_run_matcher/1;
-#endif
+let native blast_make_diagnostic/2;
+let diagnostic/1 { |message| { |name| blast_make_diagnostic name message } }
+
+let with/1 \|x| x
+let as/1 \|x| x
+
+let string_matcher/1 { |x| \x }
+
+let native blast_match_ast/3;
+
+let blast/3 { |ast matcher handlers|
+    let match_str &(matcher)/0
+    blast_match_ast ast match_str list_to_array handlers
+}
+
+let handlers/1 { |x| &(x)/0 }
+let end_handlers/0 \\nil
+
+let handle/3 { |for impl tail|
+    \cons &(impl)/1 for
+          &(tail)/0
+}

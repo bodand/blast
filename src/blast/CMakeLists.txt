@@ -38,14 +38,22 @@ set(BLAST_DEFAULT_RESOURCE_DIR
     CACHE PATH "Default location for the clang resource directory")
 
 add_library(blast STATIC
-            src/ext-type.hxx
-            src/blast_typeid_ast_unit.cxx
             src/blast/blast_build_ast_single.cxx
             src/blast/blast_init_.cxx
-            src/resource_dir.cxx
-            src/resource_dir.hxx
+            src/blast/blast_match_ast.cxx
+
+            src/ext-type.hxx
+            src/blast_typeid.cxx
+
             src/default_resource_dir.in.hxx
+            src/resource_dir.hxx
+            src/resource_dir.cxx
+
+            src/handler/diagnostic_handler.hxx
+            src/handler/handler_base.hxx
+
             src/gc_box.hxx
+            src/blast/blast_make_diagnostic.cxx
             )
 configure_file(src/default_resource_dir.in.hxx
                default_resource_dir.hxx

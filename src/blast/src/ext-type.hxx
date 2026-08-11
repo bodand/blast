@@ -35,7 +35,8 @@
  *		types external to C4.
  *
  *		The following are provided:
- *			- ast_unit -> clang::ASTUnit*
+ *			- ast_unit -> clang::ASTUnit**
+ *			- handler -> bst::handler_base*
  */
 #ifndef BLAST_EXT_TYPE_HXX
 #define BLAST_EXT_TYPE_HXX
@@ -43,6 +44,10 @@
 #include <stdint.h>
 
 #include <c4rt3/c4rt.h>
+
+namespace bst {
+	struct handler_base;
+}
 
 c4_extern uint32_t
 blast_typeid_ast_unit();
@@ -53,6 +58,17 @@ c4_datum_from_ast_unit(ast_unit, out) \
 
 #define \
 c4_datum_get_ast_unit(datum, out) \
-	c4_datum_get_external(datum, blast_typeid_ast_unit(), out)
+	c4_datum_get_external_typed(datum, clang::ASTUnit**, blast_typeid_ast_unit(), out)
+
+c4_extern uint32_t
+blast_typeid_handler();
+
+#define \
+c4_datum_from_handler(printer, out) \
+	c4_datum_from_external(printer, blast_typeid_handler(), out)
+
+#define \
+c4_datum_get_handler(datum, out) \
+	c4_datum_get_external_typed(datum, bst::handler_base*, blast_typeid_handler(), out)
 
 #endif

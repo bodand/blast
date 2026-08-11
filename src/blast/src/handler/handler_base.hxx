@@ -28,21 +28,55 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-10.
+ * Originally created: 2026-08-11.
  *
- * src/blast/src/blast_external_typeid --
+ * src/blast/src/handler/handler_base --
  *   
  */
+#ifndef BLAST_HANDLER_BASE_HXX
+#define BLAST_HANDLER_BASE_HXX
 
-#include <atomic>
+#include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/ASTMatchers/Dynamic/Diagnostics.h>
+#include <clang/ASTMatchers/Dynamic/Parser.h>
+#include <clang/Frontend/ASTUnit.h>
 
-#include <c4rt3/c4rt.h>
-#include <c4rt3/typeid.h>
+#include "../ext-type.hxx"
 
-#include "ext-type.hxx"
+namespace ast = clang::ast_matchers;
+namespace dyn = clang::ast_matchers::dynamic;
 
-namespace {
-	std::atomic<uint32_t> typeid_ast_unit = 0;
+namespace bst {
+	struct handler_base {
+		explicit
+		handler_base(const std::string_view name)
+			: _name{name} { }
+
+		bool
+		try_handle(const std::string_view node_name,
+		           clang::ASTUnit* unit,
+		           const clang::DynTypedNode& node) {
+			if (!should_handle(node_name)) return false;
+			return try_handle(unit, node);
+		}
+
+		virtual ~handler_base() = default;
+
+	protected:
+		virtual bool
+		should_handle(const std::string_view name) {
+			return _name == name;
+		}
+
+
+		virtual bool
+		try_handle(clang::ASTUnit* unit, const clang::DynTypedNode& node) {
+			return false;
+		}
+
+	private:
+		std::string _name;
+	};
 }
 
-c4_implement_typeid_for(blast_typeid_ast_unit, typeid_ast_unit)
+#endif
