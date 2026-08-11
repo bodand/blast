@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,39 +28,19 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/include/c4rt2/package_type --
- *   Provides the types for dealing with c4rt's package.
+ * src/c4rt2/src/c4rt3/c4_next_external_typeid --
+ *   
  */
-#ifndef BLAST_PACKAGE_TYPE_H
-#define BLAST_PACKAGE_TYPE_H
 
-#include <c4rt2/api.h>
-#include <c4rt2/datum_type.h>
+#include <c4rt3/c4rt.h>
 
-typedef uint64_t c4_ptr64_t;
+#include <stdatomic.h>
 
-C4_MSVC_ALIGNMENT_BEGIN (
+static _Atomic uint64_t next_external_typeid = 1;
 
-8
-)
-#pragma pack(push, 8)
-
-/**
- * Type erased generic package type.
- * ABI stable, backwards and forwards compatible.
- *
- * Aligned to 8 bytes: storage arrays should follow.
- */
-struct c4_package_t {
-	uint16_t version;
-} C4_GCC_ALIGNMENT(8);
-
-#pragma pack(pop)
-C4_MSVC_ALIGNMENT_END()
-
-typedef c4_datum_t
-(c4rt_package_function_t)();
-
-#endif
+uint64_t
+c4_next_external_typeid(void) {
+	return atomic_fetch_add_explicit(&next_external_typeid, 1, memory_order_relaxed);
+}

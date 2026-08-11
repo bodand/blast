@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,27 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-10.
  *
- * src/c4rt2/include/c4rt2/datum_type --
- *   Provides the types for dealing with c4rt' datum.
+ * src/blast/src/blast_external_typeid --
+ *   
  */
-#ifndef C4RT_DATUM_TYPE_H
-#define C4RT_DATUM_TYPE_H
 
-#include <c4rt2/api.h>
+#include <atomic>
 
-typedef uint64_t c4_datum_t;
+#include <c4rt3/c4rt.h>
+#include <c4rt3/typeid.h>
 
-enum c4_datum_type {
-	C4_Float = 0x0,
-	/* 0000 */
-	C4_Block = 0x1,
-	/* 0001 */
-	C4_Integer = 0x2,
-	/* 0010 */
-	C4_String = 0x4,
-	/* 0100 */
-};
+#include "ext-type.hxx"
 
-#endif
+namespace {
+	std::atomic<uint32_t> typeid_ast_unit = 0;
+}
+
+c4_implement_typeid_for(blast_typeid_ast_unit, typeid_ast_unit)

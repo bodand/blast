@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,32 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt/src/DllMain --
+ * src/std4/src/std/c4_array_ensure --
  *   
  */
 
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
+#include <assert.h>
+#include <c4rt3/c4rt.h>
+#include <gc/gc.h>
 
-#include <dll-config.h>
+#include <c4/array.h>
 
-#ifdef C4RT2_USE_MIMALLOC
-#  include <mimalloc.h>
-#  define MI_VERSION mi_version()
-#else
-#  define MI_VERSION
-#endif
+static const size_t C4_ArrayBaseIncrement = 8;
+static const size_t C4_ArrayNumerator = 1;
+static const size_t C4_ArrayDenominator = 8;
 
-BOOL WINAPI
+#define c4_array_growth(x) ((x) + C4_ArrayBaseIncrement + C4_ArrayNumerator * (x) / C4_ArrayDenominator)
 
-DllMain(
-	HINSTANCE hinstDLL, // handle to DLL module
-	DWORD fdwReason,    // reason for calling function
-	LPVOID lpvReserved) // reserved
-{
-	MI_VERSION;
-	return TRUE;
+c4_array
+c4_array_ensure(const c4_array arr, const size_t len) {
+	const size_t new_cap = c4_array_growth(len);
+	if (new_cap > arr->cap) {
+		arr->data = GC_REALLOC(arr->data, new_cap * sizeof(c4_datum));
+		assert(arr->data && "realloc failed");
+		arr->cap = new_cap;
+	}
+	return arr;
 }

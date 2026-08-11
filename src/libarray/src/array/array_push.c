@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,54 +28,25 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt/src/dll --
+ * src/std4/src/std/array_push --
  *   
  */
-#ifndef C4RT_DLL_CONFIG_H
-#define C4RT_DLL_CONFIG_H
 
-@PVOID_SIZE_CODE@
+#include <assert.h>
+#include <c4rt3/c4rt.h>
 
-#ifdef __cplusplus
-#  define C4_EXTERNC extern "C"
-#else
-#  define C4_EXTERNC
-#endif
+#include <c4/array.h>
 
-#cmakedefine C4RT2_USE_MIMALLOC
-#ifdef C4RT2_USE_MIMALLOC
-#  include <mimalloc.h>
+c4_let_native(array_push)(const c4_datum arr, const c4_datum datum) {
+	const uint32_t array_exttype = c4_array_external_typeid();
 
-#  define C4_MALLOC(...) mi_malloc(__VA_ARGS__)
-#  define C4_MALLOC_SMALL(...) mi_malloc_small(__VA_ARGS__)
-#  define C4_STRDUP(...) mi_strdup(__VA_ARGS__)
-#  define C4_FREE(...) mi_free(__VA_ARGS__)
-#  define C4_SMALL_ALLOC_SIZE MI_SMALL_SIZE_MAX
-#else
+	void* impl_raw;
+	assert(c4_datum_get_external(arr, array_exttype, &impl_raw) == 0);
+	const c4_array impl = impl_raw;
 
-
-#  include <gc.h>
-
-#  define C4_MALLOC(...) GC_malloc(__VA_ARGS__)
-#  define C4_MALLOC_SMALL(...) GC_malloc(__VA_ARGS__)
-#  define C4_STRDUP(...) GC_strdup(__VA_ARGS__)
-#  define C4_FREE(...) GC_free(__VA_ARGS__)
-// #  define C4_FREE(...) ((void)__VA_ARGS__)
-#  define C4_SMALL_ALLOC_SIZE 0U
-#endif
-
-#if 0
-C4_EXTERNC inline void*
-C4_ALLOCATE(const size_t bytes) {
-	if (bytes < C4_SMALL_ALLOC_SIZE) return C4_MALLOC_SMALL(bytes);
-	return C4_MALLOC(bytes);
+	c4_array_ensure_more(impl, 1);
+	impl->data[impl->len++] = datum;
+	return arr;
 }
-#else
-#  define C4_ALLOCATE(bytes) C4_MALLOC(bytes)
-#endif
-
-#define C4_NEW(type, count) C4_ALLOCATE(sizeof(type)*(count))
-
-#endif

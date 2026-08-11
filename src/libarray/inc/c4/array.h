@@ -28,24 +28,44 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/std4/src/std/array --
  *   
  */
+#ifndef BLAST_ARRAY_H
+#define BLAST_ARRAY_H
 
-#include <assert.h>
 #include <c4rt3/c4rt.h>
 
-#include "internal_type.h"
+struct c4_array_t {
+	c4_datum* data;
+	size_t len;
+	size_t cap;
+};
 
-#define C4_Blackhole 2
+typedef struct c4_array_t* c4_array;
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+c4_extern uint32_t
+c4_array_external_typeid();
 
-	return type;
-}
+c4_extern c4_array
+c4_array_new(size_t len);
+
+c4_extern c4_array
+c4_array_ensure(c4_array arr, size_t len);
+
+c4_extern c4_array
+c4_array_ensure_more(c4_array arr, size_t len);
+
+#define \
+c4_datum_from_array(arr, out) c4_datum_from_external(arr, c4_array_external_typeid(), out)
+
+#define \
+c4_datum_get_array(datum, out) do {                                            \
+		void* raw = NULL;                                                        \
+		c4_datum_get_external(datum, c4_array_external_typeid(), &raw);          \
+		*out = (c4_array)raw; \
+	} while (0)
+
+#endif

@@ -40,9 +40,11 @@
 
 #include <c4rt3/c4rt.h>
 
+static char newline[] = "\n";
+
 c4_let_native(io_println)(c4_datum d) {
 	struct iovec iov[2];
-	iov[1].iov_base = "\n";
+	iov[1].iov_base = newline;
 	iov[1].iov_len = 1;
 
 	assert(c4_datum_coerce_string(d,

@@ -28,24 +28,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/std4/src/std/c4_array_external_typeid --
  *   
  */
 
-#include <assert.h>
+#include <stdatomic.h>
+
 #include <c4rt3/c4rt.h>
 
-#include "internal_type.h"
+#include <c4/array.h>
 
-#define C4_Blackhole 2
+static _Atomic uint32_t array_typeid = 0;
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+uint32_t
+c4_array_external_typeid(void) {
+	uint32_t exp = atomic_load_explicit(&array_typeid, memory_order_acquire);
+	if (exp) return exp;
 
-	return type;
+	const uint32_t next = c4_next_external_typeid();
+	if (atomic_compare_exchange_strong_explicit(&array_typeid,
+	                                            &exp,
+	                                            next,
+	                                            memory_order_acq_rel,
+	                                            memory_order_acquire)) {
+		return next;
+	}
+	return exp;
 }

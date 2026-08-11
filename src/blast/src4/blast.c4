@@ -1,0 +1,12 @@
+#include "array.c4"
+
+let native blast_init_/1;
+let blast_init/1 { |builder| &(builder)/0 }
+let defaults/0 { { blast_init_ nil } }
+let resource_dir/1 { |x| { blast_init_ x } }
+
+let native blast_build_ast_single/2;
+
+#if 0
+let native blast_run_matcher/1;
+#endif

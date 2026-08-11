@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,16 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2/c4rt --
- *    Common implementations for c4rt functions.
+ * src/std4/src/std/new_array --
+ *   
  */
 
-#include <assert.h>
-#include <dll-config.h>
-#include <limits.h>
+#include <c4rt3/c4rt.h>
 
-#if PVOID_SIZE > 8
-#  error "systems with pointer sizes up-to 64bit are supported"
-#endif
+#include <c4/array.h>
+
+c4_let_native(new_array)() {
+	const uint32_t array_exttype = c4_array_external_typeid();
+	const c4_array ext = c4_array_new(0);
+
+	c4_datum out;
+	c4_datum_from_external(ext, array_exttype, &out);
+	return out;
+}

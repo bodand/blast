@@ -28,34 +28,36 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2026-08-01.
+# Originally created: 2026-08-08.
 #
-# src/std4/CMakeLists.txt --
-#   C4 basic standard library utilities.
+# src/blast/CMakeLists.txt --
+#
 
-add_library(std4 STATIC
-            src/std/primitive_op.h
-            src/std/primitive_add.c
-            src/std/primitive_sub.c
-            src/std/primitive_mul.c
-            src/std/primitive_div.c
-            src/std/primitive_mod.c
+set(BLAST_DEFAULT_RESOURCE_DIR
+    ${CMAKE_INSTALL_PREFIX}/share/blast/clang
+    CACHE PATH "Default location for the clang resource directory")
 
-            src/std/primitive_cmp.h
-            src/std/primitve_lt.c
-            src/std/primitve_le.c
-            src/std/primitve_eq.c
-            src/std/primitve_ne.c
-            src/std/primitve_gt.c
-            src/std/primitve_ge.c
-
-            src/std/io_print.c
-            src/std/io_println.c
-            src/std/io_readln.c
-
-            src/extra/gc.c
-            src/std/str_cat.c
+add_library(blast STATIC
+            src/ext-type.hxx
+            src/blast_typeid_ast_unit.cxx
+            src/blast/blast_build_ast_single.cxx
+            src/blast/blast_init_.cxx
+            src/resource_dir.cxx
+            src/resource_dir.hxx
+            src/default_resource_dir.in.hxx
+            src/gc_box.hxx
             )
+configure_file(src/default_resource_dir.in.hxx
+               default_resource_dir.hxx
+               @ONLY)
+target_include_directories(
+        blast
+        PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)
-target_compile_features(std4 PRIVATE c_std_11)
+target_link_libraries(blast
+                      PRIVATE
+                      c4rt3
+                      libarray
+                      clangASTMatchers
+                      clangTooling)

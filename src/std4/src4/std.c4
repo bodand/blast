@@ -1,3 +1,9 @@
+/* Primary standard library for c4. Provides a minimal set of functionality
+ * needed to get something running. Needs to be expanded.
+ *
+ * Version: 1.0.0
+ */
+
 let true \{ |t f| t }
 let false \{ |t f| f }
 
