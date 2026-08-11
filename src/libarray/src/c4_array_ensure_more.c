@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,31 +28,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2/c4rt --
- *   Statically check that C4 ABI structures are properly packed.
+ * src/std4/src/std/c4_array_ensure_more --
+ *   
  */
 
-#include <c4rt2/c4rt.h>
+#include <errno.h>
 
-#include "package.1.h"
+#include <c4rt3/c4rt.h>
 
-static_assert(alignof(void*) > 2);
-static_assert(alignof(c4rt_package_function_t*) > 2);
+#include <c4/array.h>
 
-namespace {
-	template<class... Args>
-	struct sizeof_sum {
-		constexpr static size_t value = (sizeof(Args) + ...);
-	};
-
-	template<class... Args>
-	constexpr auto sizeof_sum_v = sizeof_sum<Args...>::value;
+c4_array
+c4_array_ensure_more(const c4_array arr, const size_t len) {
+	const size_t new_len = arr->len + len;
+	if (new_len < arr->len) return (errno = ERANGE, NULL);
+	return c4_array_ensure(arr, new_len);
 }
-
-static_assert(
-	sizeof(c4_package_v1_t) == sizeof_sum_v<std::uint16_t, std::uint16_t, std::uint16_t, std::uint16_t, std::uint64_t>);
-static_assert(sizeof(c4_package_t[2]) == sizeof_sum_v<c4_package_t, c4_package_t>);
-// static_assert(alignof(c4_package_t) == alignof(c4_package_v1_t));
-static_assert(sizeof(c4_package_v1_t[2]) == sizeof_sum_v<c4_package_v1_t, c4_package_v1_t>);

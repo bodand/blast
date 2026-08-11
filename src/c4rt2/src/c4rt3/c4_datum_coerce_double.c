@@ -59,6 +59,9 @@ c4_datum_coerce_double(const c4_datum datum, double* const out) {
 	case C4_Block:
 		*out = (double)(int64_t) datum_blk(datum);
 		break;
+	case C4_External:
+		*out = (double)(int64_t) datum_ext(datum);
+		break;
 	}
 
 	return 0;

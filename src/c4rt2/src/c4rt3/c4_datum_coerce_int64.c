@@ -50,7 +50,7 @@ c4_datum_coerce_int64(const c4_datum datum, int64_t* const out) {
 	case C4_Integer:
 		return c4_datum_get_int64(datum, out);
 	case C4_Float:
-		*out = (int64_t) datum_flt(datum);
+		*out = (int64_t)datum_flt(datum);
 		break;
 	case C4_Nil:
 		*out = 0;
@@ -60,8 +60,10 @@ c4_datum_coerce_int64(const c4_datum datum, int64_t* const out) {
 		break;
 	case C4_Thunk:
 	case C4_Block:
-		*out = (int64_t) datum_blk(datum);
+		*out = (int64_t)datum_blk(datum);
 		break;
+	case C4_External:
+		*out = (int64_t)datum_ext(datum);
 	}
 
 	return 0;

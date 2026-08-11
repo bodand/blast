@@ -75,6 +75,8 @@ c4_datum_cmp(const c4_datum a, const c4_datum b) {
 	case C4_Thunk:
 	case C4_Block:
 		return pointer_cmp(datum_blk(a), datum_blk(b));
+	case C4_External:
+		return pointer_cmp(datum_ext(a), datum_ext(b));
 	}
 	return 0;
 }

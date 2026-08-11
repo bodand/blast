@@ -45,12 +45,13 @@ struct c4_datum_t;
 typedef struct c4_datum_t* c4_datum;
 
 enum c4_datum_type {
-	C4_Integer = 0,
-	C4_Thunk   = 1,
-	C4_Float   = 3,
-	C4_String  = 4,
-	C4_Block   = 5,
-	C4_Nil     = 6
+	C4_Integer  = 0,
+	C4_Thunk    = 1,
+	C4_Float    = 3,
+	C4_String   = 4,
+	C4_Block    = 5,
+	C4_Nil      = 6,
+	C4_External = 7
 };
 typedef enum c4_datum_type c4_datum_type;
 
@@ -85,6 +86,9 @@ c4_extern int
 c4_datum_get_string(c4_datum datum, char** out, size_t* out_sz);
 
 c4_extern int
+c4_datum_get_external(c4_datum datum, uint64_t exttype, void** out);
+
+c4_extern int
 c4_datum_coerce_int64(c4_datum datum, int64_t* out);
 
 c4_extern int
@@ -112,6 +116,12 @@ c4_extern int
 c4_datum_from_nil(c4_datum* out);
 
 c4_extern int
+c4_datum_from_external(void* val, uint64_t exttype, c4_datum* out);
+
+c4_extern int
 c4_datum_cmp(c4_datum a, c4_datum b);
+
+c4_extern uint64_t
+c4_next_external_typeid(void);
 
 #endif

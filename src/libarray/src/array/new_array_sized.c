@@ -28,24 +28,28 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/std4/src/std/new_array_sized --
  *   
  */
 
-#include <assert.h>
 #include <c4rt3/c4rt.h>
 
-#include "internal_type.h"
+#include <c4/array.h>
 
-#define C4_Blackhole 2
+c4_let_native(new_array_sized)(const c4_datum len) {
+	const uint32_t array_exttype = c4_array_external_typeid();
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+	int64_t len_i64;
+	c4_datum_coerce_int64(len, &len_i64);
 
-	return type;
+	const c4_array ext = c4_array_new((size_t)len_i64);
+	for (size_t i = 0; i < (size_t)len_i64; i++) {
+		c4_datum_from_nil(&ext->data[i]);
+	}
+
+	c4_datum out;
+	c4_datum_from_external(ext, array_exttype, &out);
+	return out;
 }

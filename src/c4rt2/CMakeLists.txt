@@ -40,6 +40,7 @@
 #   Most code is ported over from c4rt.
 
 set(rt_bridge_llvm
+    src/c4rt3/bridge.ll
     src/c4rt3/c4int_datum_true.ll
     src/c4rt3/c4int_datum_false.ll
     )
@@ -66,20 +67,23 @@ endforeach ()
 
 add_library(c4rt3 STATIC
             include/c4rt3/c4rt.h
-            src/c4rt3/c4_datum_type_of.c
-            src/c4rt3/c4_datum_is_nil.c
-            src/c4rt3/c4_datum_get_int64.c
-            src/c4rt3/c4_datum_get_double.c
-            src/c4rt3/c4_datum_get_string.c
-            src/c4rt3/c4_datum_coerce_int64.c
+            src/c4rt3/c4_datum_cmp.c
             src/c4rt3/c4_datum_coerce_double.c
+            src/c4rt3/c4_datum_coerce_int64.c
             src/c4rt3/c4_datum_coerce_string.c
             src/c4rt3/c4_datum_from_boolean.c
-            src/c4rt3/c4_datum_from_string_sz.c
-            src/c4rt3/c4_datum_from_int64.c
             src/c4rt3/c4_datum_from_double.c
+            src/c4rt3/c4_datum_from_external.c
+            src/c4rt3/c4_datum_from_int64.c
             src/c4rt3/c4_datum_from_nil.c
-            src/c4rt3/c4_datum_cmp.c
+            src/c4rt3/c4_datum_from_string_sz.c
+            src/c4rt3/c4_datum_get_double.c
+            src/c4rt3/c4_datum_get_external.c
+            src/c4rt3/c4_datum_get_int64.c
+            src/c4rt3/c4_datum_get_string.c
+            src/c4rt3/c4_datum_is_nil.c
+            src/c4rt3/c4_datum_type_of.c
+            src/c4rt3/c4_next_external_typeid.c
 
             src/c4rt3/internal_type.h
             ${rt_bridge_obj}
@@ -91,13 +95,13 @@ add_library(c4rt3 STATIC
             src/c4rt3/ska/scan.h
             src/c4rt3/ska/uint64_scan_base_max.c
             src/c4rt3/ska/int64_scan_base_max.c
+            include/c4rt3/typeid.h
             )
 target_include_directories(c4rt3
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_link_libraries(c4rt3 PUBLIC BDWgc::gc BDWgc::cord RYU::ryu)
-#target_compile_definitions(c4rt3 PUBLIC GC_DEBUG)
+target_link_libraries(c4rt3 PUBLIC BDWgc::gc RYU::ryu)
 
 add_library(c4rt2c STATIC
             include/c4rt2c/llvm_value_attribute.hxx

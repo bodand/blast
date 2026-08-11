@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,24 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/src/c4rt2/c4rt_package_versions --
- *   Defines the known versions for c4rt packages. Used to provide ABI
- *   stability.
+ * src/c4rt2/src/c4rt3/c4_datum_get_external --
+ *   
  */
-#ifndef BLAST_C4RT_PACKAGE_VERSIONS_H
-#define BLAST_C4RT_PACKAGE_VERSIONS_H
 
-#define C4_PACKAGE_VERSION_1 1U
-#define C4_PACKAGE_VERSION_1_SIZE 16U
+#include <errno.h>
 
-uint16_t
-c4rt_package_version_to_size(uint16_t version);
+#include <c4rt3/c4rt.h>
 
-#endif
+#include "internal_type.h"
+
+int
+c4_datum_get_external(const c4_datum datum,
+                      uint64_t type,
+                      void** const out) {
+	if (c4_datum_type_of(datum) != C4_External) return -(errno = EINVAL);
+	if (datum_exttype(datum) != type) return -(errno = EPROTO);
+	if (out) *out = datum_ext(datum);
+	return 0;
+}

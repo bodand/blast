@@ -28,24 +28,43 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-11.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
- *   
+ * src/blast/src/gc_box --
+ *   Boxes a unique pointer into the GC system of C4. The unique ptr is stripped
+ *   of its power.
  */
+#ifndef BLAST_GC_BOX_HXX
+#define BLAST_GC_BOX_HXX
 
-#include <assert.h>
-#include <c4rt3/c4rt.h>
+#include <utility>
 
-#include "internal_type.h"
+#include <gc/gc.h>
 
-#define C4_Blackhole 2
+namespace bst {
+	template<class T, class D>
+	T**
+	gc_box(std::unique_ptr<T, D>&& ptr) {
+		struct finalizer {
+			D deleter;
+		};
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+		auto* gc_state = GC_NEW_ATOMIC(finalizer);
+		std::construct_at(gc_state, std::move(ptr.get_deleter()));
 
-	return type;
+		auto** gc_ptr = GC_NEW_ATOMIC(T*);
+		*gc_ptr = ptr.release();
+
+		GC_REGISTER_FINALIZER(gc_ptr, [](void* obj, void* state) {
+			auto* ptr = static_cast<T**>(obj);
+			auto* finalizer = static_cast<struct finalizer*>(state);
+			finalizer->deleter(*ptr);
+
+			std::destroy_at(finalizer);
+		}, gc_state, nullptr, nullptr);
+
+		return gc_ptr;
+	}
 }
+
+#endif

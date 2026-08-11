@@ -120,6 +120,8 @@ c4_datum_coerce_string(const c4_datum datum,
 	case C4_Thunk:
 	case C4_Block:
 		return blk_to_str((uint64_t)datum_blk(datum), out, out_sz);
+	case C4_External:
+		return blk_to_str((uint64_t)datum_ext(datum), out, out_sz);
 	}
 
 	return 0;

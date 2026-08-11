@@ -28,24 +28,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-10.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/c4rt2/include/c4rt3/typeid --
  *   
  */
+#ifndef BLAST_TYPEID_H
+#define BLAST_TYPEID_H
 
-#include <assert.h>
 #include <c4rt3/c4rt.h>
 
-#include "internal_type.h"
+#include <stdatomic.h>
 
-#define C4_Blackhole 2
+#define c4_implement_typeid_for(fn, state)                                     \
+	c4_extern uint32_t                                                                    \
+	fn(void) {                                                                  \
+		uint32_t exp = atomic_load_explicit(&state, memory_order_acquire);       \
+		if (exp) return exp;                                                     \
+		const uint32_t next = c4_next_external_typeid();                         \
+		if (atomic_compare_exchange_strong_explicit(&state,                      \
+																  &exp,                        \
+																  next,                        \
+																  memory_order_acq_rel,        \
+																  memory_order_acquire))       \
+			return next;                                                          \
+		return exp;                                                              \
+	}
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+#define with(x) x
 
-	return type;
-}
+#endif

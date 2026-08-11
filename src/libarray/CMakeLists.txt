@@ -28,34 +28,21 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2026-08-01.
+# Originally created: 2026-08-09.
 #
-# src/std4/CMakeLists.txt --
-#   C4 basic standard library utilities.
+# src/libarray/CMakeLists.txt --
+#   CMake source to provide libarray.
 
-add_library(std4 STATIC
-            src/std/primitive_op.h
-            src/std/primitive_add.c
-            src/std/primitive_sub.c
-            src/std/primitive_mul.c
-            src/std/primitive_div.c
-            src/std/primitive_mod.c
+add_library(libarray STATIC
+            inc/c4/array.h
+            src/c4_array_new.c
+            src/c4_array_ensure.c
+            src/c4_array_ensure_more.c
+            src/c4_array_external_typeid.c
 
-            src/std/primitive_cmp.h
-            src/std/primitve_lt.c
-            src/std/primitve_le.c
-            src/std/primitve_eq.c
-            src/std/primitve_ne.c
-            src/std/primitve_gt.c
-            src/std/primitve_ge.c
-
-            src/std/io_print.c
-            src/std/io_println.c
-            src/std/io_readln.c
-
-            src/extra/gc.c
-            src/std/str_cat.c
+            src/array/new_array.c
+            src/array/new_array_sized.c
+            src/array/array_push.c
             )
-
-target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)
-target_compile_features(std4 PRIVATE c_std_11)
+target_link_libraries(libarray PUBLIC c4rt3)
+target_include_directories(libarray PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/inc")

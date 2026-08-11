@@ -28,24 +28,30 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-11.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/blast/src/resource_diur --
  *   
  */
 
-#include <assert.h>
-#include <c4rt3/c4rt.h>
+#include <atomic>
+#include <cstdlib>
 
-#include "internal_type.h"
+#include <default_resource_dir.hxx>
 
-#define C4_Blackhole 2
+#include "resource_dir.hxx"
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+namespace {
+	std::atomic<const char*> resource_dir_value = BLAST_DEFAULT_RESOURCE_DIR;
+}
 
-	return type;
+std::string_view
+resource_dir() {
+	if (const auto env = getenv("BLAST_RESOURCE_DIR")) return env;
+	return resource_dir_value.load(std::memory_order::acquire);
+}
+
+void
+resource_dir(const std::string_view new_dir) {
+	resource_dir_value.store(new_dir.data(), std::memory_order::release);
 }

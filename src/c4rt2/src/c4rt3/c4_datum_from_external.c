@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,16 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-08-08.
+ * Originally created: 2026-08-08.
  *
- * src/c4rt2/include/c4rt2/c4rt --
- *   The C interface to the C4 runtime. Provides ABI stability.
+ * src/c4rt2/src/c4rt3/c4_datum_from_external --
+ *   
  */
-#ifndef C4RT_C4RT_H
-#define C4RT_C4RT_H
 
-#include <c4rt2/api.h>
-#include <c4rt2/datum.h>
-#include <c4rt2/package.h>
+#include <assert.h>
+#include <errno.h>
 
-#endif
+#include <c4rt3/c4rt.h>
+#include <gc/gc.h>
+
+#include "internal_type.h"
+
+int
+c4_datum_from_external(void* const val, uint64_t exttype, c4_datum* out) {
+	assert(out && "out must not be null");
+
+	struct c4_datum_t* d = GC_NEW(struct c4_datum_t);
+	if (!d) return -(errno = ENOMEM);
+
+	d->type = C4_External;
+	datum_ext(d) = val;
+	datum_exttype(d) = exttype;
+
+	*out = d;
+	return 0;
+}

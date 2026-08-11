@@ -28,24 +28,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-11.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
+ * src/blast/src/default_resource_dir --
  *   
  */
+#ifndef BLAST_DEFAULT_RESOURCE_DIR_IN_HXX
+#define BLAST_DEFAULT_RESOURCE_DIR_IN_HXX
 
-#include <assert.h>
-#include <c4rt3/c4rt.h>
+#cmakedefine BLAST_DEFAULT_RESOURCE_DIR "@BLAST_DEFAULT_RESOURCE_DIR@"
 
-#include "internal_type.h"
-
-#define C4_Blackhole 2
-
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
-
-	return type;
-}
+#endif

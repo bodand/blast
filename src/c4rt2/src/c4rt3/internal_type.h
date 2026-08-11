@@ -56,11 +56,14 @@ struct c4_datum_t {
 };
 
 #define datum_blk(d) ((d)->val_ptr)
-#define datum_str(d) ((d)->val_ptr)
-#define datum_int(d) ((d)->val_int64)
+#define datum_ext(d) ((d)->val_ptr)
 #define datum_flt(d) ((d)->val_float64)
+#define datum_int(d) ((d)->val_int64)
+#define datum_str(d) ((d)->val_ptr)
 
 #define datum_str_sz(d) ((d)->str_sz)
 #define datum_sstr(d) datum_str(d), datum_str_sz(d)
+
+#define datum_exttype(d) ((d)->str_sz)
 
 #endif

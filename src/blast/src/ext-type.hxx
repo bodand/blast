@@ -28,24 +28,31 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-10.
  *
- * src/c4rt2/src/c4rt3/c4_datum_type_of --
- *   
+ * src/blast/src/ext-type --
+ *		A set of functions providing identifiers for specific blAST specific
+ *		types external to C4.
+ *
+ *		The following are provided:
+ *			- ast_unit -> clang::ASTUnit*
  */
+#ifndef BLAST_EXT_TYPE_HXX
+#define BLAST_EXT_TYPE_HXX
 
-#include <assert.h>
+#include <stdint.h>
+
 #include <c4rt3/c4rt.h>
 
-#include "internal_type.h"
+c4_extern uint32_t
+blast_typeid_ast_unit();
 
-#define C4_Blackhole 2
+#define \
+c4_datum_from_ast_unit(ast_unit, out) \
+	c4_datum_from_external(ast_unit, blast_typeid_ast_unit(), out)
 
-c4_datum_type
-c4_datum_type_of(const c4_datum datum) {
-	const c4_datum_type type = datum->type;
-	assert(type <= C4_External && "type out of range");
-	assert(type != C4_Blackhole && "blackholeeeeeeeeee....");
+#define \
+c4_datum_get_ast_unit(datum, out) \
+	c4_datum_get_external(datum, blast_typeid_ast_unit(), out)
 
-	return type;
-}
+#endif
