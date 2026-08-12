@@ -42,7 +42,7 @@
 c4_array
 c4_array_new(const size_t len) {
 	const c4_array arr = GC_NEW(struct c4_array_t);
-	arr->len = len;
+	arr->len = 0;
 	arr->cap = len;
 	arr->data = GC_MALLOC(len * sizeof(c4_datum));
 	return arr;

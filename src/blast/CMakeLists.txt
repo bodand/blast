@@ -39,7 +39,9 @@ set(BLAST_DEFAULT_RESOURCE_DIR
 
 add_library(blast STATIC
             src/blast/blast_build_ast_single.cxx
+            src/blast/blast_build_from_compile_commands.cxx
             src/blast/blast_init_.cxx
+            src/blast/blast_make_diagnostic.cxx
             src/blast/blast_match_ast.cxx
 
             src/ext-type.hxx
@@ -53,7 +55,10 @@ add_library(blast STATIC
             src/handler/handler_base.hxx
 
             src/gc_box.hxx
-            src/blast/blast_make_diagnostic.cxx
+
+            src/compilation_db.hxx
+            src/compilation_db/compilation_db.cxx
+            src/compilation_db/build_tool.cxx
             )
 configure_file(src/default_resource_dir.in.hxx
                default_resource_dir.hxx
@@ -65,6 +70,7 @@ target_include_directories(
 
 target_link_libraries(blast
                       PRIVATE
+                      c4_llvm
                       c4rt3
                       libarray
                       clangASTMatchers

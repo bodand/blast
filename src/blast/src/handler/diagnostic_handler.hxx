@@ -46,6 +46,8 @@
 #include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
 
+#include "../gc_box.hxx"
+
 namespace bst {
 	struct diagnostic_handler : handler_base {
 		explicit
@@ -55,13 +57,15 @@ namespace bst {
 			: handler_base{handler_for}
 			, _message{message}
 			, _id{id} {
-			const auto opts = llvm::makeIntrusiveRefCnt<clang::DiagnosticOptions>();
+			const auto opts = bst::gc_new<clang::DiagnosticOptions>();
 			opts->ShowColors = llvm::sys::Process::StandardErrHasColors();
 
+			auto vfs_uniq = llvm::vfs::createPhysicalFileSystem();
+			const auto vfs = bst::gc_box(std::move(vfs_uniq));
+
 			// printer ownership yoinked by engine
-			_printer = new clang::TextDiagnosticPrinter(llvm::errs(), opts.get());
-			_engine = clang::CompilerInstance::createDiagnostics(
-				opts.get(), _printer);
+			_printer = new clang::TextDiagnosticPrinter(llvm::errs(), *opts);
+			_engine = clang::CompilerInstance::createDiagnostics(**vfs, *opts, _printer);
 		}
 
 	protected:

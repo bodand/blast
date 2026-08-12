@@ -69,7 +69,9 @@ function(generate_warnings _Interface)
         no-exit-time-destructors # todo
         no-unknown-pragmas # really don't gaf
         no-switch-default # clashes with covered-switch-default
+        # ## random compat stuffs i don't care about ##
         no-c++98-compat no-c++98-compat-pedantic no-c++20-compat
+        no-c2y-extensions # catches Catch2's __COUNTER__ usage
         # MSVC
         /w14062 /w14165 /w14191 /w14242 /we4263 /w14265 /w14287 /w14296 /we4350 /we4355
         /w14355 /w14471 /we4545 /w14546 /w14547 /w14548 /w14549 /w14557 /we4596 /w14605

@@ -40,7 +40,7 @@ llvm::Value*
 c4rt2c::runtime_emitter::make_datum_str(const std::string_view str,
                                         const std::optional<std::string_view>& global_name) const {
 	const auto name = global_name ? *global_name : std::string_view{"global_str"};
-	const auto bytes = _builder.CreateGlobalStringPtr(str, name);
+	const auto bytes = _builder.CreateGlobalString(str, name);
 	const auto bytes_sz = str.size();
 
 	const auto call = _builder.CreateCall(

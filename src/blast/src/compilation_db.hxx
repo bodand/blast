@@ -28,59 +28,39 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-10.
+ * Originally created: 2026-08-12.
  *
- * src/blast/src/ext-type --
- *		A set of functions providing identifiers for specific blAST specific
- *		types external to C4.
- *
- *		The following are provided:
- *			- ast_unit -> clang::ASTUnit**
- *			- handler -> bst::handler_base*
- *			- db -> bst::compilation_db*
+ * src/blast/src/compilation_db --
+ *   
  */
-#ifndef BLAST_EXT_TYPE_HXX
-#define BLAST_EXT_TYPE_HXX
+#ifndef BLAST_COMPILATION_DB_HXX
+#define BLAST_COMPILATION_DB_HXX
 
-#include <stdint.h>
+#include <filesystem>
+#include <memory>
 
-#include <c4rt3/c4rt.h>
+#include <clang/Tooling/CompilationDatabase.h>
+#include <clang/Tooling/Tooling.h>
 
 namespace bst {
-	struct handler_base;
+	struct compilation_db {
+		explicit
+		compilation_db(const std::filesystem::path& path);
+
+		compilation_db(std::vector<std::string>&& args,
+		               const std::filesystem::path& file);
+
+		clang::tooling::ClangTool
+		build_tool(const std::filesystem::path& source) const;
+
+		[[nodiscard]] const std::vector<std::filesystem::path>&
+		files() const { return _files; }
+
+	private:
+		std::string _resource_dir_flag;
+		std::vector<std::filesystem::path> _files;
+		std::unique_ptr<clang::tooling::CompilationDatabase> _db;
+	};
 }
-
-c4_extern uint32_t
-blast_typeid_ast_unit();
-
-#define \
-c4_datum_from_ast_unit(ast_unit, out) \
-	c4_datum_from_external(ast_unit, blast_typeid_ast_unit(), out)
-
-#define \
-c4_datum_get_ast_unit(datum, out) \
-	c4_datum_get_external_typed(datum, clang::ASTUnit**, blast_typeid_ast_unit(), out)
-
-c4_extern uint32_t
-blast_typeid_handler();
-
-#define \
-c4_datum_from_handler(printer, out) \
-	c4_datum_from_external(printer, blast_typeid_handler(), out)
-
-#define \
-c4_datum_get_handler(datum, out) \
-	c4_datum_get_external_typed(datum, bst::handler_base*, blast_typeid_handler(), out)
-
-c4_extern uint32_t
-blast_typeid_db();
-
-#define \
-c4_datum_from_db(db, out) \
-	c4_datum_from_external(db, blast_typeid_db(), out)
-
-#define \
-c4_datum_get_db(datum, out) \
-	c4_datum_get_external_typed(datum, bst::compilation_db*, blast_typeid_db(), out)
 
 #endif

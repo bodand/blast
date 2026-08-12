@@ -40,9 +40,10 @@ add_library(libarray STATIC
             src/c4_array_ensure_more.c
             src/c4_array_external_typeid.c
 
-            src/array/new_array.c
-            src/array/new_array_sized.c
             src/array/array_push.c
+            src/array/new_array.c
+            src/array/new_array_capacity.c
+            src/array/new_array_sized.c
             )
 target_link_libraries(libarray PUBLIC c4rt3)
 target_include_directories(libarray PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/inc")

@@ -47,6 +47,8 @@
 
 #include <libassert/assert.hpp>
 
+#include <llvm/IR/Module.h>
+
 llvm::Value*
 c4rt2c::direct_fn_call_gen::
 build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {

@@ -36,6 +36,8 @@
 
 #include <c4rt2c/runtime_emitter.hxx>
 
+#include <llvm/IR/Module.h>
+
 llvm::Value*
 c4rt2c::runtime_emitter::
 make_seq_ti_argv(llvm::Value* left_thunk,

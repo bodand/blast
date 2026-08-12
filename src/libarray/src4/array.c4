@@ -6,6 +6,8 @@
 
 let native new_array/0;
 let native new_array_sized/1;
+let native new_array_capacity/1;
+
 let native array_push/2;
 
 let list_to_array/1 { |list|

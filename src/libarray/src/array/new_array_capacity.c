@@ -28,59 +28,25 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-10.
+ * Originally created: 2026-08-12.
  *
- * src/blast/src/ext-type --
- *		A set of functions providing identifiers for specific blAST specific
- *		types external to C4.
- *
- *		The following are provided:
- *			- ast_unit -> clang::ASTUnit**
- *			- handler -> bst::handler_base*
- *			- db -> bst::compilation_db*
+ * src/libarray/src/array/new_array_capacity --
+ *   
  */
-#ifndef BLAST_EXT_TYPE_HXX
-#define BLAST_EXT_TYPE_HXX
-
-#include <stdint.h>
 
 #include <c4rt3/c4rt.h>
 
-namespace bst {
-	struct handler_base;
+#include <c4/array.h>
+
+c4_let_native(new_array_capacity)(const c4_datum len) {
+	const uint32_t array_exttype = c4_array_external_typeid();
+
+	int64_t len_i64;
+	c4_datum_coerce_int64(len, &len_i64);
+
+	const c4_array ext = c4_array_new((size_t)len_i64);
+
+	c4_datum out;
+	c4_datum_from_external(ext, array_exttype, &out);
+	return out;
 }
-
-c4_extern uint32_t
-blast_typeid_ast_unit();
-
-#define \
-c4_datum_from_ast_unit(ast_unit, out) \
-	c4_datum_from_external(ast_unit, blast_typeid_ast_unit(), out)
-
-#define \
-c4_datum_get_ast_unit(datum, out) \
-	c4_datum_get_external_typed(datum, clang::ASTUnit**, blast_typeid_ast_unit(), out)
-
-c4_extern uint32_t
-blast_typeid_handler();
-
-#define \
-c4_datum_from_handler(printer, out) \
-	c4_datum_from_external(printer, blast_typeid_handler(), out)
-
-#define \
-c4_datum_get_handler(datum, out) \
-	c4_datum_get_external_typed(datum, bst::handler_base*, blast_typeid_handler(), out)
-
-c4_extern uint32_t
-blast_typeid_db();
-
-#define \
-c4_datum_from_db(db, out) \
-	c4_datum_from_external(db, blast_typeid_db(), out)
-
-#define \
-c4_datum_get_db(datum, out) \
-	c4_datum_get_external_typed(datum, bst::compilation_db*, blast_typeid_db(), out)
-
-#endif

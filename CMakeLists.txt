@@ -34,6 +34,9 @@ project(blAST
         DESCRIPTION "Scriptable AST scanner"
         LANGUAGES C CXX)
 
+# maybe some time...
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 option(BLAST_BUILD_TESTS "Build the test suite for blAST [Yes]" Yes)
 option(BLAST_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
 option(BLAST_ENABLE_SANITIZERS "Build blAST with sanitizers [No]" No)
@@ -142,6 +145,13 @@ find_package(lyra CONFIG REQUIRED)
 find_package(ryu CONFIG REQUIRED)
 find_package(BDWgc CONFIG REQUIRED)
 
+find_package(zstd REQUIRED)
+if (NOT TARGET zstd::libzstd_shared)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(ZSTD REQUIRED IMPORTED_TARGET libzstd)
+    add_library(zstd::libzstd_shared ALIAS PkgConfig::ZSTD)
+endif ()
+
 ## Mio wrap Win specific stuffs
 add_library(c4-mio INTERFACE)
 target_link_libraries(c4-mio INTERFACE
@@ -150,23 +160,18 @@ target_link_libraries(c4-mio INTERFACE
                       )
 
 ## LLVM ##
-find_package(LLVM CONFIG REQUIRED)
+find_package(LLVM CONFIG REQUIRED PATHS /usr/lib/llvm/22/lib/cmake/llvm NO_DEFAULT_PATH)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(HandleLLVMOptions)
 
-# Find the libraries that correspond to the LLVM components that we wish to use
-llvm_map_components_to_libnames(llvm_libs Support Core Target Passes IRPrinter
-                                          CodeGen CodeGenTypes BitWriter OrcJIT
-                                AArch64Info AArch64CodeGen
-                                RISCVInfo RISCVCodeGen
-                                SparcInfo SparcCodeGen
-                                SystemZInfo SystemZCodeGen
-                                X86Info X86CodeGen
-                                )
+## Clang ##
+find_package(Clang CONFIG REQUIRED PATHS /usr/lib/llvm/22/lib/cmake/clang NO_DEFAULT_PATH)
+
 add_library(c4_llvm INTERFACE)
-target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS})
-target_include_directories(c4_llvm INTERFACE ${LLVM_INCLUDE_DIRS})
-target_link_libraries(c4_llvm INTERFACE ${llvm_libs})
+target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS_LIST})
+target_include_directories(c4_llvm SYSTEM INTERFACE
+                           ${LLVM_INCLUDE_DIRS}
+                           ${CLANG_INCLUDE_DIRS})
+target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM)
 
 #add_subdirectory(src/cdb)
 

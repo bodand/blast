@@ -7,9 +7,10 @@ let resource_dir/1 { |x| { blast_init_ x } }
 
 let native blast_build_ast_single_/2;
 let blast_build_ast_single/2 { |src flags|
-    cons blast_build_ast_single_ src list_to_array flags
-         nil
+    blast_build_ast_single_ src list_to_array flags
 }
+
+let native blast_build_from_compile_commands/1;
 
 let native blast_make_diagnostic/2;
 let diagnostic/1 { |message| { |name| blast_make_diagnostic name message } }
@@ -24,7 +25,7 @@ let native blast_match_ast/3;
 let blast/3 { |ast matcher handlers|
     let match_str &(matcher)/0
     blast_match_ast
-        list_to_array ast
+        ast
         match_str
         list_to_array handlers
 }

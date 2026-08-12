@@ -28,59 +28,40 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-10.
+ * Originally created: 2026-08-12.
  *
- * src/blast/src/ext-type --
- *		A set of functions providing identifiers for specific blAST specific
- *		types external to C4.
- *
- *		The following are provided:
- *			- ast_unit -> clang::ASTUnit**
- *			- handler -> bst::handler_base*
- *			- db -> bst::compilation_db*
+ * src/blast/src/compilation_db/compilation_db --
+ *   
  */
-#ifndef BLAST_EXT_TYPE_HXX
-#define BLAST_EXT_TYPE_HXX
 
-#include <stdint.h>
+#include "../compilation_db.hxx"
 
-#include <c4rt3/c4rt.h>
+#include <clang/Tooling/JSONCompilationDatabase.h>
 
-namespace bst {
-	struct handler_base;
+#include "../resource_dir.hxx"
+
+namespace fs = std::filesystem;
+
+bst::compilation_db::
+compilation_db(const fs::path& path)
+	: _resource_dir_flag{std::format("-resource-dir={}", resource_dir())} {
+	std::string error;
+
+	if (!exists(path)) throw std::runtime_error("compilation database not found");
+	_db = clang::tooling::JSONCompilationDatabase::loadFromFile(
+		path.c_str(), error,
+		clang::tooling::JSONCommandLineSyntax::AutoDetect);
+	if (!_db) throw std::runtime_error(error);
+
+	const auto bad_files = _db->getAllFiles();
+	_files.reserve(bad_files.size());
+	std::ranges::transform(bad_files, std::back_inserter(_files),
+	                       [](const auto& file) { return fs::path(file); });
 }
 
-c4_extern uint32_t
-blast_typeid_ast_unit();
-
-#define \
-c4_datum_from_ast_unit(ast_unit, out) \
-	c4_datum_from_external(ast_unit, blast_typeid_ast_unit(), out)
-
-#define \
-c4_datum_get_ast_unit(datum, out) \
-	c4_datum_get_external_typed(datum, clang::ASTUnit**, blast_typeid_ast_unit(), out)
-
-c4_extern uint32_t
-blast_typeid_handler();
-
-#define \
-c4_datum_from_handler(printer, out) \
-	c4_datum_from_external(printer, blast_typeid_handler(), out)
-
-#define \
-c4_datum_get_handler(datum, out) \
-	c4_datum_get_external_typed(datum, bst::handler_base*, blast_typeid_handler(), out)
-
-c4_extern uint32_t
-blast_typeid_db();
-
-#define \
-c4_datum_from_db(db, out) \
-	c4_datum_from_external(db, blast_typeid_db(), out)
-
-#define \
-c4_datum_get_db(datum, out) \
-	c4_datum_get_external_typed(datum, bst::compilation_db*, blast_typeid_db(), out)
-
-#endif
+bst::compilation_db::
+compilation_db(std::vector<std::string>&& args, const fs::path& file)
+	: _resource_dir_flag{std::format("-resource-dir={}", resource_dir())}
+	, _files{file} {
+	_db = std::make_unique<clang::tooling::FixedCompilationDatabase>(".", args);
+}

@@ -38,7 +38,11 @@
 
 #include <algorithm>
 #include <format>
+#include <functional>
+#include <iostream>
+#include <memory>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <gc/gc.h>
@@ -48,16 +52,20 @@
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/Support/Process.h>
 
+#include <clang/Frontend/ASTUnit.h>
 #include <clang/Frontend/CompilerInstance.h>
+#include <clang/Tooling/CompilationDatabase.h>
 #include <clang/Tooling/Tooling.h>
 
+#include "../compilation_db.hxx"
 #include "../ext-type.hxx"
 #include "../gc_box.hxx"
 #include "../resource_dir.hxx"
 
 c4_let_native(blast_build_ast_single_)(
 	const c4_datum src,
-	const c4_datum flags) {
+	const c4_datum flags
+) try {
 	c4_array flags_array;
 	c4_datum_get_array(flags, &flags_array);
 
@@ -66,10 +74,7 @@ c4_let_native(blast_build_ast_single_)(
 	c4_datum_coerce_string(src, &src_ptr, &src_sz);
 
 	std::vector<std::string> argv;
-	argv.reserve(3 + flags_array->len + 1);
-	argv.emplace_back("blast"); // XXX -- proper argv0
-	argv.emplace_back("-fsyntax-only");
-	argv.emplace_back(std::format("-resource-dir={}", resource_dir()));
+	argv.reserve(flags_array->len);
 
 	std::transform(
 		flags_array->data,
@@ -81,35 +86,17 @@ c4_let_native(blast_build_ast_single_)(
 			c4_datum_coerce_string(arg, &ptr, &ptr_sz);
 			return std::string(ptr, ptr_sz);
 		});
-	argv.emplace_back(src_ptr, src_sz);
 
-	std::vector<const char*> argv_ptrs;
-	argv_ptrs.reserve(argv.size());
-	std::ranges::transform(argv, std::back_inserter(argv_ptrs),
-	                       std::mem_fn(&std::string::c_str));
-
-	// XXX -- implement custom diagnostics handling
-	const auto diag_opts = llvm::makeIntrusiveRefCnt<clang::DiagnosticOptions>();
-	diag_opts->ShowColors = llvm::sys::Process::StandardErrHasColors();
-	const auto diags = clang::CompilerInstance::createDiagnostics(diag_opts.get());
-
-	const auto pch = std::make_shared<clang::PCHContainerOperations>();
-	auto unit = clang::ASTUnit::LoadFromCommandLine(
-		argv_ptrs.data(),
-		argv_ptrs.data() + argv_ptrs.size(),
-		pch,
-		diags,
-		resource_dir()
-	);
-	if (!unit || unit->getDiagnostics().getNumErrors() > 0) {
-		c4_datum out;
-		c4_datum_from_nil(&out);
-		return out;
-	}
-
-	const auto gc_unit = bst::gc_box(std::move(unit));
+	const auto db = bst::gc_new<bst::compilation_db>(std::move(argv),
+		std::filesystem::path(std::string_view(src_ptr, src_sz)));
 
 	c4_datum out;
-	c4_datum_from_ast_unit(gc_unit, &out);
+	c4_datum_from_db(db, &out);
 	return out;
+}
+catch (const std::exception& e) {
+	std::cerr << "blast: fatal: " << e.what() << std::endl;
+	c4_datum nil;
+	c4_datum_from_nil(&nil);
+	return nil;
 }

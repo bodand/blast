@@ -43,10 +43,16 @@
 #include <clang/ASTMatchers/Dynamic/Diagnostics.h>
 #include <clang/ASTMatchers/Dynamic/Parser.h>
 #include <clang/Frontend/ASTUnit.h>
+#include <clang/Tooling/Tooling.h>
 
+#include "../compilation_db.hxx"
 #include "../ext-type.hxx"
 #include "../handler/diagnostic_handler.hxx"
 #include "../handler/handler_base.hxx"
+
+namespace bst {
+	struct compilation_db;
+}
 
 namespace ast = clang::ast_matchers;
 namespace dyn = clang::ast_matchers::dynamic;
@@ -89,25 +95,17 @@ namespace {
 }
 
 c4_let_native(blast_match_ast)(
-	c4_datum ast_datum_arr,
+	c4_datum ast_db,
 	c4_datum matcher_str,
-	c4_datum handlers_array) {
+	c4_datum handlers_array
+) {
 	char* matcher;
 	size_t matcher_sz;
 	c4_datum_coerce_string(matcher_str, &matcher, &matcher_sz);
 	llvm::StringRef matcher_code(matcher, matcher_sz);
 
-	c4_array units_array;
-	c4_datum_get_array(ast_datum_arr, &units_array);
-
-	std::vector<clang::ASTUnit*> units;
-	units.reserve(units_array->len);
-
-	for (size_t i = 0; i < units_array->len; ++i) {
-		clang::ASTUnit** unit_ptr;
-		c4_datum_get_ast_unit(units_array->data[i], &unit_ptr);
-		units.push_back(*unit_ptr);
-	}
+	bst::compilation_db* db;
+	c4_datum_get_db(ast_db, &db);
 
 	dyn::Diagnostics diags;
 	const auto m = dyn::Parser::parseMatcherExpression(matcher_code, &diags);
@@ -133,7 +131,24 @@ c4_let_native(blast_match_ast)(
 		return nil;
 	}
 
-	std::ranges::for_each(units, [&finder](auto* unit) {
+	std::vector<std::unique_ptr<clang::ASTUnit>> units;
+	std::ranges::for_each(db->files(), [&](const auto& file) {
+		units.clear();
+
+		if (auto tool = db->build_tool(file);
+			tool.buildASTs(units)) {
+			std::cerr << "blast: error: cannot build AST for " << file << std::endl;
+			return;
+		}
+
+		if (units.empty()
+		    || !units.front()
+		    || units.front()->getDiagnostics().hasErrorOccurred()) {
+			std::cerr << "blast: error: cannot build AST for " << file << std::endl;
+			return;
+		}
+
+		auto&& unit = units.front();
 		finder.matchAST(unit->getASTContext());
 	});
 

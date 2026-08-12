@@ -230,18 +230,20 @@ main(int argc, const char** argv) {
 		const auto target_triple = target_arch.empty()
 			                           ? llvm::sys::getDefaultTargetTriple()
 			                           : target_arch;
+		const auto llvm_triple = llvm::Triple(target_triple);
+
 		std::string target_error;
-		const auto target = llvm::TargetRegistry::lookupTarget(target_triple, target_error);
+		const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
 		if (!target) {
 			std::cerr << "fatal: " << target_error << "\n";
 			return 2;
 		}
 
 		const auto machine = std::unique_ptr<llvm::TargetMachine>(
-			target->createTargetMachine(target_triple, "generic", "", {}, llvm::Reloc::PIC_)
+			target->createTargetMachine(llvm_triple, "generic", "", {}, llvm::Reloc::PIC_)
 		);
 		module.setDataLayout(machine->createDataLayout());
-		module.setTargetTriple(target_triple);
+		module.setTargetTriple(llvm_triple);
 
 		llvm::FunctionPassManager fn_pm;
 		llvm::LoopAnalysisManager loop_am;
@@ -309,28 +311,7 @@ main(int argc, const char** argv) {
 
 void
 initialize_targets() {
-	LLVMInitializeX86Target();
-	LLVMInitializeX86TargetInfo();
-	LLVMInitializeX86TargetMC();
-	LLVMInitializeX86AsmPrinter();
-
-	LLVMInitializeAArch64Target();
-	LLVMInitializeAArch64TargetInfo();
-	LLVMInitializeAArch64TargetMC();
-	LLVMInitializeAArch64AsmPrinter();
-
-	LLVMInitializeRISCVTarget();
-	LLVMInitializeRISCVTargetInfo();
-	LLVMInitializeRISCVTargetMC();
-	LLVMInitializeRISCVAsmPrinter();
-
-	LLVMInitializeSparcTarget();
-	LLVMInitializeSparcTargetInfo();
-	LLVMInitializeSparcTargetMC();
-	LLVMInitializeSparcAsmPrinter();
-
-	LLVMInitializeSystemZTarget();
-	LLVMInitializeSystemZTargetInfo();
-	LLVMInitializeSystemZTargetMC();
-	LLVMInitializeSystemZAsmPrinter();
+	llvm::InitializeAllTargetInfos();
+	llvm::InitializeAllTargets();
+	llvm::InitializeAllTargetMCs();
 }

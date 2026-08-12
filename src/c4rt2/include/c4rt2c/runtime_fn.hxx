@@ -38,11 +38,11 @@
 
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 
 #include "scoped_scope.hxx"
-#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/IR/DIBuilder.h"
 
 namespace llvm {
 	class DIBuilder;

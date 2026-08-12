@@ -28,59 +28,48 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-10.
+ * Originally created: 2026-08-12.
  *
- * src/blast/src/ext-type --
- *		A set of functions providing identifiers for specific blAST specific
- *		types external to C4.
- *
- *		The following are provided:
- *			- ast_unit -> clang::ASTUnit**
- *			- handler -> bst::handler_base*
- *			- db -> bst::compilation_db*
+ * src/blast/src/blast/blast_build_from_compile_commands --
+ *   
  */
-#ifndef BLAST_EXT_TYPE_HXX
-#define BLAST_EXT_TYPE_HXX
-
-#include <stdint.h>
 
 #include <c4rt3/c4rt.h>
 
-namespace bst {
-	struct handler_base;
+#include <c4/array.h>
+
+#include <filesystem>
+#include <iostream>
+
+#include <clang/Frontend/ASTUnit.h>
+#include <clang/Tooling/JSONCompilationDatabase.h>
+#include <clang/Tooling/Tooling.h>
+
+#include "../compilation_db.hxx"
+#include "../ext-type.hxx"
+#include "../gc_box.hxx"
+#include "../resource_dir.hxx"
+
+namespace fs = std::filesystem;
+
+c4_let_native(blast_build_from_compile_commands)(
+	const c4_datum compile_commands_json
+) try {
+	char* json_path_str;
+	size_t json_path_sz;
+	c4_datum_coerce_string(compile_commands_json, &json_path_str, &json_path_sz);
+	const auto json_path_view = std::string_view(json_path_str, json_path_sz);
+
+	const fs::path json_path(json_path_view);
+	const auto db = bst::gc_new<bst::compilation_db>(json_path);
+
+	c4_datum out;
+	c4_datum_from_db(db, &out);
+	return out;
 }
-
-c4_extern uint32_t
-blast_typeid_ast_unit();
-
-#define \
-c4_datum_from_ast_unit(ast_unit, out) \
-	c4_datum_from_external(ast_unit, blast_typeid_ast_unit(), out)
-
-#define \
-c4_datum_get_ast_unit(datum, out) \
-	c4_datum_get_external_typed(datum, clang::ASTUnit**, blast_typeid_ast_unit(), out)
-
-c4_extern uint32_t
-blast_typeid_handler();
-
-#define \
-c4_datum_from_handler(printer, out) \
-	c4_datum_from_external(printer, blast_typeid_handler(), out)
-
-#define \
-c4_datum_get_handler(datum, out) \
-	c4_datum_get_external_typed(datum, bst::handler_base*, blast_typeid_handler(), out)
-
-c4_extern uint32_t
-blast_typeid_db();
-
-#define \
-c4_datum_from_db(db, out) \
-	c4_datum_from_external(db, blast_typeid_db(), out)
-
-#define \
-c4_datum_get_db(datum, out) \
-	c4_datum_get_external_typed(datum, bst::compilation_db*, blast_typeid_db(), out)
-
-#endif
+catch (const std::exception& e) {
+	std::cerr << "blast: fatal: " << e.what() << std::endl;
+	c4_datum nil;
+	c4_datum_from_nil(&nil);
+	return nil;
+}

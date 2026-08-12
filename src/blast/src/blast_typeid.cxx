@@ -44,7 +44,9 @@
 namespace {
 	std::atomic<uint32_t> typeid_ast_unit = 0;
 	std::atomic<uint32_t> typeid_handler = 0;
+	std::atomic<uint32_t> typeid_db = 0;
 }
 
 c4_implement_typeid_for(blast_typeid_ast_unit, typeid_ast_unit)
 c4_implement_typeid_for(blast_typeid_handler, typeid_handler)
+c4_implement_typeid_for(blast_typeid_db, typeid_db)

@@ -39,6 +39,7 @@
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/Module.h>
 
 namespace fs = std::filesystem;
 namespace dwf = llvm::dwarf;

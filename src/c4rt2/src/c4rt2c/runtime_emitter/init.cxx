@@ -35,9 +35,11 @@
  */
 
 #include <c4rt2c/runtime_emitter.hxx>
+#include <libassert/assert.hpp>
 
-#include <llvm/ADT/APSInt.h>
 #include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Module.h>
 
 void
 c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
@@ -205,7 +207,8 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 		_context, llvm::Attribute::AllocKind, allocation_flags
 	));
 
-	const auto trap = llvm::Intrinsic::getDeclaration(&_module, llvm::Intrinsic::trap);
+	const auto trap = llvm::Intrinsic::getOrInsertDeclaration(&_module,
+	                                                          llvm::Intrinsic::trap);
 
 	_rt_allocate_array.dbg(dib).file_scoped(rt_file)
 	                  .name("_c4_allocate_array")
