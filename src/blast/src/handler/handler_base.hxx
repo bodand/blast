@@ -54,10 +54,10 @@ namespace bst {
 
 		bool
 		try_handle(const std::string_view node_name,
-		           clang::ASTUnit* unit,
+		           clang::ASTContext* context,
 		           const clang::DynTypedNode& node) {
 			if (!should_handle(node_name)) return false;
-			return try_handle(unit, node);
+			return try_handle(context, node);
 		}
 
 		virtual ~handler_base() = default;
@@ -70,7 +70,7 @@ namespace bst {
 
 
 		virtual bool
-		try_handle(clang::ASTUnit* unit, const clang::DynTypedNode& node) {
+		try_handle(clang::ASTContext* context, const clang::DynTypedNode& node) {
 			return false;
 		}
 

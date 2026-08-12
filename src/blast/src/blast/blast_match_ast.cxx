@@ -53,9 +53,8 @@ namespace dyn = clang::ast_matchers::dynamic;
 
 namespace {
 	struct blast_callback final : ast::MatchFinder::MatchCallback {
-		blast_callback(const c4_datum handlers_array,
-		               clang::ASTUnit* unit)
-			: _unit(unit) {
+		explicit
+		blast_callback(const c4_datum handlers_array) {
 			c4_array handlers;
 			c4_datum_get_array(handlers_array, &handlers);
 			_handlers.reserve(handlers->len + 1);
@@ -70,33 +69,27 @@ namespace {
 
 		void run(const ast::MatchFinder::MatchResult& result) override {
 			for (const auto& [id, node] : result.Nodes.getMap()) {
-				handle(id, node);
+				handle(id, result.Context, node);
 			}
 		}
-
-		[[nodiscard]] clang::ASTUnit*
-		unit() const { return _unit; }
-
-		void
-		unit(clang::ASTUnit* unit) { _unit = unit; }
 
 	private:
 		void
 		handle(const std::string_view name,
+		       clang::ASTContext* context,
 		       const clang::DynTypedNode& node) const {
 			for (const auto& handler : _handlers) {
-				if (handler->try_handle(name, _unit, node)) break;
+				if (handler->try_handle(name, context, node)) break;
 			}
 		}
 
-		clang::ASTUnit* _unit;
 		std::vector<bst::handler_base*> _handlers;
 		bst::fallback_diagnostic_handler _fallback_handler;
 	};
 }
 
 c4_let_native(blast_match_ast)(
-	c4_datum ast_datum,
+	c4_datum ast_datum_arr,
 	c4_datum matcher_str,
 	c4_datum handlers_array) {
 	char* matcher;
@@ -104,9 +97,17 @@ c4_let_native(blast_match_ast)(
 	c4_datum_coerce_string(matcher_str, &matcher, &matcher_sz);
 	llvm::StringRef matcher_code(matcher, matcher_sz);
 
-	clang::ASTUnit** unit_ptr;
-	c4_datum_get_ast_unit(ast_datum, &unit_ptr);
-	const auto unit = *unit_ptr;
+	c4_array units_array;
+	c4_datum_get_array(ast_datum_arr, &units_array);
+
+	std::vector<clang::ASTUnit*> units;
+	units.reserve(units_array->len);
+
+	for (size_t i = 0; i < units_array->len; ++i) {
+		clang::ASTUnit** unit_ptr;
+		c4_datum_get_ast_unit(units_array->data[i], &unit_ptr);
+		units.push_back(*unit_ptr);
+	}
 
 	dyn::Diagnostics diags;
 	const auto m = dyn::Parser::parseMatcherExpression(matcher_code, &diags);
@@ -118,10 +119,10 @@ c4_let_native(blast_match_ast)(
 		return nil;
 	}
 
-	const auto bound = m->tryBind("root"); // std::optional<DynTypedMatcher>
+	const auto bound = m->tryBind("root");
 	const auto& final = bound ? *bound : *m;
 
-	blast_callback cb(handlers_array, unit);
+	blast_callback cb(handlers_array);
 	ast::MatchFinder finder;
 	if (!finder.addDynamicMatcher(final, &cb)) {
 		std::cerr << "blast: fatal: "
@@ -132,7 +133,9 @@ c4_let_native(blast_match_ast)(
 		return nil;
 	}
 
-	finder.matchAST(unit->getASTContext());
+	std::ranges::for_each(units, [&finder](auto* unit) {
+		finder.matchAST(unit->getASTContext());
+	});
 
 	c4_datum nil;
 	c4_datum_from_nil(&nil);

@@ -38,7 +38,6 @@
 
 #include <algorithm>
 #include <format>
-#include <iostream>
 #include <string_view>
 #include <vector>
 
@@ -47,6 +46,7 @@
 #include <c4/array.h>
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/Support/Process.h>
 
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Tooling/Tooling.h>
@@ -54,8 +54,6 @@
 #include "../ext-type.hxx"
 #include "../gc_box.hxx"
 #include "../resource_dir.hxx"
-#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/clang/include/clang/Frontend/TextDiagnosticPrinter.h"
-#include "../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/Support/Process.h"
 
 c4_let_native(blast_build_ast_single_)(
 	const c4_datum src,

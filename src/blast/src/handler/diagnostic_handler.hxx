@@ -66,10 +66,10 @@ namespace bst {
 
 	protected:
 		bool
-		try_handle(clang::ASTUnit* unit,
+		try_handle(clang::ASTContext* context,
 		           const clang::DynTypedNode& node) override {
-			_engine->setSourceManager(&unit->getSourceManager());
-			_printer->BeginSourceFile(unit->getLangOpts(), nullptr);
+			_engine->setSourceManager(&context->getSourceManager());
+			_printer->BeginSourceFile(context->getLangOpts(), nullptr);
 
 			const auto range = node.getSourceRange();
 			const auto loc = range.getBegin();
