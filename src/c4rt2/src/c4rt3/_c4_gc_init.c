@@ -28,23 +28,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-05.
+ * Originally created: 2026-08-12.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/get_debug_location --
+ * src/c4rt2/src/c4rt3/_c4_gc_init --
  *   
  */
 
-#include <c4rt2c/runtime_emitter.hxx>
+#include <gc/gc.h>
 
-llvm::Value*
-c4rt2c::runtime_emitter::
-get_debug_location(const std::string_view name) const {
-	if (const auto it = debug.gc_location_globals.find(std::string(name));
-		it != debug.gc_location_globals.end()) {
-		return it->second;
-	}
-
-	const auto val = _builder.CreateGlobalString(name);
-	debug.gc_location_globals.emplace(name, val);
-	return val;
+extern void
+_c4_gc_init(void) {
+	GC_INIT();
+	GC_allow_register_threads();
 }

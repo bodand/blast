@@ -54,7 +54,7 @@ namespace bst {
 
 		bool
 		try_handle(const std::string_view node_name,
-		           clang::ASTContext* context,
+		           std::unique_ptr<clang::ASTUnit>& context,
 		           const clang::DynTypedNode& node) {
 			if (!should_handle(node_name)) return false;
 			return try_handle(context, node);
@@ -62,15 +62,24 @@ namespace bst {
 
 		virtual ~handler_base() = default;
 
+		virtual void
+		dump_diagnostics(llvm::raw_ostream& out) const = 0;
+
+		virtual std::unique_ptr<handler_base>
+		clone() const = 0;
+
+		[[nodiscard]] std::string_view
+		name() const { return _name; }
+
 	protected:
 		virtual bool
 		should_handle(const std::string_view name) {
 			return _name == name;
 		}
 
-
 		virtual bool
-		try_handle(clang::ASTContext* context, const clang::DynTypedNode& node) {
+		try_handle(std::unique_ptr<clang::ASTUnit>& context,
+		           const clang::DynTypedNode& node) {
 			return false;
 		}
 

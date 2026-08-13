@@ -144,6 +144,7 @@ find_package(uni-algo CONFIG REQUIRED)
 find_package(lyra CONFIG REQUIRED)
 find_package(ryu CONFIG REQUIRED)
 find_package(BDWgc CONFIG REQUIRED)
+add_compile_definitions(GC_THREADS)
 
 find_package(zstd REQUIRED)
 if (NOT TARGET zstd::libzstd_shared)

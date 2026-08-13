@@ -46,8 +46,6 @@
 #include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
 
-#include "../gc_box.hxx"
-
 namespace bst {
 	struct diagnostic_handler : handler_base {
 		explicit
@@ -56,21 +54,31 @@ namespace bst {
 		                   const unsigned id = UINT_MAX)
 			: handler_base{handler_for}
 			, _message{message}
-			, _id{id} {
-			const auto opts = bst::gc_new<clang::DiagnosticOptions>();
-			opts->ShowColors = llvm::sys::Process::StandardErrHasColors();
-
-			auto vfs_uniq = llvm::vfs::createPhysicalFileSystem();
-			const auto vfs = bst::gc_box(std::move(vfs_uniq));
+			, _id{id}
+			, _vfs{llvm::vfs::createPhysicalFileSystem()} {
+			_opts.ShowColors = llvm::sys::Process::StandardErrHasColors();
 
 			// printer ownership yoinked by engine
-			_printer = new clang::TextDiagnosticPrinter(llvm::errs(), *opts);
-			_engine = clang::CompilerInstance::createDiagnostics(**vfs, *opts, _printer);
+			_printer = new clang::TextDiagnosticPrinter(_diagnostics_holder, _opts);
+			_engine = clang::CompilerInstance::createDiagnostics(*_vfs, _opts,
+			                                                     _printer);
+		}
+
+		void
+		dump_diagnostics(llvm::raw_ostream& out) const override {
+			out << _diagnostics_backing;
+		}
+
+		std::unique_ptr<handler_base>
+		clone() const override {
+			return std::make_unique<diagnostic_handler>(
+				name(), _message
+			);
 		}
 
 	protected:
 		bool
-		try_handle(clang::ASTContext* context,
+		try_handle(std::unique_ptr<clang::ASTUnit>& context,
 		           const clang::DynTypedNode& node) override {
 			_engine->setSourceManager(&context->getSourceManager());
 			_printer->BeginSourceFile(context->getLangOpts(), nullptr);
@@ -81,8 +89,6 @@ namespace bst {
 					<< _message
 					<< clang::CharSourceRange::getTokenRange(range);
 
-			_printer->EndSourceFile();
-
 			return true;
 		}
 
@@ -90,10 +96,10 @@ namespace bst {
 		engine() const { return *_engine; }
 
 		void
-		id(const unsigned id) { _id = id; }
+		id(const unsigned id) const { _id = id; }
 
 		unsigned
-		id() {
+		id() const {
 			if (_id != UINT_MAX) return _id;
 			return _id = _engine->getCustomDiagID(
 				       clang::DiagnosticsEngine::Warning,
@@ -103,7 +109,11 @@ namespace bst {
 		std::string _message;
 
 	private:
-		unsigned _id;
+		mutable unsigned _id;
+		std::string _diagnostics_backing;
+		clang::DiagnosticOptions _opts;
+		std::unique_ptr<llvm::vfs::FileSystem> _vfs{};
+		llvm::raw_string_ostream _diagnostics_holder{_diagnostics_backing};
 		clang::DiagnosticConsumer* _printer = nullptr;
 		llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> _engine = nullptr;
 	};

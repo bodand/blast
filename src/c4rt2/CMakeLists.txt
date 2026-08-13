@@ -66,6 +66,8 @@ foreach (src IN LISTS rt_bridge_llvm)
 endforeach ()
 
 add_library(c4rt3 STATIC
+            src/c4rt3/_c4_gc_init.c
+
             include/c4rt3/c4rt.h
             src/c4rt3/c4_datum_cmp.c
             src/c4rt3/c4_datum_coerce_double.c

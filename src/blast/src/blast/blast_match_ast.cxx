@@ -35,9 +35,13 @@
  */
 
 #include <iostream>
+#include <thread>
+
 #include <c4rt3/c4rt.h>
 
 #include <c4/array.h>
+
+#include <gc/gc.h>
 
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/Dynamic/Diagnostics.h>
@@ -50,54 +54,177 @@
 #include "../handler/diagnostic_handler.hxx"
 #include "../handler/handler_base.hxx"
 
-namespace bst {
-	struct compilation_db;
-}
-
 namespace ast = clang::ast_matchers;
 namespace dyn = clang::ast_matchers::dynamic;
 
+namespace fs = std::filesystem;
+
 namespace {
+	struct draining_work_pool final {
+		explicit draining_work_pool(const std::vector<fs::path>& files)
+			: _files{files} { }
+
+		std::optional<fs::path>
+		get_work() {
+			std::scoped_lock lck(_files_mx);
+			if (_files.empty()) return std::nullopt;
+			const auto ret = _files.back();
+			_files.pop_back();
+			return ret;
+		}
+
+	private:
+		std::vector<fs::path> _files;
+		std::mutex _files_mx{};
+	};
+
 	struct blast_callback final : ast::MatchFinder::MatchCallback {
 		explicit
-		blast_callback(const c4_datum handlers_array) {
-			c4_array handlers;
-			c4_datum_get_array(handlers_array, &handlers);
+		blast_callback(const c4_array handlers) {
 			_handlers.reserve(handlers->len + 1);
 
 			for (size_t i = 0; i < handlers->len; ++i) {
-				bst::handler_base* handler = nullptr;
+				const bst::handler_base* handler = nullptr;
 				c4_datum_get_handler(handlers->data[i], &handler);
-				if (handler) _handlers.push_back(handler);
+				if (handler) _handlers.emplace_back(handler->clone());
 			}
-			_handlers.push_back(&_fallback_handler);
+			_handlers.emplace_back(new bst::fallback_diagnostic_handler);
 		}
 
-		void run(const ast::MatchFinder::MatchResult& result) override {
+		blast_callback(const blast_callback& other) = delete;
+
+		blast_callback(blast_callback&& other) noexcept = delete;
+
+		blast_callback&
+		operator=(const blast_callback& other) = delete;
+
+		blast_callback&
+		operator=(blast_callback&& other) noexcept = delete;
+
+		void
+		reset() {
+			_matches.clear();
+			_context = nullptr;
+		}
+
+		void
+		match(clang::ast_matchers::MatchFinder& finder) {
+			finder.matchAST(_context->getASTContext());
+			run_handlers();
+			reset();
+		}
+
+		void
+		run(const ast::MatchFinder::MatchResult& result) override {
 			for (const auto& [id, node] : result.Nodes.getMap()) {
-				handle(id, result.Context, node);
+				_matches.emplace_back(id, node);
 			}
+		}
+
+		void
+		run_handlers() {
+			for (const auto& [name, node] : _matches) {
+				handle(name, node);
+			}
+		}
+
+		void
+		set_ast(std::unique_ptr<clang::ASTUnit> unit) {
+			_context = std::move(unit);
+		}
+
+		void
+		dump_handlers(llvm::raw_ostream& errs) const {
+			std::ranges::for_each(_handlers, [&](const auto& handler) {
+				handler->dump_diagnostics(errs);
+			});
 		}
 
 	private:
 		void
 		handle(const std::string_view name,
-		       clang::ASTContext* context,
-		       const clang::DynTypedNode& node) const {
+		       const clang::DynTypedNode& node) {
 			for (const auto& handler : _handlers) {
-				if (handler->try_handle(name, context, node)) break;
+				if (handler->try_handle(name, _context, node)) break;
 			}
 		}
 
-		std::vector<bst::handler_base*> _handlers;
-		bst::fallback_diagnostic_handler _fallback_handler;
+		std::vector<std::unique_ptr<bst::handler_base>> _handlers;
+		std::unique_ptr<clang::ASTUnit> _context = nullptr;
+		std::vector<std::pair<std::string, clang::DynTypedNode>> _matches;
+	};
+
+	struct matcher_worker {
+		explicit
+		matcher_worker(const c4_array handlers,
+		               const auto& matcher,
+		               bst::compilation_db* db,
+		               draining_work_pool* pool)
+			: _callback(handlers)
+			, _db{db}
+			, _pool{pool} {
+			if (_finder.addDynamicMatcher(matcher, &_callback)) {
+				_running.test_and_set();
+			}
+		}
+
+		void
+		operator()() try {
+			if (!_running.test()) return;
+			GC_stack_base base;
+			GC_get_stack_base(&base);
+			GC_register_my_thread(&base);
+
+			// hosted out of loop as to not consistently reallocate 1 sized arrays
+			std::vector<std::unique_ptr<clang::ASTUnit>> units;
+
+			for (auto work = _pool->get_work();
+			     work;
+			     work = _pool->get_work()) {
+				const auto file = *work;
+
+				units.clear();
+
+				auto tool = _db->build_tool(file);
+				tool.buildASTs(units);
+
+				if (units.empty()
+				    || !units.front()
+				    || units.front()->getDiagnostics().hasErrorOccurred()) {
+					std::cerr << "blast: error: cannot build AST for "
+							<< file << std::endl;
+					continue;
+				}
+
+				auto&& unit = units.front();
+				_callback.set_ast(std::move(unit));
+				_callback.match(_finder);
+			}
+
+			GC_unregister_my_thread();
+		}
+		catch (...) {
+			GC_unregister_my_thread();
+		}
+
+		void
+		dump() const {
+			_callback.dump_handlers(llvm::errs());
+		}
+
+	private:
+		std::atomic_flag _running = ATOMIC_FLAG_INIT;
+		ast::MatchFinder _finder{};
+		blast_callback _callback;
+		bst::compilation_db* _db;
+		draining_work_pool* _pool;
 	};
 }
 
 c4_let_native(blast_match_ast)(
-	c4_datum ast_db,
-	c4_datum matcher_str,
-	c4_datum handlers_array
+	const c4_datum ast_db,
+	const c4_datum matcher_str,
+	const c4_datum handlers_array
 ) {
 	char* matcher;
 	size_t matcher_sz;
@@ -120,37 +247,33 @@ c4_let_native(blast_match_ast)(
 	const auto bound = m->tryBind("root");
 	const auto& final = bound ? *bound : *m;
 
-	blast_callback cb(handlers_array);
-	ast::MatchFinder finder;
-	if (!finder.addDynamicMatcher(final, &cb)) {
-		std::cerr << "blast: fatal: "
-				"matcher's top-level kind can't be matched against a TU"
-				<< std::endl;
-		c4_datum nil;
-		c4_datum_from_nil(&nil);
-		return nil;
-	}
+	c4_array handlers;
+	c4_datum_get_array(handlers_array, &handlers);
 
-	std::vector<std::unique_ptr<clang::ASTUnit>> units;
-	std::ranges::for_each(db->files(), [&](const auto& file) {
-		units.clear();
+	draining_work_pool pool(db->files());
 
-		if (auto tool = db->build_tool(file);
-			tool.buildASTs(units)) {
-			std::cerr << "blast: error: cannot build AST for " << file << std::endl;
-			return;
-		}
+	std::vector<std::unique_ptr<matcher_worker>> workers;
+	workers.reserve(std::thread::hardware_concurrency());
+	std::generate_n(std::back_inserter(workers),
+	                std::thread::hardware_concurrency(),
+	                [&] {
+		                return std::make_unique<matcher_worker>(
+			                handlers,
+			                final,
+			                db,
+			                &pool);
+	                });
 
-		if (units.empty()
-		    || !units.front()
-		    || units.front()->getDiagnostics().hasErrorOccurred()) {
-			std::cerr << "blast: error: cannot build AST for " << file << std::endl;
-			return;
-		}
+	std::vector<std::thread> threads;
+	threads.reserve(workers.size());
+	std::ranges::transform(
+		workers, std::back_inserter(threads),
+		[](auto& worker) {
+			return std::thread(&matcher_worker::operator(), worker.get());
+		});
 
-		auto&& unit = units.front();
-		finder.matchAST(unit->getASTContext());
-	});
+	std::ranges::for_each(threads, [](auto& thread) { thread.join(); });
+	std::ranges::for_each(workers, [](auto& worker) { worker->dump(); });
 
 	c4_datum nil;
 	c4_datum_from_nil(&nil);
