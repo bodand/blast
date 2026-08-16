@@ -41,14 +41,6 @@
 
 #include <gc/gc.h>
 
-c4_let_native(sleep)() {
-	sleep(1);
-
-	c4_datum out;
-	c4_datum_from_nil(&out);
-	return out;
-}
-
 c4_let_native(gc)() {
 	GC_gcollect();
 
