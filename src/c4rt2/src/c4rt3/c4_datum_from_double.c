@@ -52,7 +52,7 @@ c4_datum_from_double(const double val,
 	struct c4_datum_t* d = GC_NEW(struct c4_datum_t);
 	if (!d) return -(errno = ENOMEM);
 
-	d->type = C4_Integer;
+	d->type = C4_Float;
 	datum_flt(d) = val;
 
 	*out = d;

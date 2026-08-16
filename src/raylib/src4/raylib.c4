@@ -1,0 +1,16 @@
+let native Color/4;
+
+let native Vector2/2;
+let native Vector2_Move/3;
+
+let native InitWindow/3;
+let native WindowShouldClose/0;
+let native CloseWindow/0;
+
+let native GetFrameTime/0;
+
+let native BeginDrawing/0;
+let native EndDrawing/0;
+
+let native ClearBackground/1;
+let native DrawRectangleV/3;

@@ -28,38 +28,32 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-16.
  *
- * src/std4/src/std/primitive_op --
+ * src/raylib/src/Vector2_Move --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		double a_dbl, b_dbl; \
-		bool have_a_dbl = 0 == c4_datum_get_double(a, &a_dbl); \
-		bool have_b_dbl = 0 == c4_datum_get_double(b, &b_dbl); \
-\
-		int64_t a_int, b_int; \
-		if (!have_a_dbl) { \
-			c4_datum_coerce_int64(a, &a_int); \
-			if (have_b_dbl) a_dbl = (double)a_int; \
-		} \
-		if (!have_b_dbl) { \
-			c4_datum_coerce_int64(b, &b_int); \
-			if (have_a_dbl) b_dbl = (double)b_int; \
-		} \
-\
-		c4_datum ret; \
-		if (have_a_dbl || have_b_dbl) { \
-			c4_datum_from_double(op(a_dbl, b_dbl), &ret);\
-		} \
-		else { \
-			c4_datum_from_int64(op(a_int, b_int), &ret); \
-		}\
-		return ret; \
-	}
+#include <c4rt3/c4rt.h>
 
-#endif
+#include <raylib.h>
+
+#include "types.h"
+
+c4_let_native(Vector2_Move)(
+	c4_datum vec,
+	c4_datum x,
+	c4_datum y
+) {
+	Vector2* vec_v;
+	c4_datum_get_Vector2(vec, &vec_v);
+
+	double x_dbl, y_dbl;
+	c4_datum_coerce_double(x, &x_dbl);
+	c4_datum_coerce_double(y, &y_dbl);
+
+	vec_v->x += (float)x_dbl;
+	vec_v->y += (float)y_dbl;
+
+	return vec;
+}

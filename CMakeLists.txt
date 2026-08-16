@@ -181,6 +181,11 @@ add_subdirectory(src/libarray)
 add_subdirectory(src/std4)
 add_subdirectory(src/blast)
 
+find_package(raylib)
+if (TARGET raylib)
+    add_subdirectory(src/raylib)
+endif ()
+
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
 #add_subdirectory(src/c4i)

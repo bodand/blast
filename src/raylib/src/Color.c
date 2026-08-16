@@ -28,38 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-01.
+ * Originally created: 2026-08-16.
  *
- * src/std4/src/std/primitive_op --
+ * src/raylib/src/Color --
  *   
  */
-#ifndef BLAST_PRIMITIVE_OP_H
-#define BLAST_PRIMITIVE_OP_H
 
-#define c4_primitive_op(p, op) \
-	c4_let_native(p)(const c4_datum a, const c4_datum b) { \
-		double a_dbl, b_dbl; \
-		bool have_a_dbl = 0 == c4_datum_get_double(a, &a_dbl); \
-		bool have_b_dbl = 0 == c4_datum_get_double(b, &b_dbl); \
-\
-		int64_t a_int, b_int; \
-		if (!have_a_dbl) { \
-			c4_datum_coerce_int64(a, &a_int); \
-			if (have_b_dbl) a_dbl = (double)a_int; \
-		} \
-		if (!have_b_dbl) { \
-			c4_datum_coerce_int64(b, &b_int); \
-			if (have_a_dbl) b_dbl = (double)b_int; \
-		} \
-\
-		c4_datum ret; \
-		if (have_a_dbl || have_b_dbl) { \
-			c4_datum_from_double(op(a_dbl, b_dbl), &ret);\
-		} \
-		else { \
-			c4_datum_from_int64(op(a_int, b_int), &ret); \
-		}\
-		return ret; \
-	}
+#include <c4rt3/c4rt.h>
 
-#endif
+#include <raylib.h>
+#include <gc/gc.h>
+
+#include "types.h"
+
+c4_let_native(Color)(
+	const c4_datum r,
+	const c4_datum g,
+	const c4_datum b,
+	const c4_datum a
+) {
+	int64_t r_i64, g_i64, b_i64, a_i64;
+	c4_datum_coerce_int64(r, &r_i64);
+	c4_datum_coerce_int64(g, &g_i64);
+	c4_datum_coerce_int64(b, &b_i64);
+	c4_datum_coerce_int64(a, &a_i64);
+
+	Color* color = GC_NEW(Color);
+	color->r = (uint8_t)r_i64;
+	color->g = (uint8_t)g_i64;
+	color->b = (uint8_t)b_i64;
+	color->a = (uint8_t)a_i64;
+
+	c4_datum out;
+	c4_datum_from_Color(color, &out);
+	return out;
+}

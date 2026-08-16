@@ -34,8 +34,12 @@
  *   
  */
 
+#include <math.h>
+
 #include <c4rt3/c4rt.h>
 
 #include "primitive_op.h"
 
-c4_primitive_op(primitive_mod, %)
+#define op_mod(x, y) _Generic(x, int64_t: (x) / (y), double: fmod(x, y))
+
+c4_primitive_op(primitive_mod, op_mod)

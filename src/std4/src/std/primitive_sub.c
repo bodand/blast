@@ -38,4 +38,6 @@
 
 #include "primitive_op.h"
 
-c4_primitive_op(primitive_sub, -)
+#define op(x, y) ((x) - (y))
+
+c4_primitive_op(primitive_sub, op)
