@@ -77,6 +77,12 @@ typedef enum c4_datum_type c4_datum_type;
 	c4_extern c4_datum \
 	c4_cat(c4_native_prefix, sym)
 
+c4_extern c4_datum
+c4_call(c4_datum callee);
+
+c4_extern c4_datum
+c4_apply(c4_datum callee, uint32_t n, c4_datum* args, uint64_t args_sz);
+
 c4_extern c4_datum_type
 c4_datum_type_of(c4_datum datum);
 

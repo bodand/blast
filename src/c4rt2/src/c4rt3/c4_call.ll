@@ -24,9 +24,10 @@ define ptr @c4_call(ptr %callee) {
     %ret.K = getelementptr inbounds %c4_completion_t, ptr %ret, i32 0, i32 2
     store ptr null, ptr %ret.K, align 8
 
-    tail call tailcc void @_c4_evaluate(ptr %callee, ptr %ret)
+    call tailcc void @_c4_evaluate(ptr %callee, ptr %ret)
 
-    ret ptr %ret.target
+    %res = load ptr, ptr %ret.target, align 8
+    ret ptr %res
 }
 
 attributes #1 = { nofree nounwind }

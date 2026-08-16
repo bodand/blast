@@ -41,6 +41,8 @@
 
 set(rt_bridge_llvm
     src/c4rt3/bridge.ll
+    src/c4rt3/c4_apply.ll
+    src/c4rt3/c4_call.ll
     src/c4rt3/c4int_datum_true.ll
     src/c4rt3/c4int_datum_false.ll
     )

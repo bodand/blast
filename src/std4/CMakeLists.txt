@@ -55,6 +55,7 @@ add_library(std4 STATIC
 
             src/extra/gc.c
             src/std/str_cat.c
+            src/std/callback.c
             )
 
 target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)
