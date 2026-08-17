@@ -1,6 +1,11 @@
-cmake-build-debug
+cmake-build-debug*
 _build*
+.cache
+.junie
 .idea
+
+# this is a symlink when using vim
+compile_commands.json
 
 ### C++ template
 # Prerequisites
