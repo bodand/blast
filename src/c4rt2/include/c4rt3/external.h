@@ -28,43 +28,63 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-10.
  *
- * src/c4rt2/src/c4rt3/internal_type --
- *   Defines the PImpl's implementation part to be used within c4rt3. MUST BE
- *   KEPT IN ORDER WITH c4rt2c's LLVM IR structure and its usage.
+ * src/c4rt2/include/c4rt3/external --
+ *   This file allows external types to register their own behaviors into
+ *   C4_External typed data. It is named magic as homage to Perl's MAGIC
+ *   struct of a similar purpose and because it cannot be manipulated from the
+ *   C4 language itself.
+ *
+ *   The structure is effectively a dynamic vtable. Each type can emplace
+ *   an amount of (name, n, fnptr) triplets and a C function can try to lookup 
+ *   a function by name and arity. All argument types are always pointers, the
+ *   thing they point to depends on the actual function.
+ *
+ *   Magic function names can be anything, except starting with "_c4" which
+ *   are reserved for the C4 language's own shenanigans.
+ *
+ *   The current native magics understood by specific parts of C4's runtime:
+ *   	_c4_cmp/2 -> compares 2 external c4_datum objects
+ *   	_c4_stringify/1 -> makes a string out of a c4_datum object
+ *
+ *   Note that magic is not overallocated. This is because it likely is not
+ *   used much.
  */
-#ifndef BLAST_INTERNAL_TYPE_H
-#define BLAST_INTERNAL_TYPE_H
+#ifndef C4RT3_EXTERNAL_H
+#define C4RT3_EXTERNAL_H
 
 #include <c4rt3/c4rt.h>
 
-struct c4_datum_t {
-	c4_datum_type type;
-	int32_t argv_sz;
-
-	union {
-		void* val_ptr;
-		int64_t val_int64;
-		double val_float64;
-	};
-
-	union {
-		struct c4_datum_t** argv;
-		uint64_t str_sz;
-	};
+struct c4_magic_entry {
+	char* name;
+	uint32_t arity;
+	void (*fn)();
 };
 
-#define datum_blk(d) ((d)->val_ptr)
-#define datum_ext(d) ((d)->val_ptr)
-#define datum_flt(d) ((d)->val_float64)
-#define datum_int(d) ((d)->val_int64)
-#define datum_str(d) ((d)->val_ptr)
+struct c4_external_magic {
+	struct c4_magic_entry* entries;
+	size_t entries_sz;
+};
 
-#define datum_str_sz(d) ((d)->str_sz)
-#define datum_sstr(d) datum_str(d), datum_str_sz(d)
+#define C4_MAGIC_ZERO { 0, 0 }
 
-#define datum_exttype(d) ((d)->argv_sz)
-#define datum_magic(d) (*((struct c4_external_magic**)&(d)->argv))
+void
+c4_magic_put(struct c4_external_magic* magic,
+             char* name,
+             uint32_t n,
+             void(*fn)());
+
+void
+(*c4_magic_get(struct c4_external_magic* magic,
+               char* name,
+               uint32_t n))();
+
+struct c4_external_magic*
+c4_register_magic(c4_datum d);
+
+struct c4_external_magic*
+c4_get_magic(c4_datum d);
 
 #endif
+

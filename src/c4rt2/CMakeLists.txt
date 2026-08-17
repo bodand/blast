@@ -39,6 +39,8 @@
 #   be used by c4c and c4 when generating LLVM IR.
 #   Most code is ported over from c4rt.
 
+project(c4rt3 C CXX)
+
 set(rt_bridge_llvm
     src/c4rt3/bridge.ll
     src/c4rt3/c4_apply.ll
@@ -54,7 +56,7 @@ foreach (src IN LISTS rt_bridge_llvm)
 
     add_custom_command(
             OUTPUT ${obj}
-            COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc
+            COMMAND llc
             -filetype=obj
             -relocation-model=pic
             -O3
@@ -91,6 +93,11 @@ add_library(c4rt3 STATIC
 
             src/c4rt3/internal_type.h
             ${rt_bridge_obj}
+
+            src/c4rt3/external/c4_magic_get.c
+            src/c4rt3/external/c4_magic_put.c
+            src/c4rt3/external/c4_register_magic.c
+            src/c4rt3/external/c4_get_magic.c
 
             src/c4rt3/ska/fmt.h
             src/c4rt3/ska/int64_fmt_generic.c

@@ -28,43 +28,27 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-17.
  *
- * src/c4rt2/src/c4rt3/internal_type --
- *   Defines the PImpl's implementation part to be used within c4rt3. MUST BE
- *   KEPT IN ORDER WITH c4rt2c's LLVM IR structure and its usage.
+ * src/src4/src/std/Block --
+ *   
  */
-#ifndef BLAST_INTERNAL_TYPE_H
-#define BLAST_INTERNAL_TYPE_H
 
 #include <c4rt3/c4rt.h>
 
-struct c4_datum_t {
-	c4_datum_type type;
-	int32_t argv_sz;
+#include <gc/gc.h>
 
-	union {
-		void* val_ptr;
-		int64_t val_int64;
-		double val_float64;
-	};
+#include "typeid.h"
+#include "types.h"
 
-	union {
-		struct c4_datum_t** argv;
-		uint64_t str_sz;
-	};
-};
+c4_let_native(Block)() {
+	c4_datum_type* type = GC_NEW(c4_datum_type);
+	*type = C4_Block;
 
-#define datum_blk(d) ((d)->val_ptr)
-#define datum_ext(d) ((d)->val_ptr)
-#define datum_flt(d) ((d)->val_float64)
-#define datum_int(d) ((d)->val_int64)
-#define datum_str(d) ((d)->val_ptr)
+	c4_datum out;
+	c4_datum_from_typeid(type, &out);
+	typeid_bless(out);
 
-#define datum_str_sz(d) ((d)->str_sz)
-#define datum_sstr(d) datum_str(d), datum_str_sz(d)
+	return out;
+}
 
-#define datum_exttype(d) ((d)->argv_sz)
-#define datum_magic(d) (*((struct c4_external_magic**)&(d)->argv))
-
-#endif

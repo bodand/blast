@@ -45,6 +45,19 @@ let native io_print/1;
 let native io_println/1;
 let native io_readln/0;
 
+let native typeof/1;
+
+let native Integer/0;
+let native Float/0;
+let native String/0;
+let native Block/0;
+let native Nil/0;
+let native External/0;
+
+let typed/2 { |x type|
+    (typeof x) == type
+}
+
 let nil {}
 let is_nil/1 { |x| x == nil }
 
@@ -115,3 +128,46 @@ let for_each/2 { |l f|
         for_each tail f
     }
 }
+
+let bst_node/4 { |k v left right| k :: v :: left :: right :: nil }
+let bst_node_key/1 { |n| car n }
+let bst_node_val/1 { |n| cadr n }
+let bst_node_left/1 { |n| caddr n }
+let bst_node_right/1 { |n| car cdddr n }
+
+let bst_insert/3 { |k v bst|
+	let nkey bst_node_key bst
+
+	when is_nil bst 
+		bst_node k v nil nil
+	when k < nkey
+		bst_node nkey
+		         bst_node_val bst
+					bst_insert k v (bst_node_left bst)
+					bst_node_right bst
+	when k > nkey
+		bst_node nkey
+		         bst_node_val bst
+					bst_node_left bst
+					bst_insert k v (bst_node_right bst)
+	else
+		bst_node nkey v
+				   bst_node_left bst
+					bst_node_right bst
+}
+
+let bst_find/2 { |k bst|
+	let nkey bst_node_key bst
+
+	when is_nil bst
+		nil
+	when k < nkey
+		bst_find k bst_node_left bst
+	when k > nkey
+		bst_find k bst_node_right bst
+	else
+		bst_node_val bst
+}
+
+let (.)/2 left 90 { |x y| bst_find y x }
+

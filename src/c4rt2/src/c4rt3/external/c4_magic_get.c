@@ -28,43 +28,47 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-17.
  *
- * src/c4rt2/src/c4rt3/internal_type --
- *   Defines the PImpl's implementation part to be used within c4rt3. MUST BE
- *   KEPT IN ORDER WITH c4rt2c's LLVM IR structure and its usage.
+ * src/c4rt2/src/c4rt3/external/c4_magic_get --
  */
-#ifndef BLAST_INTERNAL_TYPE_H
-#define BLAST_INTERNAL_TYPE_H
+
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <c4rt3/c4rt.h>
+#include <c4rt3/external.h>
 
-struct c4_datum_t {
-	c4_datum_type type;
-	int32_t argv_sz;
-
-	union {
-		void* val_ptr;
-		int64_t val_int64;
-		double val_float64;
-	};
-
-	union {
-		struct c4_datum_t** argv;
-		uint64_t str_sz;
-	};
+struct search_key {
+	char* name;
+	uint32_t arity;
 };
 
-#define datum_blk(d) ((d)->val_ptr)
-#define datum_ext(d) ((d)->val_ptr)
-#define datum_flt(d) ((d)->val_float64)
-#define datum_int(d) ((d)->val_int64)
-#define datum_str(d) ((d)->val_ptr)
+static int
+magic_cmp(const void* vkey, const void* ventry) {
+	const struct search_key* key = vkey;
+	const struct c4_magic_entry* entry = ventry;
 
-#define datum_str_sz(d) ((d)->str_sz)
-#define datum_sstr(d) datum_str(d), datum_str_sz(d)
+	const int namecmp = strcmp(key->name, entry->name);
+	if (namecmp != 0) return namecmp;
 
-#define datum_exttype(d) ((d)->argv_sz)
-#define datum_magic(d) (*((struct c4_external_magic**)&(d)->argv))
+	return key->arity - entry->arity;
+}
 
-#endif
+void
+(*c4_magic_get(struct c4_external_magic* magic,
+               char* name,
+               uint32_t n))() {
+	struct search_key key = { name, n };
+
+	struct c4_magic_entry* entry = bsearch(&key,
+	                                       magic->entries,
+	                                       magic->entries_sz,
+	                                       sizeof(struct c4_magic_entry),
+	                                       magic_cmp);
+	if (!entry) return 0;
+
+	return entry->fn;
+}
+

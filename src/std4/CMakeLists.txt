@@ -56,7 +56,22 @@ add_library(std4 STATIC
             src/extra/gc.c
             src/std/str_cat.c
             src/std/callback.c
-            )
+
+            src/std/Block.c
+            src/std/External.c
+            src/std/Float.c
+            src/std/Integer.c
+            src/std/Nil.c
+            src/std/String.c
+
+            src/std/types.h
+            src/std/types.c
+            src/std/typeof.c
+
+            src/std/typeid.h
+            src/std/_typeid_cmp.c
+            src/std/typeid_bless.c
+)
 
 target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)
 target_compile_features(std4 PRIVATE c_std_11)

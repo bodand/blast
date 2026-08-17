@@ -1,0 +1,49 @@
+let any/1 { |m| { &(m)/2 nil "" } }
+
+let such/2 { |obj modif| {
+	&(obj)/2 nil &(modif)/0
+}}
+
+
+let declaration/0 \{ |decltype body|
+	let call when is_nil decltype "decl" decltype
+
+	str_cat str_cat str_cat
+		call "(" &(body)/0 ")" 
+}
+
+let function/1 { |m| { |any body|
+	&(m)/2 "functionDecl" body
+}}
+
+
+let expression/0 \{ |expr_type body|
+	let expr when is_nil expr_type "expr" expr_type
+
+	str_cat str_cat str_cat
+		expr "(" &(body)/0 ")"
+}
+
+let call/1 { |m| { |any body| 
+	&(m)/2 "callExpr" body
+}}
+
+
+let that/1 \|x| x
+
+let isnt/1 { |m| { 
+	str_cat str_cat 
+		"unless(" &(m)/0 ")"
+}}
+let is/1 \|x| x
+
+
+let expanded/1 \|x| x
+
+let macro/1 { |name| {
+	str_cat str_cat
+		'isExpandedFromMacro("' name '")'
+}}
+
+
+

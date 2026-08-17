@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include <c4rt3/c4rt.h>
+#include <c4rt3/external.h>
 
 #include "internal_type.h"
 
@@ -60,6 +61,23 @@ pointer_cmp(const void* const a, const void* const b) {
 	return (int)((intptr_t)a - (intptr_t)b);
 }
 
+static int
+type_cmp(const c4_datum a, const c4_datum b) {
+	int64_t exta = datum_exttype(a);
+	int64_t extb = datum_exttype(b);
+
+	if (exta != extb) return int_cmp(exta, extb);
+
+	struct c4_external_magic* m = datum_magic(a);
+	if (!m) return pointer_cmp(datum_ext(a), datum_ext(b));
+
+	void (*rawfn)() = c4_magic_get(m, "_c4_cmp", 2);
+	if (!rawfn) return pointer_cmp(datum_ext(a), datum_ext(b));
+
+	int (*fn)(c4_datum, c4_datum) = (int (*)(c4_datum, c4_datum))rawfn;
+	return fn(a, b);
+}
+
 int
 c4_datum_cmp(const c4_datum a, const c4_datum b) {
 	const c4_datum_type a_type = a->type;
@@ -76,7 +94,7 @@ c4_datum_cmp(const c4_datum a, const c4_datum b) {
 	case C4_Block:
 		return pointer_cmp(datum_blk(a), datum_blk(b));
 	case C4_External:
-		return pointer_cmp(datum_ext(a), datum_ext(b));
+		return type_cmp(a, b);
 	}
 	return 0;
 }
