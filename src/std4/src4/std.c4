@@ -63,7 +63,7 @@ let is_nil/1 { |x| x == nil }
 
 let cons/2 { |x y| { |op| when op == 0 x y } }
 let (::)/2 right 40 { |x y| { |op| when op == 0 x y } }
-let (,)/2 right 40 { |x y| { |op| when op == 0 x y } }
+let (,)/2 right 40 { |x y| { |op| when op == 0 x y } } 
 
 let car/1 \|x| &(x)/1 0
 let cdr/1 \|x| &(x)/1 1

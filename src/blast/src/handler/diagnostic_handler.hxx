@@ -36,7 +36,6 @@
 #ifndef BLAST_DIAGNOSTIC_HANDLER_HXX
 #define BLAST_DIAGNOSTIC_HANDLER_HXX
 
-
 #include "handler_base.hxx"
 
 #include <clang/Basic/Diagnostic.h>

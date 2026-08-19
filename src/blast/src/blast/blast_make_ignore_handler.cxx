@@ -28,61 +28,30 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-11.
+ * Originally created: 2026-08-19.
  *
- * src/blast/src/handler/handler_base --
+ * src/blast/src/blast/blast_make_ignore_handler --
  *   
  */
-#ifndef BLAST_HANDLER_BASE_HXX
-#define BLAST_HANDLER_BASE_HXX
 
-#include <clang/ASTMatchers/ASTMatchFinder.h>
-#include <clang/ASTMatchers/Dynamic/Diagnostics.h>
-#include <clang/ASTMatchers/Dynamic/Parser.h>
-#include <clang/Frontend/ASTUnit.h>
+#include <c4rt3/c4rt.h>
+
+#include <gc/gc.h>
 
 #include "../ext-type.hxx"
+#include "../handler/ignore_handler.hxx"
 
-namespace bst {
-	struct handler_base {
-		explicit
-		handler_base(const std::string_view name)
-			: _name{name} { }
+c4_let_native(blast_make_ignore_handler)(c4_datum binding) {
+	char* binding_name;
+	size_t binding_name_sz;
+	c4_datum_coerce_string(binding, &binding_name, &binding_name_sz);
 
-		bool
-		try_handle(const std::string_view node_name,
-		           std::unique_ptr<clang::ASTUnit>& context,
-		           const clang::DynTypedNode& node) {
-			if (!should_handle(node_name)) return false;
-			return try_handle(context, node);
-		}
+	const auto handler = GC_NEW(bst::ignore_handler);
+	std::construct_at(handler,
+		std::string_view(binding_name, binding_name_sz));
 
-		virtual ~handler_base() = default;
-
-		virtual void
-		dump_diagnostics(llvm::raw_ostream& out) const = 0;
-
-		virtual std::unique_ptr<handler_base>
-		clone() const = 0;
-
-		[[nodiscard]] std::string_view
-		name() const { return _name; }
-
-	protected:
-		virtual bool
-		should_handle(const std::string_view name) {
-			return _name == name;
-		}
-
-		virtual bool
-		try_handle(std::unique_ptr<clang::ASTUnit>& context,
-		           const clang::DynTypedNode& node) {
-			return false;
-		}
-
-	private:
-		std::string _name;
-	};
+	c4_datum out;
+	c4_datum_from_handler(handler, &out);
+	return out;
 }
 
-#endif

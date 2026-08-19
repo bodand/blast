@@ -1,31 +1,46 @@
-let any/1 { |m| { &(m)/2 nil "" } }
+let any/1 { |m| { &(m)/3 nil "" nil } }
 
 let such/2 { |obj modif| {
-	&(obj)/2 nil &(modif)/0
+	&(obj)/3 nil &(modif)/0 nil
 }}
 
 
-let declaration/0 \{ |decltype body|
+let bound/2 { |name obj| { |x y z|
+	&(obj)/3 
+		x 
+		y 
+		str_cat str_cat 
+			'.bind("' name '")'
+}}
+
+let (@#)/2 left 60 { |m name| bound name m }
+
+
+let declaration/0 \{ |decltype body bondage|
 	let call when is_nil decltype "decl" decltype
 
-	str_cat str_cat str_cat
-		call "(" &(body)/0 ")" 
+	str_cat str_cat str_cat str_cat
+		call "(" &(body)/0 ")" bondage
 }
 
-let function/1 { |m| { |any body|
-	&(m)/2 "functionDecl" body
+let function/1 { |m| { |any body bondage|
+	&(m)/3 "functionDecl" body bondage
+}}
+
+let variable/1 { |m| { |any body bondage|
+	&(m)/3 "varDecl" body bondage
 }}
 
 
-let expression/0 \{ |expr_type body|
+let expression/0 \{ |expr_type body bondage|
 	let expr when is_nil expr_type "expr" expr_type
 
-	str_cat str_cat str_cat
-		expr "(" &(body)/0 ")"
+	str_cat str_cat str_cat str_cat
+		expr "(" &(body)/0 ")" bondage
 }
 
-let call/1 { |m| { |any body| 
-	&(m)/2 "callExpr" body
+let call/1 { |m| { |any body bondage|
+	&(m)/3 "callExpr" body bondage
 }}
 
 
@@ -35,8 +50,20 @@ let isnt/1 { |m| {
 	str_cat str_cat 
 		"unless(" &(m)/0 ")"
 }}
+let (~)/1 { |m| isnt m }
 let is/1 \|x| x
 
+let named/1 { |name| {
+	str_cat str_cat
+		'hasName("' name '")'
+}}
+
+let auto \\"hasAutomaticStorageDuration()"
+let static \\"hasStaticStorageDuration()"
+let global \\"hasGlobalStorage()"
+let local \\"hasLocalStorage()"
+let thread_local \\"hasThreadLocalDuration()"
+let static_local \\"isStaticLocal()"
 
 let expanded/1 \|x| x
 
@@ -45,5 +72,47 @@ let macro/1 { |name| {
 		'isExpandedFromMacro("' name '")'
 }}
 
+let in/1 \|x| x
+
+let system_header \\"isExpansionInSystemHeader()"
+
+let main_file \\"isExpansionInMainFile()"
+
+let file/1 { |regex| {
+	str_cat str_cat
+		'isExpansionInFileMatching("' regex '")'
+}}
 
 
+let calls/1 { |m| {
+	str_cat str_cat
+		"callee(" &(m)/0 ")"
+}}
+
+let fmt_list/1 { |l| 
+	let head car l
+	let tail cdr l
+
+	when is_nil head nil
+	if is_nil car tail {
+		str_cat "" &(head)/0
+	}
+	else {
+		str_cat str_cat 
+			&(head)/0 ", " fmt_list tail
+	}
+}
+
+let allOf/1 { |list|
+	\fmt_list list
+}
+
+let eachOf/1 { |list| 
+	\str_cat str_cat
+		"eachOf(" fmt_list list ")"
+}
+
+let anyOf/1 { |list| 
+	\str_cat str_cat
+		"anyOf(" fmt_list list ")"
+}

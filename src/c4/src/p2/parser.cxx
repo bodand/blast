@@ -228,6 +228,7 @@ c4::p2::parser::parse_operator_let() {
 		nullptr
 	);
 
+	// XXX this is suboptimal
 	ASSERT(op.base_arity() == 1 || op.base_arity() == 2,
 	       "invalid operator arity", op);
 

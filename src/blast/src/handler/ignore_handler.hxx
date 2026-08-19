@@ -30,58 +30,36 @@
  *
  * Originally created: 2026-08-11.
  *
- * src/blast/src/handler/handler_base --
+ * src/blast/src/handler/diagnostic_handler --
  *   
  */
-#ifndef BLAST_HANDLER_BASE_HXX
-#define BLAST_HANDLER_BASE_HXX
+#ifndef BLAST_DIAGNOSTIC_HANDLER_HXX
+#define BLAST_DIAGNOSTIC_HANDLER_HXX
 
-#include <clang/ASTMatchers/ASTMatchFinder.h>
-#include <clang/ASTMatchers/Dynamic/Diagnostics.h>
-#include <clang/ASTMatchers/Dynamic/Parser.h>
-#include <clang/Frontend/ASTUnit.h>
+#include <memory>
 
-#include "../ext-type.hxx"
+#include "handler_base.hxx"
 
 namespace bst {
-	struct handler_base {
+	struct ignore_handler : handler_base {
 		explicit
-		handler_base(const std::string_view name)
-			: _name{name} { }
+		ignore_handler(const std::string_view handler_for)
+			: handler_base(handler_for) { }
 
-		bool
-		try_handle(const std::string_view node_name,
-		           std::unique_ptr<clang::ASTUnit>& context,
-		           const clang::DynTypedNode& node) {
-			if (!should_handle(node_name)) return false;
-			return try_handle(context, node);
+		void
+		dump_diagnostics(llvm::raw_ostream&) const override { }
+
+		std::unique_ptr<handler_base>
+		clone() const override {
+			return std::make_unique<ignore_handler>(name());
 		}
-
-		virtual ~handler_base() = default;
-
-		virtual void
-		dump_diagnostics(llvm::raw_ostream& out) const = 0;
-
-		virtual std::unique_ptr<handler_base>
-		clone() const = 0;
-
-		[[nodiscard]] std::string_view
-		name() const { return _name; }
 
 	protected:
-		virtual bool
-		should_handle(const std::string_view name) {
-			return _name == name;
-		}
-
-		virtual bool
+		bool
 		try_handle(std::unique_ptr<clang::ASTUnit>& context,
-		           const clang::DynTypedNode& node) {
-			return false;
+		           const clang::DynTypedNode& node) override {
+			return true;
 		}
-
-	private:
-		std::string _name;
 	};
 }
 

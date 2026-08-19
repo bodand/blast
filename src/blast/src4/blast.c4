@@ -1,7 +1,7 @@
 #include "array.c4"
 
 let native blast_init_/1;
-let blast_init/1 { |builder| &(builder)/0 }
+let blast_init/1 { |builder| &( builder )/0 }
 let defaults/0 \{ blast_init_ nil }
 let resource_dir/1 { |x| { blast_init_ x } }
 
@@ -14,6 +14,9 @@ let native blast_build_from_compile_commands/1;
 
 let native blast_make_diagnostic/2;
 let diagnostic/1 { |message| { |name| blast_make_diagnostic name message } }
+
+let native blast_make_ignore_handler/1;
+let ignored \\|name| blast_make_ignore_handler name
 
 let with/1 \|x| x
 let as/1 \|x| x
