@@ -139,7 +139,7 @@ namespace {
 				<< argdesc(-g, debug, Enable debugging flag for compiling this TU. See c4c-debug(7).)
 				<< argdesc(-h, , Print this help and exit 100.)
 				<< argdesc(-I, dir, Add dir for finding C4 library archives.)
-				<< argdesc(-O, level, Set optimization level. Values are 0-3.)
+				<< argdesc(-O, level, Set optimization level. Values are 0-3, s, or z.)
 				<< argdesc(-o, file, The file to use as output. A bare - means STDOUT. Defaults to source with .o suffix.)
 				<< argdesc(-T, triplet, Set target triplet to trp. Same format as LLVM.);
 		exit(100);
@@ -218,10 +218,16 @@ main(int argc, const char* const* argv) {
 			break; // TODO
 		}
 		case 'O': {
-			auto [ptr, ec] = std::from_chars(opts.arg, opts.arg + std::strlen(opts.arg), opt_level);
-			if (ec != std::errc{}
-			    || *ptr != '\0') {
-				die(100, "{}: fatal: invalid argument for {}: {}\n", argv[0], "-O", std::make_error_code(ec).message());
+			if ((opts.arg[0] == 's' || opts.arg[0] == 'z') && opts.arg[1] == '\0') {
+				opt_level = opts.arg[0] == 's' ? -1 : -2;
+				break;
+			}
+			if (auto [ptr, ec] = std::from_chars(opts.arg,
+			                                     opts.arg + std::strlen(opts.arg),
+			                                     opt_level);
+				ec != std::errc{} || *ptr != '\0') {
+				die(100, "{}: fatal: invalid argument for {}: {}\n", argv[0], "-O",
+				    std::make_error_code(ec).message());
 			}
 			break;
 		}
@@ -247,7 +253,11 @@ main(int argc, const char* const* argv) {
 	src_path = argv[0];
 
 	auto opt = llvm::OptimizationLevel::O0;
-	switch (std::max(std::min(opt_level, 3), 0)) {
+	switch (std::max(std::min(opt_level, 3), -2)) {
+	case -2: opt = llvm::OptimizationLevel::Oz;
+		break;
+	case -1: opt = llvm::OptimizationLevel::Os;
+		break;
 	case 0: break;
 	case 1: opt = llvm::OptimizationLevel::O1;
 		break;
@@ -301,8 +311,12 @@ main(int argc, const char* const* argv) {
 			return 2;
 		}
 
+		llvm::TargetOptions target_options;
+		target_options.DataSections = true;
+		target_options.FunctionSections = true;
+
 		const auto machine = std::unique_ptr<llvm::TargetMachine>(
-			target->createTargetMachine(llvm_triple, "generic", "", {}, llvm::Reloc::PIC_)
+			target->createTargetMachine(llvm_triple, "generic", "", target_options, llvm::Reloc::PIC_)
 		);
 		module.setDataLayout(machine->createDataLayout());
 		module.setTargetTriple(llvm_triple);
@@ -316,9 +330,14 @@ main(int argc, const char* const* argv) {
 		llvm::StandardInstrumentations si(context, false);
 		si.registerCallbacks(pass_ic, &mod_am);
 
-		llvm::PassBuilder pass_builder;
+		llvm::PassBuilder pass_builder{machine.get(), llvm::PipelineTuningOptions{}, {}, &pass_ic};
+		machine->registerPassBuilderCallbacks(pass_builder);
+
 		pass_builder.registerModuleAnalyses(mod_am);
 		pass_builder.registerFunctionAnalyses(fn_am);
+		pass_builder.registerCGSCCAnalyses(cgscc_am);
+		pass_builder.registerLoopAnalyses(loop_am);
+
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
 		const bool decl_only_rt = !build_entrypoint;
@@ -379,5 +398,7 @@ namespace {
 		llvm::InitializeAllTargetInfos();
 		llvm::InitializeAllTargets();
 		llvm::InitializeAllTargetMCs();
+		llvm::InitializeAllAsmParsers();
+		llvm::InitializeAllAsmPrinters();
 	}
 }

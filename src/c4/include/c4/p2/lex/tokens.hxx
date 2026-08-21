@@ -172,6 +172,31 @@ namespace c4::p2::tokens {
 		C4P2_DEFAULT_TOKEN_DECL(let)
 	};
 
+	struct use final : token_base {
+		constexpr static std::string_view token_name = "use";
+		constexpr static std::string_view regex = R"(\Ause[ \t]*(<[^>\n]*>|"[^"\n]*"))";
+		constexpr static size_t group_count = 1;
+
+		[[nodiscard]] std::string_view
+		path() const noexcept { return _path; }
+
+		[[nodiscard]] bool
+		library() const noexcept { return _library; }
+
+	private:
+		friend token_source;
+
+		use(const position& position,
+		    const std::string_view range,
+		    const std::string_view path_range)
+			: token_base{position, range}
+			, _path{path_range.substr(1, path_range.size() - 2)}
+			, _library{path_range.front() == '<'} { }
+
+		std::string_view _path;
+		bool _library;
+	};
+
 	struct lbrace final : token_base {
 		constexpr static std::string_view token_name = "opening brace '{'";
 		constexpr static std::string_view string = "{";
@@ -358,6 +383,7 @@ namespace c4::p2::tokens {
 		pipe,         // |
 		backslash,    // \ <- space needed to not escape linebreak
 		let,          // let
+		use,          // use <>
 
 		float_literal,   // 12.1
 		integer_literal, // 42

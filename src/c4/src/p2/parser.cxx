@@ -213,11 +213,26 @@ c4::p2::parser::parse_bare_symbol() {
 }
 
 c4::ast2::expression*
+c4::p2::parser::parse_use_expression() {
+	const auto maybe_use = expect_token<tokens::use>();
+	if (!maybe_use) report_failure(_diag, maybe_use);
+	next_relevant();
+
+	const auto& use = *maybe_use;
+	auto p = use.path();
+
+	return nullptr;
+}
+
+c4::ast2::expression*
 c4::p2::parser::parse_expression() {
 	if (const auto empty = expect_token<tokens::semicolon>()) {
 		next_relevant();
 		return nullptr;
 	}
+
+	if (const auto use = expect_token<tokens::use>())
+		return parse_use_expression();
 
 	if (const auto let = expect_token<tokens::let>())
 		return parse_let_expression();

@@ -157,6 +157,9 @@ namespace c4::p2 {
 		parse_bare_symbol();
 
 		ast2::expression*
+			parse_use_expression();
+
+		ast2::expression*
 		parse_expression();
 
 		ast2::expression*

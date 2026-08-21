@@ -75,6 +75,4 @@ target_link_libraries(blast
                       PRIVATE
                       c4_llvm
                       c4rt3
-                      libarray
-                      clangASTMatchers
-                      clangTooling)
+                      libarray)
