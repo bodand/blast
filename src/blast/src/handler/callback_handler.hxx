@@ -30,36 +30,50 @@
 *
 * Originally created: 2026-08-11.
 *
-* src/blast/src/handler/ignore_handler --
+* src/blast/src/handler/callback_handler --
 *   
 */
-#ifndef BLAST_IGNORE_HANDLER_HXX
-#define BLAST_IGNORE_HANDLER_HXX
+#ifndef BLAST_CALLBACK_HANDLER_HXX
+#define BLAST_CALLBACK_HANDLER_HXX
 
 #include <memory>
+
+#include <c4rt3/c4rt.h>
 
 #include "handler_base.hxx"
 
 namespace bst {
-	struct ignore_handler : handler_base {
+	struct callback_handler : handler_base {
 		explicit
-		ignore_handler(const std::string_view handler_for)
-			: handler_base(handler_for) { }
+		callback_handler(const std::string_view handler_for,
+							  c4_datum cb)
+			: handler_base(handler_for)
+			, _cb(cb) { }
 
 		void
 		dump_diagnostics(llvm::raw_ostream&) const override { }
 
 		std::unique_ptr<handler_base>
 		clone() const override {
-			return std::make_unique<ignore_handler>(name());
+			return std::make_unique<callback_handler>(name(), _cb);
 		}
 
 	protected:
 		bool
 		try_handle(std::unique_ptr<clang::ASTUnit>& context,
 					  const clang::DynTypedNode& node) override {
+			c4_datum nil;
+			c4_datum_from_nil(&nil);
+
+			c4_datum arr[3] = { nil, nil, nil };
+
+			c4_apply(_cb, 3, arr, 3);
+
 			return true;
 		}
+
+	private:
+		c4_datum _cb;
 	};
 }
 

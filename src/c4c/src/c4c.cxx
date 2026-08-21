@@ -34,15 +34,26 @@
  *   
  */
 
-#include <system_error>
-#include <system_error>
+#include <filesystem>
+#include <filesystem>
+#include <ios>
+#include <ios>
+#include <skalibs/buffer.h>
+#include <utility>
+#include <utility>
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
+#include <algorithm>
+#include <charconv>
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
-#include <algorithm>
+#include <system_error>
+
+#include <fmt/format.h>
 
 #include <c4/ast_dumper.hxx>
 
@@ -73,127 +84,178 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 
-#include <lyra/lyra.hpp>
+#include <sgetopt/sgetopt.h>
 
 using namespace std::literals;
 
-struct ostream_deleter {
-	void
-	operator()(const std::ostream* os) const {
-		if (os == &std::cout) return;
-		delete os;
-	}
-};
-
-using outstream_ptr = std::unique_ptr<std::ostream, ostream_deleter>;
-
-outstream_ptr
-open_outstream(const std::filesystem::path& path) {
-	if (path == "-") return outstream_ptr(&std::cout);
-
-	auto ptr = outstream_ptr(new std::ofstream(path));
-	if (!*ptr) throw std::runtime_error("could not open output file: " + path.string());
-
-	return ptr;
-}
-
-template<class It, class S = It>
-void
-dump_ast(It begin, S end, std::ostream& out) {
-	c4::ast_dumper dumper(out);
-	std::for_each(
-		std::move(begin), std::move(end),
-		[&dumper, &out](const auto& expr) {
-			expr->accept(dumper);
-			out << "\n";
+namespace {
+	struct ostream_deleter {
+		void
+		operator()(const std::ostream* os) const {
+			if (os == &std::cout) return;
+			delete os;
 		}
-	);
-}
+	};
 
-template<class It, class S = It>
-void
-dump_cps(It begin, S end, std::ostream& out) {
-	// c4::ast3_dumper dumper(out);
-	// std::for_each(
-	// std::move(begin), std::move(end),
-	// [&mapper, &dumper, &out](const auto& expr) {
-	// expr->accept(mapper);
-	// if (auto* e = mapper.result()) {
-	// dumper.dump(e);
-	// out << "\n";
-	// }
-	// }
-	// );
-}
+	using outstream_ptr = std::unique_ptr<std::ostream, ostream_deleter>;
 
-void
-initialize_targets();
+	outstream_ptr
+	open_outstream(const std::filesystem::path& path) {
+		if (path == "-") return outstream_ptr(&std::cout);
+
+		auto ptr = outstream_ptr(new std::ofstream(path));
+		if (!*ptr) throw std::runtime_error("could not open output file: " + path.string());
+
+		return ptr;
+	}
+
+	template<class It, class S = It>
+	void
+	dump_ast(It begin, S end, std::ostream& out) {
+		c4::ast_dumper dumper(out);
+		std::for_each(
+			std::move(begin), std::move(end),
+			[&dumper, &out](const auto& expr) {
+				expr->accept(dumper);
+				out << "\n";
+			}
+		);
+	}
+
+	void
+	initialize_targets();
+
+	#define argdesc(flag, arg, ...) "   " #flag "  "  << std::setw(w) << #arg << "   " #__VA_ARGS__ "\n"
+
+	[[noreturn]] void
+	usage(const char* argv0) {
+		constexpr int w = 7;
+		std::cerr << "usage: " << argv0 << " [-dEghIOoT] <source>\n"
+				<< "\n"
+				<< "options:\n"
+				<< std::left // don't need to restore, we are exiting imminently
+				<< argdesc(-d, type, Set dump type written to output. By default it is object code.)
+				<< argdesc(-E, , Compile source as executable entrypoint.)
+				<< argdesc(-g, debug, Enable debugging flag for compiling this TU. See c4c-debug(7).)
+				<< argdesc(-h, , Print this help and exit 100.)
+				<< argdesc(-I, dir, Add dir for finding C4 library archives.)
+				<< argdesc(-O, level, Set optimization level. Values are 0-3.)
+				<< argdesc(-o, file, The file to use as output. A bare - means STDOUT. Defaults to source with .o suffix.)
+				<< argdesc(-T, triplet, Set target triplet to trp. Same format as LLVM.);
+		exit(100);
+	}
+
+	template<class... Args>
+	[[noreturn]] void
+	die(const int e,
+	    fmt::format_string<Args...> fmt, Args&&... args) {
+		std::cerr << fmt::format(fmt, std::forward<Args>(args)...);
+		exit(e);
+	}
+
+	std::optional<std::string>
+	make_libinit_name(const bool build_entrypoint,
+	                  const std::filesystem::path& src) {
+		if (build_entrypoint) return {};
+
+		const auto rel = relative(src).make_preferred().replace_extension();
+		auto rel_str = rel.string();
+		std::ranges::transform(rel_str, begin(rel_str), [](const char c) {
+			if (c == std::filesystem::path::preferred_separator) return '_';
+			if (c == '.') return '_';
+			return c;
+		});
+
+		return rel_str + "_init";
+	}
+}
 
 int
-main(int argc, const char** argv) {
+main(int argc, const char* const* argv) {
+	const auto argv0 = argv[0];
+
 	std::filesystem::path out_path;
 	std::filesystem::path src_path;
 	std::string target_arch;
 	std::string dump_type;
-	bool show_help = false;
-	bool no_color_output = true;
 	int opt_level = 0;
 
 	bool debug_trace = false;
 	bool debug_gc = false;
 
-	const auto cli = lyra::cli()
-	                 | lyra::arg(src_path, "source")("The C4 source file to compile.").required()
-	                 | lyra::help(show_help).description(
-		                 "Compile a C4 script into an object file."
-	                 )(
-		                 "Do not compile, print help and exit."
-	                 )
-	                 | lyra::opt(out_path, "output")["-o"]["--output"](
-		                 "The name of the output file. When -d is set, STDOUT if `-'."
-	                 )
-	                 | lyra::opt(dump_type, "dump")["-d"]["--dump"](
-		                 "Do not compile, dump code instead. [AST, IR, ASM]"
-	                 ).choices("AST", "IR", "ASM")
-	                 | lyra::opt(target_arch, "target arch triplet")["-T"]["--target"](
-		                 "The target triplet to produce the binary for."
-	                 )
-	                 | lyra::opt(debug_trace)["-gcall-trace"](
-		                 "Generate code to bypass TCO allowing manual debugging,"
-		                 "while breaking concepts of computability"
-	                 )
-	                 | lyra::opt(debug_gc)["-gdebug-gc-calls"](
-		                 "Call debug versions of GC allocators. May break things."
-	                 )
-	                 | lyra::opt(no_color_output)["-C"]["--no-color"](
-		                 "Disable color diagnostic output to STDERR. (Not yet implemented.)"
-	                 )
-	                 | lyra::opt(opt_level, "level")["-O"](
-		                 "Set optimization level. [0-3]"
-	                 )
-			//
-			;
+	bool build_entrypoint = false;
 
-	if (const auto result = cli.parse({argc, argv});
-		!result) {
-		std::cerr << "fatal: " << result.message() << "\n";
-		std::cerr << cli << std::endl;
-		return 1;
+	subgetopt opts = SUBGETOPT_ZERO;
+	opts.prog = argv[0];
+	for (int opt;
+	     (opt = subgetopt_r(argc, argv, "d:Eg:hI:O:o:T:", &opts)) != -1;) {
+		switch (static_cast<char>(opt)) {
+		case 'd': {
+			dump_type = opts.arg;
+			if (dump_type == "AST") break;
+			if (dump_type == "IR") break;
+			if (dump_type == "ASM") break;
+			if (dump_type == "LTO") break;
+			die(100, "{}: fatal: invalid argument for {}: expected AST, IR, ASM, or LTO", argv0, "-d");
+		}
+		case 'E': {
+			build_entrypoint = true;
+			break;
+		}
+		case 'g': {
+			std::string_view tmp = opts.arg;
+			if (tmp == "call-trace") {
+				debug_trace = true;
+				break;
+			}
+			if (tmp == "debug-gc") {
+				debug_gc = true;
+				break;
+			}
+			die(100, "{}: fatal: invalid argument for {}: see c4c-debug(7) for valid values", argv0, "-g");
+		}
+		case 'I': {
+			break; // TODO
+		}
+		case 'O': {
+			auto [ptr, ec] = std::from_chars(opts.arg, opts.arg + std::strlen(opts.arg), opt_level);
+			if (ec != std::errc{}
+			    || *ptr != '\0') {
+				die(100, "{}: fatal: invalid argument for {}: {}\n", argv[0], "-O", std::make_error_code(ec).message());
+			}
+			break;
+		}
+		case 'o': {
+			out_path = opts.arg;
+			break;
+		}
+		case 'T': {
+			target_arch = opts.arg;
+			break;
+		}
+
+		case 'h':
+		default:
+			usage(argv0);
+		}
 	}
 
-	if (show_help) {
-		std::cout << cli << std::endl;
-		return 1;
-	}
+	argc -= opts.ind;
+	argv += opts.ind;
+	if (argc != 1) usage(argv0);
 
-	llvm::OptimizationLevel opt = llvm::OptimizationLevel::O0;
+	src_path = argv[0];
+
+	auto opt = llvm::OptimizationLevel::O0;
 	switch (std::max(std::min(opt_level, 3), 0)) {
 	case 0: break;
-	case 1: opt = llvm::OptimizationLevel::O1; break;
-	case 2: opt = llvm::OptimizationLevel::O2; break;
-	case 3: opt = llvm::OptimizationLevel::O3; break;
+	case 1: opt = llvm::OptimizationLevel::O1;
+		break;
+	case 2: opt = llvm::OptimizationLevel::O2;
+		break;
+	case 3: opt = llvm::OptimizationLevel::O3;
+		break;
 	}
-
 
 	c4c::source_file src(src_path);
 	if (out_path.empty()) {
@@ -204,7 +266,7 @@ main(int argc, const char** argv) {
 	src_path = absolute(src_path);
 	c4::ast2::ast_context ast_context;
 	c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
-	c4::diagnostics_engine diagnostics_engine{stderr, !no_color_output};
+	c4::diagnostics_engine diagnostics_engine{stderr};
 	c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
 
 	try {
@@ -259,11 +321,13 @@ main(int argc, const char** argv) {
 		pass_builder.registerFunctionAnalyses(fn_am);
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
-		c4rt2c::runtime_emitter rt_emitter(context, module, builder, true);
+		const bool decl_only_rt = !build_entrypoint;
+		c4rt2c::runtime_emitter rt_emitter(context, module, builder, decl_only_rt);
 		rt_emitter.set_debug_trace(debug_trace);
 		rt_emitter.set_memory_debug(debug_gc);
 
-		c4rt2c::ast2_ir_emitter ir(context, module, builder, std::move(rt_emitter));
+		const auto library_init_fn = make_libinit_name(build_entrypoint, src_path);
+		c4rt2c::ast2_ir_emitter ir(module, builder, std::move(rt_emitter), library_init_fn);
 		ir.init(src_path);
 
 		ir.declare_symbols(ast_context);
@@ -309,9 +373,11 @@ main(int argc, const char** argv) {
 	}
 }
 
-void
-initialize_targets() {
-	llvm::InitializeAllTargetInfos();
-	llvm::InitializeAllTargets();
-	llvm::InitializeAllTargetMCs();
+namespace {
+	void
+	initialize_targets() {
+		llvm::InitializeAllTargetInfos();
+		llvm::InitializeAllTargets();
+		llvm::InitializeAllTargetMCs();
+	}
 }

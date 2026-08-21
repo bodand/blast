@@ -41,9 +41,11 @@ add_library(blast STATIC
             src/blast/blast_build_ast_single.cxx
             src/blast/blast_build_from_compile_commands.cxx
             src/blast/blast_init_.cxx
+            src/blast/blast_make_callback.cxx
             src/blast/blast_make_diagnostic.cxx
             src/blast/blast_make_ignore_handler.cxx
             src/blast/blast_match_ast.cxx
+            src/blast/blast_new_unique_binding.cxx
 
             src/ext-type.hxx
             src/blast_typeid.cxx

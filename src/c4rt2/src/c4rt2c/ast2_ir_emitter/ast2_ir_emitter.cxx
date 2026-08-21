@@ -36,11 +36,15 @@
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
-c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
-                                         llvm::Module& module,
-                                         llvm::IRBuilder<>& builder,
-                                         runtime_emitter&& rt)
-	: _context{context}
+#include <llvm/IR/Module.h>
+#include <llvm/IR/IRBuilder.h>
+
+c4rt2c::ast2_ir_emitter::
+ast2_ir_emitter(llvm::Module& module,
+                builder_type& builder,
+                runtime_emitter&& rt,
+                const std::optional<std::string>& libinit_name)
+	: _context{module.getContext()}
 	, _module{module}
 	, _builder{builder}
 	, _di_builder{std::make_unique<llvm::DIBuilder>(module)}
@@ -55,7 +59,7 @@ c4rt2c::ast2_ir_emitter::ast2_ir_emitter(llvm::LLVMContext& context,
 	_c4_main = llvm::Function::Create(
 		c4_main_ty,
 		llvm::GlobalValue::ExternalLinkage,
-		"_c4_main",
+		libinit_name ? *libinit_name : "_c4_main",
 		_module
 	);
 	_c4_main->setCallingConv(llvm::CallingConv::Tail);

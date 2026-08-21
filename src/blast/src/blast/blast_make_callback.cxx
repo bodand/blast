@@ -28,16 +28,30 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-28.
+ * Originally created: 2026-08-19.
  *
- * src/c4rt2/src/c4rt2c/runtime_emitter/get_completion_self --
+ * src/blast/src/blast/blast_make_callback --
  *   
  */
 
-#include <c4rt2c/runtime_emitter.hxx>
+#include <c4rt3/c4rt.h>
 
-llvm::Value*
-c4rt2c::runtime_emitter::get_completion_self(llvm::Value* c) const {
-	const auto addr = _builder.CreateStructGEP(completion_t, c, completion_field_self, {c->getName(), ".self.addr"});
-	return _builder.CreateAlignedLoad(ptr_t, addr, llvm::Align(8), {c->getName(), ".self"});
+#include <gc/gc.h>
+
+#include "../ext-type.hxx"
+#include "../handler/callback_handler.hxx"
+
+c4_let_native(blast_make_callback)(c4_datum binding, c4_datum cb) {
+	char* binding_name;
+	size_t binding_name_sz;
+	c4_datum_coerce_string(binding, &binding_name, &binding_name_sz);
+
+	const auto handler = GC_NEW(bst::callback_handler);
+	std::construct_at(handler,
+		std::string_view(binding_name, binding_name_sz),
+		cb);
+
+	c4_datum out;
+	c4_datum_from_handler(handler, &out);
+	return out;
 }

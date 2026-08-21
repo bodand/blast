@@ -175,6 +175,7 @@ target_include_directories(c4_llvm SYSTEM INTERFACE
 target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM)
 
 #add_subdirectory(src/cdb)
+add_subdirectory(src/sgetopt)
 
 add_subdirectory(src/c4rt2)
 add_subdirectory(src/libarray)

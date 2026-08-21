@@ -42,6 +42,8 @@
 
 
 c4rt2c::runtime_fn_debug_info_builder::~runtime_fn_debug_info_builder() {
+	if (_target->decl_only()) return;
+
 	std::vector<llvm::Metadata*> types;
 	types.reserve(1 + _args.size());
 
@@ -71,7 +73,6 @@ c4rt2c::runtime_fn_debug_info_builder::~runtime_fn_debug_info_builder() {
 
 	fn->setSubprogram(sub);
 	_target->_dib = _dib;
-	if (_target->decl_only()) return;
 
 	std::vector<llvm::Argument*> unfucked_args(fn->arg_size());
 	std::transform(fn->arg_begin(), fn->arg_end(), unfucked_args.begin(),

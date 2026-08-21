@@ -1,0 +1,25 @@
+.Dd August 21, 2026
+.Dt C4C-DEBUG 7
+.Os C4 1.0.0
+.Sh NAME
+.Nm c4c-debug
+.Nd optional debugging aiding functionality of the c4c
+.Sh DESCRIPTION
+The
+.Xr c4c 1 ,
+compiler has a set of features that allow special debugging functionality to be compiled into the output.
+This can be accessed by passing the special flag over to the
+.Fl g
+flag of the compiler.
+The accepted flags are as follows:
+.Bl -tag -width Ds
+.It Fl g Ar call-trace
+Emit code that does not perform tail calls.
+.Em Warning:
+This may make your otherwise fine code uncomputable because of indefinitely growing the OS stack.
+This is primarily useful for finding weird call-paths, because all functions ever called will be visible in the callstack.
+.It Fl g Ar debug-gc
+Emit calls to the Boehm GC's debugging functions instead of normal calls.
+.El
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me

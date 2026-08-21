@@ -34,8 +34,14 @@
  *   
  */
 
+#include <algorithm>
+#include <exception>
 #include <iostream>
+#include <iterator>
+#include <stdexcept>
+#include <string_view>
 #include <thread>
+#include <vector>
 
 #include <c4rt3/c4rt.h>
 
@@ -46,8 +52,11 @@
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 #include <clang/ASTMatchers/Dynamic/Diagnostics.h>
 #include <clang/ASTMatchers/Dynamic/Parser.h>
+#include <clang/ASTMatchers/Dynamic/VariantValue.h>
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/Tooling/Tooling.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/ADT/StringRef.h>
 
 #include "../compilation_db.hxx"
 #include "../ext-type.hxx"
@@ -157,20 +166,21 @@ namespace {
 	struct matcher_worker {
 		explicit
 		matcher_worker(const c4_array handlers,
-		               const auto& matcher,
+		               const auto& matchers,
 		               bst::compilation_db* db,
 		               draining_work_pool* pool)
 			: _callback(handlers)
 			, _db{db}
 			, _pool{pool} {
-			if (_finder.addDynamicMatcher(matcher, &_callback)) {
-				_running.test_and_set();
-			}
+			std::ranges::for_each(matchers, [&](const auto& matcher) {
+				if (_finder.addDynamicMatcher(matcher, &_callback)) return;
+
+				throw std::runtime_error("couldn't add dynamic matcher");
+			});
 		}
 
 		void
 		operator()() try {
-			if (!_running.test()) return;
 			GC_stack_base base;
 			GC_get_stack_base(&base);
 			GC_register_my_thread(&base);
@@ -213,7 +223,6 @@ namespace {
 		}
 
 	private:
-		std::atomic_flag _running = ATOMIC_FLAG_INIT;
 		ast::MatchFinder _finder{};
 		blast_callback _callback;
 		bst::compilation_db* _db;
@@ -223,32 +232,44 @@ namespace {
 
 c4_let_native(blast_match_ast)(
 	const c4_datum ast_db,
-	const c4_datum matcher_str,
+	const c4_datum matchers_dat,
 	const c4_datum handlers_array
-) {
-	char* matcher;
-	size_t matcher_sz;
-	c4_datum_coerce_string(matcher_str, &matcher, &matcher_sz);
-	llvm::StringRef matcher_code(matcher, matcher_sz);
+) try {
+	c4_array matchers_array;
+	c4_datum_get_array(matchers_dat, &matchers_array);
 
-	bst::compilation_db* db;
-	c4_datum_get_db(ast_db, &db);
+	llvm::SmallVector<llvm::StringRef, 4> matcher_strs;
+	matcher_strs.reserve(matchers_array->len);
+	std::ranges::transform(matchers_array->data,
+	                       matchers_array->data + matchers_array->len,
+	                       std::back_inserter(matcher_strs),
+	                       [](c4_datum str) {
+		char* ret_str;
+		size_t ret_str_sz;
+		c4_datum_coerce_string(str, &ret_str, &ret_str_sz);
+		return llvm::StringRef{ret_str, ret_str_sz};
+	});
 
-	dyn::Diagnostics diags;
-	const auto m = dyn::Parser::parseMatcherExpression(matcher_code, &diags);
-	if (!m) {
+	llvm::SmallVector<dyn::DynTypedMatcher, 4> matchers;
+	matchers.reserve(matchers_array->len);
+	std::ranges::transform(matcher_strs.begin(),
+	                       matcher_strs.end(),
+	                       std::back_inserter(matchers),
+	                       [](llvm::StringRef matcher) {
+		dyn::Diagnostics diags;
+		const auto m = dyn::Parser::parseMatcherExpression(matcher, &diags);
+		if (m) return *m;
+
 		std::cerr << "blast: fatal: error parsing matcher expression: "
-				<< diags.toStringFull() << std::endl;
-		c4_datum nil;
-		c4_datum_from_nil(&nil);
-		return nil;
-	}
-
-	const auto bound = m->tryBind("root");
-	const auto& final = bound ? *bound : *m;
+		          << diags.toStringFull() << "\n";
+		throw std::runtime_error("bad matcher");
+	});
 
 	c4_array handlers;
 	c4_datum_get_array(handlers_array, &handlers);
+
+	bst::compilation_db* db;
+	c4_datum_get_db(ast_db, &db);
 
 	draining_work_pool pool(db->files());
 
@@ -259,7 +280,7 @@ c4_let_native(blast_match_ast)(
 	                [&] {
 		                return std::make_unique<matcher_worker>(
 			                handlers,
-			                final,
+			                matchers,
 			                db,
 			                &pool);
 	                });
@@ -275,6 +296,18 @@ c4_let_native(blast_match_ast)(
 	std::ranges::for_each(threads, [](auto& thread) { thread.join(); });
 	std::ranges::for_each(workers, [](auto& worker) { worker->dump(); });
 
+	c4_datum nil;
+	c4_datum_from_nil(&nil);
+	return nil;
+}
+catch (std::exception& ex) {
+	std::cerr << "blast: fatal: " << ex.what() << "\n";
+
+	c4_datum nil;
+	c4_datum_from_nil(&nil);
+	return nil;
+}
+catch (...) {
 	c4_datum nil;
 	c4_datum_from_nil(&nil);
 	return nil;

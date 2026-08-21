@@ -37,6 +37,8 @@
 #define BLAST_AST3_IR_EMITTER_HXX
 
 #include <filesystem>
+#include <optional>
+#include <optional>
 #include <string_view>
 
 #include <c4/ast2/fwd.hxx>
@@ -69,11 +71,10 @@ namespace c4rt2c {
 	struct ast2_ir_emitter : c4::ast2::ast2_visitor {
 		using builder_type = llvm::IRBuilder<>;
 
-		ast2_ir_emitter(llvm::LLVMContext& context,
-		                llvm::Module& module,
+		ast2_ir_emitter(llvm::Module& module,
 		                builder_type& builder,
-		                runtime_emitter&& rt
-		);
+		                runtime_emitter&& rt,
+		                const std::optional<std::string>& libinit_name);
 
 		void do_visit(const c4::ast2::binary_op_call& obj) override;
 

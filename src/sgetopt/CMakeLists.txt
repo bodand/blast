@@ -28,41 +28,24 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2025-03-26.
+# Originally created: 2026-08-21.
 #
-# src/c4c/CMakeLists.txt --
-#   CMake project for the C4 Compiler (c4c)s
+# src/sgetopt/CMakeLists.txt --
+#	A wrapper for a common getopt function yanked from skalibs. The sources are
+#	modified to be used by C++. 
+#	Changes:
+#		- use C++'s std::format instead of skalibs' buffer interface
+#		- codestyle
+#
+#	The original license is in-tact in LICENSE.orig in this dir.
 
-add_executable(c4c src/c4c.cxx)
+project(sgetopt)
 
-target_link_libraries(c4c PRIVATE
-                      c4
-                      c4rt2c
-                      c4_llvm
-                      sgetopt
-                      bfg::lyra
-                      libassert::assert
-                      )
-target_include_directories(c4c PRIVATE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+add_library(sgetopt STATIC
+				inc/sgetopt/sgetopt.h
+				src/sgetopt/sgetopt.cxx
+				src/sgetopt/subgetopt_here.cxx
+				src/sgetopt/subgetopt.cxx
+			)
+target_include_directories(sgetopt PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>)
 
-if (WIN32)
-    add_custom_command(
-            TARGET c4c POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
-if (MSVC AND BLAST_ENABLE_SANITIZERS)
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
