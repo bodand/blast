@@ -90,7 +90,7 @@ c4::ast2::let_expression::value() {
 
 bool
 c4::ast2::let_expression::declaration() const noexcept {
-	return false;
+	return _value == nullptr;
 }
 
 bool

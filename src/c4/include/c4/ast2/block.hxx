@@ -90,6 +90,9 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		introduces_function() const noexcept override { return false; }
 
+		[[nodiscard]] bool
+		declaration() const noexcept override { return false; }
+
 	private:
 		struct symbol _symbol;
 	};

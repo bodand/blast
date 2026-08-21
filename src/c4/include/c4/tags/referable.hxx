@@ -56,6 +56,9 @@ namespace c4::ast2::tags {
 		thunk() const noexcept;
 
 		[[nodiscard]] virtual bool
+		declaration() const noexcept = 0;
+
+		[[nodiscard]] virtual bool
 		introduces_variable() const noexcept = 0;
 
 		[[nodiscard]] virtual bool

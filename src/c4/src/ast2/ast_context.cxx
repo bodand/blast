@@ -60,6 +60,12 @@ namespace {
 		nodes.emplace_front(std::move(arg));
 		return ptr;
 	}
+
+	struct wrapping_expression_attribute : c4::ast2::tags::typed_attribute<c4::ast2::expression*> {
+		explicit
+		wrapping_expression_attribute(c4::ast2::expression* expression)
+			: typed_attribute(expression) { }
+	};
 }
 
 c4::ast2::block_args*
@@ -126,7 +132,13 @@ c4::ast2::ast_context::build_expression(fn_call* exp, std::vector<symbol>&& clos
 
 c4::ast2::expression*
 c4::ast2::ast_context::build_expression(let_expression* exp, std::vector<symbol>&& closure) {
-	return build_insert<expression>(_nodes, exp, std::move(closure));
+	if (const auto wrap = exp->attribute_value<expression*>("wrapping-expr")) {
+		return *wrap;
+	}
+
+	auto wrap = build_insert<expression>(_nodes, exp, std::move(closure));
+	exp->emplace_attribute<wrapping_expression_attribute>("wrapping-expr", wrap);
+	return wrap;
 }
 
 c4::ast2::expression*

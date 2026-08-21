@@ -99,7 +99,7 @@ namespace c4::ast2 {
 		introduces_function() const noexcept override { return !introduces_variable(); }
 
 		[[nodiscard]] bool
-		declaration() const noexcept;
+		declaration() const noexcept override;
 
 		[[nodiscard]] bool
 		global_symbol() const;

@@ -116,6 +116,12 @@ namespace {
 		native_attachment(c4::ast2::symbol&& sym)
 			: typed_attribute(sym) { }
 	};
+
+	struct flag_attribute : c4::ast2::tags::typed_attribute<bool> {
+		explicit
+		flag_attribute()
+			: typed_attribute(true) { }
+	};
 }
 
 c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
@@ -222,22 +228,38 @@ c4::p2::parser::parse_expression() {
 
 c4::ast2::expression*
 c4::p2::parser::parse_operator_let() {
-	const auto op = parse_op_symbol();
-	parser_symbol* sym = nullptr;
+	auto op = parse_op_symbol();
 	const auto let = _context.build_let_expression(
 		op.position(),
 		op,
 		nullptr
 	);
 
-	// XXX this is suboptimal
-	ASSERT(op.base_arity() == 1 || op.base_arity() == 2,
-	       "invalid operator arity", op);
+	if (const auto last = find_scoped_symbol_with_arity(op)) {
+		_diag.error(op.position(),
+		            "operator `({})/{}' is already defined",
+		            op.name(), op.base_arity())
+		     .note("replacing definition with this one for further parsing")
+		     .when(last->symbol.referee)
+		     .note(last->symbol.referee->position(), "previous definition is here")
+		     .when(!last->symbol.referee)
+		     .note("previous definition was externally provided");
+	}
 
 	std::string_view diagnostic;
 	std::string_view continuation_note;
+	parser_symbol* sym = nullptr;
 
-	if (op.base_arity() == 1) {
+	switch (op.base_arity()) {
+	case 0:
+		_diag.error(op.position(),
+		            "invalid operator arity: {} for operator `({})/0' (expected 1 or 2)",
+		            op.base_arity(),
+		            op.name())
+		     .note("reparsing as if it had one argument (prefix)");
+		op = op.with_arity(1);
+		[[fallthrough]];
+	case 1:
 		diagnostic = "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments";
 		continuation_note = "continuing parsing as if `{}' had one parameter (prefix)";
 
@@ -245,8 +267,17 @@ c4::p2::parser::parse_operator_let() {
 		                               op.base_arity(),
 		                               nullptr,
 		                               static_cast<unsigned>(-1));
-	}
-	if (op.base_arity() == 2) {
+		break;
+
+	default:
+		_diag.error(op.position(),
+		            "invalid operator arity: {} for operator `({})/?' (expected 1 or 2)",
+		            op.base_arity(),
+		            op.name())
+		     .note("reparsing as if it had two arguments (infix)");
+		op = op.with_arity(2);
+		[[fallthrough]];
+	case 2:
 		diagnostic = "operator `{}' is defined with two parameters (infix) but definition expects `{}' arguments";
 		continuation_note = "continuing parsing as if `{}' had two parameters (infix)";
 
@@ -260,6 +291,7 @@ c4::p2::parser::parse_operator_let() {
 		                               nullptr,
 		                               precedence,
 		                               !left_assoc);
+		break;
 	}
 
 	const auto expr = parse_expression_of_let(op, let);
@@ -268,11 +300,11 @@ c4::p2::parser::parse_operator_let() {
 		if (unsigned unbound = expr->unbound_parameters();
 			unbound != op.base_arity()) {
 			_diag.error(op.position(),
-							fmt::runtime(diagnostic),
-							op.name(),
-							unbound)
-				  .note(expr->position(), "definition is here")
-				  .note(fmt::runtime(continuation_note), op.name());
+			            fmt::runtime(diagnostic),
+			            op.name(),
+			            unbound)
+			     .note(expr->position(), "definition is here")
+			     .note(fmt::runtime(continuation_note), op.name());
 		}
 	}
 
@@ -318,13 +350,45 @@ c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
 c4::ast2::expression*
 c4::p2::parser::parse_fn_let(const bool native) {
 	const auto symbol = parse_symbol(false);
-	const auto let = _context.build_let_expression(
-		symbol.position(),
-		symbol,
-		nullptr
-	);
 
-	declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
+	ast2::let_expression* let = nullptr;
+
+	if (const auto last = find_scoped_symbol(symbol)) {
+		if (last->symbol.referee) {
+			let = dynamic_cast<ast2::let_expression*>(last->symbol.referee);
+			if (let) {
+				if (!let->declaration()) {
+					_diag.error(symbol.position(),
+					            "function `{}' is already defined",
+					            symbol.name())
+					     .note("replacing definition with this one for further parsing")
+					     .note(last->symbol.referee->position(), "previous definition is here");
+				}
+				if (let->symbol().base_arity() != symbol.base_arity()) {
+					_diag.error(symbol.position(),
+					            "function `{}' is already defined with different arity",
+					            symbol.name())
+					     .note(last->symbol.referee->position(), "previous definition is here with arity {}",
+					           let->symbol().base_arity())
+					     .note("replacing definition with this one for further parsing");
+				}
+			}
+			else {
+				_diag.warning(symbol.position(),
+				              "local variable shadows argument of enclosing block");
+			}
+		}
+	}
+
+	if (!let) {
+		let = _context.build_let_expression(
+			symbol.position(),
+			symbol,
+			nullptr
+		);
+		declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
+	}
+
 	if (native) {
 		if (!expect_token<tokens::symbol>()) {
 			_diag.warning(current_position(),
@@ -372,14 +436,14 @@ c4::p2::parser::parse_fn_let(const bool native) {
 		if (unsigned unbound = expr->unbound_parameters();
 			unbound != symbol.base_arity()) {
 			_diag.error(symbol.position(),
-							"function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
-							symbol.name(),
-							symbol.base_arity(),
-							unbound)
-				  .note(expr->position().snapshot(), "definition is here")
-				  .note("continuing parsing as if `{}' had `{}' parameter(s)",
-						  symbol.name(),
-						  symbol.base_arity());
+			            "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
+			            symbol.name(),
+			            symbol.base_arity(),
+			            unbound)
+			     .note(expr->position().snapshot(), "definition is here")
+			     .note("continuing parsing as if `{}' had `{}' parameter(s)",
+			           symbol.name(),
+			           symbol.base_arity());
 		}
 	}
 
@@ -832,7 +896,13 @@ std::vector<c4::ast2::expression*>
 c4::p2::parser::parse_script() {
 	std::vector<ast2::expression*> expressions{};
 	while (!is_eof(_current)) {
-		if (auto expr = parse_expression()) expressions.emplace_back(expr);
+		auto expr = parse_expression();
+		if (!expr) continue;
+
+		if (!expr->attribute_value<bool>("emplaced")) {
+			std::ignore = expr->emplace_attribute<flag_attribute>("emplaced");
+			expressions.emplace_back(expr);
+		}
 	}
 	return expressions;
 }

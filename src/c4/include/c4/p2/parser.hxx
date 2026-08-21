@@ -35,6 +35,7 @@
  */
 #ifndef C4_P2_PARSER_HXX
 #define C4_P2_PARSER_HXX
+#include <deque>
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -256,7 +257,6 @@ namespace c4::p2 {
 
 		struct symbol_resolution {
 			parser_symbol& symbol;
-			std::ptrdiff_t distance;
 			bool save_in_context;
 		};
 
@@ -269,7 +269,6 @@ namespace c4::p2 {
 			const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
 			return symbol_resolution{
 				.symbol = *it,
-				.distance = iter_difference,
 				.save_in_context = std::cmp_greater_equal(iter_difference, current_scope)
 			};
 		}
@@ -285,7 +284,6 @@ namespace c4::p2 {
 			const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
 			return symbol_resolution{
 				.symbol = *it,
-				.distance = iter_difference,
 				.save_in_context = std::cmp_greater(iter_difference, current_scope)
 			};
 		}
@@ -325,7 +323,7 @@ namespace c4::p2 {
 		find_prefix_operator(std::string_view name);
 
 		std::vector<unsigned> _scope_symbol_size;
-		std::vector<parser_symbol> _scope_symbols;
+		std::deque<parser_symbol> _scope_symbols;
 
 		ast2::let_expression* _within_let = nullptr;
 		ast2::block* _within_block = nullptr;
