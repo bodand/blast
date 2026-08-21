@@ -357,20 +357,20 @@ c4::p2::parser::parse_fn_let(const bool native) {
 		if (last->symbol.referee) {
 			let = dynamic_cast<ast2::let_expression*>(last->symbol.referee);
 			if (let) {
-				if (!let->declaration()) {
-					_diag.error(symbol.position(),
-					            "function `{}' is already defined",
-					            symbol.name())
-					     .note("replacing definition with this one for further parsing")
-					     .note(last->symbol.referee->position(), "previous definition is here");
-				}
 				if (let->symbol().base_arity() != symbol.base_arity()) {
 					_diag.error(symbol.position(),
 					            "function `{}' is already defined with different arity",
 					            symbol.name())
 					     .note(last->symbol.referee->position(), "previous definition is here with arity {}",
 					           let->symbol().base_arity())
-					     .note("replacing definition with this one for further parsing");
+					     .note("using previous definition for further parsing");
+				}
+				else if (!let->declaration()) {
+					_diag.error(symbol.position(),
+					            "function `{}' is already defined",
+					            symbol.name())
+					     .note("replacing definition with this one for further parsing")
+					     .note(last->symbol.referee->position(), "previous definition is here");
 				}
 			}
 			else {
@@ -447,7 +447,7 @@ c4::p2::parser::parse_fn_let(const bool native) {
 		}
 	}
 
-	let->expression(expr);
+	if (!let->value()) let->expression(expr);
 	if (_within_block) let->emplace_attribute<nested_symbol_attribute>("nested-in", _within_block);
 	return _context.build_expression(let);
 }
