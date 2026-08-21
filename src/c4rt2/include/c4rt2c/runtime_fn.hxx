@@ -106,6 +106,18 @@ namespace c4rt2c {
 		mutable llvm::DIBuilder* _dib{};
 		mutable llvm::BasicBlock* _entry{};
 
+		bool _decl_only{};
+
+		runtime_fn(llvm::FunctionType* type,
+		           llvm::Function* fn,
+		           bool decl_only = false)
+			: type(type)
+			, fn(fn)
+			, _decl_only(decl_only) { }
+
+		[[nodiscard]] bool
+		decl_only() const noexcept { return _decl_only; }
+
 		runtime_fn_debug_info_builder
 		dbg(llvm::DIBuilder* dib) { return {this, dib}; }
 
@@ -115,6 +127,9 @@ namespace c4rt2c {
 		template<class Fn>
 		void
 		define(llvm::IRBuilder<>& builder, Fn&& body_builder) const {
+			decorate_function();
+			if (_decl_only) return;
+
 			const scoped_scope scope(builder);
 			builder.SetInsertPoint(entry());
 
@@ -151,6 +166,12 @@ namespace c4rt2c {
 		explicit(false) operator llvm::FunctionCallee() const noexcept {
 			return {type, fn};
 		}
+
+	private:
+		mutable bool _decorated{};
+
+		void
+		decorate_function() const;
 	};
 }
 

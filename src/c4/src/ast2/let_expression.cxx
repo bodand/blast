@@ -37,6 +37,7 @@
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/let_expression.hxx>
 
+#include <stdbool.h>
 #include <utility>
 #include <libassert/assert.hpp>
 
@@ -85,6 +86,11 @@ c4::ast2::let_expression::value() const {
 c4::ast2::expression*
 c4::ast2::let_expression::value() {
 	return _value;
+}
+
+bool
+c4::ast2::let_expression::declaration() const noexcept {
+	return false;
 }
 
 bool

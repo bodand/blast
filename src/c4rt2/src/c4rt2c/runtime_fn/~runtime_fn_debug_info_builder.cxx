@@ -70,6 +70,8 @@ c4rt2c::runtime_fn_debug_info_builder::~runtime_fn_debug_info_builder() {
 	llvm::IRBuilder<> builder(ctx);
 
 	fn->setSubprogram(sub);
+	_target->_dib = _dib;
+	if (_target->decl_only()) return;
 
 	std::vector<llvm::Argument*> unfucked_args(fn->arg_size());
 	std::transform(fn->arg_begin(), fn->arg_end(), unfucked_args.begin(),
@@ -85,16 +87,15 @@ c4rt2c::runtime_fn_debug_info_builder::~runtime_fn_debug_info_builder() {
 			const auto dbg_loc = llvm::DILocation::get(ctx, 0, 0, sub);
 
 			const auto insert = _target->entry();
+			const auto insert_ptr = insert->getFirstInsertionPt();
 
 			arg->setName(local_arg.name);
-			builder.SetInsertPoint(insert);
+			builder.SetInsertPoint(insert_ptr);
 			builder.SetCurrentDebugLocation(dbg_loc);
 
 			const auto addr = builder.CreateAlloca(arg->getType(), nullptr,
 			                                       {local_arg.name, ".addr"});
 			builder.CreateStore(arg, addr);
-			_dib->insertDeclare(addr, di_arg, local_arg.expr, dbg_loc, insert);
+			_dib->insertDeclare(addr, di_arg, local_arg.expr, dbg_loc, insert_ptr);
 		});
-
-	_target->_dib = _dib;
 }

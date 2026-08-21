@@ -28,44 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-31.
+ * Originally created: 2026-08-21.
  *
- * src/c4rt2/src/c4rt3/internal_type --
- *   Defines the PImpl's implementation part to be used within c4rt3. MUST BE
- *   KEPT IN ORDER WITH c4rt2c's LLVM IR structure and its usage.
+ * src/c4rt2/src/c4rt2c/runtime_fn/decorate_function --
+ *   
  */
-#ifndef BLAST_INTERNAL_TYPE_H
-#define BLAST_INTERNAL_TYPE_H
 
-#include <c4rt3/c4rt.h>
+#include <c4rt2c/runtime_fn.hxx>
 
-struct c4_datum_t {
-	c4_datum_type type;
-	int32_t argv_sz;
+#include <llvm/IR/DIBuilder.h>
 
-	union {
-		void* val_ptr;
-		int64_t val_int64;
-		double val_float64;
-	};
+void
+c4rt2c::runtime_fn::
+decorate_function() const {
+	if (_decorated) return;
+	_decorated = true;
 
-	union {
-		struct c4_datum_t** argv;
-		struct c4_external_magic* magic;
-		uint64_t str_sz;
-	};
-};
+	fn->setCallingConv(llvm::CallingConv::Tail);
+	fn->addFnAttr(llvm::Attribute::NoUnwind);
+	fn->addFnAttr(llvm::Attribute::NoFree);
+	fn->setVisibility(llvm::GlobalValue::HiddenVisibility);
+	if (!decl_only()) fn->setLinkage(llvm::Function::WeakODRLinkage);
+}
 
-#define datum_blk(d) ((d)->val_ptr)
-#define datum_ext(d) ((d)->val_ptr)
-#define datum_flt(d) ((d)->val_float64)
-#define datum_int(d) ((d)->val_int64)
-#define datum_str(d) ((d)->val_ptr)
-
-#define datum_str_sz(d) ((d)->str_sz)
-#define datum_sstr(d) datum_str(d), datum_str_sz(d)
-
-#define datum_exttype(d) ((d)->argv_sz)
-#define datum_magic(d) ((d)->magic)
-
-#endif

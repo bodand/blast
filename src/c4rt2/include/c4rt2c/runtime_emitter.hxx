@@ -55,7 +55,8 @@ namespace c4rt2c {
 	struct runtime_emitter {
 		runtime_emitter(llvm::LLVMContext& ctx,
 		                llvm::Module& module,
-		                llvm::IRBuilder<>& builder);
+		                llvm::IRBuilder<>& builder,
+		                bool decl_only_rt);
 
 		[[nodiscard]] llvm::FunctionType*
 		function_type() const { return _function_type; }

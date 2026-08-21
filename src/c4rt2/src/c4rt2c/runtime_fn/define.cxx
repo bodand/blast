@@ -35,17 +35,15 @@
  */
 
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Function.h>
 #include <llvm/IR/LLVMContext.h>
 
 #include <c4rt2c/runtime_fn.hxx>
 
 llvm::BasicBlock*
 c4rt2c::runtime_fn::define(llvm::LLVMContext& ctx) const {
-	fn->setCallingConv(llvm::CallingConv::Tail);
-	fn->addFnAttr(llvm::Attribute::NoUnwind);
-	fn->addFnAttr(llvm::Attribute::NoFree);
-	fn->setVisibility(llvm::GlobalValue::HiddenVisibility);
-
+	decorate_function();
 	const auto ptr_t = llvm::PointerType::get(ctx, 0);
 
 	for (auto& arg : fn->args()) {

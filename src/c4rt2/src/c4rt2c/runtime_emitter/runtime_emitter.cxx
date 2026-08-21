@@ -110,6 +110,7 @@ namespace {
 	template<class R, class... Args>
 	c4rt2c::runtime_fn
 	make_rt_function(llvm::Module* module,
+	                 bool decl_only,
 	                 type<R>,
 	                 std::string_view name,
 	                 type<Args>...) {
@@ -125,7 +126,7 @@ namespace {
 			module
 		);
 
-		return {fn_type, fn};
+		return {fn_type, fn, decl_only};
 	}
 }
 
@@ -143,12 +144,12 @@ namespace {
 
 #define fn_II(_, fn) cat(_rt_, fn)
 #define fn_I(t, fn) t, str(cat(_c4_, fn))
-#define fn(tfn) PASS(fn_II LPAREN TYPE_##tfn RPAREN) { make_rt_function LPAREN &_module, PASS(fn_I LPAREN TYPE_##tfn RPAREN) STRIPPER
-
+#define fn(tfn) PASS(fn_II LPAREN TYPE_##tfn RPAREN) { make_rt_function LPAREN &_module, decl_only_rt, PASS(fn_I LPAREN TYPE_##tfn RPAREN) STRIPPER
 
 c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
                                          llvm::Module& module,
-                                         llvm::IRBuilder<>& builder)
+                                         llvm::IRBuilder<>& builder,
+	                                      bool decl_only_rt)
 	: _context{ctx}
 	, _module{module}
 	, _builder{builder}
@@ -183,10 +184,10 @@ c4rt2c::runtime_emitter::runtime_emitter(llvm::LLVMContext& ctx,
 	, fn(void set_thunk_args)(ptr, ptr, i32)
 	, fn(ptr merge_argv)(ptr, i32, ptr)
 	, _gc_malloc{
-		make_rt_function(&_module, ptr, "GC_malloc", i64)
+		make_rt_function(&_module, true, ptr, "GC_malloc", i64)
 	}
 	, _gc_debug_malloc{
-		make_rt_function(&_module, ptr, "GC_debug_malloc", i64, ptr, i32)
+		make_rt_function(&_module, true, ptr, "GC_debug_malloc", i64, ptr, i32)
 	} {
 	int8_t = i8.get(_context);
 	int32_t = i32.get(_context);

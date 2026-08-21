@@ -34,9 +34,6 @@
  *   
  */
 
-#include <deque>
-#include <iostream>
-#include <ranges>
 #include <utility>
 
 #include <c4/p2/parser.hxx>
@@ -211,6 +208,11 @@ c4::p2::parser::parse_bare_symbol() {
 
 c4::ast2::expression*
 c4::p2::parser::parse_expression() {
+	if (const auto empty = expect_token<tokens::semicolon>()) {
+		next_relevant();
+		return nullptr;
+	}
+
 	if (const auto let = expect_token<tokens::let>())
 		return parse_let_expression();
 
@@ -262,14 +264,16 @@ c4::p2::parser::parse_operator_let() {
 
 	const auto expr = parse_expression_of_let(op, let);
 
-	if (unsigned unbound = expr->unbound_parameters();
-		unbound != op.base_arity()) {
-		_diag.error(op.position(),
-		            fmt::runtime(diagnostic),
-		            op.name(),
-		            unbound)
-		     .note(expr->position(), "definition is here")
-		     .note(fmt::runtime(continuation_note), op.name());
+	if (expr) {
+		if (unsigned unbound = expr->unbound_parameters();
+			unbound != op.base_arity()) {
+			_diag.error(op.position(),
+							fmt::runtime(diagnostic),
+							op.name(),
+							unbound)
+				  .note(expr->position(), "definition is here")
+				  .note(fmt::runtime(continuation_note), op.name());
+		}
 	}
 
 	let->expression(expr);
@@ -364,17 +368,19 @@ c4::p2::parser::parse_fn_let(const bool native) {
 
 	const auto expr = parse_expression_of_let(symbol, let);
 
-	if (unsigned unbound = expr->unbound_parameters();
-		unbound != symbol.base_arity()) {
-		_diag.error(symbol.position(),
-		            "function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
-		            symbol.name(),
-		            symbol.base_arity(),
-		            unbound)
-		     .note(expr->position().snapshot(), "definition is here")
-		     .note("continuing parsing as if `{}' had `{}' parameter(s)",
-		           symbol.name(),
-		           symbol.base_arity());
+	if (expr) {
+		if (unsigned unbound = expr->unbound_parameters();
+			unbound != symbol.base_arity()) {
+			_diag.error(symbol.position(),
+							"function `{}' is defined with `{}' parameter(s) but definition expects `{}' arguments",
+							symbol.name(),
+							symbol.base_arity(),
+							unbound)
+				  .note(expr->position().snapshot(), "definition is here")
+				  .note("continuing parsing as if `{}' had `{}' parameter(s)",
+						  symbol.name(),
+						  symbol.base_arity());
+		}
 	}
 
 	let->expression(expr);
@@ -498,6 +504,7 @@ c4::p2::parser::parse_final_expression() {
 		next_relevant();
 
 		auto expr = parse_expression();
+		ASSERT(expr, "empty expression is unimplemented for dynamic calls");
 
 		const auto dyn_call_end = expect_token<tokens::arity_marker>();
 		if (!dyn_call_end) report_failure(_diag, dyn_call_end);
@@ -558,14 +565,14 @@ c4::p2::parser::parse_block() {
 	if (lbrace) {
 		auto next = expect_token<tokens::rbrace>();
 		while (!next) {
-			expressions.emplace_back(parse_expression());
+			if (auto expr = parse_expression()) expressions.emplace_back(expr);
 			next = expect_token<tokens::rbrace>();
 		}
 		next_relevant();
 	}
 
 	if (bslash) {
-		expressions.emplace_back(parse_expression());
+		if (auto expr = parse_expression()) expressions.emplace_back(expr);
 	}
 
 	block->args(args);
@@ -635,7 +642,11 @@ c4::p2::parser::parse_precedence(std::string_view op) {
 void
 c4::p2::parser::parse_n_expressions(const unsigned n,
                                     std::vector<ast2::expression*>& expressions) {
-	for (unsigned i = 0; i < n; ++i) expressions.emplace_back(parse_expression());
+	for (unsigned i = 0; i < n; ++i) {
+		auto expr = parse_expression();
+		ASSERT(expr, "argument-list cutting via the empty expression is not implemented");
+		expressions.emplace_back(expr);
+	}
 }
 
 c4::ast2::expression*
@@ -821,7 +832,7 @@ std::vector<c4::ast2::expression*>
 c4::p2::parser::parse_script() {
 	std::vector<ast2::expression*> expressions{};
 	while (!is_eof(_current)) {
-		expressions.emplace_back(parse_expression());
+		if (auto expr = parse_expression()) expressions.emplace_back(expr);
 	}
 	return expressions;
 }

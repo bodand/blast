@@ -64,10 +64,15 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 
 	expr->emplace_attribute<c4c::llvm_value_attribute>("value", *fn);
 
+	const auto val = let.value();
+	if (!val) {
+		const auto native_sym = let.attribute_value<c4::ast2::symbol>("native");
+		if (!native_sym) return;
+	}
+
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
 
-	const auto val = let.value();
 	if (!val) {
 		define_bridge_function(let);
 		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();

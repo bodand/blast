@@ -160,6 +160,7 @@ add_library(c4rt2c STATIC
 
             include/c4rt2c/runtime_fn.hxx
             src/c4rt2c/runtime_fn/arg.cxx
+            src/c4rt2c/runtime_fn/decorate_function.cxx
             src/c4rt2c/runtime_fn/define.cxx
             src/c4rt2c/runtime_fn/file_scoped.cxx
             src/c4rt2c/runtime_fn/~runtime_fn_debug_info_builder.cxx

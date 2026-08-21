@@ -259,7 +259,7 @@ main(int argc, const char** argv) {
 		pass_builder.registerFunctionAnalyses(fn_am);
 		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
-		c4rt2c::runtime_emitter rt_emitter(context, module, builder);
+		c4rt2c::runtime_emitter rt_emitter(context, module, builder, true);
 		rt_emitter.set_debug_trace(debug_trace);
 		rt_emitter.set_memory_debug(debug_gc);
 
