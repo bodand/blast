@@ -162,6 +162,7 @@ target_link_libraries(c4-mio INTERFACE
 
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED PATHS /usr/lib/llvm/22/lib/cmake/llvm NO_DEFAULT_PATH)
+#find_library(LLVM_OBJECT_LIB NAMES LLVMObject PATHS /usr/lib/llvm/22/lib)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
 ## Clang ##
@@ -172,7 +173,9 @@ target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS_LIST})
 target_include_directories(c4_llvm SYSTEM INTERFACE
                            ${LLVM_INCLUDE_DIRS}
                            ${CLANG_INCLUDE_DIRS})
-target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM)
+target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM
+#                      ${LLVM_OBJECT_LIB}
+                      )
 
 #add_subdirectory(src/cdb)
 add_subdirectory(src/sgetopt)
@@ -189,6 +192,7 @@ endif ()
 
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
+add_subdirectory(src/c4ar)
 #add_subdirectory(src/c4i)
 
 add_subdirectory(test)

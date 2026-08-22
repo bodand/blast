@@ -34,49 +34,40 @@
  *   
  */
 
-#include <filesystem>
-#include <filesystem>
-#include <ios>
-#include <ios>
-#include <skalibs/buffer.h>
-#include <utility>
-#include <utility>
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
 #include <algorithm>
 #include <charconv>
 #include <cstdio>
-#include <cstdlib>
+#include <filesystem>
+#include <format>
 #include <fstream>
+#include <ios>
 #include <iostream>
 #include <memory>
 #include <system_error>
-
-#include <fmt/format.h>
+#include <utility>
 
 #include <c4/ast_dumper.hxx>
 
 #include <c4/p2/parser.hxx>
 #include <c4/p2/lex/lexer.hxx>
-#include <c4rt2c/ast2_ir_emitter.hxx>
 
+#include <c4rt2c/ast2_ir_emitter.hxx>
 #include <c4rt2c/source_file.hxx>
 
 #include <libassert/assert.hpp>
 
 #include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/PassManager.h>
-#include <llvm/IR/LegacyPassManager.h>
-#include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Passes/StandardInstrumentations.h>
-#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
@@ -84,6 +75,7 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 
+#include <sgetopt/opts.hxx>
 #include <sgetopt/sgetopt.h>
 
 using namespace std::literals;
@@ -145,14 +137,6 @@ namespace {
 		exit(100);
 	}
 
-	template<class... Args>
-	[[noreturn]] void
-	die(const int e,
-	    fmt::format_string<Args...> fmt, Args&&... args) {
-		std::cerr << fmt::format(fmt, std::forward<Args>(args)...);
-		exit(e);
-	}
-
 	std::optional<std::string>
 	make_libinit_name(const bool build_entrypoint,
 	                  const std::filesystem::path& src) {
@@ -172,7 +156,7 @@ namespace {
 
 int
 main(int argc, const char* const* argv) {
-	const auto argv0 = argv[0];
+	argv0 = argv[0];
 
 	std::filesystem::path out_path;
 	std::filesystem::path src_path;
@@ -196,7 +180,7 @@ main(int argc, const char* const* argv) {
 			if (dump_type == "IR") break;
 			if (dump_type == "ASM") break;
 			if (dump_type == "LTO") break;
-			die(100, "{}: fatal: invalid argument for {}: expected AST, IR, ASM, or LTO", argv0, "-d");
+			argdie("-d", "expected one of AST, IR, ASM, or LTO");
 		}
 		case 'E': {
 			build_entrypoint = true;
@@ -212,7 +196,7 @@ main(int argc, const char* const* argv) {
 				debug_gc = true;
 				break;
 			}
-			die(100, "{}: fatal: invalid argument for {}: see c4c-debug(7) for valid values", argv0, "-g");
+			argdie("-g", "unknown debug option, see c4c-debug(7) for valid values");
 		}
 		case 'I': {
 			break; // TODO
@@ -222,13 +206,7 @@ main(int argc, const char* const* argv) {
 				opt_level = opts.arg[0] == 's' ? -1 : -2;
 				break;
 			}
-			if (auto [ptr, ec] = std::from_chars(opts.arg,
-			                                     opts.arg + std::strlen(opts.arg),
-			                                     opt_level);
-				ec != std::errc{} || *ptr != '\0') {
-				die(100, "{}: fatal: invalid argument for {}: {}\n", argv[0], "-O",
-				    std::make_error_code(ec).message());
-			}
+			die_or_parse("-O", opts.arg, opt_level);
 			break;
 		}
 		case 'o': {

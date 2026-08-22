@@ -131,6 +131,7 @@ add_library(c4
             include/c4/fmt.hxx
 
             include/c4/ast2/fwd.hxx
+            include/c4/p2/named_source.hxx
             )
 
 target_link_libraries(c4

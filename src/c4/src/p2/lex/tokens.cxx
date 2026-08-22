@@ -48,9 +48,7 @@ c4::p2::tokens::token_base::token_base(const position& position,
                                        const std::string_view range)
 	: _position(position)
 	, _begin(range.data())
-	, _end(range.data() + range.size())
-	, _source(position.source()) {
-	DEBUG_ASSERT(_source != nullptr, "source cannot be specified as null");
+	, _end(range.data() + range.size()) {
 	DEBUG_ASSERT(_begin <= _end, "token must start before it ends");
 }
 

@@ -1,6 +1,6 @@
-/* demo project
+/* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,45 +28,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-22.
  *
- * src/c4/include/c4/p2/lex/token_source --
- *   
+ * src/sgetopt/src/opts/argv0 --
+ *   Holder for the global argv0 variable. This should be set by each main on
+ *   startup.
  */
-#ifndef TOKEN_SOURCE_HXX
-#define TOKEN_SOURCE_HXX
 
-#include <filesystem>
-#include <utility>
-
-#include  <c4/p2/named_source.hxx>
-
-namespace c4::p2 {
-	struct token_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-		token_source()
-			: _file(std::filesystem::path{}) { }
-
-		explicit
-		token_source(std::filesystem::path file_)
-			: _file{std::move(file_)}
-			, _file_string{this->_file.string()} { }
-
-		template<class T, class... Args>
-		T
-		build(Args&&... args) {
-			return {std::forward<Args>(args)...};
-		}
-
-	private:
-		const std::filesystem::path _file{};
-		const std::string _file_string{};
-	};
-}
-
-#endif
+extern "C" const char* argv0 = "lmao";

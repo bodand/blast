@@ -79,7 +79,6 @@ namespace c4::p2::tokens {
 
 	private:
 		friend token_source;
-		token_source* _source; // todo remove
 	};
 
 	#define C4P2_DEFAULT_TOKEN(name) \

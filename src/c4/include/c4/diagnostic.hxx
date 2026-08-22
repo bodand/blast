@@ -54,7 +54,7 @@
 #include <c4/fmt.hxx>
 
 namespace c4::p2 {
-	struct token_source;
+	struct named_source;
 }
 
 namespace c4 {
@@ -75,7 +75,7 @@ namespace c4 {
 	struct position {
 		static position pseudo_position();
 
-		explicit position(p2::token_source* source);
+		explicit position(p2::named_source* source);
 
 		position(const position& other) = default;
 
@@ -99,15 +99,14 @@ namespace c4 {
 
 		[[nodiscard]] std::string_view filename() const;
 
-		[[nodiscard]] p2::token_source* source() const { return _source; }
-
 		[[nodiscard]] std::string_view range() const;
 
 		[[nodiscard]] bool is_single_line() const noexcept {
 			return row_number == row_number_end;
 		}
 
-		std::string& attach(const std::string_view sv) {
+		std::string&
+		attach(const std::string_view sv) {
 			_attached = std::string{sv};
 			return _attached;
 		}
@@ -117,7 +116,7 @@ namespace c4 {
 		         const std::size_t col_number_, const std::size_t row_number_end_,
 		         const std::size_t col_number_end_,
 		         const std::string_view& expanded_range_,
-		         p2::token_source* const source)
+		         p2::named_source* const source)
 			: line{line_}
 			, row_number{row_number_}
 			, col_number{col_number_}
@@ -127,7 +126,7 @@ namespace c4 {
 			, _source{source} { }
 
 		std::string _attached{};
-		p2::token_source* _source{};
+		p2::named_source* _source{};
 	};
 
 	struct source_diagnostic {

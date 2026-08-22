@@ -38,7 +38,7 @@
 #include <ranges>
 
 #include <c4/diagnostic.hxx>
-#include <c4/p2/lex/token_source.hxx>
+#include <c4/p2/named_source.hxx>
 
 #include <fmt/format.h>
 #ifdef __clang__
@@ -94,83 +94,6 @@ namespace {
 	utf8_strlen(std::string_view str) {
 		auto str_view = str | una::views::utf8;
 		return static_cast<std::size_t>(std::distance(str_view.begin(), str_view.end()));
-	}
-}
-
-c4::position::position(p2::token_source* source)
-	: _source{source} {
-	ASSERT(source, "token source must be a valid source");
-}
-
-std::string_view
-c4::position::filename() const {
-	return _source->file_string();
-}
-
-std::string_view
-c4::position::range() const {
-	// XXX allocating on what is basically a subrange calculation, truly
-	//  the pinnacle of software engineering
-	const auto leading_utf_str = expanded_range
-	                       | una::views::utf8
-	                       | una::views::take(col_number - 1)
-	                       | una::ranges::to_utf8<std::string>();
-	const auto range_begin = leading_utf_str.size();
-	const auto last_ln_idx = expanded_range.rfind('\n');
-	if (last_ln_idx == std::string_view::npos) {
-		const auto utf_str = expanded_range
-		                     | una::views::utf8
-		                     | una::views::drop(col_number - 1)
-		                     | una::views::take(col_number_end - col_number + 1)
-		                     | una::ranges::to_utf8<std::string>();
-		return expanded_range.substr(range_begin, utf_str.size());
-	}
-	const auto last_line_start = last_ln_idx + 1;
-	const auto last_line_range_end = last_line_start + col_number_end;
-	return expanded_range.substr(range_begin, last_line_range_end - range_begin);
-}
-
-c4::diagnostics_bundle::~diagnostics_bundle() noexcept {
-	_engine.emit(*this);
-}
-
-c4::diagnostics_bundle&&
-c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
-                                           const position& position,
-                                           const fmt::string_view diagnostic,
-                                           const fmt::format_args args) && {
-	if (!_skip_next) {
-		_tail.emplace_back(
-			type,
-			fmt::vformat(diagnostic, args),
-			position
-		);
-		_skip_next = false;
-	}
-	return std::move(*this);
-}
-
-c4::diagnostics_bundle&&
-c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
-                                           position&& position,
-                                           const fmt::string_view diagnostic,
-                                           const fmt::format_args args) && {
-	if (!_skip_next) {
-		_tail.emplace_back(
-			type,
-			fmt::vformat(diagnostic, args),
-			position
-		);
-		_skip_next = false;
-	}
-	return std::move(*this);
-}
-
-void
-c4::diagnostics_engine::emit(const diagnostics_bundle& bundle) const {
-	fmt::print(_output, "{}", bundle._head);
-	for (const auto& diag : bundle._tail) {
-		fmt::print(_output, "{}", diag);
 	}
 }
 
@@ -279,6 +202,83 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
 
 c4::position
 c4::position::pseudo_position() {
-	static p2::token_source pseudo_source;
+	static p2::unknown_source pseudo_source;
 	return {"", 1, 1, 1, 1, "", &pseudo_source};
+}
+
+c4::position::position(p2::named_source* source)
+	: _source{source} {
+	ASSERT(source, "token source must be a valid source");
+}
+
+std::string_view
+c4::position::filename() const {
+	return _source->file_string();
+}
+
+std::string_view
+c4::position::range() const {
+	// XXX allocating on what is basically a subrange calculation, truly
+	//  the pinnacle of software engineering
+	const auto leading_utf_str = expanded_range
+	                             | una::views::utf8
+	                             | una::views::take(col_number - 1)
+	                             | una::ranges::to_utf8<std::string>();
+	const auto range_begin = leading_utf_str.size();
+	const auto last_ln_idx = expanded_range.rfind('\n');
+	if (last_ln_idx == std::string_view::npos) {
+		const auto utf_str = expanded_range
+		                     | una::views::utf8
+		                     | una::views::drop(col_number - 1)
+		                     | una::views::take(col_number_end - col_number + 1)
+		                     | una::ranges::to_utf8<std::string>();
+		return expanded_range.substr(range_begin, utf_str.size());
+	}
+	const auto last_line_start = last_ln_idx + 1;
+	const auto last_line_range_end = last_line_start + col_number_end;
+	return expanded_range.substr(range_begin, last_line_range_end - range_begin);
+}
+
+c4::diagnostics_bundle::~diagnostics_bundle() noexcept {
+	_engine.emit(*this);
+}
+
+c4::diagnostics_bundle&&
+c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
+                                           const position& position,
+                                           const fmt::string_view diagnostic,
+                                           const fmt::format_args args) && {
+	if (!_skip_next) {
+		_tail.emplace_back(
+			type,
+			fmt::vformat(diagnostic, args),
+			position
+		);
+		_skip_next = false;
+	}
+	return std::move(*this);
+}
+
+c4::diagnostics_bundle&&
+c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
+                                           position&& position,
+                                           const fmt::string_view diagnostic,
+                                           const fmt::format_args args) && {
+	if (!_skip_next) {
+		_tail.emplace_back(
+			type,
+			fmt::vformat(diagnostic, args),
+			position
+		);
+		_skip_next = false;
+	}
+	return std::move(*this);
+}
+
+void
+c4::diagnostics_engine::emit(const diagnostics_bundle& bundle) const {
+	fmt::print(_output, "{}", bundle._head);
+	for (const auto& diag : bundle._tail) {
+		fmt::print(_output, "{}", diag);
+	}
 }

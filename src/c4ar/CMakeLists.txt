@@ -1,6 +1,6 @@
 # blAST project
 #
-# Copyright (c) 2025 András Bodor <bodand@proton.me>
+# Copyright (c) 2026 András Bodor <bodand@proton.me>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,26 +28,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2026-08-21.
+# Originally created: 2026-08-22.
 #
-# src/sgetopt/CMakeLists.txt --
-#	A wrapper for a common getopt function yanked from skalibs. The sources are
-#	modified to be used by C++. 
-#	Changes:
-#		- use C++'s std::format instead of skalibs' buffer interface
-#		- codestyle
-#
-#	The original license is in-tact in LICENSE.orig in this dir.
+# src/c4ar/CMakeLists.txt --
+#   CMake tool for creating archive libraries from C4 object files.
 
-project(sgetopt)
+add_executable(c4ar
+               src/c4ar.cxx)
 
-add_library(sgetopt STATIC
-            inc/sgetopt/sgetopt.h
-            src/sgetopt/sgetopt.cxx
-            src/sgetopt/subgetopt_here.cxx
-            src/sgetopt/subgetopt.cxx
-            inc/sgetopt/opts.hxx
-            src/opts/argv0.cxx
-            )
-target_include_directories(sgetopt PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>)
-
+target_link_libraries(c4ar PRIVATE sgetopt c4_llvm libassert::assert)
