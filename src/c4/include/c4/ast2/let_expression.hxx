@@ -57,6 +57,12 @@ namespace c4::ast2 {
 	struct let_expression final : tags::referable
 	                              , ast_node
 	                              , tags::visitable {
+		enum visibility {
+			v_public = '+',
+			v_private = '-',
+			v_internal = '~'
+		};
+
 		let_expression(const c4::position& position,
 		               symbol symbol,
 		               expression* expr);
@@ -112,6 +118,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] bool
 		constant_evaluated(std::span<const struct symbol> skips) const noexcept override;
+
+		[[nodiscard]] bool
+		top_level() const noexcept;
 
 	private:
 		void

@@ -38,19 +38,17 @@
 
 #include <filesystem>
 #include <optional>
-#include <optional>
 #include <string_view>
 
 #include <c4/ast2/fwd.hxx>
 
+#include <c4rt2c/fn_call_gen.hxx>
 #include <c4rt2c/runtime_emitter.hxx>
 #include <c4rt2c/seq_builder.hxx>
 
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/PassManager.h>
-
-#include "fn_call_gen.hxx"
 
 namespace c4::ast2::tags {
 	struct tailable;
@@ -144,6 +142,9 @@ namespace c4rt2c {
 			std::string
 			lambda_name();
 
+			static void
+			export_symbol_to(const c4::ast2::symbol& symbol, std::vector<uint8_t>& table);
+
 			static std::string
 			global_name(const c4::ast2::symbol& sym);
 
@@ -181,6 +182,8 @@ namespace c4rt2c {
 
 		[[nodiscard]] llvm::BasicBlock*
 		define(llvm::Function* fn_decl);
+
+		std::vector<uint8_t> _export_table;
 	};
 }
 

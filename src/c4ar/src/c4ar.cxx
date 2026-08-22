@@ -37,18 +37,25 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <thread>
 
 #include <sgetopt/opts.hxx>
 #include <sgetopt/sgetopt.h>
 
+#include <llvm/ADT/SmallString.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/ObjCopy/ConfigManager.h>
 #include <llvm/ObjCopy/ObjCopy.h>
 #include <llvm/Object/ArchiveWriter.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 
 #include <libassert/assert.hpp>
@@ -180,6 +187,8 @@ namespace {
 			object_buffer.filename = src_obj.filename().string();
 			object_buffer.member.MemberName = object_buffer.filename;
 
+			const auto section_name = obj->isMachO() ? "__DWARF,__c4xport" : ".c4xport";
+
 			llvm::SmallVector<llvm::object::SectionRef, 1> sections;
 			std::copy_if(
 				obj->sections().begin(),
@@ -194,7 +203,7 @@ namespace {
 						return false;
 					}
 					const auto name = nameerr.get();
-					return name == ".c4xport";
+					return name == section_name;
 				});
 
 			llvm::SmallVector<std::optional<llvm::StringRef>, 1> symbols;
@@ -271,6 +280,8 @@ main(int argc, const char* const* argv) {
 	llvm::InitializeAllTargetInfos();
 	llvm::InitializeAllTargets();
 	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmParsers();
+	llvm::InitializeAllAsmPrinters();
 
 	const auto target_triple = target_arch.empty()
 		                           ? llvm::sys::getDefaultTargetTriple()
@@ -283,9 +294,10 @@ main(int argc, const char* const* argv) {
 		die(2, "{}: fatal: cannot find target triplet {}: {}", target_triple, target_error);
 	}
 
+	const auto section_name = llvm_triple.isOSBinFormatMachO() ? "__DWARF,__c4xport" : ".c4xport";
 	llvm::objcopy::ConfigManager config;
 	auto err = config.Common.ToRemove.addMatcher(
-		llvm::objcopy::NameOrPattern::create(".c4xport", llvm::objcopy::MatchStyle::Literal, [](llvm::Error e) {
+		llvm::objcopy::NameOrPattern::create(section_name, llvm::objcopy::MatchStyle::Literal, [](llvm::Error e) {
 			return e;
 		}));
 	if (err) die(2, "{}: fatal: cannot create matcher for .c4xport");
@@ -316,10 +328,87 @@ main(int argc, const char* const* argv) {
 
 	std::ranges::for_each(threads, std::mem_fn(&std::thread::join));
 
+	std::vector<char> merged_symbol_buffer;
+	std::ranges::for_each(symbol_buffers, [&](auto& buf) {
+		merged_symbol_buffer.reserve(merged_symbol_buffer.size() + buf.size());
+		merged_symbol_buffer.insert(merged_symbol_buffer.end(), buf.begin(), buf.end());
+	});
+
+	const auto imm_name = "exports__" + out_path.string();
+	llvm::LLVMContext context;
+	llvm::Module module(imm_name, context);
+
+	llvm::TargetOptions target_options;
+	target_options.DataSections = true;
+	target_options.FunctionSections = true;
+
+	const auto machine = std::unique_ptr<llvm::TargetMachine>(
+		target->createTargetMachine(llvm_triple, "generic", "", target_options, llvm::Reloc::PIC_)
+	);
+	module.setDataLayout(machine->createDataLayout());
+	module.setTargetTriple(llvm_triple);
+
+	std::string assembly;
+	if (llvm_triple.isOSBinFormatELF()) {
+		assembly += ".section .c4xport,\"\",@progbits\n";
+	}
+	else if (llvm_triple.isOSBinFormatMachO()) {
+		assembly += ".section __DWARF,__c4xport,regular,debug\n";
+	}
+	else if (llvm_triple.isOSBinFormatCOFF()) {
+		assembly += ".section .c4xport,\"dr\"\n";
+	}
+	else if (llvm_triple.isOSBinFormatWasm()) {
+		assembly += ".section .custom_section.c4xport,\"\",@\n";
+	}
+	else if (llvm_triple.isOSBinFormatXCOFF()) {
+		assembly += ".csect .c4xport[RO]\n";
+	}
+	else {
+		die(100, "{}: fatal: unsupported target format: {}: please patch LLVM's "
+		    "inline assembly to support your arch",
+		    llvm_triple.getTriple());
+	}
+
+	std::vector<char> formatted_symbols;
+	formatted_symbols.resize(merged_symbol_buffer.size() * 5);
+
+	auto to = formatted_symbols.data();
+	auto begin = formatted_symbols.data();
+	std::ranges::for_each(merged_symbol_buffer, [&](auto c) {
+		to = std::copy_n("0x", 2, to);
+		if (c < 16) *to++ = '0';
+		auto [ptr, y] = std::to_chars(to, to + 2, c, 16);
+		to = ptr;
+		*to++ = ',';
+	});
+
+	assembly += ".byte ";
+	if (to - begin != 0) {
+		assembly.append(formatted_symbols.data(), to - begin - 1); // skip last ','
+	}
+	assembly += "\n";
+
+	module.appendModuleInlineAsm(assembly);
+
+	llvm::SmallString<8192> pseudo_file_buf;
+	llvm::raw_svector_ostream out(pseudo_file_buf);
+
+	llvm::legacy::PassManager pm;
+	if (machine->addPassesToEmitFile(pm, out, nullptr,
+	                                 llvm::CodeGenFileType::ObjectFile)) {
+		die(111, "{}: fatal: target machine cannot produce object files: bummer");
+	}
+
+	pm.run(module);
+
 	std::vector<llvm::NewArchiveMember> members;
-	members.reserve(member_buffers.size());
+	members.reserve(member_buffers.size() + 1);
 	std::ranges::transform(member_buffers, std::back_inserter(members),
 	                       [](auto& member) { return std::move(member.member); });
+	auto& ours = members.emplace_back(llvm::NewArchiveMember{});
+	ours.Buf = llvm::MemoryBuffer::getMemBuffer(pseudo_file_buf);
+	ours.MemberName = imm_name;
 
 	auto arerr = llvm::writeArchive(
 		out_path.string(),
@@ -330,8 +419,8 @@ main(int argc, const char* const* argv) {
 		false
 	);
 	if (arerr) {
-		std::cerr << "fatal: failed to write archive " << out_path.string() << ": "
-				<< toString(std::move(arerr)) << "\n";
-		return 111;
+		die(111, "{}: fatal: failed to write archive {}: {}",
+		    out_path.string(),
+		    toString(std::move(arerr)));
 	}
 }

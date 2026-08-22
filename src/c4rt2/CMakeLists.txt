@@ -247,6 +247,7 @@ add_library(c4rt2c STATIC
             src/c4rt2c/runtime_emitter/make_seq_ti_argv.cxx
             src/c4rt2c/seq_node/seq_leaf/build_immediate.cxx
             src/c4rt2c/runtime_emitter/get_debug_location.cxx
+            src/c4rt2c/ast2_ir_emitter/name_manager/export_symbol_to.cxx
             )
 target_link_libraries(c4rt2c
                       PUBLIC

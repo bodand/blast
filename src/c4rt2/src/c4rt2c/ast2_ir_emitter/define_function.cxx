@@ -66,12 +66,12 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 
 	const auto val = let.value();
 	if (!val) {
-		const auto native_sym = let.attribute_value<c4::ast2::symbol>("native");
-		if (!native_sym) return;
+		if (!let.attribute_value<c4::ast2::symbol>("native")) return;
 	}
 
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
+	if (let.top_level()) _name_manager.export_symbol_to(let.symbol(), _export_table);
 
 	if (!val) {
 		define_bridge_function(let);

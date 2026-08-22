@@ -56,6 +56,13 @@ c4::ast2::let_expression::constant_evaluated(std::span<const ast2::symbol>) cons
 	return true;
 }
 
+bool
+c4::ast2::let_expression::top_level() const noexcept {
+	const auto symbols = attribute_value<std::vector<struct symbol>>("symbol-stack");
+	if (!symbols) return false;
+	return symbols->size() == 1;
+}
+
 void
 c4::ast2::let_expression::mark_expression_owned() {
 	if (!_value) return;

@@ -28,41 +28,45 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-07-17.
+ * Originally created: 2026-08-22.
  *
- * src/c4rt2/src/c4rt2c/ast2_ir_emitter/finalize --
+ * src/c4rt2/src/c4rt2c/ast2_ir_emitter/name_manager/export_symbol --
  *   
  */
 
-#include <llvm/IR/DIBuilder.h>
-#include <llvm/Transforms/Utils/ModuleUtils.h>
+#include <bit>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
-#include <llvm/IR/Module.h>
+
+#include <libassert/assert.hpp>
 
 void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+c4rt2c::ast2_ir_emitter::name_manager::
+export_symbol_to(const c4::ast2::symbol& symbol, std::vector<uint8_t>& table) {
+	table.reserve(table.size() + sizeof(uint32_t) + symbol.name().size() + sizeof(uint32_t));
 
-	const auto exports = llvm::ConstantDataArray::get(_context, _export_table);
-	const auto exports_global =
-			// do not fret: the module yoinks ownership
-			new llvm::GlobalVariable(_module,
-			                         exports->getType(),
-			                         true,
-			                         llvm::GlobalValue::PrivateLinkage,
-			                         exports,
-			                         "_c4_exports_table");
+	ASSERT(symbol.name().size() < std::numeric_limits<uint32_t>::max(),
+	       "Exported symbol names must be shorter than 4 gb",
+	       symbol.name());
 
-	if (const auto& triple = _module.getTargetTriple();
-		triple.isOSBinFormatMachO()) {
-		exports_global->setSection("__DWARF,__c4xport");
-	} else {
-		exports_global->setSection(".c4xport");
+	static_assert(std::endian::native == std::endian::little
+	              || std::endian::native == std::endian::big,
+	              "Mixed endian hardware detected: please submit a patch");
+
+	uint32_t sym_name_sz = symbol.name().size();
+	uint32_t sym_arity = symbol.base_arity();
+	if constexpr (std::endian::native == std::endian::big) {
+		sym_name_sz = std::byteswap(sym_name_sz);
+		sym_arity = std::byteswap(sym_arity);
 	}
 
-	llvm::appendToUsed(_module, exports_global);
+	auto sz_bytes = std::bit_cast<std::array<uint8_t, sizeof(sym_name_sz)>>(sym_name_sz);
+	auto arity_bytes = std::bit_cast<std::array<uint8_t, sizeof(sym_arity)>>(sym_arity);
 
-	_di_builder->finalize();
+	table.insert(table.end(), sz_bytes.begin(), sz_bytes.end());
+
+	const auto* name_data = reinterpret_cast<const uint8_t*>(symbol.name().data());
+	table.insert(table.end(), name_data, name_data + sym_name_sz);
+
+	table.insert(table.end(), arity_bytes.begin(), arity_bytes.end());
 }

@@ -354,9 +354,9 @@ main(int argc, const char* const* argv) {
 		if (ec) throw std::system_error(ec);
 
 		llvm::legacy::PassManager pm;
-		const auto ftype = llvm::CodeGenFileType::ObjectFile;
 
-		if (machine->addPassesToEmitFile(pm, out, nullptr, ftype)) {
+		if (machine->addPassesToEmitFile(pm, out, nullptr,
+		                                 llvm::CodeGenFileType::ObjectFile)) {
 			std::cerr << "\033[31mfatal:\033[0m target machine cannot produce object files. Bummer.\n";
 			return 100;
 		}
