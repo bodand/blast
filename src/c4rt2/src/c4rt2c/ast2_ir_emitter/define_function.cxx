@@ -42,6 +42,8 @@
 #include <c4rt2c/llvm_value_attribute.hxx>
 #include <c4rt2c/scoped_scope.hxx>
 
+#include <llvm/IR/Function.h>
+
 #include <libassert/assert.hpp>
 
 namespace {
@@ -71,7 +73,11 @@ c4rt2c::ast2_ir_emitter::define_function(const c4::ast2::let_expression& let) {
 
 	scoped_scope scope(_builder);
 	_builder.SetInsertPoint(define(*fn));
-	if (let.top_level()) _name_manager.export_symbol_to(let.symbol(), _export_table);
+	if (let.top_level() && let.visibility() == c4::ast2::let_expression::v_public)
+		_name_manager.export_symbol_to(let.symbol(), _export_table);
+
+	if (let.visibility() == c4::ast2::let_expression::v_private)
+		(*fn)->setLinkage(llvm::GlobalValue::PrivateLinkage);
 
 	if (!val) {
 		define_bridge_function(let);

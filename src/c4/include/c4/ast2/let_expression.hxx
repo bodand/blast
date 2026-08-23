@@ -65,7 +65,8 @@ namespace c4::ast2 {
 
 		let_expression(const c4::position& position,
 		               symbol symbol,
-		               expression* expr);
+		               expression* expr,
+		               visibility vis = v_internal);
 
 		let_expression(const let_expression& cp) = delete;
 
@@ -122,12 +123,16 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		top_level() const noexcept;
 
+		[[nodiscard]] visibility
+		visibility() const noexcept { return _visibility; }
+
 	private:
 		void
 		mark_expression_owned();
 
 		struct symbol _symbol;
 		struct expression* _value;
+		enum visibility _visibility;
 	};
 }
 

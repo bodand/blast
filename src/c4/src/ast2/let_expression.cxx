@@ -43,30 +43,14 @@
 
 c4::ast2::let_expression::let_expression(const c4::position& position,
                                          ast2::symbol symbol,
-                                         struct expression* expr)
+                                         struct expression* expr,
+                                         const enum visibility vis)
 	: referable{position}
 	, _symbol{std::move(symbol)}
-	, _value{expr} {
+	, _value{expr}
+	, _visibility{vis} {
 	_symbol.references(this);
 	mark_expression_owned();
-}
-
-bool
-c4::ast2::let_expression::constant_evaluated(std::span<const ast2::symbol>) const noexcept {
-	return true;
-}
-
-bool
-c4::ast2::let_expression::top_level() const noexcept {
-	const auto symbols = attribute_value<std::vector<struct symbol>>("symbol-stack");
-	if (!symbols) return false;
-	return symbols->size() == 1;
-}
-
-void
-c4::ast2::let_expression::mark_expression_owned() {
-	if (!_value) return;
-	_value->owner(this);
 }
 
 void
@@ -96,17 +80,17 @@ c4::ast2::let_expression::value() {
 }
 
 bool
-c4::ast2::let_expression::declaration() const noexcept {
-	return _value == nullptr;
-}
-
-bool
 c4::ast2::let_expression::introduces_variable() const noexcept {
 	if (_symbol.native() || !_value) return false;
 
 	// if (_value->true_closure()) return false;
 	if (_value->invocable_with()) return false;
 	return true;
+}
+
+bool
+c4::ast2::let_expression::declaration() const noexcept {
+	return _value == nullptr;
 }
 
 bool
@@ -120,4 +104,22 @@ c4::ast2::let_expression::function_body() const noexcept {
 	ASSERT(introduces_function(), "let is not function");
 
 	return std::get<block*>(_value->value());
+}
+
+bool
+c4::ast2::let_expression::constant_evaluated(std::span<const ast2::symbol>) const noexcept {
+	return true;
+}
+
+bool
+c4::ast2::let_expression::top_level() const noexcept {
+	const auto symbols = attribute_value<std::vector<struct symbol>>("symbol-stack");
+	if (!symbols) return false;
+	return symbols->size() == 1;
+}
+
+void
+c4::ast2::let_expression::mark_expression_owned() {
+	if (!_value) return;
+	_value->owner(this);
 }

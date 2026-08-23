@@ -154,8 +154,9 @@ c4::ast2::ast_context::build_expression(binary_op_call* exp, std::vector<symbol>
 c4::ast2::let_expression*
 c4::ast2::ast_context::build_let_expression(const position& position,
                                             const symbol& sym,
-                                            expression* expression) {
-	const auto ret = build_insert<let_expression>(_nodes, position, sym, expression);
+                                            expression* expression,
+                                            enum let_expression::visibility vis) {
+	const auto ret = build_insert<let_expression>(_nodes, position, sym, expression, vis);
 	_lets.push_back(ret);
 	return ret;
 }

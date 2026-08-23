@@ -218,9 +218,6 @@ c4::p2::parser::parse_use_expression() {
 	if (!maybe_use) report_failure(_diag, maybe_use);
 	next_relevant();
 
-	const auto& use = *maybe_use;
-	auto p = use.path();
-
 	return nullptr;
 }
 
@@ -242,12 +239,14 @@ c4::p2::parser::parse_expression() {
 }
 
 c4::ast2::expression*
-c4::p2::parser::parse_operator_let() {
+c4::p2::parser::
+parse_operator_let(const enum ast2::let_expression::visibility vis) {
 	auto op = parse_op_symbol();
 	const auto let = _context.build_let_expression(
 		op.position(),
 		op,
-		nullptr
+		nullptr,
+		vis
 	);
 
 	if (const auto last = find_scoped_symbol_with_arity(op)) {
@@ -329,41 +328,9 @@ c4::p2::parser::parse_operator_let() {
 	return _context.build_expression(let);
 }
 
-void
-c4::p2::parser::set_symbol_stack(const ast2::symbol& symbol,
-                                 const ast2::let_expression* let,
-                                 const ast2::let_expression* const memory) {
-	if (memory) {
-		if (const auto& stck = memory->attribute_value<std::vector<ast2::symbol>>("symbol-stack")) {
-			std::vector symbol_stack(stck->begin(), stck->end());
-			symbol_stack.push_back(symbol);
-			let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
-			return;
-		}
-	}
-
-	std::vector symbol_stack{symbol};
-	let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
-}
-
 c4::ast2::expression*
-c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
-                                        ast2::let_expression* let) {
-	const auto memory = std::exchange(_within_let, let);
-	enter_scope();
-
-	set_symbol_stack(symbol, let, memory);
-
-	const auto expr = parse_expression();
-
-	leave_scope();
-	std::exchange(_within_let, memory);
-
-	return expr;
-}
-
-c4::ast2::expression*
-c4::p2::parser::parse_fn_let(const bool native) {
+c4::p2::parser::parse_fn_let(enum ast2::let_expression::visibility vis,
+                             const bool native) {
 	const auto symbol = parse_symbol(false);
 
 	ast2::let_expression* let = nullptr;
@@ -399,7 +366,8 @@ c4::p2::parser::parse_fn_let(const bool native) {
 		let = _context.build_let_expression(
 			symbol.position(),
 			symbol,
-			nullptr
+			nullptr,
+			vis
 		);
 		declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
 	}
@@ -474,6 +442,16 @@ c4::p2::parser::parse_let_expression() {
 		report_failure(_diag, let);
 	next_relevant();
 
+	auto vis = ast2::let_expression::v_internal;
+	if (const auto vis_tok = expect_token<tokens::operator_>()) {
+		if (vis_tok->value() == "+") vis = ast2::let_expression::v_public;
+		else if (vis_tok->value() == "-") vis = ast2::let_expression::v_private;
+		else if (vis_tok->value() == "~") vis = ast2::let_expression::v_internal;
+		else report_failure(_diag, vis_tok);
+
+		next_relevant();
+	}
+
 	bool native = false;
 	if (const auto bare_symbol = expect_token<tokens::bare_symbol>()) {
 		if (bare_symbol->name() == "native") {
@@ -484,11 +462,10 @@ c4::p2::parser::parse_let_expression() {
 
 	if (expect_token<tokens::operator_symbol>()
 	    || expect_token<tokens::fn_operator>())
-		return parse_operator_let();
+		return parse_operator_let(vis);
 
-	return parse_fn_let(native);
+	return parse_fn_let(vis, native);
 }
-
 
 c4::ast2::expression*
 c4::p2::parser::parse_final_expression() {
@@ -604,6 +581,40 @@ c4::p2::parser::parse_final_expression() {
 	report_failure(_diag, lpar, str, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
 }
 
+void
+c4::p2::parser::set_symbol_stack(const ast2::symbol& symbol,
+                                 const ast2::let_expression* let,
+                                 const ast2::let_expression* const memory) {
+	if (memory) {
+		if (const auto& stck = memory->attribute_value<std::vector<ast2::symbol>>("symbol-stack")) {
+			std::vector symbol_stack(stck->begin(), stck->end());
+			symbol_stack.push_back(symbol);
+			let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
+			return;
+		}
+	}
+
+	std::vector symbol_stack{symbol};
+	let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack", std::move(symbol_stack));
+}
+
+
+c4::ast2::expression*
+c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
+                                        ast2::let_expression* let) {
+	const auto memory = std::exchange(_within_let, let);
+	enter_scope();
+
+	set_symbol_stack(symbol, let, memory);
+
+	const auto expr = parse_expression();
+
+	leave_scope();
+	std::exchange(_within_let, memory);
+
+	return expr;
+}
+
 namespace {
 	template<class... Args>
 	c4::position
@@ -658,17 +669,6 @@ c4::p2::parser::parse_block() {
 	block->expressions(std::move(expressions));
 	leave_scope();
 	return std::exchange(_within_block, memory);
-}
-
-std::vector<c4::ast2::undef_symbol>
-c4::p2::parser::promised_symbols() const {
-	std::vector<ast2::undef_symbol> undef_symbols;
-
-	undef_symbols.reserve(_scope_symbols.size());
-	for (const auto& scope_symbol : _scope_symbols)
-		undef_symbols.emplace_back(scope_symbol.name, scope_symbol.arity);
-
-	return undef_symbols;
 }
 
 bool
@@ -922,13 +922,6 @@ c4::p2::parser::parse_script() {
 	return expressions;
 }
 
-void
-c4::p2::parser::declare_symbol(const std::string_view symbol,
-                               const unsigned arity,
-                               ast2::tags::referable* referee) {
-	declare_symbol_internal(symbol, arity, referee);
-}
-
 c4::p2::parser::parser_symbol&
 c4::p2::parser::declare_symbol_internal(std::string_view symbol,
                                         unsigned arity,
@@ -937,15 +930,4 @@ c4::p2::parser::declare_symbol_internal(std::string_view symbol,
                                         bool right_assoc) {
 	++_scope_symbol_size.back();
 	return _scope_symbols.emplace_back(symbol, arity, referee, precedence, right_assoc);
-}
-
-void
-c4::p2::parser::declare_binop(const std::string_view symbol,
-                              const unsigned precedence, const bool right_assoc) {
-	declare_symbol_internal(symbol, 2, nullptr, precedence, right_assoc);
-}
-
-void
-c4::p2::parser::declare_uniop(const std::string_view symbol) {
-	declare_symbol_internal(symbol, 1, nullptr, static_cast<unsigned>(-1));
 }

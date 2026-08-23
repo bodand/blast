@@ -157,21 +157,16 @@ namespace c4::p2 {
 		parse_bare_symbol();
 
 		ast2::expression*
-			parse_use_expression();
+		parse_use_expression();
 
 		ast2::expression*
 		parse_expression();
 
 		ast2::expression*
-		parse_operator_let();
-
-		static void
-		set_symbol_stack(const ast2::symbol& symbol,
-		                 const ast2::let_expression* let,
-		                 const ast2::let_expression* memory);
+		parse_operator_let(enum ast2::let_expression::visibility vis);
 
 		ast2::expression*
-		parse_fn_let(bool native);
+		parse_fn_let(enum ast2::let_expression::visibility vis, bool native);
 
 		ast2::expression*
 		parse_let_expression();
@@ -188,23 +183,12 @@ namespace c4::p2 {
 		std::vector<ast2::expression*>
 		parse_script();
 
-		void
-		declare_symbol(std::string_view symbol,
-		               unsigned arity,
-		               ast2::tags::referable* referee);
-
-		void
-		declare_binop(std::string_view symbol,
-		              unsigned precedence,
-		              bool right_assoc);
-
-		void
-		declare_uniop(std::string_view symbol);
-
-		[[nodiscard]] std::vector<ast2::undef_symbol>
-		promised_symbols() const;
-
 	private:
+		static void
+		set_symbol_stack(const ast2::symbol& symbol,
+							  const ast2::let_expression* let,
+							  const ast2::let_expression* memory);
+
 		ast2::expression*
 		parse_expression_of_let(const ast2::symbol& symbol,
 		                        ast2::let_expression* let);

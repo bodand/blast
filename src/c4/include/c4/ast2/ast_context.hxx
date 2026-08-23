@@ -48,6 +48,8 @@
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
 
+#include "let_expression.hxx"
+
 namespace c4::ast2 {
 	struct block_argument;
 	struct block_args;
@@ -110,9 +112,10 @@ namespace c4::ast2 {
 		build_expression(binary_op_call* exp, std::vector<symbol>&& closure = {});
 
 		let_expression*
-		build_let_expression(const position& position,
+		build_let_expression(const c4::position& position,
 		                     const symbol& sym,
-		                     expression* expression);
+		                     expression* expression,
+		                     enum let_expression::visibility vis);
 
 		unary_op_call*
 		build_unary_op_call(const position& position,
