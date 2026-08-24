@@ -164,6 +164,13 @@ c4::ast2::symbol::pretty() const {
 
 void
 c4::ast2::symbol::lift_to_context(ast_context& ctx) {
-	const auto name2 = ctx.lift_symbol(_name);
-	_name = name2;
+	_name = ctx.lift_symbol(_name);
+}
+
+unsigned
+c4::ast2::symbol::precedence_like() const {
+	/// XXX abysmal hack of prefix operator's having precedence -1
+	if (_op_data) return _op_data->precedence;
+	if (is_operator_symbol(_name)) return static_cast<unsigned>(-1);
+	return 0;
 }

@@ -34,7 +34,7 @@
  *   
  */
 
-#include "../symbol_table.hxx"
+#include "../../../include/c4/p2/symbol_table.hxx"
 
 c4::p2::parser_symbol*
 c4::p2::symbol_table::find_operator(std::string_view name, unsigned arity) {

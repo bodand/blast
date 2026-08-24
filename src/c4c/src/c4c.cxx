@@ -54,6 +54,8 @@
 #include <c4/p2/source_resolver.hxx>
 #include <c4/p2/lex/lexer.hxx>
 
+#include <c4/ast2/ast_context.hxx>
+
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
@@ -265,7 +267,7 @@ main(int argc, const char* const* argv) try {
 		out_path.replace_extension(".o");
 	}
 
-	c4::p2::parser parser(ast_context, diag, src.lex());
+	c4::p2::parser parser(ast_context, diag, resolver, src);
 
 	const auto script = parser.parse_script();
 	if (diag.errored())

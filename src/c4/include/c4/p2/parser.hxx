@@ -35,9 +35,6 @@
  */
 #ifndef C4_P2_PARSER_HXX
 #define C4_P2_PARSER_HXX
-#include <deque>
-
-#include "../../../src/p2/symbol_table.hxx"
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -45,28 +42,30 @@
 #endif
 
 #include <expected>
-#include <list>
-#include <utility>
 
-#include <c4/ast2/ast_context.hxx>
-#include <c4/ast2/expression.hxx>
-#include <c4/ast2/float_literal.hxx>
-#include <c4/ast2/integer_literal.hxx>
-#include <c4/ast2/string_literal.hxx>
-#include <c4/ast2/symbol.hxx>
+#include <c4/ast2/fwd.hxx>
+#include <c4/ast2/let_expression.hxx>
 
 #include <c4/p2/lex/lexer.hxx>
 
 #include <c4/p2/parser-aux.hxx>
+#include <c4/p2/symbol_table.hxx>
+
+namespace c4 {
+	struct source_file;
+}
 
 namespace c4::p2 {
+	struct source_resolver;
+
 	struct parser {
 		constexpr static size_t cfg_max_precedence = 100;
 
 		explicit
 		parser(ast2::ast_context& context,
 		       diagnostics_engine& diagnostics_engine,
-		       lexer&& lexer);
+		       source_resolver& resolver,
+		       const source_file& source);
 
 		ast2::integer_literal
 		parse_integer_literal();
@@ -158,12 +157,17 @@ namespace c4::p2 {
 		ensure_valid_infix_operator(const tokens::operator_& sym);
 
 		symbol_table _st;
+		std::vector<ast2::expression*> _expressions{};
 
 		ast2::let_expression* _within_let = nullptr;
 		ast2::block* _within_block = nullptr;
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;
+		source_resolver& _resolver;
+
+		const source_file& _source;
+
 		lexer _lexer;
 		tokens::token_type _current;
 	};

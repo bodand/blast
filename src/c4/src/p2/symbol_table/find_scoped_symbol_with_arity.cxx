@@ -34,7 +34,7 @@
  *   
  */
 
-#include "../symbol_table.hxx"
+#include "../../../include/c4/p2/symbol_table.hxx"
 
 std::optional<c4::p2::symbol_resolution>
 c4::p2::symbol_table::

@@ -36,6 +36,8 @@
 
 #include <c4/p2/included_parser.hxx>
 
+#include <c4/ast2/integer_literal.hxx>
+
 #include "../parser_utils.hxx"
 
 unsigned

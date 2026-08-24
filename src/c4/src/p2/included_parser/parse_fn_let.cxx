@@ -36,6 +36,8 @@
 
 #include <c4/p2/included_parser.hxx>
 
+#include <c4/ast2/ast_context.hxx>
+
 #include "../parser_utils.hxx"
 
 void

@@ -153,7 +153,7 @@ add_library(c4
             include/c4/p2/parser-aux.hxx
             src/p2/included_parser/included_parser.cxx
             src/p2/parser_utils.hxx
-            src/p2/symbol_table.hxx
+            include/c4/p2/symbol_table.hxx
             src/p2/symbol_table/find_scoped_symbol.cxx
             src/p2/symbol_table/find_scoped_symbol_with_arity.cxx
             src/p2/symbol_table/enter_scope.cxx

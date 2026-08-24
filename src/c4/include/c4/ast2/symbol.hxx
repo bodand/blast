@@ -171,16 +171,22 @@ namespace c4::ast2 {
 		lift_to_context(ast_context& ctx);
 
 		void
-		set_op_data(const bool assoc, const unsigned prec) {
+		operator_data(const bool assoc, const unsigned prec) {
 			_op_data = {.left_associative = assoc, .precedence = prec};
 		}
+
+		std::optional<struct operator_data>
+		operator_data() const noexcept { return _op_data; }
+
+		unsigned
+		precedence_like() const;
 
 	private:
 		mutable tags::referable* _references{};
 		std::string_view _name;
 		unsigned _arity;
 		bool _native = false;
-		std::optional<operator_data> _op_data;
+		std::optional<struct operator_data> _op_data;
 	};
 }
 

@@ -41,8 +41,14 @@
 #ifndef BLAST_INCLUDED_PARSER_HXX
 #define BLAST_INCLUDED_PARSER_HXX
 
+#include <functional>
+
+#include <c4/ast2/fwd.hxx>
+#include <c4/ast2/let_expression.hxx>
+
 #include <c4/p2/parser-aux.hxx>
-#include <c4/p2/parser.hxx>
+#include <c4/p2/symbol_table.hxx>
+#include <c4/p2/lex/lexer.hxx>
 
 namespace c4 {
 	struct source_file;
@@ -52,7 +58,7 @@ namespace c4::p2 {
 	struct source_resolver;
 
 	struct included_parser {
-		constexpr static size_t cfg_max_precedence = parser::cfg_max_precedence;
+		constexpr static size_t cfg_max_precedence = 100;
 
 		explicit
 		included_parser(ast2::ast_context& context,

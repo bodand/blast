@@ -36,6 +36,8 @@
 
 #include <c4/p2/included_parser.hxx>
 
+#include <c4/ast2/ast_context.hxx>
+
 void
 c4::p2::included_parser::
 parse_op_let(const enum ast2::let_expression::visibility vis,
@@ -97,7 +99,7 @@ parse_op_let(const enum ast2::let_expression::visibility vis,
 		next_relevant();
 		const unsigned precedence = parse_precedence(op.name());
 		next_relevant();
-		op.set_op_data(left_assoc, precedence);
+		op.operator_data(left_assoc, precedence);
 
 		_st.declare(op.name(),
 		            op.base_arity(),

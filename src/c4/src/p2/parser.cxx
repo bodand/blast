@@ -35,19 +35,30 @@
  */
 
 #include <utility>
+#include <c4/source_file.hxx>
 
 #include <c4/p2/parser.hxx>
+#include <c4/p2/source_resolver.hxx>
 #include <c4/p2/lex/tokens.hxx>
+
+#include <c4/ast2/ast_context.hxx>
+#include <c4/ast2/expression.hxx>
+#include <c4/p2/included_parser.hxx>
 
 #include <fmt/format.h>
 #include <libassert/assert.hpp>
 
 #include "parser_utils.hxx"
 
-c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
+c4::p2::parser::parser(ast2::ast_context& context,
+                       diagnostics_engine& diagnostics_engine,
+                       source_resolver& resolver,
+                       const source_file& source_file)
 	: _diag{diagnostics_engine}
 	, _context{context}
-	, _lexer{std::move(lexer)}
+	, _resolver{resolver}
+	, _source{source_file}
+	, _lexer{_source.lex()}
 	, _current{_lexer.next()} {
 	while (std::visit(token_ignorer{_diag}, _current)) {
 		_current = _lexer.next();
@@ -133,9 +144,57 @@ c4::p2::parser::parse_bare_symbol() {
 
 c4::ast2::expression*
 c4::p2::parser::parse_use_expression() {
-	const auto maybe_use = expect_token<tokens::use>();
-	if (!maybe_use) report_failure(_diag, maybe_use);
+	const auto use = expect_token<tokens::use>();
+	if (!use) report_failure(_diag, use);
 	next_relevant();
+
+	if (!use->library() && use->is_public()) {
+		_diag.error(use->token_position(), "+public use of non-library files is not allowed")
+		     .note("parsing as if it were ~internal");
+	}
+
+	// always check if file exists to locate errors even if private import
+	const auto path = _resolver.resolve(_source,
+	                                    use->token_position(),
+	                                    use->library(),
+	                                    use->path());
+	if (!path) return nullptr;
+
+	const auto transitive_src = _resolver.open(*path);
+	included_parser nested(_context, _diag, _resolver, transitive_src);
+	nested.parse_global_let();
+
+	for (const auto lets = nested.forfeit_expressions();
+	     const auto& let : lets) {
+		let->lift_to_context(_context);
+
+		if (const auto op = let->symbol().operator_data()) {
+			_st.declare(let->symbol().name(),
+			            let->symbol().base_arity(),
+			            let,
+			            op->precedence,
+			            op->left_associative);
+		}
+		else {
+			_st.declare(let->symbol().name(),
+			            let->symbol().base_arity(),
+			            let,
+			            let->symbol().precedence_like());
+		}
+
+		let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack",
+		                                                    std::vector{let->symbol()});
+		if (auto native = let->attribute_value<ast2::symbol>("native")) {
+			native->lift_to_context(_context);
+			let->emplace_attribute<native_attachment>("native", std::move(*native));
+		}
+
+		if (const auto expr = _context.build_expression(let);
+			!expr->attribute_value<bool>("emplaced")) {
+			std::ignore = expr->emplace_attribute<flag_attribute>("emplaced");
+			_expressions.emplace_back(expr);
+		}
+	}
 
 	return nullptr;
 }
@@ -228,7 +287,7 @@ parse_operator_let(const enum ast2::let_expression::visibility vis,
 		next_relevant();
 		const unsigned precedence = parse_precedence(op.name());
 		next_relevant();
-		op.set_op_data(left_assoc, precedence);
+		op.operator_data(left_assoc, precedence);
 
 		sym = &_st.declare(op.name(),
 		                   op.base_arity(),
@@ -631,17 +690,17 @@ c4::p2::parser::parse_block_args() {
 
 std::vector<c4::ast2::expression*>
 c4::p2::parser::parse_script() {
-	std::vector<ast2::expression*> expressions{};
+	_expressions.clear();
 	while (!is_eof(_current)) {
 		auto expr = parse_expression();
 		if (!expr) continue;
 
 		if (!expr->attribute_value<bool>("emplaced")) {
 			std::ignore = expr->emplace_attribute<flag_attribute>("emplaced");
-			expressions.emplace_back(expr);
+			_expressions.emplace_back(expr);
 		}
 	}
-	return expressions;
+	return _expressions;
 }
 
 bool

@@ -36,7 +36,7 @@
 
 #include <libassert/assert.hpp>
 
-#include "../symbol_table.hxx"
+#include "../../../include/c4/p2/symbol_table.hxx"
 
 void
 c4::p2::symbol_table::
