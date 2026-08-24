@@ -28,60 +28,70 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-24.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/included_parser/parse_final_expression --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/p2/included_parser.hxx>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../parser_utils.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+void
+c4::p2::included_parser::
+parse_final_expression() {
+	const auto lpar = expect_token<tokens::lparen>();
+	if (lpar) {
+		next_relevant(); // (
+		parse_expression();
+		// )
+		if (const auto rpar = expect_token<tokens::rparen>();
+			!rpar)
+			report_failure(_diag, rpar);
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+		next_relevant();
+		return;
+	}
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
+	const auto str = expect_token<tokens::string_literal>();
+	if (str) {
+		next_relevant();
+		return;
+	}
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
+	const auto flt = expect_token<tokens::float_literal>();
+	if (flt) {
+		next_relevant();
+		return;
+	}
 
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
+	const auto integer = expect_token<tokens::integer_literal>();
+	if (integer) {
+		next_relevant();
+		return;
+	}
 
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
+	const auto symbol = expect_token<tokens::symbol>();
+	if (symbol) {
+		next_relevant();
+		return;
+	}
 
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
+	const auto prefix_op = expect_token<tokens::bare_symbol>();
+	if (prefix_op) return throw_away_expression(true);
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
+	const auto fn_symbol = expect_token<tokens::bare_symbol>();
+	if (fn_symbol) return throw_away_expression(true);
 
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+	const auto lbrace = expect_token<tokens::lbrace>();
+	if (lbrace) return throw_away_expression(true);
+
+	const auto backslash = expect_token<tokens::backslash>();
+	if (backslash) return throw_away_expression(true);
+
+	const auto dyn_call_start = expect_token<tokens::ampersand>();
+	if (dyn_call_start) return throw_away_expression(true);
+
+	report_failure(_diag, lpar, str, flt, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
 }
-
-#endif

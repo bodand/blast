@@ -46,6 +46,7 @@
 #undef FMT_STRING
 #define FMT_STRING(x) x
 #endif
+#include <iostream>
 #include <fmt/color.h>
 
 #include <libassert/assert.hpp>
@@ -147,6 +148,14 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
 	auto ret = ctx.out();
 	auto line_number = pos.row_number;
 
+	if (pos.expanded_range.empty()) {
+		ret = fmt::format_to(
+				ret, "{}:{}: {} {}\n", pos.filename(), line_number,
+				prefix_from_type(diagnostic_type), diagnostic_string
+			);
+		return ret;
+	}
+
 	for (const auto line : pos.expanded_range | std::views::split('\n')) {
 		if (line.empty()) continue;
 		auto line_str = std::string_view(line);
@@ -206,6 +215,11 @@ c4::position::pseudo_position() {
 	return {"", 1, 1, 1, 1, "", &pseudo_source};
 }
 
+c4::position
+c4::position::invalid_file_position(p2::named_source& src) {
+	return {"", 1, 1, 1, 1, "", &src};
+}
+
 c4::position::position(p2::named_source* source)
 	: _source{source} {
 	ASSERT(source, "token source must be a valid source");
@@ -213,6 +227,7 @@ c4::position::position(p2::named_source* source)
 
 std::string_view
 c4::position::filename() const {
+	if (!_relative_source_pos.empty()) return _relative_source_pos;
 	return _source->file_string();
 }
 
@@ -237,6 +252,13 @@ c4::position::range() const {
 	const auto last_line_start = last_ln_idx + 1;
 	const auto last_line_range_end = last_line_start + col_number_end;
 	return expanded_range.substr(range_begin, last_line_range_end - range_begin);
+}
+
+c4::position
+c4::position::relative_to(std::filesystem::path const& path) const {
+	auto ret = snapshot();
+	ret._relative_source_pos = relative(_source->file(), path);
+	return ret;
 }
 
 c4::diagnostics_bundle::~diagnostics_bundle() noexcept {
@@ -277,8 +299,9 @@ c4::diagnostics_bundle::emplace_diagnostic(source_diagnostic::diag_type type,
 
 void
 c4::diagnostics_engine::emit(const diagnostics_bundle& bundle) const {
-	fmt::print(_output, "{}", bundle._head);
+	std::cerr << fmt::format("{}", bundle._head);
 	for (const auto& diag : bundle._tail) {
-		fmt::print(_output, "{}", diag);
+		std::cerr << fmt::format("{}", diag);
 	}
+	std::cerr << "\n" << std::flush;
 }

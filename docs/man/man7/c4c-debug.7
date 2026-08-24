@@ -20,6 +20,8 @@ This may make your otherwise fine code uncomputable because of indefinitely grow
 This is primarily useful for finding weird call-paths, because all functions ever called will be visible in the callstack.
 .It Fl g Ar debug-gc
 Emit calls to the Boehm GC's debugging functions instead of normal calls.
+.It Fl g Ar nonrelative-errors
+Emit diagnostics with absolute path. By default paths are made relative to the current working directory.
 .El
 .Sh AUTHORS
 .An András Bodor Aq Mt bodand@proton.me

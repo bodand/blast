@@ -78,6 +78,7 @@ c4rt2c::ast2_ir_emitter::define_bridge_function(
 	// normal C4-side of bridge
 	const auto argv = (*fn)->getArg(0);
 	const auto K = (*fn)->getArg(1);
+	(*fn)->setLinkage(llvm::GlobalValue::LinkOnceODRLinkage);
 
 	const auto forces = _runtime.make_forces_blob(
 		argv,

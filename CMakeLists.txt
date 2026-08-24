@@ -193,6 +193,7 @@ endif ()
 add_subdirectory(src/c4)
 add_subdirectory(src/c4c)
 add_subdirectory(src/c4ar)
+add_subdirectory(src/c4if)
 #add_subdirectory(src/c4i)
 
 add_subdirectory(test)

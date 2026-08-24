@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,41 +28,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-23.
  *
- * src/c4c/src/source_file --
+ * src/c4/src/source_file/begin --
  *   
  */
 
-#include <c4rt2c/source_file.hxx>
-#include <utility>
-#include <fmt/base.h>
-
-c4c::source_file::source_file(std::filesystem::path path)
-	: _file{std::move(path)}
-	, _mmap{} {
-	if (!exists(_file)) {
-		fmt::print("fatal: could not open input file `{}': not found\n",
-		           _file.c_str());
-		throw std::runtime_error("could not find input file");
-	}
-
-	std::error_code ec;
-	_mmap.map(_file.c_str(), 0, mio::map_entire_file, ec);
-	if (ec) {
-		fmt::print("fatal: could not open input file `{}': {}\n",
-		           _file.c_str(),
-		           ec.message());
-		throw std::runtime_error("could not find input file");
-	}
-}
+#include <c4/source_file.hxx>
 
 const char*
-c4c::source_file::begin() const {
+c4::source_file::
+begin() const {
 	return _mmap.data();
-}
-
-const char*
-c4c::source_file::end() const {
-	return begin() + _mmap.size();
 }

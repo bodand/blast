@@ -63,9 +63,10 @@ namespace {
 	constexpr auto linebreak_markers = std::string_view("\n\0", 2U);
 }
 
-c4::p2::lexer::lexer(const std::string_view source,
-                     const char* begin, const char* end)
-	: _token_source{source}
+c4::p2::lexer::
+lexer(std::filesystem::path source,
+      const char* begin, const char* end)
+	: _token_source{std::move(source)}
 	, _end{end}
 	, _data{begin}
 	, _rules{ruleset_builder<tokens::token_type>::build(_token_source, _regex_context)} {
@@ -106,7 +107,7 @@ c4::p2::lexer::next() {
 	auto m = matcher(_data, _end, _current_position);
 	std::ignore =
 			[this, &m]<std::size_t... Is>(std::index_sequence<Is...>) {
-				return (m.do_match<std::tuple_element_t<Is, token_types>>(std::get < Is > (_rules)) || ...);
+				return (m.do_match<std::tuple_element_t<Is, token_types>>(std::get<Is>(_rules)) || ...);
 			}(std::make_index_sequence<std::tuple_size_v<decltype(_rules)>>{});
 	ASSERT(m.ret,
 	       "abysmal input: could not make sense of found input with given lexer rules. "

@@ -158,6 +158,9 @@ namespace c4::ast2 {
 			return cpy;
 		}
 
+		std::string
+		pretty() const;
+
 	private:
 		mutable tags::referable* _references{};
 		std::string_view _name;

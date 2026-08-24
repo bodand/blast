@@ -118,9 +118,6 @@ add_library(c4rt2c STATIC
             include/c4rt2c/llvm_value_attribute.hxx
             src/c4rt2c/llvm_value_attribute.cxx
 
-            include/c4rt2c/source_file.hxx
-            src/c4rt2c/source_file.cxx
-
             include/c4rt2c/ast2_ir_emitter.hxx
             src/c4rt2c/ast2_ir_emitter/init.cxx
             src/c4rt2c/ast2_ir_emitter/active_expression.cxx

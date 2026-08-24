@@ -37,6 +37,8 @@
  */
 #ifndef C4_DIAGNOSTIC_HXX
 #define C4_DIAGNOSTIC_HXX
+#include <filesystem>
+#include <format>
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -73,17 +75,24 @@ struct fmt::formatter<c4::source_diagnostic> {
 
 namespace c4 {
 	struct position {
-		static position pseudo_position();
+		static position
+		pseudo_position();
 
-		explicit position(p2::named_source* source);
+		static position
+		invalid_file_position(p2::named_source& src);
+
+		explicit
+		position(p2::named_source* source);
 
 		position(const position& other) = default;
 
 		position(position&& other) noexcept = default;
 
-		position& operator=(const position& other) = default;
+		position&
+		operator=(const position& other) = default;
 
-		position& operator=(position&& other) noexcept = default;
+		position&
+		operator=(position&& other) noexcept = default;
 
 		std::string_view line;
 		std::size_t row_number{1};
@@ -92,16 +101,20 @@ namespace c4 {
 		std::size_t col_number_end{1};
 		std::string_view expanded_range{};
 
-		[[nodiscard]] position snapshot() const
+		[[nodiscard]] position
+		snapshot() const
 			noexcept(std::is_nothrow_copy_constructible_v<position>) {
 			return *this;
 		}
 
-		[[nodiscard]] std::string_view filename() const;
+		[[nodiscard]] std::string_view
+		filename() const;
 
-		[[nodiscard]] std::string_view range() const;
+		[[nodiscard]] std::string_view
+		range() const;
 
-		[[nodiscard]] bool is_single_line() const noexcept {
+		[[nodiscard]] bool
+		is_single_line() const noexcept {
 			return row_number == row_number_end;
 		}
 
@@ -110,6 +123,9 @@ namespace c4 {
 			_attached = std::string{sv};
 			return _attached;
 		}
+
+		[[nodiscard]] position
+		relative_to(std::filesystem::path const& path) const;
 
 	private:
 		position(const std::string_view& line_, const std::size_t row_number_,
@@ -126,6 +142,7 @@ namespace c4 {
 			, _source{source} { }
 
 		std::string _attached{};
+		std::string _relative_source_pos{};
 		p2::named_source* _source{};
 	};
 
@@ -179,7 +196,12 @@ namespace c4 {
 	struct diagnostics_bundle {
 		~diagnostics_bundle() noexcept;
 
-		diagnostics_bundle&& when(const bool cond) && {
+		template<class... Args>
+		void
+		bail(std::format_string<Args...> msg, Args&&... args);
+
+		diagnostics_bundle&&
+		when(const bool cond) && {
 			_skip_next = !cond;
 			return std::move(*this);
 		}
@@ -187,35 +209,34 @@ namespace c4 {
 		template<class P, class... Args>
 		diagnostics_bundle&&
 		note(P&& position, fmt::format_string<Args...> diagnostic, Args&&... args) &&
-			requires(std::same_as<std::remove_cvref_t<P>, struct position>) {
-			return std::move(*this).emplace_diagnostic(
-				source_diagnostic::diag_type::Note, std::forward<P>(position),
-				diagnostic, fmt::make_format_args(args...));
-		}
+			requires(std::same_as<std::remove_cvref_t<P>, struct position>);
 
 		template<class... Args>
-		diagnostics_bundle&& note(fmt::format_string<Args...> diagnostic,
-		                          Args&&... args) && {
+		diagnostics_bundle&&
+		note(fmt::format_string<Args...> diagnostic,
+		     Args&&... args) && {
 			return std::move(*this).emplace_diagnostic(
-				source_diagnostic::diag_type::Note, _head.position(), diagnostic,
+				source_diagnostic::diag_type::Note,
+				_head.position(),
+				diagnostic,
 				fmt::make_format_args(args...));
 		}
 
 		template<class P, class... Args>
-		diagnostics_bundle&& suggest(P&& position,
-		                             fmt::format_string<Args...> diagnostic,
-		                             Args&&... args) &&
-			requires(std::same_as<std::remove_cvref_t<P>, struct position>) {
-			return std::move(*this).emplace_diagnostic(
-				source_diagnostic::diag_type::Suggestion, std::forward<P>(position),
-				diagnostic, fmt::make_format_args(args...));
-		}
+		diagnostics_bundle&&
+		suggest(P&& position,
+		        fmt::format_string<Args...> diagnostic,
+		        Args&&... args) &&
+			requires(std::same_as<std::remove_cvref_t<P>, struct position>);
 
 		template<class... Args>
-		diagnostics_bundle&& suggest(fmt::format_string<Args...> diagnostic,
-		                             Args&&... args) && {
+		diagnostics_bundle&&
+		suggest(fmt::format_string<Args...> diagnostic,
+		        Args&&... args) && {
 			return std::move(*this).emplace_diagnostic(
-				source_diagnostic::diag_type::Suggestion, _head.position(), diagnostic,
+				source_diagnostic::diag_type::Suggestion,
+				_head.position(),
+				diagnostic,
 				fmt::make_format_args(args...));
 		}
 
@@ -227,15 +248,17 @@ namespace c4 {
 			: _engine(engine)
 			, _head{std::move(head)} { }
 
-		diagnostics_bundle&& emplace_diagnostic(source_diagnostic::diag_type type,
-		                                        const position& position,
-		                                        fmt::string_view diagnostic,
-		                                        fmt::format_args args) &&;
+		diagnostics_bundle&&
+		emplace_diagnostic(source_diagnostic::diag_type type,
+		                   const position& position,
+		                   fmt::string_view diagnostic,
+		                   fmt::format_args args) &&;
 
-		diagnostics_bundle&& emplace_diagnostic(source_diagnostic::diag_type type,
-		                                        position&& position,
-		                                        fmt::string_view diagnostic,
-		                                        fmt::format_args args) &&;
+		diagnostics_bundle&&
+		emplace_diagnostic(source_diagnostic::diag_type type,
+		                   position&& position,
+		                   fmt::string_view diagnostic,
+		                   fmt::format_args args) &&;
 
 		const diagnostics_engine& _engine;
 		source_diagnostic _head;
@@ -244,7 +267,7 @@ namespace c4 {
 	};
 
 	struct diagnostics_engine {
-		explicit diagnostics_engine(std::FILE* const output = stderr,
+		explicit diagnostics_engine(std::FILE* const output,
 		                            const bool color = true) noexcept
 			: _output{output}
 			, _color{color} {
@@ -257,41 +280,84 @@ namespace c4 {
 			std::fclose(_output);
 		}
 
-		[[nodiscard]] bool errored() const noexcept { return _errored; }
+		[[nodiscard]] bool
+		errored() const noexcept { return _errored; }
 
 		template<class... Args>
-		decltype(auto) warning(const position& position,
-		                       fmt::format_string<Args...> diagnostic,
-		                       Args&&... args) {
+		decltype(auto)
+		warning(const position& position,
+		        fmt::format_string<Args...> diagnostic,
+		        Args&&... args) {
 			return diagnostics_bundle(
 				*this,
 				source_diagnostic{
 					source_diagnostic::diag_type::Warning,
 					fmt::format(diagnostic, std::forward<Args>(args)...),
-					position
+					relative(position)
 				});
 		}
 
 		template<class... Args>
-		decltype(auto) error(const position& position,
-		                     fmt::format_string<Args...> diagnostic, Args&&... args) {
+		decltype(auto)
+		error(const position& position,
+		      fmt::format_string<Args...> diagnostic, Args&&... args) {
 			_errored = true;
 			return diagnostics_bundle(
 				*this,
 				source_diagnostic{
 					source_diagnostic::diag_type::Error,
 					fmt::format(diagnostic, std::forward<Args>(args)...),
-					position
+					relative(position)
 				});
 		}
 
-		void emit(const diagnostics_bundle& bundle) const;
+		void
+		emit(const diagnostics_bundle& bundle) const;
+
+		void
+		report_relative_to(const std::filesystem::path& path) noexcept {
+			_report_relative_to = path;
+		}
+
+		[[nodiscard]] position
+		relative(position p) const {
+			if (_report_relative_to.empty()) return p;
+			return p.relative_to(_report_relative_to);
+		}
 
 	private:
+		std::filesystem::path _report_relative_to = std::filesystem::current_path();
 		bool _errored{};
 		std::FILE* _output;
 		bool _color;
 	};
+
+	template<class... Args>
+	void
+	diagnostics_bundle::bail(std::format_string<Args...> msg, Args&&... args) {
+		_engine.emit(*this);
+		throw std::runtime_error(std::format(msg, std::forward<Args>(args)...));
+	}
+
+	template<class P, class... Args>
+	diagnostics_bundle&&
+	diagnostics_bundle::note(P&& position, fmt::format_string<Args...> diagnostic, Args&&... args) &&
+		requires (std::same_as<std::remove_cvref_t<P>, struct position>) {
+		return std::move(*this).emplace_diagnostic(
+			source_diagnostic::diag_type::Note,
+			_engine.relative(std::forward<P>(position)),
+			diagnostic, fmt::make_format_args(args...));
+	}
+
+	template<class P, class... Args>
+	diagnostics_bundle&&
+	diagnostics_bundle::suggest(P&& position, fmt::format_string<Args...> diagnostic, Args&&... args) &&
+		requires (std::same_as<std::remove_cvref_t<P>, struct position>) {
+		return std::move(*this).emplace_diagnostic(
+			source_diagnostic::diag_type::Suggestion,
+			_engine.relative(std::forward<P>(position)),
+			diagnostic, fmt::make_format_args(args...));
+	}
 } // namespace c4
 
 #ifndef __clang__

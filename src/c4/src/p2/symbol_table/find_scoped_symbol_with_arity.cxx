@@ -28,60 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/symbol_table/find_scoped_symbol_with_arity --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include "../symbol_table.hxx"
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+std::optional<c4::p2::symbol_resolution>
+c4::p2::symbol_table::
+find_scoped_symbol_with_arity(const ast2::symbol& sym) {
+	const auto it = std::find_if(_scope_symbols.rbegin(), _scope_symbols.rend(), [&sym](const auto& scope) {
+		return scope.name == sym.name() && scope.arity == sym.base_arity();
+	});
+	if (it == _scope_symbols.rend()) return std::nullopt;
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
-
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
-
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
-
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
+	const auto current_scope = _scope_symbol_size.back();
+	const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
+	return symbol_resolution{
+		.symbol = *it,
+		.save_in_context = std::cmp_greater(iter_difference, current_scope)
 	};
 }
-
-#endif

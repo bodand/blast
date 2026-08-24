@@ -45,7 +45,7 @@
 #include <c4rt2/datum.h>
 #include <c4rt2/datum_type.h>
 
-#include <c4rt2c/source_file.hxx>
+#include <../../c4/include/c4/source_file.hxx>
 
 #include <gc/gc.h>
 

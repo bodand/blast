@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,30 +28,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-23.
  *
- * src/c4c/include/c4c/source_file --
+ * src/c4/src/p2/source_resolver/open --
  *   
  */
-#ifndef C4C_SOURCE_FILE_HXX
-#define C4C_SOURCE_FILE_HXX
 
-#include <filesystem>
-#include <mio/mmap.hpp>
+#include <c4/p2/source_resolver.hxx>
 
-namespace c4c {
-	struct source_file {
-		explicit
-		source_file(std::filesystem::path path);
-
-		const char* begin() const;
-
-		const char* end() const;
-
-	private:
-		std::filesystem::path _file;
-		mio::mmap_source _mmap;
-	};
+c4::source_file
+c4::p2::source_resolver::
+open(std::filesystem::path const& path) const {
+	return source_file{_diag, path};
 }
-
-#endif

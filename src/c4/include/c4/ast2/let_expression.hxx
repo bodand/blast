@@ -79,6 +79,9 @@ namespace c4::ast2 {
 		[[nodiscard]] bool
 		value_constant() const noexcept override;
 
+		bool
+		seen_by(visibility vis) const;
+
 		let_expression(let_expression&&) noexcept = delete;
 
 		let_expression&
@@ -95,6 +98,9 @@ namespace c4::ast2 {
 
 		std::string_view
 		name() const override { return _symbol.name(); }
+
+		std::string
+		pretty() const;
 
 		[[nodiscard]] unsigned
 		unbound_parameters() const noexcept { return 0; }

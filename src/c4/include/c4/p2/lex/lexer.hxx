@@ -74,10 +74,10 @@ namespace c4::p2 {
 		using type = std::conditional_t<
 			regex_based_token<T>,
 			regex_rule,
-			std::conditional_t <
-			string_based_token<T>,
-			string_rule,
-			incorrect_token_type>
+			std::conditional_t<
+				string_based_token<T>,
+				string_rule,
+				incorrect_token_type>
 		>;
 
 		constexpr static const std::string_view*
@@ -104,12 +104,34 @@ namespace c4::p2 {
 	};
 
 	struct lexer {
-		lexer(std::string_view source,
+		lexer(std::filesystem::path source,
 		      const char* begin,
 		      const char* end);
 
 		tokens::token_type
 		next();
+
+		lexer(const lexer&) = delete;
+
+		lexer&
+		operator=(const lexer&) = delete;
+
+		lexer(lexer&& mv) noexcept
+			: _token_source{std::move(mv._token_source)}
+			, _current_position{std::move(mv._current_position)}
+			, _end{mv._end}
+			, _data{mv._data}
+			, _regex_context{std::move(mv._regex_context)}
+			, _rules{std::move(mv._rules)} {
+			auto old = _current_position;
+			_current_position = position{&_token_source};
+			_current_position.line = old.line;
+			_current_position.row_number = old.row_number;
+			_current_position.row_number_end = old.row_number_end;
+			_current_position.col_number = old.col_number;
+			_current_position.col_number_end = old.col_number_end;
+			_current_position.expanded_range = old.expanded_range;
+		}
 
 	private:
 		using token_types = rebind_to_lexer_rule_tuple<tokens::token_type>::token_types;

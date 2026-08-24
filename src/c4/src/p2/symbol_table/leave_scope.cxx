@@ -28,60 +28,26 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/symbol_table/leave_scope --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <libassert/assert.hpp>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../symbol_table.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+void
+c4::p2::symbol_table::
+leave_scope() {
+	ASSERT(_scope_symbol_size.size() > 0, "cannot leave scope when empty",
+		_scope_symbol_size.size());
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+	const auto stackSize = _scope_symbol_size.back();
+	ASSERT(_scope_symbols.size() >= stackSize,
+	       "scope size mismatch: current scope is larger than entire table");
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
-
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+	_scope_symbol_size.pop_back();
+	for (size_t i = 0; i < stackSize; ++i) _scope_symbols.pop_back();
 }
-
-#endif

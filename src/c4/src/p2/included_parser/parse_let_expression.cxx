@@ -28,60 +28,45 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/included_parser/parse_let_expression --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/p2/included_parser.hxx>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../parser_utils.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+void
+c4::p2::included_parser::
+parse_let_expression() {
+	if (const auto let = expect_token<tokens::let>();
+		!let)
+		report_failure(_diag, let);
+	next_relevant();
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+	auto vis = ast2::let_expression::v_internal;
+	if (const auto vis_tok = expect_token<tokens::operator_>()) {
+		if (vis_tok->value() == "+") vis = ast2::let_expression::v_public;
+		else if (vis_tok->value() == "-") vis = ast2::let_expression::v_private;
+		else if (vis_tok->value() == "~") vis = ast2::let_expression::v_internal;
+		else report_failure(_diag, vis_tok);
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
+		next_relevant();
+	}
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
+	bool native = false;
+	if (const auto bare_symbol = expect_token<tokens::bare_symbol>()) {
+		if (bare_symbol->name() == "native") {
+			native = true;
+			next_relevant();
 		}
+	}
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
+	if (expect_token<tokens::operator_symbol>()
+	    || expect_token<tokens::fn_operator>())
+		return parse_op_let(vis, native);
 
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+	return parse_fn_let(vis, native);
 }
-
-#endif

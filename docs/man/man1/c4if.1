@@ -1,0 +1,40 @@
+.Dd August 23, 2026
+.Dt C4IF 1
+.Os C4 1.0.0
+.Sh NAME
+.Nm c4if
+.Nd utility to check exposed interfaces of C4 sources
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl v Ar vis
+.Ar source
+.Sh DESCRIPTION
+The
+.Nm
+utility reads an roughly parses the top-level expressions within a given C4
+source file and outputs C4 code in form of a list of function declarations that
+show the interface provided by the original file.
+
+The options are as follows:
+.Bl -tag -width DS
+.It Fl h
+Print help information and exit 100.
+.It Fl v Ar vis
+Instead of public and internal visibility, print only functions that have a
+visibility of
+.Ar vis
+or higher. The value can be any one of the following:
+.Cm ~ Ns , or
+.Cm internal
+for the default internal or higher visibility;
+.Cm + Ns , or
+.Cm public
+for only public functions or
+.Cm - Ns ,
+.Cm private Ns , or
+.Cm all
+for listing all functions. English word options can be passed by unique prefix.
+.El
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me

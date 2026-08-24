@@ -33,6 +33,16 @@
 # src/c4/CMakeLists.txt --
 #
 
+if (UNIX)
+    set(C4_DEFAULT_SEARCH_PATHS_RAW
+        "\"${CMAKE_INSTALL_PREFIX}/lib\""
+        "\"${CMAKE_INSTALL_PREFIX}/lib64\"")
+    string(REPLACE ";" ", " C4_DEFAULT_SEARCH_PATHS "${C4_DEFAULT_SEARCH_PATHS_RAW}")
+else ()
+    message(SEND_ERROR "C4 is currently not configurable on your platform.
+ We need to figure out a default search path that makes sense.")
+endif ()
+
 set(C4_LEXER_REGEX_BACKEND "pcre2")
 add_library(c4
             # Parser
@@ -132,7 +142,41 @@ add_library(c4
 
             include/c4/ast2/fwd.hxx
             include/c4/p2/named_source.hxx
+            include/c4/p2/source_resolver.hxx
+            src/p2/source_resolver/source_resolver.cxx
+            src/source_file/source_file.cxx
+            src/source_file/begin.cxx
+            src/source_file/end.cxx
+            src/p2/source_resolver/open.cxx
+            src/source_file/lex.cxx
+            include/c4/p2/included_parser.hxx
+            include/c4/p2/parser-aux.hxx
+            src/p2/included_parser/included_parser.cxx
+            src/p2/parser_utils.hxx
+            src/p2/symbol_table.hxx
+            src/p2/symbol_table/find_scoped_symbol.cxx
+            src/p2/symbol_table/find_scoped_symbol_with_arity.cxx
+            src/p2/symbol_table/enter_scope.cxx
+            src/p2/symbol_table/leave_scope.cxx
+            src/p2/symbol_table/declare.cxx
+            src/p2/symbol_table/find_operator.cxx
+            src/p2/included_parser/parse_global_let.cxx
+            src/p2/included_parser/parse_expression.cxx
+            src/p2/included_parser/next_relevant.cxx
+            src/p2/included_parser/parse_let_expression.cxx
+            src/p2/included_parser/parse_fn_let.cxx
+            src/p2/included_parser/parse_symbol.cxx
+            src/p2/included_parser/parse_op_let.cxx
+            src/p2/included_parser/parse_op_symbol.cxx
+            src/p2/included_parser/parse_associativity_indicator.cxx
+            src/p2/included_parser/parse_precedence.cxx
+            src/p2/included_parser/throw_away_expression.cxx
+            src/p2/included_parser/parse_final_expression.cxx
+            src/p2/included_parser/parse_operator_precedence.cxx
             )
+configure_file(src/p2/source_resolver/source-config.in.h
+               source-config.h
+               @ONLY)
 
 target_link_libraries(c4
                       PUBLIC
@@ -143,13 +187,13 @@ target_link_libraries(c4
                       uni-algo::uni-algo
                       PCRE2::8BIT
                       libassert::assert
-                      c4_llvm)
+                      )
 target_compile_options(c4 PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 target_compile_definitions(c4 PRIVATE
                            PCRE2_CODE_UNIT_WIDTH=8
                            C4_LEXER_ASSERT_RULES)
 target_include_directories(c4
-                           PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private"
+                           PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            )
 

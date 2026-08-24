@@ -37,6 +37,8 @@
 #define C4_P2_PARSER_HXX
 #include <deque>
 
+#include "../../../src/p2/symbol_table.hxx"
+
 #ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wchanges-meaning"
@@ -44,7 +46,6 @@
 
 #include <expected>
 #include <list>
-#include <stdexcept>
 #include <utility>
 
 #include <c4/ast2/ast_context.hxx>
@@ -56,80 +57,9 @@
 
 #include <c4/p2/lex/lexer.hxx>
 
+#include <c4/p2/parser-aux.hxx>
+
 namespace c4::p2 {
-	struct bad_token_error final : std::runtime_error {
-		bad_token_error()
-			: std::runtime_error("parser failure: bad token") { }
-	};
-
-	namespace aux {
-		struct mismatched_token_error final {
-			std::string_view name;
-			std::string_view expected;
-			position position;
-		};
-
-		struct eof_error final {
-			constexpr static std::string_view name = "end of file";
-			std::string_view expected;
-			position position;
-		};
-
-		template<class>
-		struct type_val_t { };
-
-		template<class T>
-		constexpr static auto type_val = type_val_t<T>{};
-
-		struct token_error final {
-			using value_type = std::variant<mismatched_token_error, eof_error>;
-
-			template<class T, class... Args>
-			explicit(false)
-			token_error(type_val_t<T>, Args&&... args)
-				: _value{std::in_place_type<T>, std::forward<Args>(args)...} { }
-
-			explicit
-			token_error(value_type value)
-				: _value{std::move(value)} { }
-
-			[[nodiscard]] std::string_view
-			name() const {
-				return std::visit([](const auto& tok) { return tok.name; }, _value);
-			}
-
-			[[nodiscard]] std::string_view
-			expected_token_name() const {
-				return std::visit([](const auto& tok) { return tok.expected; }, _value);
-			}
-
-			[[nodiscard]] position
-			position() const {
-				return std::visit([](const auto& tok) { return tok.position; }, _value);
-			}
-
-		private:
-			value_type _value;
-		};
-
-		template<class T>
-		struct token_selector {
-			std::expected<T, token_error>
-			operator()(const T& tok) const { return tok; }
-
-			template<class Found>
-			std::expected<T, token_error>
-			operator()(const Found& tok) const {
-				return std::unexpected<token_error>(
-					std::in_place,
-					type_val<mismatched_token_error>,
-					Found::token_name,
-					T::token_name,
-					tok.token_position());
-			}
-		};
-	}
-
 	struct parser {
 		constexpr static size_t cfg_max_precedence = 100;
 
@@ -163,7 +93,7 @@ namespace c4::p2 {
 		parse_expression();
 
 		ast2::expression*
-		parse_operator_let(enum ast2::let_expression::visibility vis);
+		parse_operator_let(enum ast2::let_expression::visibility vis, bool native);
 
 		ast2::expression*
 		parse_fn_let(enum ast2::let_expression::visibility vis, bool native);
@@ -212,84 +142,8 @@ namespace c4::p2 {
 			                  _current);
 		}
 
-		struct parser_symbol {
-			std::string_view name;
-			ast2::tags::referable* referee;
-			unsigned arity;
-			unsigned precedence; // Set only on operators
-			bool native = false;
-			bool right_assoc; // Set only on operators
-
-			parser_symbol(const std::string_view& name_,
-			              const unsigned arity_,
-			              ast2::tags::referable* referee_,
-			              const unsigned precedence_ = 0,
-			              const bool right_assoc_ = false)
-				noexcept(std::is_nothrow_copy_constructible_v<std::string_view>)
-				: name{name_}
-				, referee{referee_}
-				, arity{arity_}
-				, precedence{precedence_}
-				, right_assoc{right_assoc_} { }
-
-			[[nodiscard]] bool
-			is_operator() const noexcept { return precedence != 0; }
-
-			[[nodiscard]] bool
-			operator==(const ast2::symbol& sym) const noexcept {
-				if (native) return false;
-				return sym.name() == name;
-			}
-		};
-
-		struct symbol_resolution {
-			parser_symbol& symbol;
-			bool save_in_context;
-		};
-
-		std::optional<symbol_resolution>
-		find_scoped_symbol(const ast2::symbol& sym) {
-			const auto it = std::find(_scope_symbols.rbegin(), _scope_symbols.rend(), sym);
-			if (it == _scope_symbols.rend()) return std::nullopt;
-
-			const auto current_scope = _scope_symbol_size.back();
-			const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
-			return symbol_resolution{
-				.symbol = *it,
-				.save_in_context = std::cmp_greater_equal(iter_difference, current_scope)
-			};
-		}
-
-		std::optional<symbol_resolution>
-		find_scoped_symbol_with_arity(const ast2::symbol& sym) {
-			const auto it = std::find_if(_scope_symbols.rbegin(), _scope_symbols.rend(), [&sym](const auto& scope) {
-				return scope.name == sym.name() && scope.arity == sym.base_arity();
-			});
-			if (it == _scope_symbols.rend()) return std::nullopt;
-
-			const auto current_scope = _scope_symbol_size.back();
-			const auto iter_difference = std::distance(_scope_symbols.rbegin(), it);
-			return symbol_resolution{
-				.symbol = *it,
-				.save_in_context = std::cmp_greater(iter_difference, current_scope)
-			};
-		}
-
 		void
 		next_relevant();
-
-		void
-		enter_scope();
-
-		void
-		leave_scope();
-
-		parser_symbol&
-		declare_symbol_internal(std::string_view symbol,
-		                        unsigned arity,
-		                        ast2::tags::referable* referee = nullptr,
-		                        unsigned precedence = 0,
-		                        bool right_assoc = false);
 
 		template<class T>
 		std::expected<T, aux::token_error>
@@ -303,14 +157,7 @@ namespace c4::p2 {
 		parser_symbol&
 		ensure_valid_infix_operator(const tokens::operator_& sym);
 
-		parser_symbol*
-		find_infix_operator(std::string_view name);
-
-		parser_symbol*
-		find_prefix_operator(std::string_view name);
-
-		std::vector<unsigned> _scope_symbol_size;
-		std::deque<parser_symbol> _scope_symbols;
+		symbol_table _st;
 
 		ast2::let_expression* _within_let = nullptr;
 		ast2::block* _within_block = nullptr;

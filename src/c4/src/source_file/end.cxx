@@ -28,60 +28,16 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/end --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/source_file.hxx>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
-
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
-
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
-
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
-
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+const char*
+c4::source_file::
+end() const {
+	return _mmap.data() + _mmap.size();
 }
-
-#endif

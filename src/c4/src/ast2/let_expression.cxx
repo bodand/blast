@@ -69,6 +69,20 @@ c4::ast2::let_expression::value_constant() const noexcept {
 	return _value->constant_evaluated(std::array{_symbol});
 }
 
+bool
+c4::ast2::let_expression::seen_by(const enum visibility vis) const {
+	switch (_visibility) {
+	case v_public:
+		return true;
+	case v_internal:
+		if (vis == v_internal) return true;
+		[[fallthrough]];
+	case v_private:
+		return vis == v_private;
+	}
+	std::unreachable();
+}
+
 const c4::ast2::expression*
 c4::ast2::let_expression::value() const {
 	return _value;
@@ -77,6 +91,14 @@ c4::ast2::let_expression::value() const {
 c4::ast2::expression*
 c4::ast2::let_expression::value() {
 	return _value;
+}
+
+std::string
+c4::ast2::let_expression::pretty() const {
+	return std::format("let {}{}/{};",
+	                   static_cast<char>(visibility()),
+	                   symbol().pretty(),
+	                   symbol().base_arity());
 }
 
 bool

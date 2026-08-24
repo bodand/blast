@@ -105,7 +105,9 @@ namespace {
 }
 
 std::string
-c4::ast2::undef_symbol::mangle() const { return mangle_symbol(_name, _arity); }
+c4::ast2::undef_symbol::mangle() const {
+	return mangle_symbol(_name, _arity);
+}
 
 c4::ast2::symbol
 c4::ast2::symbol::with_arity(const unsigned arity) const {
@@ -144,4 +146,10 @@ c4::ast2::symbol::references(tags::referable* ref) const noexcept {
 	DEBUG_ASSERT((!_references || _references == ref),
 	             "referenced value should not be overwritten");
 	_references = ref;
+}
+
+std::string
+c4::ast2::symbol::pretty() const {
+	if (is_operator_symbol(_name)) return std::format("({})", _name);
+	return std::string(_name);
 }

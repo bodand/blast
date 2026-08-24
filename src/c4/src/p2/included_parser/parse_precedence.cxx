@@ -28,60 +28,38 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/included_parser/parse_precedence --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/p2/included_parser.hxx>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../parser_utils.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+unsigned
+c4::p2::included_parser::
+parse_precedence(std::string_view op) {
+	const auto int_lit = expect_token<tokens::integer_literal>();
+	if (!int_lit) {
+		_diag.error(position_of(_current),
+						"expected precedence value (0..{}) found `{}'",
+						cfg_max_precedence,
+						name_of(_current))
+			  .note("continuing to parse as if `{}' had precedence of 0", op);
+		return 0;
+	}
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+	const auto uint = ast2::integer_literal::from_token(*int_lit);
+	const auto uvalue = static_cast<unsigned>(uint.value());
+	if (uvalue <= cfg_max_precedence) return uvalue;
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
-
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+	_diag.error(uint.position(),
+					"expected precedence value (0..{}) found `{}'",
+					cfg_max_precedence,
+					uint.value())
+		  .note("continuing to parse as if `{}' had precedence of 0",
+				  op);
+	return 0;
 }
-
-#endif

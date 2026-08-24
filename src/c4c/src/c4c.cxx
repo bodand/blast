@@ -38,10 +38,8 @@
 #define NOMINMAX
 
 #include <algorithm>
-#include <charconv>
 #include <cstdio>
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -50,12 +48,13 @@
 #include <utility>
 
 #include <c4/ast_dumper.hxx>
+#include <c4/source_file.hxx>
 
 #include <c4/p2/parser.hxx>
+#include <c4/p2/source_resolver.hxx>
 #include <c4/p2/lex/lexer.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
-#include <c4rt2c/source_file.hxx>
 
 #include <libassert/assert.hpp>
 
@@ -69,7 +68,6 @@
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Passes/StandardInstrumentations.h>
 #include <llvm/Support/raw_ostream.h>
-#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
@@ -79,6 +77,7 @@
 #include <sgetopt/sgetopt.h>
 
 using namespace std::literals;
+namespace fs = std::filesystem;
 
 namespace {
 	struct ostream_deleter {
@@ -152,17 +151,34 @@ namespace {
 
 		return rel_str + "_init";
 	}
+
+	llvm::OptimizationLevel
+	map_optlevel(const int opt_level) {
+		switch (std::max(std::min(opt_level, 3), -2)) {
+		case -2: return llvm::OptimizationLevel::Oz;
+		case -1: return llvm::OptimizationLevel::Os;
+		case 0: return llvm::OptimizationLevel::O0;
+		case 1: return llvm::OptimizationLevel::O1;
+		case 2: return llvm::OptimizationLevel::O2;
+		case 3: return llvm::OptimizationLevel::O3;
+		default:
+			std::unreachable();
+		}
+	}
 }
 
 int
-main(int argc, const char* const* argv) {
+main(int argc, const char* const* argv) try {
 	argv0 = argv[0];
 
+	c4::diagnostics_engine diag(stderr);
+	c4::p2::source_resolver resolver(diag);
+
 	std::filesystem::path out_path;
-	std::filesystem::path src_path;
 	std::string target_arch;
 	std::string dump_type;
-	int opt_level = 0;
+
+	auto opt_level = llvm::OptimizationLevel::O0;
 
 	bool debug_trace = false;
 	bool debug_gc = false;
@@ -196,17 +212,27 @@ main(int argc, const char* const* argv) {
 				debug_gc = true;
 				break;
 			}
+			if (tmp == "nonrelative-errors") {
+				diag.report_relative_to("");
+				break;
+			}
 			argdie("-g", "unknown debug option, see c4c-debug(7) for valid values");
 		}
 		case 'I': {
 			break; // TODO
 		}
 		case 'O': {
-			if ((opts.arg[0] == 's' || opts.arg[0] == 'z') && opts.arg[1] == '\0') {
-				opt_level = opts.arg[0] == 's' ? -1 : -2;
+			if (opts.arg == "z"sv) {
+				opt_level = map_optlevel(-2);
 				break;
 			}
-			die_or_parse("-O", opts.arg, opt_level);
+			if (opts.arg == "s"sv) {
+				opt_level = map_optlevel(-1);
+				break;
+			}
+			int level = 0;
+			die_or_parse("-O", opts.arg, level);
+			opt_level = map_optlevel(level);
 			break;
 		}
 		case 'o': {
@@ -228,146 +254,131 @@ main(int argc, const char* const* argv) {
 	argv += opts.ind;
 	if (argc != 1) usage(argv0);
 
-	src_path = argv[0];
+	const auto src_path = fs::absolute(argv[0]);
 
-	auto opt = llvm::OptimizationLevel::O0;
-	switch (std::max(std::min(opt_level, 3), -2)) {
-	case -2: opt = llvm::OptimizationLevel::Oz;
-		break;
-	case -1: opt = llvm::OptimizationLevel::Os;
-		break;
-	case 0: break;
-	case 1: opt = llvm::OptimizationLevel::O1;
-		break;
-	case 2: opt = llvm::OptimizationLevel::O2;
-		break;
-	case 3: opt = llvm::OptimizationLevel::O3;
-		break;
-	}
 
-	c4c::source_file src(src_path);
+	c4::ast2::ast_context ast_context;
+
+	const auto src = resolver.open(src_path);
 	if (out_path.empty()) {
 		out_path = src_path;
 		out_path.replace_extension(".o");
 	}
 
-	src_path = absolute(src_path);
-	c4::ast2::ast_context ast_context;
-	c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
-	c4::diagnostics_engine diagnostics_engine{stderr};
-	c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
+	c4::p2::parser parser(ast_context, diag, src.lex());
 
-	try {
-		const auto script = parser.parse_script();
-		if (diagnostics_engine.errored())
-			return 1;
+	const auto script = parser.parse_script();
+	if (diag.errored())
+		return 1;
 
-		if (dump_type == "AST") {
-			auto outstrm = open_outstream(out_path);
-			dump_ast(script.begin(), script.end(), *outstrm);
-			return 0;
-		}
-
-		initialize_targets();
-
-		llvm::LLVMContext context;
-		llvm::SMDiagnostic diag;
-		const auto module_id = src_path.string();
-		llvm::Module module(module_id, context);
-		module.setSourceFileName(module_id);
-		llvm::IRBuilder<> builder(context);
-
-		const auto target_triple = target_arch.empty()
-			                           ? llvm::sys::getDefaultTargetTriple()
-			                           : target_arch;
-		const auto llvm_triple = llvm::Triple(target_triple);
-
-		std::string target_error;
-		const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
-		if (!target) {
-			std::cerr << "fatal: " << target_error << "\n";
-			return 2;
-		}
-
-		llvm::TargetOptions target_options;
-		target_options.DataSections = true;
-		target_options.FunctionSections = true;
-
-		const auto machine = std::unique_ptr<llvm::TargetMachine>(
-			target->createTargetMachine(llvm_triple, "generic", "", target_options, llvm::Reloc::PIC_)
-		);
-		module.setDataLayout(machine->createDataLayout());
-		module.setTargetTriple(llvm_triple);
-
-		llvm::FunctionPassManager fn_pm;
-		llvm::LoopAnalysisManager loop_am;
-		llvm::FunctionAnalysisManager fn_am;
-		llvm::ModuleAnalysisManager mod_am;
-		llvm::CGSCCAnalysisManager cgscc_am;
-		llvm::PassInstrumentationCallbacks pass_ic;
-		llvm::StandardInstrumentations si(context, false);
-		si.registerCallbacks(pass_ic, &mod_am);
-
-		llvm::PassBuilder pass_builder{machine.get(), llvm::PipelineTuningOptions{}, {}, &pass_ic};
-		machine->registerPassBuilderCallbacks(pass_builder);
-
-		pass_builder.registerModuleAnalyses(mod_am);
-		pass_builder.registerFunctionAnalyses(fn_am);
-		pass_builder.registerCGSCCAnalyses(cgscc_am);
-		pass_builder.registerLoopAnalyses(loop_am);
-
-		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
-
-		const bool decl_only_rt = !build_entrypoint;
-		c4rt2c::runtime_emitter rt_emitter(context, module, builder, decl_only_rt);
-		rt_emitter.set_debug_trace(debug_trace);
-		rt_emitter.set_memory_debug(debug_gc);
-
-		const auto library_init_fn = make_libinit_name(build_entrypoint, src_path);
-		c4rt2c::ast2_ir_emitter ir(module, builder, std::move(rt_emitter), library_init_fn);
-		ir.init(src_path);
-
-		ir.declare_symbols(ast_context);
-		std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
-
-		ir.finalize();
-
-		llvm::ModulePassManager mod_pm;
-		if (opt_level == 0) {
-			mod_pm = pass_builder.buildO0DefaultPipeline(opt);
-		}
-		else {
-			mod_pm = pass_builder.buildPerModuleDefaultPipeline(opt);
-		}
-		mod_pm.run(module, mod_am);
-
-		if (dump_type == "IR") {
-			std::string dump;
-			llvm::raw_string_ostream os(dump);
-			module.print(os, nullptr);
-			*open_outstream(out_path) << dump;
-			return 0;
-		}
-
-		std::error_code ec;
-		llvm::raw_fd_ostream out(out_path.string(), ec);
-		if (ec) throw std::system_error(ec);
-
-		llvm::legacy::PassManager pm;
-
-		if (machine->addPassesToEmitFile(pm, out, nullptr,
-		                                 llvm::CodeGenFileType::ObjectFile)) {
-			std::cerr << "\033[31mfatal:\033[0m target machine cannot produce object files. Bummer.\n";
-			return 100;
-		}
-
-		pm.run(module);
-		out.flush();
+	if (dump_type == "AST") {
+		auto outstrm = open_outstream(out_path);
+		dump_ast(script.begin(), script.end(), *outstrm);
+		return 0;
 	}
-	catch (const std::exception& e) {
-		std::cerr << "\033[31mfatal:\033[0m " << e.what() << "\n";
-		return 111;
+
+	initialize_targets();
+
+	llvm::LLVMContext context;
+	const auto module_id = src_path.string();
+	llvm::Module module(module_id, context);
+	module.setSourceFileName(module_id);
+	llvm::IRBuilder<> builder(context);
+
+	const auto target_triple = target_arch.empty()
+		                           ? llvm::sys::getDefaultTargetTriple()
+		                           : target_arch;
+	const auto llvm_triple = llvm::Triple(target_triple);
+
+	std::string target_error;
+	const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
+	if (!target) {
+		std::cerr << "fatal: " << target_error << "\n";
+		return 2;
 	}
+
+	llvm::TargetOptions target_options;
+	target_options.DataSections = true;
+	target_options.FunctionSections = true;
+
+	const auto machine = std::unique_ptr<llvm::TargetMachine>(
+		target->createTargetMachine(llvm_triple, "generic", "", target_options, llvm::Reloc::PIC_)
+	);
+	module.setDataLayout(machine->createDataLayout());
+	module.setTargetTriple(llvm_triple);
+
+	llvm::FunctionPassManager fn_pm;
+	llvm::LoopAnalysisManager loop_am;
+	llvm::FunctionAnalysisManager fn_am;
+	llvm::ModuleAnalysisManager mod_am;
+	llvm::CGSCCAnalysisManager cgscc_am;
+	llvm::PassInstrumentationCallbacks pass_ic;
+	llvm::StandardInstrumentations si(context, false);
+	si.registerCallbacks(pass_ic, &mod_am);
+
+	llvm::PassBuilder pass_builder{machine.get(), llvm::PipelineTuningOptions{}, {}, &pass_ic};
+	machine->registerPassBuilderCallbacks(pass_builder);
+
+	pass_builder.registerModuleAnalyses(mod_am);
+	pass_builder.registerFunctionAnalyses(fn_am);
+	pass_builder.registerCGSCCAnalyses(cgscc_am);
+	pass_builder.registerLoopAnalyses(loop_am);
+
+	pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
+
+	const bool decl_only_rt = !build_entrypoint;
+	c4rt2c::runtime_emitter rt_emitter(context, module, builder, decl_only_rt);
+	rt_emitter.set_debug_trace(debug_trace);
+	rt_emitter.set_memory_debug(debug_gc);
+
+	const auto library_init_fn = make_libinit_name(build_entrypoint, src_path);
+	c4rt2c::ast2_ir_emitter ir(module, builder, std::move(rt_emitter), library_init_fn);
+	ir.init(src_path);
+
+	ir.declare_symbols(ast_context);
+	std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
+
+	ir.finalize();
+
+	llvm::ModulePassManager mod_pm;
+	if (opt_level == llvm::OptimizationLevel::O0) {
+		mod_pm = pass_builder.buildO0DefaultPipeline(opt_level);
+	}
+	else {
+		mod_pm = pass_builder.buildPerModuleDefaultPipeline(opt_level);
+	}
+	mod_pm.run(module, mod_am);
+
+	if (dump_type == "IR") {
+		std::string dump;
+		llvm::raw_string_ostream os(dump);
+		module.print(os, nullptr);
+		*open_outstream(out_path) << dump;
+		return 0;
+	}
+
+	std::error_code ec;
+	llvm::raw_fd_ostream out(out_path.string(), ec);
+	if (ec) throw std::system_error(ec);
+
+	llvm::legacy::PassManager pm;
+
+	if (machine->addPassesToEmitFile(pm, out, nullptr,
+	                                 llvm::CodeGenFileType::ObjectFile)) {
+		std::cerr << "\033[31mfatal:\033[0m target machine cannot produce object files. Bummer.\n";
+		return 100;
+	}
+
+	pm.run(module);
+	out.flush();
+}
+catch (const std::exception& e) {
+	std::cerr << argv0 << ": \033[31mfatal:\033[0m " << e.what() << "\n";
+	return 111;
+}
+catch (...) {
+	std::cerr << argv0 << ": \033[31mfatal:\033[0m weird error?\n";
+	return 111;
 }
 
 namespace {

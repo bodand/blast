@@ -42,87 +42,7 @@
 #include <fmt/format.h>
 #include <libassert/assert.hpp>
 
-namespace {
-	struct token_ignorer final {
-		c4::diagnostics_engine& diag;
-
-		bool
-		operator()(const c4::p2::tokens::whitespace&) const { return true; }
-
-		bool
-		operator()(const c4::p2::tokens::comment&) const { return true; }
-
-		bool
-		operator()(const c4::p2::tokens::unknown& unk) const {
-			// format position before passing it to source_diagnostic to escape
-			// the likely unprintable characters:
-			auto pos = unk.token_position();
-			const auto debug_line = fmt::format("{:?}", pos.expanded_range);
-			pos.expanded_range = debug_line;
-			diag.error(pos, "unknown characters found: {:?}", unk.value())
-			    .note("line is escaped because of possibly unprintable characters, column location might be incorrect");
-			return true;
-		}
-
-		bool
-		operator()(const auto&) const { return false; }
-	};
-
-	template<class E1, class... Es>
-	[[noreturn]] void
-	report_failure(c4::diagnostics_engine& diag,
-	               E1&& error,
-	               Es&&... trailing) {
-		const auto& e1_error = error.error();
-		diag.error(e1_error.position(), "encountered unexpected {}", e1_error.name())
-		    .when(sizeof...(trailing) > 0)
-		    .note("expected one of: {}", fmt::join(std::make_tuple(trailing.error().expected_token_name()...), ", "));
-		throw c4::p2::bad_token_error{};
-	}
-
-	bool
-	is_eof(const c4::p2::tokens::token_type& tok) noexcept {
-		return std::holds_alternative<c4::p2::tokens::eof>(tok);
-	}
-
-	std::string_view
-	name_of(const c4::p2::tokens::token_type& token) {
-		return std::visit([](const auto& tok) {
-			return tok.token_name;
-		}, token);
-	}
-
-	c4::position
-	position_of(const c4::p2::tokens::token_type& token) {
-		return std::visit([](const auto& tok) {
-			return tok.token_position();
-		}, token);
-	}
-
-	struct namespaced_symbol_attribute : c4::ast2::tags::typed_attribute<std::vector<c4::ast2::symbol>> {
-		explicit
-		namespaced_symbol_attribute(std::vector<c4::ast2::symbol>&& symbols)
-			: typed_attribute(symbols) { }
-	};
-
-	struct nested_symbol_attribute : c4::ast2::tags::typed_attribute<c4::ast2::block*> {
-		explicit
-		nested_symbol_attribute(c4::ast2::block* blk)
-			: typed_attribute(blk) { }
-	};
-
-	struct native_attachment : c4::ast2::tags::typed_attribute<c4::ast2::symbol> {
-		explicit
-		native_attachment(c4::ast2::symbol&& sym)
-			: typed_attribute(sym) { }
-	};
-
-	struct flag_attribute : c4::ast2::tags::typed_attribute<bool> {
-		explicit
-		flag_attribute()
-			: typed_attribute(true) { }
-	};
-}
+#include "parser_utils.hxx"
 
 c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnostics_engine, lexer&& lexer)
 	: _diag{diagnostics_engine}
@@ -133,7 +53,6 @@ c4::p2::parser::parser(ast2::ast_context& context, diagnostics_engine& diagnosti
 		_current = _lexer.next();
 		if (is_eof(_current)) break;
 	}
-	enter_scope();
 }
 
 c4::ast2::integer_literal
@@ -240,7 +159,8 @@ c4::p2::parser::parse_expression() {
 
 c4::ast2::expression*
 c4::p2::parser::
-parse_operator_let(const enum ast2::let_expression::visibility vis) {
+parse_operator_let(const enum ast2::let_expression::visibility vis,
+                   bool native) {
 	auto op = parse_op_symbol();
 	const auto let = _context.build_let_expression(
 		op.position(),
@@ -249,7 +169,16 @@ parse_operator_let(const enum ast2::let_expression::visibility vis) {
 		vis
 	);
 
-	if (const auto last = find_scoped_symbol_with_arity(op)) {
+	if (native) {
+		_diag.error(op.position(),
+		            "operator `{}/{}' cannot be declared native",
+		            op.name(), op.base_arity())
+		     .note("native modifier is ignored")
+		     .note("consider defining a private function and wraping it",
+		           op.name());
+	}
+
+	if (const auto last = _st.find_scoped_symbol_with_arity(op)) {
 		_diag.error(op.position(),
 		            "operator `({})/{}' is already defined",
 		            op.name(), op.base_arity())
@@ -277,10 +206,10 @@ parse_operator_let(const enum ast2::let_expression::visibility vis) {
 		diagnostic = "operator `{}' is defined with one parameter (prefix) but definition expects `{}' arguments";
 		continuation_note = "continuing parsing as if `{}' had one parameter (prefix)";
 
-		sym = &declare_symbol_internal(op.name(),
-		                               op.base_arity(),
-		                               nullptr,
-		                               static_cast<unsigned>(-1));
+		sym = &_st.declare(op.name(),
+		                   op.base_arity(),
+		                   nullptr,
+		                   static_cast<unsigned>(-1));
 		break;
 
 	default:
@@ -300,11 +229,11 @@ parse_operator_let(const enum ast2::let_expression::visibility vis) {
 		const unsigned precedence = parse_precedence(op.name());
 		next_relevant();
 
-		sym = &declare_symbol_internal(op.name(),
-		                               op.base_arity(),
-		                               nullptr,
-		                               precedence,
-		                               !left_assoc);
+		sym = &_st.declare(op.name(),
+		                   op.base_arity(),
+		                   nullptr,
+		                   precedence,
+		                   !left_assoc);
 		break;
 	}
 
@@ -335,7 +264,7 @@ c4::p2::parser::parse_fn_let(enum ast2::let_expression::visibility vis,
 
 	ast2::let_expression* let = nullptr;
 
-	if (const auto last = find_scoped_symbol(symbol)) {
+	if (const auto last = _st.find_scoped_symbol(symbol)) {
 		if (last->symbol.referee) {
 			let = dynamic_cast<ast2::let_expression*>(last->symbol.referee);
 			if (let) {
@@ -369,7 +298,7 @@ c4::p2::parser::parse_fn_let(enum ast2::let_expression::visibility vis,
 			nullptr,
 			vis
 		);
-		declare_symbol_internal(symbol.name(), symbol.base_arity(), let);
+		_st.declare(symbol.name(), symbol.base_arity(), let);
 	}
 
 	if (native) {
@@ -462,7 +391,7 @@ c4::p2::parser::parse_let_expression() {
 
 	if (expect_token<tokens::operator_symbol>()
 	    || expect_token<tokens::fn_operator>())
-		return parse_operator_let(vis);
+		return parse_operator_let(vis, native);
 
 	return parse_fn_let(vis, native);
 }
@@ -485,6 +414,9 @@ c4::p2::parser::parse_final_expression() {
 	const auto str = expect_token<tokens::string_literal>();
 	if (str) return _context.build_expression(parse_string_literal());
 
+	const auto flt = expect_token<tokens::float_literal>();
+	if (flt) return _context.build_expression(parse_float_literal());
+
 	const auto integer = expect_token<tokens::integer_literal>();
 	if (integer) return _context.build_expression(parse_integer_literal());
 
@@ -505,15 +437,14 @@ c4::p2::parser::parse_final_expression() {
 		const auto op_sym = ast2::symbol(prefix_op->token_position(),
 		                                 prefix_op->value(),
 		                                 1);
-		const auto resolved = find_scoped_symbol_with_arity(op_sym);
+		const auto resolved = _st.find_scoped_symbol_with_arity(op_sym);
 		DEBUG_ASSERT(resolved, "prefix operator should have been resolved (ensure_valid_prefix_operator called above)",
 		             op_sym.name(),
 		             op_sym.base_arity());
 		op_sym.references(resolved->symbol.referee);
 
 		std::vector<ast2::symbol> closure_symbols;
-		if (resolved->save_in_context
-		    || _scope_symbol_size.size() == 1) { // in root scope
+		if (resolved->save_in_context || _st.root()) {
 			closure_symbols.push_back(op_sym);
 			closure_symbols.back().references(resolved->symbol.referee);
 		}
@@ -528,8 +459,10 @@ c4::p2::parser::parse_final_expression() {
 	const auto fn_symbol = expect_token<tokens::bare_symbol>();
 	if (fn_symbol) {
 		auto sym = parse_symbol();
-		const auto resolved = find_scoped_symbol(sym);
+		const auto resolved = _st.find_scoped_symbol(sym);
 		if (!resolved) {
+			/// XXX add flaky recover logic, maybe we can produce something
+			/// potentially helpful
 			_diag.error(sym.position(),
 			            "unknown symbol referenced in function call: {}",
 			            sym.name());
@@ -539,8 +472,7 @@ c4::p2::parser::parse_final_expression() {
 		sym.references(resolved->symbol.referee);
 
 		std::vector<ast2::symbol> closure_symbols;
-		if (resolved->save_in_context
-		    || _scope_symbol_size.size() == 1) { // in root scope
+		if (resolved->save_in_context || _st.root()) {
 			closure_symbols.push_back(sym);
 			closure_symbols.back().references(resolved->symbol.referee);
 		}
@@ -578,7 +510,7 @@ c4::p2::parser::parse_final_expression() {
 		return _context.build_expression(dyn_call);
 	}
 
-	report_failure(_diag, lpar, str, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
+	report_failure(_diag, lpar, str, flt, integer, symbol, prefix_op, lbrace, backslash, fn_symbol, dyn_call_start);
 }
 
 void
@@ -603,13 +535,11 @@ c4::ast2::expression*
 c4::p2::parser::parse_expression_of_let(const ast2::symbol& symbol,
                                         ast2::let_expression* let) {
 	const auto memory = std::exchange(_within_let, let);
-	enter_scope();
-
+	_st.enter_scope();
 	set_symbol_stack(symbol, let, memory);
 
 	const auto expr = parse_expression();
-
-	leave_scope();
+	_st.leave_scope();
 	std::exchange(_within_let, memory);
 
 	return expr;
@@ -627,7 +557,7 @@ namespace {
 		);
 		if (found_pos) return *reinterpret_cast<c4::position*>(data);
 
-		report_failure(diag, std::forward<decltype(args)>(args)...);
+		c4::p2::report_failure(diag, std::forward<decltype(args)>(args)...);
 	}
 }
 
@@ -647,8 +577,7 @@ c4::p2::parser::parse_block() {
 	);
 
 	const auto memory = std::exchange(_within_block, block);
-	enter_scope();
-
+	_st.enter_scope();
 	ast2::block_args* args{};
 	if (const auto args_pipe = expect_token<tokens::pipe>()) args = parse_block_args();
 
@@ -667,8 +596,51 @@ c4::p2::parser::parse_block() {
 
 	block->args(args);
 	block->expressions(std::move(expressions));
-	leave_scope();
+	_st.leave_scope();
 	return std::exchange(_within_block, memory);
+}
+
+c4::ast2::block_args*
+c4::p2::parser::parse_block_args() {
+	const auto lead = expect_token<tokens::pipe>();
+	if (!lead) report_failure(_diag, lead);
+	next_relevant();
+
+	std::vector<ast2::symbol> args{};
+	auto sym = expect_token<tokens::bare_symbol>();
+	while (sym) {
+		args.emplace_back(parse_bare_symbol());
+		sym = expect_token<tokens::bare_symbol>();
+	}
+
+	if (const auto tail = expect_token<tokens::pipe>();
+		!tail)
+		report_failure(_diag, tail);
+	next_relevant();
+
+	const auto block_args = _context.build_block_args(lead->token_position(),
+	                                                  std::span(args));
+	for (std::size_t i = 0; i < block_args->size(); ++i) {
+		auto& argument = block_args->argument_reference(i);
+		_st.declare(argument.name(), 0, &argument);
+	}
+
+	return block_args;
+}
+
+std::vector<c4::ast2::expression*>
+c4::p2::parser::parse_script() {
+	std::vector<ast2::expression*> expressions{};
+	while (!is_eof(_current)) {
+		auto expr = parse_expression();
+		if (!expr) continue;
+
+		if (!expr->attribute_value<bool>("emplaced")) {
+			std::ignore = expr->emplace_attribute<flag_attribute>("emplaced");
+			expressions.emplace_back(expr);
+		}
+	}
+	return expressions;
 }
 
 bool
@@ -756,7 +728,7 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs,
 			                    op_token.value(),
 			                    2);
 
-			const auto resolved = find_scoped_symbol_with_arity(op_sym);
+			const auto resolved = _st.find_scoped_symbol_with_arity(op_sym);
 			DEBUG_ASSERT(resolved,
 			             "prefix operator should have been resolved (ensure_valid_infix_operator called above)",
 			             op_sym.name(),
@@ -764,8 +736,7 @@ c4::p2::parser::parse_operator_precedence(ast2::expression* lhs,
 			op_sym.references(resolved->symbol.referee);
 
 			std::vector<ast2::symbol> closure_symbols;
-			if (resolved->save_in_context
-			    || _scope_symbol_size.size() == 1) { // in root scope
+			if (resolved->save_in_context || _st.root()) {
 				closure_symbols.push_back(op_sym);
 				closure_symbols.back().references(resolved->symbol.referee);
 			}
@@ -793,27 +764,16 @@ c4::p2::parser::next_relevant() {
 	} while (std::visit(token_ignorer{_diag}, _current));
 }
 
-void
-c4::p2::parser::enter_scope() {
-	_scope_symbol_size.emplace_back();
-}
 
-void
-c4::p2::parser::leave_scope() {
-	const auto stackSize = _scope_symbol_size.back();
-	_scope_symbol_size.pop_back();
-	for (auto i = 0U; i < stackSize; ++i) _scope_symbols.pop_back();
-}
-
-c4::p2::parser::parser_symbol&
+c4::p2::parser_symbol&
 c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
-	if (const auto op = find_prefix_operator(sym.value())) return *op;
+	if (const auto op = _st.find_prefix_operator(sym.value())) return *op;
 
 	auto pos = sym.token_position().snapshot();
 	_diag.error(sym.token_position(),
 	            "unknown prefix operator referenced: {}/1",
 	            sym.value())
-	     .when(find_infix_operator(sym.value()))
+	     .when(_st.find_infix_operator(sym.value()))
 	     .note("there exists an infix operator with name {}/2, did you mean to call that?", sym.value())
 	     .when(sym.size() > 1)
 	     .suggest([&pos] -> position&& {
@@ -829,15 +789,15 @@ c4::p2::parser::ensure_valid_prefix_operator(const tokens::operator_& sym) {
 	throw bad_token_error{};
 }
 
-c4::p2::parser::parser_symbol&
+c4::p2::parser_symbol&
 c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
-	if (const auto op = find_infix_operator(sym.value())) return *op;
+	if (const auto op = _st.find_infix_operator(sym.value())) return *op;
 
 	auto pos = sym.token_position().snapshot();
 	_diag.error(sym.token_position(),
 	            "unknown infix operator referenced: {}/2",
 	            sym.value())
-	     .when(find_prefix_operator(sym.value()))
+	     .when(_st.find_prefix_operator(sym.value()))
 	     .note("there exists an prefix operator with name {}/1, did you mean to call that?", sym.value())
 	     .when(sym.size() > 1)
 	     .suggest([&pos] -> position&& {
@@ -851,83 +811,4 @@ c4::p2::parser::ensure_valid_infix_operator(const tokens::operator_& sym) {
 	              " separate them with whitespace or parentheses");
 
 	throw bad_token_error{};
-}
-
-namespace {
-	template<class It>
-	auto
-	find_any_operator(It begin, const It& end,
-	                  unsigned arity, std::string_view name) -> std::iterator_traits<It>::value_type* {
-		const auto it = std::find_if(std::move(begin), end,
-		                             [arity, &name](const auto& op) {
-			                             return op.arity == arity
-			                                    && op.name == name
-			                                    && op.is_operator();
-		                             });
-		if (it == end) return nullptr;
-		return &*it;
-	}
-}
-
-c4::p2::parser::parser_symbol*
-c4::p2::parser::find_infix_operator(const std::string_view name) {
-	return find_any_operator(_scope_symbols.begin(), _scope_symbols.end(), 2, name);
-}
-
-c4::p2::parser::parser_symbol*
-c4::p2::parser::find_prefix_operator(const std::string_view name) {
-	return find_any_operator(_scope_symbols.begin(), _scope_symbols.end(), 1, name);
-}
-
-c4::ast2::block_args*
-c4::p2::parser::parse_block_args() {
-	const auto lead = expect_token<tokens::pipe>();
-	if (!lead) report_failure(_diag, lead);
-	next_relevant();
-
-	std::vector<ast2::symbol> args{};
-	auto sym = expect_token<tokens::bare_symbol>();
-	while (sym) {
-		args.emplace_back(parse_bare_symbol());
-		sym = expect_token<tokens::bare_symbol>();
-	}
-
-	if (const auto tail = expect_token<tokens::pipe>();
-		!tail)
-		report_failure(_diag, tail);
-	next_relevant();
-
-	const auto block_args = _context.build_block_args(lead->token_position(),
-	                                                  std::span(args));
-	for (std::size_t i = 0; i < block_args->size(); ++i) {
-		auto& argument = block_args->argument_reference(i);
-		declare_symbol_internal(argument.name(), 0, &argument);
-	}
-
-	return block_args;
-}
-
-std::vector<c4::ast2::expression*>
-c4::p2::parser::parse_script() {
-	std::vector<ast2::expression*> expressions{};
-	while (!is_eof(_current)) {
-		auto expr = parse_expression();
-		if (!expr) continue;
-
-		if (!expr->attribute_value<bool>("emplaced")) {
-			std::ignore = expr->emplace_attribute<flag_attribute>("emplaced");
-			expressions.emplace_back(expr);
-		}
-	}
-	return expressions;
-}
-
-c4::p2::parser::parser_symbol&
-c4::p2::parser::declare_symbol_internal(std::string_view symbol,
-                                        unsigned arity,
-                                        ast2::tags::referable* referee,
-                                        unsigned precedence,
-                                        bool right_assoc) {
-	++_scope_symbol_size.back();
-	return _scope_symbols.emplace_back(symbol, arity, referee, precedence, right_assoc);
 }

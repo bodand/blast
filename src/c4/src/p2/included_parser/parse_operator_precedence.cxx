@@ -28,60 +28,52 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-24.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/included_parser/parse_operator_precedence --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/p2/included_parser.hxx>
+#include <libassert/assert.hpp>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../parser_utils.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+void
+c4::p2::included_parser::
+parse_operator_precedence(const unsigned precedence) {
+	auto lookahead = expect_token<tokens::operator_>();
+	if (!lookahead) return;
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+	auto op_token = *lookahead;
+	auto op = _st.find_infix_operator(op_token.value());
+	if (!op) report_failure(_diag, lookahead);
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
+	while (op->precedence >= precedence) {
+		next_relevant();
+		parse_final_expression();
+		lookahead = expect_token<tokens::operator_>();
+		if (lookahead) {
+			auto op_ahead = _st.find_infix_operator(lookahead->value());
+			if (!op_ahead) report_failure(_diag, lookahead);
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
+			while (lookahead && (op_ahead->precedence > op->precedence
+			                     || (op_ahead->right_assoc && op_ahead->precedence == op->precedence))) {
+				parse_operator_precedence(op->precedence + (op_ahead->precedence > op->precedence));
+				lookahead = expect_token<tokens::operator_>();
+				if (!lookahead) continue;
 
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
+				op_ahead = _st.find_infix_operator(lookahead->value());
+				if (!op_ahead) report_failure(_diag, lookahead);
+			}
 		}
 
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
+		ast2::symbol op_sym(op_token.token_position(),
+		                    op_token.value(),
+		                    2);
 
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+		if (!lookahead) break;
+		op_token = *lookahead;
+		op = _st.find_infix_operator(lookahead->value());
+	}
 }
-
-#endif

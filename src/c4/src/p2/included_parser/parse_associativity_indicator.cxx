@@ -28,60 +28,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-22.
+ * Originally created: 2026-08-23.
  *
- * src/c4/include/c4/p2/named_source --
+ * src/c4/src/p2/included_parser/parse_associativity_indicator --
  *   
  */
-#ifndef C4_NAMED_SOURCE_HXX
-#define C4_NAMED_SOURCE_HXX
 
-#include <filesystem>
-#include <string>
+#include <c4/p2/included_parser.hxx>
 
-namespace c4::p2 {
-	struct named_source {
-		virtual ~named_source() = default;
+#include "../parser_utils.hxx"
 
-		[[nodiscard]] virtual const std::filesystem::path&
-		file() const noexcept = 0;
+bool
+c4::p2::included_parser::
+parse_associativity_indicator(std::string_view op) {
+	const auto bare_symbol = expect_token<tokens::bare_symbol>();
+	if (!bare_symbol) {
+		_diag.error(position_of(_current),
+						"expected associativity indicator (`left' or `right') found `{}'",
+						name_of(_current))
+			  .note("continuing to parse as if `{}' was left associative", op);
+		return true; // left-assoc
+	}
 
-		[[nodiscard]] virtual std::string_view
-		file_string() const noexcept = 0;
-	};
+	const auto assoc_direction = ast2::symbol::from_token(*bare_symbol);
+	if (assoc_direction.name() == "right") return false;
+	if (assoc_direction.name() == "left") return true;
 
-	struct unknown_source final : named_source {
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override { return _file; }
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override { return _file_string; }
-
-	private:
-		std::filesystem::path _file{"<unknown>"};
-		std::string _file_string{"<unknown>"};
-	};
-
-	struct invalid_file_source final : named_source {
-		explicit
-		invalid_file_source(const std::filesystem::path& file)
-			: _file{file} { }
-
-		[[nodiscard]] const std::filesystem::path&
-		file() const noexcept override {
-			return _file;
-		}
-
-		[[nodiscard]] std::string_view
-		file_string() const noexcept override {
-			if (_file_string.empty()) _file_string = file().string();
-			return _file_string;
-		}
-
-	private:
-		std::filesystem::path _file;
-		mutable std::string _file_string;
-	};
+	_diag.error(assoc_direction.position(),
+					"expected associativity indicator (`left' or `right') found `{}'",
+					assoc_direction.name())
+		  .note("continuing to parse as if `{}' was left associative", op);
+	return true;
 }
-
-#endif
