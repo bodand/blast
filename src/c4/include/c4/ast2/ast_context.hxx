@@ -64,22 +64,22 @@ namespace c4::ast2 {
 	struct ast_context final {
 		block_args*
 		build_block_args(const position& position,
-		                 std::span<symbol> args);
+							  std::span<symbol> args);
 
 		block*
 		build_block(const position& position,
-		            std::vector<expression*>&& expressions,
-		            block_args* args = nullptr);
+						std::vector<expression*>&& expressions,
+						block_args* args = nullptr);
 
 		dynamic_call*
 		build_dynamic_call(const position& position,
-		                   expression* callee,
-		                   std::vector<expression*>&& args);
+								 expression* callee,
+								 std::vector<expression*>&& args);
 
 		fn_call*
 		build_fn_call(const position& position,
-		              const symbol& callee,
-		              std::vector<expression*>&& args);
+						  const symbol& callee,
+						  std::vector<expression*>&& args);
 
 		expression*
 		build_expression(const symbol& sym);
@@ -113,30 +113,34 @@ namespace c4::ast2 {
 
 		let_expression*
 		build_let_expression(const c4::position& position,
-		                     const symbol& sym,
-		                     expression* expression,
-		                     enum let_expression::visibility vis);
+									const symbol& sym,
+									expression* expression,
+									enum let_expression::visibility vis);
 
 		unary_op_call*
 		build_unary_op_call(const position& position,
-		                    const symbol& sym,
-		                    expression* operand);
+								  const symbol& sym,
+								  expression* operand);
 
 		binary_op_call*
 		build_binary_op_call(const position& position,
-		                     const symbol& sym,
-		                     expression* left,
-		                     expression* right);
+									const symbol& sym,
+									expression* left,
+									expression* right);
 
 		[[nodiscard]] std::span<const let_expression* const>
 		named_symbols() const noexcept {
 			return _lets;
 		}
 
+		std::string_view
+		lift_symbol(std::string_view str);
+
 	private:
 		// TODO arena allocator
 		std::vector<let_expression*> _lets{};
 		std::list<std::unique_ptr<ast_node>> _nodes{};
+		std::list<std::string> _string_table{};
 	};
 }
 

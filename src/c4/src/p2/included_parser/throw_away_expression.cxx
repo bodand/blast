@@ -52,22 +52,29 @@ throw_away_expression(const bool top_level) {
 
 	if (expect_token<tokens::backslash>()) {
 		next_relevant();
-		if (expect_token<tokens::pipe>()) {
+		_st.enter_scope();
+		if (const auto pipe = expect_token<tokens::pipe>()) {
+			next_relevant();
+
 			auto sym = expect_token<tokens::bare_symbol>();
 			while (sym) {
+				_st.declare(sym->name(), 0);
+				next_relevant();
 				sym = expect_token<tokens::bare_symbol>();
 			}
+
 			if (const auto tail = expect_token<tokens::pipe>();
 				!tail)
 				report_failure(_diag, tail);
 			next_relevant();
 		}
 		throw_away_expression(false);
+		_st.leave_scope();
 		return;
 	}
 
 	unsigned arity = 0;
-	     if (burn_until_paired<tokens::ampersand, tokens::arity_marker>()) {
+	if (burn_until_paired<tokens::ampersand, tokens::arity_marker>()) {
 		arity = expect_token<tokens::arity_marker>()->arity();
 		next_relevant();
 	}
@@ -91,15 +98,15 @@ throw_away_expression(const bool top_level) {
 		next_relevant();
 
 		const auto op_sym = ast2::symbol(pfx->token_position(),
-													pfx->value(),
-													1);
+		                                 pfx->value(),
+		                                 1);
 		if (!_st.find_scoped_symbol_with_arity(op_sym)) {
 			_diag.error(pfx->token_position(),
-							"unknown prefix operator referenced: {}/1",
-							pfx->value())
-				  .when(_st.find_infix_operator(pfx->value()))
-				  .note("there exists an infix operator with name {}/2, did you mean to call that?",
-						  pfx->value());
+			            "unknown prefix operator referenced: {}/1",
+			            pfx->value())
+			     .when(_st.find_infix_operator(pfx->value()))
+			     .note("there exists an infix operator with name {}/2, did you mean to call that?",
+			           pfx->value());
 		}
 
 		arity = 1;

@@ -175,3 +175,10 @@ c4::ast2::ast_context::build_binary_op_call(const position& position,
                                             expression* right) {
 	return build_insert<binary_op_call>(_nodes, position, sym, left, right);
 }
+
+std::string_view
+c4::ast2::ast_context::
+lift_symbol(const std::string_view str) {
+	const auto& it = _string_table.emplace_front(str.data(), str.size());
+	return std::string_view{it.data(), it.size()};
+}

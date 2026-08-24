@@ -173,6 +173,8 @@ add_library(c4
             src/p2/included_parser/throw_away_expression.cxx
             src/p2/included_parser/parse_final_expression.cxx
             src/p2/included_parser/parse_operator_precedence.cxx
+            src/p2/included_parser/parse_use_expression.cxx
+            src/source_file/resolve_source_use.cxx
             )
 configure_file(src/p2/source_resolver/source-config.in.h
                source-config.h

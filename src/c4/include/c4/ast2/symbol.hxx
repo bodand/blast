@@ -46,14 +46,15 @@
 #include <c4/tags/visitable.hxx>
 
 namespace c4::ast2 {
+	struct ast_context;
 	/**
-    * Symbol for undefined but declared symbols. These are not inherently
-    * present in the source.
-    */
+	 * Symbol for undefined but declared symbols. These are not inherently
+	 * present in the source.
+	 */
 	struct undef_symbol {
 		undef_symbol(const std::string_view& name, const unsigned arity)
 			: _name{name}
-			, _arity{arity} { }
+		, _arity{arity} { }
 
 		[[nodiscard]] std::string
 		mangle() const;
@@ -71,6 +72,11 @@ namespace c4::ast2 {
 	private:
 		std::string_view _name;
 		unsigned _arity;
+	};
+
+	struct operator_data {
+		bool left_associative;
+		unsigned precedence;
 	};
 
 	struct symbol final : tags::visitable
@@ -161,11 +167,20 @@ namespace c4::ast2 {
 		std::string
 		pretty() const;
 
+		void
+		lift_to_context(ast_context& ctx);
+
+		void
+		set_op_data(const bool assoc, const unsigned prec) {
+			_op_data = {.left_associative = assoc, .precedence = prec};
+		}
+
 	private:
 		mutable tags::referable* _references{};
 		std::string_view _name;
 		unsigned _arity;
 		bool _native = false;
+		std::optional<operator_data> _op_data;
 	};
 }
 

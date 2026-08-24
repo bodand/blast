@@ -34,6 +34,7 @@
  *   
  */
 
+#include <c4/source_file.hxx>
 #include <c4/p2/included_parser.hxx>
 
 #include "../parser_utils.hxx"
@@ -41,10 +42,13 @@
 c4::p2::included_parser::
 included_parser(ast2::ast_context& context,
                 diagnostics_engine& diag,
-                lexer&& lexer)
+                source_resolver& resolver,
+                const source_file& source)
 	: _diag(diag)
 	, _context(context)
-	, _lexer(std::move(lexer))
+	, _resolver{resolver}
+	, _source{source}
+	, _lexer(_source.lex())
 	, _current{_lexer.next()} {
 	while (std::visit(token_ignorer{_diag}, _current)) {
 		_current = _lexer.next();

@@ -228,6 +228,7 @@ parse_operator_let(const enum ast2::let_expression::visibility vis,
 		next_relevant();
 		const unsigned precedence = parse_precedence(op.name());
 		next_relevant();
+		op.set_op_data(left_assoc, precedence);
 
 		sym = &_st.declare(op.name(),
 		                   op.base_arity(),

@@ -40,7 +40,7 @@
 
 std::vector<c4::ast2::let_expression*>
 c4::p2::included_parser::
-parser_global_let() {
+parse_global_let() {
 	_expressions.clear();
 	while (!is_eof(_current)) {
 		parse_expression();

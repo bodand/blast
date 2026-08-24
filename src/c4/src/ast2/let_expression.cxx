@@ -95,10 +95,9 @@ c4::ast2::let_expression::value() {
 
 std::string
 c4::ast2::let_expression::pretty() const {
-	return std::format("let {}{}/{};",
+	return std::format("let {}{};",
 	                   static_cast<char>(visibility()),
-	                   symbol().pretty(),
-	                   symbol().base_arity());
+	                   symbol().pretty());
 }
 
 bool
@@ -138,6 +137,14 @@ c4::ast2::let_expression::top_level() const noexcept {
 	const auto symbols = attribute_value<std::vector<struct symbol>>("symbol-stack");
 	if (!symbols) return false;
 	return symbols->size() == 1;
+}
+
+void
+c4::ast2::let_expression::
+lift_to_context(ast_context& ctx) {
+	ASSERT(!_value, "this should only be used on imported declaration from other files");
+
+	_symbol.lift_to_context(ctx);
 }
 
 void

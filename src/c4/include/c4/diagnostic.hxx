@@ -325,6 +325,12 @@ namespace c4 {
 			return p.relative_to(_report_relative_to);
 		}
 
+		[[nodiscard]] std::string
+		relative(std::filesystem::path const& path) const {
+			if (_report_relative_to.empty()) return path.string();
+			return std::filesystem::relative(path, _report_relative_to);
+		}
+
 	private:
 		std::filesystem::path _report_relative_to = std::filesystem::current_path();
 		bool _errored{};

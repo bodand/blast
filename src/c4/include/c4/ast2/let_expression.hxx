@@ -51,6 +51,7 @@
 #include <string_view>
 
 namespace c4::ast2 {
+	struct ast_context;
 	struct expression;
 	struct block;
 
@@ -89,6 +90,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] symbol
 		symbol() const { return _symbol; }
+
+		void
+		symbol(const struct symbol& s) { _symbol = s; }
 
 		[[nodiscard]] const ast2::expression*
 		value() const;
@@ -131,6 +135,9 @@ namespace c4::ast2 {
 
 		[[nodiscard]] visibility
 		visibility() const noexcept { return _visibility; }
+
+		void
+		lift_to_context(ast_context& ctx);
 
 	private:
 		void

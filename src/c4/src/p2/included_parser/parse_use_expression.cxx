@@ -1,6 +1,6 @@
 /* blAST project
  *
- * Copyright (c) 2025 András Bodor <bodand@pm.me>
+ * Copyright (c) 2026 András Bodor <bodand@pm.me>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,46 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2025-03-03.
+ * Originally created: 2026-08-24.
  *
- * src/c4c/include/c4c/source_file --
+ * src/c4/src/p2/included_parser/parse_use_expression --
  *   
  */
-#ifndef C4C_SOURCE_FILE_HXX
-#define C4C_SOURCE_FILE_HXX
 
+#include <iostream>
 #include <filesystem>
 
-#include <mio/mmap.hpp>
+#include <c4/p2/included_parser.hxx>
+#include <c4/p2/source_resolver.hxx>
 
-#include <c4/diagnostic.hxx>
+#include "../parser_utils.hxx"
 
-#include "p2/lex/lexer.hxx"
+void
+c4::p2::included_parser::
+parse_use_expression() {
+	// Always note the absolute hack that is the use "token".
+	// Because otherwise weird parsing rules would break the "" and <> syntaxes
+	// the entire darn line is lexed as a single token. Magnificent.
+	const auto use = expect_token<tokens::use>();
+	if (!use) report_failure(_diag, use);
+	next_relevant();
 
-namespace c4 {
-	struct source_file {
-		source_file(diagnostics_engine& diag,
-		            std::filesystem::path path);
+	if (!use->library() && use->is_public()) {
+		_diag.error(use->token_position(), "+public use of non-library files is not allowed")
+		     .note("parsing as if it were ~internal");
+	}
 
-		const char*
-		begin() const;
+	// always check if file exists to locate errors even if private import
+	const auto path = _resolver.resolve(_source,
+	                                    use->token_position(),
+	                                    use->library(),
+	                                    use->path());
+	if (!path) return;
+	if (use->is_private()) return;
 
-		const char*
-		end() const;
+	const auto transitive_src = _resolver.open(*path);
+	included_parser nested(_context, _diag, _resolver, transitive_src);
+	nested.parse_global_let();
 
-		p2::lexer
-		lex() const;
-
-		std::filesystem::path
-		resolve_source_use(std::string_view path) const;
-
-		const std::filesystem::path&
-		path() const noexcept { return _file; }
-
-	private:
-		std::filesystem::path _file;
-		mio::mmap_source _mmap;
-	};
+	auto included_exprs = nested.forfeit_expressions();
+	std::ranges::for_each(included_exprs, [&](auto& expr) {
+		expr->lift_to_context(_context);
+	});
+	_expressions.reserve(_expressions.size() + included_exprs.size());
+	std::ranges::copy(included_exprs, std::back_inserter(_expressions));
 }
-
-#endif

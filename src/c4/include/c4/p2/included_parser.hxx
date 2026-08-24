@@ -44,17 +44,27 @@
 #include <c4/p2/parser-aux.hxx>
 #include <c4/p2/parser.hxx>
 
+namespace c4 {
+	struct source_file;
+}
+
 namespace c4::p2 {
+	struct source_resolver;
+
 	struct included_parser {
 		constexpr static size_t cfg_max_precedence = parser::cfg_max_precedence;
 
 		explicit
 		included_parser(ast2::ast_context& context,
 		                diagnostics_engine& diag,
-		                lexer&& lexer);
+		                source_resolver& resolver,
+		                const source_file& source);
 
 		std::vector<ast2::let_expression*>
-		parser_global_let();
+		parse_global_let();
+
+		std::vector<ast2::let_expression*>&&
+		forfeit_expressions() { return std::move(_expressions); }
 
 	private:
 		ast2::symbol
@@ -64,9 +74,7 @@ namespace c4::p2 {
 		parse_op_symbol();
 
 		void
-		parse_use_expression() {
-			/// TODO: implement recursive includes
-		}
+		parse_use_expression();
 
 		void
 		throw_away_expression(bool top_level);
@@ -130,6 +138,10 @@ namespace c4::p2 {
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;
+		source_resolver& _resolver;
+
+		const source_file& _source;
+
 		lexer _lexer;
 		tokens::token_type _current;
 	};

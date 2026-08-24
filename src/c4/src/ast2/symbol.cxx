@@ -39,9 +39,11 @@
 #include <string>
 #include <string_view>
 
+#include <c4/ast2/ast_context.hxx>
 #include <c4/ast2/symbol.hxx>
 
 #include <fmt/base.h>
+
 #include <libassert/assert.hpp>
 
 using namespace std::literals;
@@ -150,6 +152,18 @@ c4::ast2::symbol::references(tags::referable* ref) const noexcept {
 
 std::string
 c4::ast2::symbol::pretty() const {
-	if (is_operator_symbol(_name)) return std::format("({})", _name);
-	return std::string(_name);
+	if (!is_operator_symbol(_name)) return std::format("{}/{}", _name, _arity);
+	if (_arity == 1) return std::format("({})/{}", _name, _arity);
+
+	return std::format("({})/{} {} {}",
+		_name,
+		_arity,
+		_op_data->left_associative ? "left" : "right",
+		_op_data->precedence);
+}
+
+void
+c4::ast2::symbol::lift_to_context(ast_context& ctx) {
+	const auto name2 = ctx.lift_symbol(_name);
+	_name = name2;
 }

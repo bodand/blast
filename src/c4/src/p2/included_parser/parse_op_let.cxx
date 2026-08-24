@@ -97,6 +97,7 @@ parse_op_let(const enum ast2::let_expression::visibility vis,
 		next_relevant();
 		const unsigned precedence = parse_precedence(op.name());
 		next_relevant();
+		op.set_op_data(left_assoc, precedence);
 
 		_st.declare(op.name(),
 		            op.base_arity(),
@@ -108,5 +109,6 @@ parse_op_let(const enum ast2::let_expression::visibility vis,
 
 	throw_away_expression(false);
 
+	let->symbol(op);
 	_expressions.push_back(let);
 }

@@ -40,6 +40,8 @@
 #include <optional>
 #include <vector>
 
+#include <c4/fmt.hxx>
+
 #include <c4/diagnostic.hxx>
 #include <c4/source_file.hxx>
 
@@ -52,15 +54,44 @@ namespace c4::p2 {
 		reset_path() { _search_paths.clear(); }
 
 		void
-		push_path(const std::filesystem::path& path);
+		push_path(const std::filesystem::path& path) {
+			_search_paths.push_back(path);
+		}
 
 		std::optional<std::filesystem::path>
-		resolve(std::string_view filename) const;
+		resolve(const source_file& initiator,
+		        const position& pos,
+		        const bool library,
+		        const std::string_view filename) const {
+			const auto expected = resolve_expected(initiator, library, filename);
+
+			const auto it = std::ranges::find_if(expected, [&](const auto& path) {
+				return exists(path);
+			});
+			if (it != end(expected)) return *it;
+
+			_diag.error(pos, "could not resolve used file \"{}\" from \"{}\"",
+			            filename, _diag.relative(initiator.path()));
+			return {};
+		}
 
 		source_file
 		open(std::filesystem::path const& path) const;
 
 	private:
+		std::vector<std::filesystem::path>
+		resolve_expected(const source_file& initiator,
+		                 const bool library,
+		                 std::string_view filename) const {
+			if (!library) return {initiator.resolve_source_use(filename)};
+
+			std::vector<std::filesystem::path> paths;
+			paths.reserve(_search_paths.size());
+			std::ranges::transform(_search_paths, std::back_inserter(paths),
+			                       [&](const auto& path) { return path / filename; });
+			return paths;
+		}
+
 		diagnostics_engine& _diag;
 		std::vector<std::filesystem::path> _search_paths;
 	};

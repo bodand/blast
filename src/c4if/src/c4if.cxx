@@ -102,7 +102,7 @@ int
 main(int argc, const char* const* argv) try {
 	argv0 = argv[0];
 	c4::diagnostics_engine diag(stderr);
-	const c4::p2::source_resolver resolver(diag);
+	c4::p2::source_resolver resolver(diag);
 
 	auto filter_vis = vis_t::v_internal;
 
@@ -128,13 +128,15 @@ main(int argc, const char* const* argv) try {
 	const auto src = resolver.open(src_path);
 
 	c4::ast2::ast_context ast_context;
-	c4::p2::included_parser parser(ast_context, diag, src.lex());
+	c4::p2::included_parser parser(ast_context, diag, resolver, src);
 
-	for (const auto lets = parser.parser_global_let();
+	for (const auto lets = parser.parse_global_let();
 	     const auto& let : lets) {
 		if (!let->seen_by(filter_vis)) continue;
 		std::println(std::cout, "{}", let->pretty());
 	}
+
+	if (diag.errored()) return 1;
 }
 catch (std::exception& ex) {
 	std::cerr << "fatal: " << ex.what() << "\n";

@@ -173,8 +173,8 @@ namespace c4::p2::tokens {
 
 	struct use final : token_base {
 		constexpr static std::string_view token_name = "use";
-		constexpr static std::string_view regex = R"(\Ause[ \t]*(<[^>\n]*>|"[^"\n]*"))";
-		constexpr static size_t group_count = 1;
+		constexpr static std::string_view regex = R"(\Ause[ \t]*([-+~]?)(<[^>\n]*>|"[^"\n]*"))";
+		constexpr static size_t group_count = 2;
 
 		[[nodiscard]] std::string_view
 		path() const noexcept { return _path; }
@@ -182,16 +182,35 @@ namespace c4::p2::tokens {
 		[[nodiscard]] bool
 		library() const noexcept { return _library; }
 
+		[[nodiscard]] char
+		visibility() const noexcept { return _visibility; }
+
+		[[nodiscard]] bool
+		is_public() const noexcept { return _visibility == '+'; }
+
+		[[nodiscard]] bool
+		is_internal() const noexcept { return _visibility == '~'; }
+
+		[[nodiscard]] bool
+		is_private() const noexcept { return _visibility == '-'; }
+
 	private:
 		friend token_source;
 
 		use(const position& position,
 		    const std::string_view range,
+		    const std::string_view visibility_range,
 		    const std::string_view path_range)
 			: token_base{position, range}
+			, _visibility{
+				visibility_range.empty()
+					? '-'
+					: visibility_range.front()
+			}
 			, _path{path_range.substr(1, path_range.size() - 2)}
 			, _library{path_range.front() == '<'} { }
 
+		char _visibility;
 		std::string_view _path;
 		bool _library;
 	};
