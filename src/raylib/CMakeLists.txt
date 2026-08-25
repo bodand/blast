@@ -47,7 +47,8 @@ add_library(c4raylib
             src/EndDrawing.c
             src/ClearBackground.c
             src/DrawRectangleV.c
-            src/Vector2_Move.c)
+            src/Vector2_Move.c
+            src/SetTargetFPS.c)
 
 target_link_libraries(c4raylib
                       PRIVATE raylib c4rt3)
