@@ -6,7 +6,7 @@
 .Nd utility to check exposed interfaces of C4 sources
 .Sh SYNOPSIS
 .Nm
-.Op Fl h
+.Op Fl ha
 .Op Fl v Ar vis
 .Ar source
 .Sh DESCRIPTION
@@ -18,6 +18,10 @@ show the interface provided by the original file.
 
 The options are as follows:
 .Bl -tag -width DS
+.It Fl a
+Process
+.Ar source
+as a C4 archive instead of a source file.
 .It Fl h
 Print help information and exit 100.
 .It Fl v Ar vis

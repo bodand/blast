@@ -39,6 +39,7 @@
 #include <filesystem>
 #include <optional>
 #include <vector>
+#include <c4/archive_file.hxx>
 
 #include <c4/fmt.hxx>
 
@@ -76,7 +77,10 @@ namespace c4::p2 {
 		}
 
 		source_file
-		open(std::filesystem::path const& path) const;
+		open(const std::filesystem::path& path) const;
+
+		archive_file
+		open_archive(const std::filesystem::path& path) const;
 
 	private:
 		std::vector<std::filesystem::path>

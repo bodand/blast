@@ -146,6 +146,8 @@ find_package(ryu CONFIG REQUIRED)
 find_package(BDWgc CONFIG REQUIRED)
 add_compile_definitions(GC_THREADS)
 
+find_package(LIEF REQUIRED)
+
 find_package(zstd REQUIRED)
 if (NOT TARGET zstd::libzstd_shared)
     find_package(PkgConfig REQUIRED)

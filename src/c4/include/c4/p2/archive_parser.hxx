@@ -28,36 +28,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-23.
+ * Originally created: 2026-08-25.
  *
- * src/c4/src/source_file/source_file --
+ * src/c4/include/c4/p2/archive_parser --
  *   
  */
+#ifndef BLAST_ARCHIVE_PARSER_HXX
+#define BLAST_ARCHIVE_PARSER_HXX
 
-#include <c4/diagnostic.hxx>
-#include <c4/source_file.hxx>
+#include <vector>
 
-#include <c4/p2/named_source.hxx>
+#include <c4/p2/a/lexer.hxx>
 
-c4::source_file::
-source_file(diagnostics_engine& diag,
-            std::filesystem::path path)
-	: _file{std::move(path)} {
-	p2::invalid_file_source src{_file};
-	if (!exists(_file)) {
-		const auto ec = make_error_code(std::errc::no_such_file_or_directory);
-		diag.error(position::invalid_file_position(src),
-		           "could not open input file: {}\n",
-		           ec.message())
-		    .bail("could not open {} for reading", _file.string());
-	}
+#include "named_source.hxx"
 
-	std::error_code ec;
-	_mmap.map(_file.c_str(), 0, mio::map_entire_file, ec);
-	if (ec) {
-		diag.error(position::invalid_file_position(src),
-		           "could not open input file: {}\n",
-		           ec.message())
-		    .bail("could not mmap {} for reading", _file.string());
-	}
+namespace c4 {
+	struct diagnostics_engine;
+	struct archive_file;
 }
+
+namespace c4::ast2 {
+	struct let_expression;
+	struct ast_context;
+}
+
+namespace c4::p2 {
+	struct archive_parser {
+		archive_parser(ast2::ast_context& ctx,
+		               diagnostics_engine& diag,
+		               const archive_file& archive);
+
+		std::vector<ast2::let_expression*>
+		parse();
+
+	private:
+		std::vector<ast2::let_expression*> _expressions;
+
+		diagnostics_engine& _diag;
+		ast2::ast_context& _ctx;
+
+		const archive_file& _archive;
+
+		invalid_file_source _named_src;
+		a::lexer _lexer;
+		a::tokens::token_type _current;
+	};
+}
+
+#endif

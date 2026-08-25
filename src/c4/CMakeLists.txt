@@ -175,6 +175,16 @@ add_library(c4
             src/p2/included_parser/parse_operator_precedence.cxx
             src/p2/included_parser/parse_use_expression.cxx
             src/source_file/resolve_source_use.cxx
+            include/c4/p2/archive_parser.hxx
+            include/c4/archive_file.hxx
+            include/c4/p2/a/lexer.hxx
+            src/p2/a/lexer/lexer.cxx
+            src/p2/a/lexer/next.cxx
+            src/p2/archive_parser.hxx/archive_parser.cxx
+            src/p2/archive_parser.hxx/parse.cxx
+            src/p2/source_resolver/open_archive.cxx
+            src/archive_file/archive_file.cxx
+            src/archive_file/lex.cxx
             )
 configure_file(src/p2/source_resolver/source-config.in.h
                source-config.h
@@ -184,6 +194,7 @@ target_link_libraries(c4
                       PUBLIC
                       fmt::fmt
                       PRIVATE
+                      LIEF::LIEF
                       internal-warnings
                       internal-lto
                       uni-algo::uni-algo

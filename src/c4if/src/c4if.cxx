@@ -48,8 +48,10 @@
 #include <c4/p2/source_resolver.hxx>
 
 #include <c4/ast2/ast_context.hxx>
+#include <c4/p2/archive_parser.hxx>
 
 using namespace std::literals;
+namespace fs = std::filesystem;
 
 namespace {
 	#define argdesc(flag, arg, ...) "   " #flag "  "  << std::setw(w) << #arg << "   " #__VA_ARGS__ "\n"
@@ -57,12 +59,13 @@ namespace {
 	[[noreturn]] void
 	usage() {
 		constexpr int w = 3;
-		std::cerr << "usage: " << argv0 << " [-hv] <source>\n"
+		std::cerr << "usage: " << argv0 << " [-ahv] <source>\n"
 				<< "\n"
 				<< "options: \n"
+				argdesc(-a, , Process input source as C4 archive.)
 				argdesc(-h, , Print this help and exit 100.)
 				argdesc(-v, vis, Set visibility level to extract at. +, [~], or -);
-		exit(1);
+		exit(100);
 	}
 
 	using vis_t = enum c4::ast2::let_expression::visibility;
@@ -98,6 +101,37 @@ namespace {
 
 		return it->second;
 	}
+
+	struct generic_parser {
+		std::vector<c4::ast2::let_expression*>
+		parse_source(const fs::path& src_path) const {
+			const auto src = _resolver.open(src_path);
+			c4::p2::included_parser parser(_ast_context, _diag, _resolver, src);
+
+			auto ret = parser.parse_global_let();
+			std::ranges::for_each(ret, [&](auto& expr) {
+				expr->lift_to_context(_ast_context);
+			});
+
+			return ret;
+		}
+
+		std::vector<c4::ast2::let_expression*>
+		parse_archive(const fs::path& ar_path) const {
+			const auto ar = _resolver.open_archive(ar_path);
+			c4::p2::archive_parser parser(_ast_context, _diag, ar);
+
+			auto ret = parser.parse();
+			std::ranges::for_each(ret, [&](auto& expr) {
+				expr->lift_to_context(_ast_context);
+			});
+			return ret;
+		}
+
+		c4::ast2::ast_context& _ast_context;
+		c4::diagnostics_engine& _diag;
+		c4::p2::source_resolver& _resolver;
+	};
 }
 
 int
@@ -105,14 +139,21 @@ main(int argc, const char* const* argv) try {
 	argv0 = argv[0];
 	c4::diagnostics_engine diag(stderr);
 	c4::p2::source_resolver resolver(diag);
+	c4::ast2::ast_context ast_context;
+	const generic_parser gen{ast_context, diag, resolver};
+
+	auto action = &generic_parser::parse_source;
 
 	auto filter_vis = vis_t::v_internal;
 
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv0;
 	for (int opt;
-	     (opt = subgetopt_r(argc, argv, "hv:", &opts)) != -1;) {
+	     (opt = subgetopt_r(argc, argv, "ahv:", &opts)) != -1;) {
 		switch (static_cast<char>(opt)) {
+		case 'a':
+			action = &generic_parser::parse_archive;
+			break;
 		case 'v':
 			filter_vis = match_visibility(opts.arg);
 			break;
@@ -127,12 +168,8 @@ main(int argc, const char* const* argv) try {
 	if (argc != 1) usage();
 
 	const auto src_path = std::filesystem::absolute(argv[0]);
-	const auto src = resolver.open(src_path);
 
-	c4::ast2::ast_context ast_context;
-	c4::p2::included_parser parser(ast_context, diag, resolver, src);
-
-	for (const auto lets = parser.parse_global_let();
+	for (const auto lets = (gen.*action)(src_path);
 	     const auto& let : lets) {
 		if (!let->seen_by(filter_vis)) continue;
 		std::println(std::cout, "{}", let->pretty());

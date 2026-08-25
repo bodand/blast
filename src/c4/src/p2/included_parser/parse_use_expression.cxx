@@ -67,9 +67,9 @@ parse_use_expression() {
 
 	const auto transitive_src = _resolver.open(*path);
 	included_parser nested(_context, _diag, _resolver, transitive_src);
-	nested.parse_global_let();
 
-	auto included_exprs = nested.forfeit_expressions();
+	auto included_exprs = nested.parse_global_let();
+
 	std::ranges::for_each(included_exprs, [&](auto& expr) {
 		expr->lift_to_context(_context);
 	});

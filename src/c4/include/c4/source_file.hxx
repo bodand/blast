@@ -40,11 +40,11 @@
 
 #include <mio/mmap.hpp>
 
-#include <c4/diagnostic.hxx>
-
 #include "p2/lex/lexer.hxx"
 
 namespace c4 {
+	struct diagnostics_engine;
+
 	struct source_file {
 		source_file(diagnostics_engine& diag,
 		            std::filesystem::path path);

@@ -69,4 +69,6 @@ export_symbol_to(const c4::ast2::symbol& symbol, std::vector<uint8_t>& table) {
 	table.insert(table.end(), name_data, name_data + sym_name_sz);
 
 	table.insert(table.end(), arity_bytes.begin(), arity_bytes.end());
+
+	// todo: operator extra byte
 }
