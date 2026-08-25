@@ -192,18 +192,16 @@ main(int argc, const char* const* argv) try {
 	for (int opt;
 	     (opt = subgetopt_r(argc, argv, "d:Eg:hI:O:o:T:", &opts)) != -1;) {
 		switch (static_cast<char>(opt)) {
-		case 'd': {
+		case 'd':
 			dump_type = opts.arg;
 			if (dump_type == "AST") break;
 			if (dump_type == "IR") break;
 			if (dump_type == "ASM") break;
 			if (dump_type == "LTO") break;
 			argdie("-d", "expected one of AST, IR, ASM, or LTO");
-		}
-		case 'E': {
+		case 'E':
 			build_entrypoint = true;
 			break;
-		}
 		case 'g': {
 			std::string_view tmp = opts.arg;
 			if (tmp == "call-trace") {
@@ -220,10 +218,14 @@ main(int argc, const char* const* argv) try {
 			}
 			argdie("-g", "unknown debug option, see c4c-debug(7) for valid values");
 		}
-		case 'I': {
-			break; // TODO
-		}
-		case 'O': {
+		case 'I':
+			if (opts.arg[0] == '\0') {
+				resolver.reset_path();
+				break;
+			}
+			resolver.push_path(opts.arg);
+			break;
+		case 'O':
 			if (opts.arg == "z"sv) {
 				opt_level = map_optlevel(-2);
 				break;
@@ -232,19 +234,19 @@ main(int argc, const char* const* argv) try {
 				opt_level = map_optlevel(-1);
 				break;
 			}
-			int level = 0;
-			die_or_parse("-O", opts.arg, level);
-			opt_level = map_optlevel(level);
+			// number
+			{
+				int level = 0;
+				die_or_parse("-O", opts.arg, level);
+				opt_level = map_optlevel(level);
+			}
 			break;
-		}
-		case 'o': {
+		case 'o':
 			out_path = opts.arg;
 			break;
-		}
-		case 'T': {
+		case 'T':
 			target_arch = opts.arg;
 			break;
-		}
 
 		case 'h':
 		default:
@@ -261,7 +263,7 @@ main(int argc, const char* const* argv) try {
 
 	c4::ast2::ast_context ast_context;
 
-	const auto src = resolver.open(src_path);
+	const auto src = resolver.open_source(src_path);
 	if (out_path.empty()) {
 		out_path = src_path;
 		out_path.replace_extension(".o");

@@ -68,12 +68,13 @@ namespace {
 	[[noreturn]] void
 	usage(const char* argv0) {
 		constexpr int w = 7;
-		std::cerr << "usage: " << argv0 << " [-dEghIOoT] <object...>\n"
+		std::cerr << "usage: " << argv0 << " [-hjoT] <object...>\n"
 				<< "\n"
 				<< "options:\n"
 				<< std::left // don't need to restore, we are exiting imminently
 				<< argdesc(-h, , Print this help and exit 100.)
-				<< argdesc(-j, dir, Add dir for finding C4 library archives.)
+				<< argdesc(-j, n, Use n for the number of worker threads. Uses all by default.)
+				<< argdesc(-o, path, Set output path to path. Default is lib.c4a.)
 				<< argdesc(-T, triplet, Set target triplet to trp. Same format as LLVM.);
 		exit(100);
 	}

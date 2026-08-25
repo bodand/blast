@@ -1,0 +1,14 @@
+This project was vendored from https://github.com/ulfjack/ryu
+
+As per the dual-license of Apache2.0 OR BSL, the project here is used under the
+BSL license. Original license text in LICENSE-Boost
+
+Date: 2026-08-25
+Commit: 4c0618b0e44f7ef027ebae05d2cc7812048f7c8f
+
+Reasoning: It is considerably easier to merge the d2s functions into the c4rt3
+static library as a locally built CMake OBJECT library than tying to figure out
+a reliable, cross-platform way to merge to .a files.
+
+Modifications: The header was modified to remove the un-yanked functions from
+the full implementation.

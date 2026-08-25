@@ -39,9 +39,6 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 option(BLAST_BUILD_TESTS "Build the test suite for blAST [Yes]" Yes)
 option(BLAST_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
-option(BLAST_ENABLE_SANITIZERS "Build blAST with sanitizers [No]" No)
-# Currently broken, needs more wizardry
-option(BLAST_USE_MIMALLOC "Use mimalloc memory allocator instead of malloc in libc [No]" No)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -97,28 +94,6 @@ generate_lto(internal-lto)
 
 add_compile_options(-fstack-protector-strong)
 
-# ASan
-if (BLAST_ENABLE_SANITIZERS)
-    if (CMAKE_CXX_COMPILER_ID MATCHES [[GNU|Clang]])
-        add_compile_options(
-                $<$<PLATFORM_ID:Linux>:-fsanitize=address,undefined>
-                $<$<PLATFORM_ID:Linux>:-fno-omit-frame-pointer>
-                )
-        add_link_options(
-                $<$<PLATFORM_ID:Linux>:-fsanitize=address,undefined>
-                )
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        add_compile_options(
-                /fsanitize=address
-                /fsanitize-address-use-after-return
-                )
-        #        add_link_options(
-        #                clang_rt.asan_$<$<CONFIG:DEBUG>:dbg_>dynamic-${BLAST_ARCH}.lib
-        #                clang_rt.asan_dynamic_runtime_thunk-${BLAST_ARCH}.lib
-        #                )
-    endif ()
-endif ()
-
 # MSVC argument injection
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     message(STATUS "Using MSVC: ${CMAKE_CXX_COMPILER}")
@@ -141,8 +116,6 @@ find_package(pcre2 CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(libassert CONFIG REQUIRED)
 find_package(uni-algo CONFIG REQUIRED)
-find_package(lyra CONFIG REQUIRED)
-find_package(ryu CONFIG REQUIRED)
 find_package(BDWgc CONFIG REQUIRED)
 add_compile_definitions(GC_THREADS)
 
@@ -175,27 +148,30 @@ target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS_LIST})
 target_include_directories(c4_llvm SYSTEM INTERFACE
                            ${LLVM_INCLUDE_DIRS}
                            ${CLANG_INCLUDE_DIRS})
-target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM
-#                      ${LLVM_OBJECT_LIB}
-                      )
+target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM)
 
-#add_subdirectory(src/cdb)
-add_subdirectory(src/sgetopt)
+## Vendored special sub-libraries
+add_subdirectory(src/libsgetopt) # sgetopt from skalibs
+add_subdirectory(src/libryu)     # d2s* from libryu
 
-add_subdirectory(src/c4rt2)
-add_subdirectory(src/libarray)
-add_subdirectory(src/std4)
-add_subdirectory(src/blast)
+## The main language libraries
+add_subdirectory(src/libc4)
+add_subdirectory(src/libc4rt2)
 
-find_package(raylib)
-if (TARGET raylib)
-    add_subdirectory(src/raylib)
-endif ()
-
-add_subdirectory(src/c4)
+## Executables
 add_subdirectory(src/c4c)
 add_subdirectory(src/c4ar)
 add_subdirectory(src/c4if)
 #add_subdirectory(src/c4i)
+
+## C4 libraries
+add_subdirectory(src/libarray.c4)
+add_subdirectory(src/libstd4.c4)
+add_subdirectory(src/libblast.c4)
+
+find_package(raylib)
+if (TARGET raylib)
+    add_subdirectory(src/libraylib.c4)
+endif ()
 
 add_subdirectory(test)

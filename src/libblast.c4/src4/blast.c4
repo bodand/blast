@@ -1,0 +1,77 @@
+use "std.c4"
+use <libarray.a>
+
+let -native blast_init_/1;
+let +blast_init/1 { |builder| &( builder )/0 }
+let +defaults/0 \{ blast_init_ nil }
+let +resource_dir/1 { |x| { blast_init_ x } }
+
+let -native blast_build_ast_single_/2;
+let +blast_build_ast_single/2 { |src flags|
+    blast_build_ast_single_ src list_to_array flags
+}
+
+let +native blast_build_from_compile_commands/1;
+
+let -native blast_make_diagnostic/2;
+let +diagnostic/1 { |message| { |name| blast_make_diagnostic name message } }
+
+let -native blast_make_callback/2;
+let +callback/1 { |cb| { |name| blast_make_callback name cb } }
+
+let -native blast_make_ignore_handler/1;
+let +ignored \\|name| blast_make_ignore_handler name
+
+let +with/1 \|x| x
+let +into/1 \|x| x
+
+let +string_matcher/1 { |x| { |matchers handlers|
+    cons
+        x :: matchers
+        handlers
+}}
+
+let +native blast_match_ast/3;
+
+let +blast/2 { |what handlers|
+    let stuff &(handlers)/2 nil nil
+
+    let ms car stuff
+    let hs cdr stuff
+
+    blast_match_ast what ms hs
+}
+
+let +end_blast { { |matchers handlers|
+    list_print handlers
+    list_print matchers
+
+    cons list_to_array matchers
+         list_to_array handlers
+}}
+
+let -native blast_new_unique_binding/0;
+
+let +match/3 { |handler matcher tail| { |matchers handlers|
+    let intbind blast_new_unique_binding
+
+    let mh &(matcher)/2 matchers handlers
+    let new_matchers car mh
+    let new_mhead car new_matchers
+    let new_mtail cdr new_matchers
+
+    let boundhead str_cat str_cat str_cat new_mhead '.bind("' intbind '")'
+
+    let new_handlers cdr mh
+
+    &(tail)/2
+        cons boundhead new_mtail
+        cons &(handler)/1 intbind new_handlers
+}}
+
+let +handle/3 { |node handler tail| { |matchers handlers|
+    &(tail)/2
+        matchers
+        cons &(handler)/1 node handlers
+}}
+

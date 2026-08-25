@@ -1,6 +1,6 @@
 # blAST project
 #
-# Copyright (c) 2025 András Bodor <bodand@proton.me>
+# Copyright (c) 2026 András Bodor <bodand@proton.me>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,40 +28,51 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2025-03-26.
+# Originally created: 2026-08-08.
 #
-# src/c4c/CMakeLists.txt --
-#   CMake project for the C4 Compiler (c4c)
+# src/blast/CMakeLists.txt --
+#
 
-add_executable(c4c src/c4c.cxx)
+set(BLAST_DEFAULT_RESOURCE_DIR
+    ${CMAKE_INSTALL_PREFIX}/share/blast/clang
+    CACHE PATH "Default location for the clang resource directory")
 
-target_link_libraries(c4c PRIVATE
-                      c4
-                      c4rt2c
+add_library(blast STATIC
+            src/blast/blast_build_ast_single.cxx
+            src/blast/blast_build_from_compile_commands.cxx
+            src/blast/blast_init_.cxx
+            src/blast/blast_make_callback.cxx
+            src/blast/blast_make_diagnostic.cxx
+            src/blast/blast_make_ignore_handler.cxx
+            src/blast/blast_match_ast.cxx
+            src/blast/blast_new_unique_binding.cxx
+
+            src/ext-type.hxx
+            src/blast_typeid.cxx
+
+            src/default_resource_dir.in.hxx
+            src/resource_dir.hxx
+            src/resource_dir.cxx
+
+            src/handler/diagnostic_handler.hxx
+            src/handler/handler_base.hxx
+
+            src/gc_box.hxx
+
+            src/compilation_db.hxx
+            src/compilation_db/compilation_db.cxx
+            src/compilation_db/build_tool.cxx
+            )
+configure_file(src/default_resource_dir.in.hxx
+               default_resource_dir.hxx
+               @ONLY)
+target_include_directories(
+        blast
+        PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+
+target_link_libraries(blast
+                      PRIVATE
                       c4_llvm
-                      sgetopt
-                      libassert::assert
-                      )
-target_include_directories(c4c PRIVATE
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
-if (WIN32)
-    add_custom_command(
-            TARGET c4c POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
-if (MSVC AND BLAST_ENABLE_SANITIZERS)
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
+                      c4rt3
+                      array)

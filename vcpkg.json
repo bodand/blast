@@ -5,13 +5,11 @@
   "builtin-baseline": "edc84ff66e6262a9f7565c28eb76577aeab9c5aa",
   "dependencies": [
     "uni-algo",
-    "bfgroup-lyra",
     "mio",
     "libassert",
     "fmt",
     "pcre2",
     "catch2",
-    "bdwgc",
-    "ryu"
+    "bdwgc"
   ]
 }

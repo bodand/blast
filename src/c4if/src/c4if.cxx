@@ -58,12 +58,13 @@ namespace {
 
 	[[noreturn]] void
 	usage() {
-		constexpr int w = 3;
-		std::cerr << "usage: " << argv0 << " [-ahv] <source>\n"
+		constexpr int w = 5;
+		std::cerr << "usage: " << argv0 << " [-ahIv] <source>\n"
 				<< "\n"
 				<< "options: \n"
 				argdesc(-a, , Process input source as C4 archive.)
 				argdesc(-h, , Print this help and exit 100.)
+				argdesc(-I, path, Append path to library search path.)
 				argdesc(-v, vis, Set visibility level to extract at. +, [~], or -);
 		exit(100);
 	}
@@ -105,7 +106,7 @@ namespace {
 	struct generic_parser {
 		std::vector<c4::ast2::let_expression*>
 		parse_source(const fs::path& src_path) const {
-			const auto src = _resolver.open(src_path);
+			const auto src = _resolver.open_source(src_path);
 			c4::p2::included_parser parser(_ast_context, _diag, _resolver, src);
 
 			auto ret = parser.parse_global_let();
@@ -149,10 +150,17 @@ main(int argc, const char* const* argv) try {
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv0;
 	for (int opt;
-	     (opt = subgetopt_r(argc, argv, "ahv:", &opts)) != -1;) {
+	     (opt = subgetopt_r(argc, argv, "ahI:v:", &opts)) != -1;) {
 		switch (static_cast<char>(opt)) {
 		case 'a':
 			action = &generic_parser::parse_archive;
+			break;
+		case 'I':
+			if (opts.arg[0] == '\0') {
+				resolver.reset_path();
+				break;
+			}
+			resolver.push_path(opts.arg);
 			break;
 		case 'v':
 			filter_vis = match_visibility(opts.arg);
