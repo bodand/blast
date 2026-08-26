@@ -36,6 +36,7 @@
 #ifndef C4_PARSER_UTILS_HXX
 #define C4_PARSER_UTILS_HXX
 
+#include <c4/p2/parser-aux.hxx>
 #include <c4/p2/lex/tokens.hxx>
 
 #include <c4/diagnostic.hxx>

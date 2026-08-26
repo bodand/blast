@@ -35,6 +35,9 @@
  */
 
 #include <bit>
+#include <chrono>
+#include <format>
+#include <iostream>
 
 #include <c4/diagnostic.hxx>
 #include <c4/p2/archive_parser.hxx>
@@ -46,6 +49,8 @@
 
 #include <libassert/assert.hpp>
 
+#include "../parser_utils.hxx"
+
 static_assert(std::endian::native == std::endian::little
               || std::endian::native == std::endian::big,
               "Mixed endian hardware detected: please submit a patch");
@@ -53,10 +58,10 @@ static_assert(std::endian::native == std::endian::little
 namespace {
 	using namespace c4::p2::a;
 
-	bool
-	is_eof(const tokens::token_type& tok) {
-		return std::holds_alternative<tokens::eof>(tok);
-	}
+	constexpr uint16_t mask_native = 0b1000'0000'0000'0000;
+	constexpr uint16_t mask_operator = 0b0100'0000'0000'0000;
+	constexpr uint16_t mask_left_assoc = 0b0010'0000'0000'0000;
+	constexpr uint16_t mask_precedence = 0b0000'0000'0111'1111;
 
 	struct parser_visitor final {
 		void
@@ -82,6 +87,10 @@ namespace {
 		operator()(const tokens::object& binary) {
 			error_counter = 0;
 
+			auto start = std::chrono::high_resolution_clock::now();
+			std::chrono::high_resolution_clock::time_point parse_start{};
+			std::chrono::high_resolution_clock::time_point parse_end{};
+
 			const auto obj = LIEF::Parser::parse(std::make_unique<LIEF::SpanStream>(binary.bytes));
 			if (!obj) {
 				_diag.error(c4::position::invalid_file_position(_src),
@@ -101,18 +110,38 @@ namespace {
 
 				const auto end = data.data() + data.size();
 
+				parse_start = std::chrono::high_resolution_clock::now();
 				std::optional<c4::ast2::symbol> sym;
 				for (auto it = parse_one(&sym, data.begin(), end);
 				     sym;
 				     it = parse_one(&sym, it, end)) {
-					const auto let = _ctx.build_let_expression(sym->position(),
-					                                           sym.value(),
-					                                           nullptr,
-					                                           vis);
-					let->lift_to_context(_ctx);
-					_expressions.push_back(let);
+					if (sym->native()) {
+						const auto let = _ctx.build_let_expression(sym->position(),
+						                                           sym.value().with_native(false),
+						                                           nullptr,
+						                                           vis);
+						let->lift_to_context(_ctx);
+
+						auto nat = std::move(*sym);
+						nat.lift_to_context(_ctx);
+						let->emplace_attribute<c4::p2::native_attachment>("native",
+						                                                  std::move(nat));
+						_expressions.push_back(let);
+					}
+					else {
+						const auto let = _ctx.build_let_expression(sym->position(),
+						                                           sym.value(),
+						                                           nullptr,
+						                                           vis);
+						let->lift_to_context(_ctx);
+						_expressions.push_back(let);
+					}
 				}
+				parse_end = std::chrono::high_resolution_clock::now();
 			}
+
+			auto end = std::chrono::high_resolution_clock::now();
+			std::println(std::clog, "LIEF time: {:%S}\n", end - start - (parse_end - parse_start));
 		}
 
 		template<std::integral I>
@@ -133,33 +162,47 @@ namespace {
 			if (std::distance(begin, end) < static_cast<ptrdiff_t>(sizeof(uint32_t)))
 				throw std::runtime_error("truncated size in export entry");
 
-			const auto sz_bytes = reinterpret_cast<
-				const std::array<const uint8_t, sizeof(uint32_t)>*>(begin);
-			std::advance(begin, sizeof(uint32_t));
-
-			auto size = std::bit_cast<uint32_t>(*sz_bytes);
+			uint32_t size;
+			std::memcpy(&size, begin, sizeof(size));
+			std::advance(begin, sizeof(size));
 			maybe_swap(size);
 
 			if (std::distance(begin, end) < static_cast<ptrdiff_t>(size))
-				throw std::runtime_error("truncated symbol name in export entry");
+				throw std::runtime_error(
+					std::format("truncated symbol name in export entry (expected {} bytes, got {})",
+					            size,
+					            std::distance(begin, end)));
 
 			const std::string_view name(reinterpret_cast<const char*>(begin), size);
 			std::advance(begin, size);
 
 			if (std::distance(begin, end) < static_cast<ptrdiff_t>(sizeof(uint32_t)))
-				throw std::runtime_error("truncated arity in export entry");
+				throw std::runtime_error(std::format("truncated arity in export entry {}", name));
 
-			const auto arity_bytes = reinterpret_cast<
-				const std::array<const uint8_t, sizeof(uint32_t)>*>(begin);
-			std::advance(begin, sizeof(uint32_t));
-
-			auto arity = std::bit_cast<uint32_t>(*arity_bytes);
+			uint32_t arity;
+			std::memcpy(&arity, begin, sizeof(arity));
+			std::advance(begin, sizeof(arity));
 			maybe_swap(arity);
 
 			// todo: proper positioning
 			*out = c4::ast2::symbol(c4::position::pseudo_position(), name, arity);
 
-			// todo: operator extra byte
+			if (std::distance(begin, end) < static_cast<ptrdiff_t>(sizeof(uint16_t)))
+				throw std::runtime_error(std::format("truncated metadata in {}/{}", name, arity));
+
+			uint16_t metadata;
+			std::memcpy(&metadata, begin, sizeof(metadata));
+			std::advance(begin, sizeof(uint16_t));
+			maybe_swap(metadata);
+
+			if (metadata & mask_native) {
+				*out = (*out)->with_native(true);
+			}
+			if (metadata & mask_operator) {
+				const bool left_assoc = metadata & mask_left_assoc;
+				const auto prec = static_cast<unsigned>(metadata & mask_precedence);
+				(*out)->operator_data(left_assoc, prec);
+			}
 
 			return begin;
 		}
@@ -176,6 +219,12 @@ namespace {
 		enum c4::ast2::let_expression::visibility vis;
 		int error_counter = 0;
 	};
+
+	bool
+	is_eof(const tokens::token_type& tok) {
+		return std::holds_alternative<tokens::eof>(tok);
+	}
+
 }
 
 std::vector<c4::ast2::let_expression*>
@@ -184,7 +233,7 @@ parse(const enum ast2::let_expression::visibility vis) try {
 	_expressions.clear();
 
 	parser_visitor vtor{_diag, _named_src, _expressions, _ctx, vis};
-	while (!is_eof(_current)) {
+	while (!::is_eof(_current)) {
 		std::visit(vtor, _current);
 
 		if (vtor.invalid()) break;

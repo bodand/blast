@@ -152,14 +152,25 @@ c4::ast2::symbol::references(tags::referable* ref) const noexcept {
 
 std::string
 c4::ast2::symbol::pretty() const {
-	if (!is_operator_symbol(_name)) return std::format("{}/{}", _name, _arity);
-	if (_arity == 1) return std::format("({})/{}", _name, _arity);
+	if (!is_operator_symbol(_name)) {
+		return std::format("{}{}/{}",
+		                   _native ? "native " : "",
+		                   _name,
+		                   _arity);
+	}
+	if (_arity == 1) {
+		return std::format("{}({})/{}",
+		                   _native ? "native " : "",
+		                   _name,
+		                   _arity);
+	}
 
-	return std::format("({})/{} {} {}",
-		_name,
-		_arity,
-		_op_data->left_associative ? "left" : "right",
-		_op_data->precedence);
+	return std::format("{}({})/{} {} {}",
+	                   _native ? "native " : "",
+	                   _name,
+	                   _arity,
+	                   _op_data->left_associative ? "left" : "right",
+	                   _op_data->precedence);
 }
 
 void

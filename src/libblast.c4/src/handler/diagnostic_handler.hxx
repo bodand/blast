@@ -55,7 +55,10 @@ namespace bst {
 			, _message{message}
 			, _id{id}
 			, _vfs{llvm::vfs::createPhysicalFileSystem()} {
-			_opts.ShowColors = llvm::sys::Process::StandardErrHasColors();
+
+			const auto color = llvm::sys::Process::StandardErrHasColors();
+			_opts.ShowColors = color;
+			_diagnostics_holder.enable_colors(color);
 
 			// printer ownership yoinked by engine
 			_printer = new clang::TextDiagnosticPrinter(_diagnostics_holder, _opts);

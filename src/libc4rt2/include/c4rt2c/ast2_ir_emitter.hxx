@@ -143,7 +143,7 @@ namespace c4rt2c {
 			lambda_name();
 
 			static void
-			export_symbol_to(const c4::ast2::symbol& symbol, std::vector<uint8_t>& table);
+			export_symbol_to(const c4::ast2::let_expression* let, std::vector<uint8_t>& table);
 
 			static std::string
 			global_name(const c4::ast2::symbol& sym);

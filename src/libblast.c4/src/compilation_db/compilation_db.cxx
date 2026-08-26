@@ -53,9 +53,9 @@ compilation_db(const fs::path& path)
 		clang::tooling::JSONCommandLineSyntax::AutoDetect);
 	if (!_db) throw std::runtime_error(error);
 
-	const auto bad_files = _db->getAllFiles();
-	_files.reserve(bad_files.size());
-	std::ranges::transform(bad_files, std::back_inserter(_files),
+	const auto str_files = _db->getAllFiles();
+	_files.reserve(str_files.size());
+	std::ranges::transform(str_files, std::back_inserter(_files),
 	                       [](const auto& file) { return fs::path(file); });
 }
 

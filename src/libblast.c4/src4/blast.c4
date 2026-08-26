@@ -31,7 +31,7 @@ let +string_matcher/1 { |x| { |matchers handlers|
         handlers
 }}
 
-let +native blast_match_ast/3;
+let -native blast_match_ast/3;
 
 let +blast/2 { |what handlers|
     let stuff &(handlers)/2 nil nil
@@ -43,7 +43,6 @@ let +blast/2 { |what handlers|
 }
 
 let +end_blast { { |matchers handlers|
-    list_print handlers
     list_print matchers
 
     cons list_to_array matchers

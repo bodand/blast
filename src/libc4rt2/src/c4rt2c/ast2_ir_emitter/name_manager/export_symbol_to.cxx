@@ -35,40 +35,66 @@
  */
 
 #include <bit>
+#include <concepts>
+
+#include <c4/ast2/let_expression.hxx>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 
 #include <libassert/assert.hpp>
 
+static_assert(std::endian::native == std::endian::little
+				  || std::endian::native == std::endian::big,
+				  "Mixed endian hardware detected: please submit a patch");
+
+namespace {
+	template<std::integral I>
+	I
+	maybe_swap(I i) {
+		if constexpr (std::endian::native == std::endian::big) return std::byteswap(i);
+		else return i;
+	}
+
+	constexpr uint16_t mask_native     = 0b1000'0000'0000'0000;
+	constexpr uint16_t mask_operator   = 0b0100'0000'0000'0000;
+	constexpr uint16_t mask_left_assoc = 0b0010'0000'0000'0000;
+	constexpr uint16_t mask_precedence = 0b0000'0000'0111'1111;
+}
+
 void
 c4rt2c::ast2_ir_emitter::name_manager::
-export_symbol_to(const c4::ast2::symbol& symbol, std::vector<uint8_t>& table) {
-	table.reserve(table.size() + sizeof(uint32_t) + symbol.name().size() + sizeof(uint32_t));
+export_symbol_to(const c4::ast2::let_expression* let, std::vector<uint8_t>& table) {
+	const auto sym = let->symbol();
+	table.reserve(table.size() + sizeof(uint32_t) + sym.name().size() + sizeof(uint32_t) + 2);
 
-	ASSERT(symbol.name().size() < std::numeric_limits<uint32_t>::max(),
+	ASSERT(sym.name().size() < std::numeric_limits<uint32_t>::max(),
 	       "Exported symbol names must be shorter than 4 gb",
-	       symbol.name());
+	       sym.name());
 
-	static_assert(std::endian::native == std::endian::little
-	              || std::endian::native == std::endian::big,
-	              "Mixed endian hardware detected: please submit a patch");
-
-	uint32_t sym_name_sz = symbol.name().size();
-	uint32_t sym_arity = symbol.base_arity();
-	if constexpr (std::endian::native == std::endian::big) {
-		sym_name_sz = std::byteswap(sym_name_sz);
-		sym_arity = std::byteswap(sym_arity);
-	}
+	const uint32_t sym_name_sz = maybe_swap(sym.name().size());
+	const uint32_t sym_arity = maybe_swap(sym.base_arity());
 
 	auto sz_bytes = std::bit_cast<std::array<uint8_t, sizeof(sym_name_sz)>>(sym_name_sz);
 	auto arity_bytes = std::bit_cast<std::array<uint8_t, sizeof(sym_arity)>>(sym_arity);
 
 	table.insert(table.end(), sz_bytes.begin(), sz_bytes.end());
 
-	const auto* name_data = reinterpret_cast<const uint8_t*>(symbol.name().data());
+	const auto* name_data = reinterpret_cast<const uint8_t*>(sym.name().data());
 	table.insert(table.end(), name_data, name_data + sym_name_sz);
 
 	table.insert(table.end(), arity_bytes.begin(), arity_bytes.end());
 
-	// todo: operator extra byte
+	uint16_t metadata = 0;
+	const auto opdata = sym.operator_data();
+
+	metadata |= let->attribute_value<c4::ast2::symbol>("native") ? mask_native : 0;
+	metadata |= opdata ? mask_operator : 0;
+	if (opdata) {
+		metadata |= opdata->left_associative ? mask_left_assoc : 0;
+	}
+	metadata |= (sym.precedence_like() & mask_precedence);
+	metadata = maybe_swap(metadata);
+
+	auto metadata_bytes = std::bit_cast<std::array<uint8_t, sizeof(metadata)>>(metadata);
+	table.insert(table.end(), metadata_bytes.begin(), metadata_bytes.end());
 }

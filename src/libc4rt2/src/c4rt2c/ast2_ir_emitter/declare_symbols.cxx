@@ -63,7 +63,7 @@ c4rt2c::ast2_ir_emitter::declare_symbols(const c4::ast2::ast_context& ctx) {
 			gsym->emplace_attribute<c4c::llvm_function_attribute>("function", decl);
 
 			if (gsym->top_level() && gsym->visibility() == c4::ast2::let_expression::v_public)
-				_name_manager.export_symbol_to(gsym->symbol(), _export_table.emplace_back());
+				_name_manager.export_symbol_to(gsym, _export_table.emplace_back());
 
 			continue;
 		}

@@ -185,8 +185,12 @@ namespace {
 			GC_get_stack_base(&base);
 			GC_register_my_thread(&base);
 
+			clang::DiagnosticOptions opts{};
+			opts.ShowColors = llvm::sys::Process::StandardErrHasColors();
+
 			// hosted out of loop as to not consistently reallocate 1 sized arrays
 			std::vector<std::unique_ptr<clang::ASTUnit>> units;
+			units.reserve(1);
 
 			for (auto work = _pool->get_work();
 			     work;
@@ -194,16 +198,26 @@ namespace {
 				const auto file = *work;
 
 				units.clear();
-
 				auto tool = _db->build_tool(file);
+
+				auto& buffer = _diagnostic_buffer.emplace_back();
+				llvm::raw_string_ostream os(buffer);
+				os.enable_colors(opts.ShowColors);
+
+				clang::TextDiagnosticPrinter printer(os, opts);
+
+				tool.setDiagnosticConsumer(&printer);
+
 				tool.buildASTs(units);
 
 				if (units.empty()
-				    || !units.front()
-				    || units.front()->getDiagnostics().hasErrorOccurred()) {
-					std::cerr << "blast: error: cannot build AST for "
-							<< file << std::endl;
+				    || !units.front()) {
+					os << "blast: error: cannot build AST for " << file << "\n";
 					continue;
+				}
+				if (units.front()->getDiagnostics().hasErrorOccurred()) {
+					os << "blast: error: errors occurred during parsing file "
+							<< file << ": matching may be incomplete or faulty\n";
 				}
 
 				auto&& unit = units.front();
@@ -219,10 +233,14 @@ namespace {
 
 		void
 		dump() const {
+			std::ranges::for_each(_diagnostic_buffer, [](const auto& diag) {
+				std::ranges::copy(diag, std::ostream_iterator<char>(std::cerr, ""));
+			});
 			_callback.dump_handlers(llvm::errs());
 		}
 
 	private:
+		std::vector<std::string> _diagnostic_buffer{};
 		ast::MatchFinder _finder{};
 		blast_callback _callback;
 		bst::compilation_db* _db;
@@ -244,11 +262,11 @@ c4_let_native(blast_match_ast)(
 	                       matchers_array->data + matchers_array->len,
 	                       std::back_inserter(matcher_strs),
 	                       [](c4_datum str) {
-		char* ret_str;
-		size_t ret_str_sz;
-		c4_datum_coerce_string(str, &ret_str, &ret_str_sz);
-		return llvm::StringRef{ret_str, ret_str_sz};
-	});
+		                       char* ret_str;
+		                       size_t ret_str_sz;
+		                       c4_datum_coerce_string(str, &ret_str, &ret_str_sz);
+		                       return llvm::StringRef{ret_str, ret_str_sz};
+	                       });
 
 	llvm::SmallVector<dyn::DynTypedMatcher, 4> matchers;
 	matchers.reserve(matchers_array->len);
@@ -256,14 +274,14 @@ c4_let_native(blast_match_ast)(
 	                       matcher_strs.end(),
 	                       std::back_inserter(matchers),
 	                       [](llvm::StringRef matcher) {
-		dyn::Diagnostics diags;
-		const auto m = dyn::Parser::parseMatcherExpression(matcher, &diags);
-		if (m) return *m;
+		                       dyn::Diagnostics diags;
+		                       const auto m = dyn::Parser::parseMatcherExpression(matcher, &diags);
+		                       if (m) return *m;
 
-		std::cerr << "blast: fatal: error parsing matcher expression: "
-		          << diags.toStringFull() << "\n";
-		throw std::runtime_error("bad matcher");
-	});
+		                       std::cerr << "blast: fatal: error parsing matcher expression: "
+				                       << diags.toStringFull() << "\n";
+		                       throw std::runtime_error("bad matcher");
+	                       });
 
 	c4_array handlers;
 	c4_datum_get_array(handlers_array, &handlers);
