@@ -859,22 +859,23 @@ c4::p2::parser::intern_lets(const std::span<ast2::let_expression*> lets) {
 	for (const auto& let : lets) {
 		let->lift_to_context(_context);
 
-		if (const auto op = let->symbol().operator_data()) {
-			_st.declare(let->symbol().name(),
-			            let->symbol().base_arity(),
+		const auto sym = let->symbol();
+		if (const auto op = sym.operator_data()) {
+			_st.declare(sym.name(),
+			            sym.base_arity(),
 			            let,
 			            op->precedence,
-			            op->left_associative);
+			            !op->left_associative);
 		}
 		else {
-			_st.declare(let->symbol().name(),
-			            let->symbol().base_arity(),
+			_st.declare(sym.name(),
+			            sym.base_arity(),
 			            let, // XXX horrid precedence rule used
-			            let->symbol().precedence_like());
+			            sym.precedence_like());
 		}
 
 		let->emplace_attribute<namespaced_symbol_attribute>("symbol-stack",
-		                                                    std::vector{let->symbol()});
+		                                                    std::vector{sym});
 		if (auto native = let->attribute_value<ast2::symbol>("native")) {
 			native->lift_to_context(_context);
 			let->emplace_attribute<native_attachment>("native", std::move(*native));
