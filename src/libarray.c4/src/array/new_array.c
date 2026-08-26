@@ -38,7 +38,7 @@
 
 #include <c4/array.h>
 
-c4_let_native(new_array)() {
+c4_let_native(new_array)(void) {
 	const uint32_t array_exttype = c4_array_external_typeid();
 	const c4_array ext = c4_array_new(0);
 

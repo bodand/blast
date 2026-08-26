@@ -56,8 +56,8 @@ namespace bst {
 
 	protected:
 		bool
-		try_handle(std::unique_ptr<clang::ASTUnit>& context,
-					  const clang::DynTypedNode& node) override {
+		try_handle(std::unique_ptr<clang::ASTUnit>&,
+		           const clang::DynTypedNode&) override {
 			return true;
 		}
 	};

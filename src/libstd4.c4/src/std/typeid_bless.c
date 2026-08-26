@@ -40,9 +40,9 @@
 #include "typeid.h"
 
 void
-typeid_bless(c4_datum d){
+typeid_bless(const c4_datum d){
 	struct c4_external_magic* magic = c4_register_magic(d);
 
-	c4_magic_put(magic, "_c4_cmp", 2, (void(*)())_typeid_cmp);
+	c4_magic_put(magic, "_c4_cmp", 2, (void(*)(void))_typeid_cmp);
 }
 

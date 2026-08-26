@@ -84,32 +84,6 @@ if (NOT DEFINED ENV{CG_DEPLOYMENT})
     endif ()
 endif ()
 
-# warnings
-add_library(internal-warnings INTERFACE)
-generate_warnings(internal-warnings)
-
-# LTO
-add_library(internal-lto INTERFACE)
-generate_lto(internal-lto)
-
-add_compile_options(-fstack-protector-strong)
-
-# MSVC argument injection
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    message(STATUS "Using MSVC: ${CMAKE_CXX_COMPILER}")
-    message(STATUS "Injecting /permissive- into cl command-line")
-    add_compile_options(/permissive-)
-    message(STATUS "Injecting /Zc:__cplusplus into cl command-line")
-    add_compile_options(/Zc:__cplusplus)
-    message(STATUS "Injecting /Zc:preprocessor into cl command-line")
-    add_compile_options(/Zc:preprocessor)
-endif ()
-if ("x${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}" STREQUAL "xMSVC")
-    message(STATUS "Using clang-cl: ${CMAKE_CXX_COMPILER}")
-    message(STATUS "Injecting /EHsc into clang-cl command-line")
-    add_compile_options(/EHsc)
-endif ()
-
 # dependencies
 find_package(mio CONFIG REQUIRED)
 find_package(pcre2 CONFIG REQUIRED)
@@ -175,3 +149,8 @@ if (TARGET raylib)
 endif ()
 
 add_subdirectory(test)
+
+install(EXPORT c4std
+        FILE c4std.cmake
+        NAMESPACE c4std::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/c4std)

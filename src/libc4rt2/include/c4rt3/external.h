@@ -59,7 +59,7 @@
 struct c4_magic_entry {
 	char* name;
 	uint32_t arity;
-	void (*fn)();
+	void (*fn)(void);
 };
 
 struct c4_external_magic {
@@ -73,12 +73,12 @@ void
 c4_magic_put(struct c4_external_magic* magic,
              char* name,
              uint32_t n,
-             void(*fn)());
+             void(*fn)(void));
 
 void
 (*c4_magic_get(struct c4_external_magic* magic,
                char* name,
-               uint32_t n))();
+               uint32_t n))(void);
 
 struct c4_external_magic*
 c4_register_magic(c4_datum d);

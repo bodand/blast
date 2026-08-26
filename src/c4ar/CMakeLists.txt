@@ -36,4 +36,10 @@
 add_executable(c4ar
                src/c4ar.cxx)
 
-target_link_libraries(c4ar PRIVATE sgetopt c4_llvm libassert::assert)
+target_link_libraries(c4ar PRIVATE
+                      sgetopt
+                      c4_llvm
+                      libassert::assert
+                      )
+generate_lto(c4ar PRIVATE)
+generate_warnings(c4ar PRIVATE)

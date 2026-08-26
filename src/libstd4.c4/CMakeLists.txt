@@ -33,7 +33,7 @@
 # src/std4/CMakeLists.txt --
 #   C4 basic standard library utilities.
 
-add_library(std4 STATIC
+add_library(std4-obj OBJECT
             src/std/primitive_op.h
             src/std/primitive_add.c
             src/std/primitive_sub.c
@@ -73,5 +73,8 @@ add_library(std4 STATIC
             src/std/typeid_bless.c
 )
 
-target_link_libraries(std4 PRIVATE c4rt3 BDWgc::gc)
-target_compile_features(std4 PRIVATE c_std_11)
+target_link_libraries(std4-obj PUBLIC c4rt3 BDWgc::gc)
+generate_warnings(std4-obj PRIVATE)
+target_compile_features(std4-obj PRIVATE c_std_11)
+
+

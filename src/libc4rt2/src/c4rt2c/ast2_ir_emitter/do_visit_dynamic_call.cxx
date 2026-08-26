@@ -79,9 +79,9 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 		const auto ptr_t = _builder.getPtrTy();
 
 		const auto argv = _runtime.allocate_array(args.size(), 8, "dynamic-tail-call");
-		std::ranges::for_each(args, [&, this, i = 0](const auto& arg) mutable {
+		std::ranges::for_each(args, [&, this, i = 0u](const auto& arg) mutable {
 			const auto addr = _builder.CreateGEP(ptr_t, argv,
-															 _builder.getInt64(i++));
+			                                     _builder.getInt64(i++));
 			_builder.CreateAlignedStore(arg, addr, llvm::Align(8));
 		});
 
@@ -94,6 +94,6 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::dynamic_call& obj) {
 		const auto apply = _runtime.make_apply_thunk(args);
 
 		expr->emplace_attribute<c4c::llvm_value_attribute>("value", apply);
-		expr->emplace_attribute<already_thunk_attribute>("thunk?");
+		std::ignore = expr->emplace_attribute<already_thunk_attribute>("thunk?");
 	}
 }

@@ -33,7 +33,7 @@
 # src/libarray/CMakeLists.txt --
 #   CMake source to provide libarray.
 
-add_library(array STATIC
+add_library(array-obj OBJECT
             inc/c4/array.h
             src/c4_array_new.c
             src/c4_array_ensure.c
@@ -45,5 +45,36 @@ add_library(array STATIC
             src/array/new_array_capacity.c
             src/array/new_array_sized.c
             )
-target_link_libraries(array PUBLIC c4rt3)
-target_include_directories(array PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+target_link_libraries(array-obj PUBLIC c4rt3)
+generate_warnings(array-obj PRIVATE)
+target_include_directories(array-obj PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+set(array-arch "${CMAKE_CURRENT_BINARY_DIR}/array.c4a")
+add_custom_command(OUTPUT ${array-arch}
+                   VERBATIM COMMAND c4ar -o "${array-arch}" $<TARGET_OBJECTS:array-obj>
+                   DEPENDS c4ar array-obj
+                   COMMAND_EXPAND_LISTS
+                   COMMENT "Creating C4 library array.c4a...")
+
+add_custom_target(libarray.c4a ALL DEPENDS "${array-arch}")
+
+add_library(array INTERFACE)
+add_dependencies(array libarray.c4a)
+
+target_include_directories(array INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+target_link_libraries(array INTERFACE
+                      $<BUILD_INTERFACE:${array-arch}>
+                      $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_LIBDIR}/array.c4a>)
+
+install(FILES ${array-arch}
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(DIRECTORY inc/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(TARGETS array
+        EXPORT c4std)

@@ -52,3 +52,4 @@ add_library(c4raylib
 
 target_link_libraries(c4raylib
                       PRIVATE raylib c4rt3)
+generate_warnings(c4raylib PRIVATE)

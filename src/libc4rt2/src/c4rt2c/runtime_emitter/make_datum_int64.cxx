@@ -51,5 +51,5 @@ c4rt2c::runtime_emitter::make_datum_int64(llvm::Value* val) const {
 llvm::Value*
 c4rt2c::runtime_emitter::make_datum_int64(const std::int64_t val) const {
 	return make_datum_int64(
-		llvm::ConstantInt::get(_context, llvm::APInt(64, val)));
+		_builder.getInt64(static_cast<uint64_t>(val)));
 }

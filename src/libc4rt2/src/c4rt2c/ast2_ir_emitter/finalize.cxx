@@ -50,7 +50,8 @@ c4rt2c::ast2_ir_emitter::finalize() {
 	_export_table.erase(from, to);
 
 	const auto total_size = std::accumulate(_export_table.begin(),
-	                                        _export_table.end(), 0,
+	                                        _export_table.end(),
+	                                        std::size_t{},
 	                                        [](const auto agg, const auto& elem) {
 		                                        return agg + elem.size();
 	                                        });

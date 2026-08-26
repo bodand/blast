@@ -310,7 +310,7 @@ main(int argc, const char* const* argv) {
 	});
 
 	std::vector<fs::path> files;
-	files.reserve(argc);
+	files.reserve(static_cast<unsigned>(argc));
 	std::transform(argv, argv + argc, std::back_inserter(files), [](const char* arg) { return arg; });
 
 	std::vector<archive_member> member_buffers;
@@ -383,10 +383,12 @@ main(int argc, const char* const* argv) {
 		to = ptr;
 		*to++ = ',';
 	});
+	ASSERT(to >= begin, "writing stuff only goes forward");
 
 	assembly += ".byte ";
 	if (to - begin != 0) {
-		assembly.append(formatted_symbols.data(), to - begin - 1); // skip last ','
+		assembly.append(formatted_symbols.data(),
+		                static_cast<size_t>(to - begin - 1)); // skip last ','
 	}
 	assembly += "\n";
 

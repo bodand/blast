@@ -180,8 +180,8 @@ namespace c4rt2c {
 		build(llvm::IRBuilder<>& builder, runtime_emitter& rt) const override;
 
 		std::optional<immediate_seq>
-		build_immediate(llvm::IRBuilder<>& builder,
-		                runtime_emitter& rt) const override { return {}; }
+		build_immediate(llvm::IRBuilder<>&,
+		                runtime_emitter&) const override { return {}; }
 
 		void
 		build_call(llvm::IRBuilder<>& builder,

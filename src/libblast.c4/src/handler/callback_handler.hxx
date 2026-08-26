@@ -46,7 +46,7 @@ namespace bst {
 	struct callback_handler : handler_base {
 		explicit
 		callback_handler(const std::string_view handler_for,
-							  c4_datum cb)
+		                 c4_datum cb)
 			: handler_base(handler_for)
 			, _cb(cb) { }
 
@@ -60,12 +60,12 @@ namespace bst {
 
 	protected:
 		bool
-		try_handle(std::unique_ptr<clang::ASTUnit>& context,
-					  const clang::DynTypedNode& node) override {
+		try_handle(std::unique_ptr<clang::ASTUnit>&,
+		           const clang::DynTypedNode&) override {
 			c4_datum nil;
 			c4_datum_from_nil(&nil);
 
-			c4_datum arr[3] = { nil, nil, nil };
+			c4_datum arr[3] = {nil, nil, nil};
 
 			c4_apply(_cb, 3, arr, 3);
 

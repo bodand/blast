@@ -87,7 +87,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_dbg_size_t = dib->createBasicType("size_t", 64, llvm::dwarf::DW_ATE_unsigned);
 	_dbg_argv_size_t = dib->createBasicType("argv_size_t", 32, llvm::dwarf::DW_ATE_unsigned);
 
-	auto enumerator = [&](const std::string_view name, const std::int64_t val) {
+	auto enumerator = [&](const std::string_view name, const std::uint64_t val) {
 		return dib->createEnumerator(name, val, true);
 	};
 
@@ -574,7 +574,7 @@ c4rt2c::runtime_emitter::init(llvm::DIBuilder* dib,
 	_rt_make_datum_nil.dbg(dib).file_scoped(rt_file)
 	                  .name("_c4_make_datum_nil")
 	                  .returns(datum_ptr);
-	_rt_make_datum_nil.define(_builder, [&](const std::span<llvm::Argument*> args) {
+	_rt_make_datum_nil.define(_builder, [&](const std::span<llvm::Argument*>) {
 		const auto memory = with_name(allocate(4 + 4 + 8 + 8, "datum-nil"), "datum");
 
 		set_datum_type(memory, _builder.getInt32(datum_type_nil));

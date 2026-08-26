@@ -62,7 +62,7 @@ c4rt2c::runtime_fn_debug_info_builder::~runtime_fn_debug_info_builder() {
 
 	std::vector<llvm::DILocalVariable*> di_args;
 	di_args.reserve(_args.size());
-	std::ranges::transform(_args, std::back_inserter(di_args), [&, i = 0](const auto& var) mutable {
+	std::ranges::transform(_args, std::back_inserter(di_args), [&, i = 0u](const auto& var) mutable {
 		constexpr bool always_preserve = true;
 		return _dib->createParameterVariable(sub, var.name, ++i, _file, 0, var.type, always_preserve);
 	});

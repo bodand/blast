@@ -42,7 +42,7 @@
 		bool have_a_dbl = 0 == c4_datum_get_double(a, &a_dbl); \
 		bool have_b_dbl = 0 == c4_datum_get_double(b, &b_dbl); \
 \
-		int64_t a_int, b_int; \
+		int64_t a_int = 0, b_int = 0; \
 		if (!have_a_dbl) { \
 			c4_datum_coerce_int64(a, &a_int); \
 			if (have_b_dbl) a_dbl = (double)a_int; \

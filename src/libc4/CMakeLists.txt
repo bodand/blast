@@ -206,12 +206,12 @@ target_link_libraries(c4
                       fmt::fmt
                       PRIVATE
                       LIEF::LIEF
-                      internal-warnings
-                      internal-lto
                       uni-algo::uni-algo
                       PCRE2::8BIT
                       libassert::assert
                       )
+generate_warnings(c4 PRIVATE)
+generate_lto(c4 PRIVATE)
 target_compile_options(c4 PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 target_compile_definitions(c4 PRIVATE
                            PCRE2_CODE_UNIT_WIDTH=8

@@ -38,7 +38,7 @@
 
 std::optional<c4rt2c::immediate_seq>
 c4rt2c::seq_leaf::
-build_immediate(llvm::IRBuilder<>& builder, runtime_emitter& rt) const {
+build_immediate(llvm::IRBuilder<>&, runtime_emitter&) const {
 	if (!_argv) return {};
 
 	return immediate_seq{.fn = dyn_cast<llvm::Function>(_value), .argv = _argv};

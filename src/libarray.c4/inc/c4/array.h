@@ -47,7 +47,7 @@ struct c4_array_t {
 typedef struct c4_array_t* c4_array;
 
 c4_extern uint32_t
-c4_array_external_typeid();
+c4_array_external_typeid(void);
 
 c4_extern c4_array
 c4_array_new(size_t len);

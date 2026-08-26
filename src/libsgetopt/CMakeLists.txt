@@ -49,5 +49,7 @@ add_library(sgetopt STATIC
             inc/sgetopt/opts.hxx
             src/opts/argv0.cxx
             )
+generate_warnings(sgetopt PRIVATE)
+generate_lto(sgetopt PRIVATE)
 target_include_directories(sgetopt PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>)
 

@@ -41,7 +41,7 @@
 #include <raylib.h>
 
 c4_extern uint32_t
-c4raylib_typeid_Color();
+c4raylib_typeid_Color(void);
 
 #define \
 c4_datum_from_Color(color, out) \
@@ -52,7 +52,7 @@ c4_datum_get_Color(datum, out) \
 	c4_datum_get_external_typed(datum, Color*, c4raylib_typeid_Color(), out)
 
 c4_extern uint32_t
-c4raylib_typeid_Vector2();
+c4raylib_typeid_Vector2(void);
 
 #define \
 c4_datum_from_Vector2(vec2, out) \

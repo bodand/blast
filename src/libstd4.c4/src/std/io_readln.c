@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-c4_let_native(io_readln)() {
+c4_let_native(io_readln)(void) {
 	char buf[8192];
 	assert(fgets(buf, sizeof(buf), stdin) != NULL);
 	const size_t buf_sz = strcspn(buf, "\n");

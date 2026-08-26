@@ -43,7 +43,7 @@ c4rt2c::runtime_emitter::make_apply_thunk(std::span<llvm::Value*> args) const {
 	const auto apply = with_name(make_thunk(_rt_apply.fn), "apply.thunk");
 
 	const auto argv = with_name(allocate_array(args.size(), 8, "apply-argv"), "apply.argv");
-	std::ranges::for_each(args, [&, this, i = 0](const auto& arg) mutable {
+	std::ranges::for_each(args, [&, this, i = 0u](const auto& arg) mutable {
 		const auto addr = _builder.CreateGEP(ptr_t, argv,
 		                                     _builder.getInt64(i++));
 		_builder.CreateAlignedStore(arg, addr, llvm::Align(8));

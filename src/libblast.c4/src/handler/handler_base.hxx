@@ -75,8 +75,8 @@ namespace bst {
 		}
 
 		virtual bool
-		try_handle(std::unique_ptr<clang::ASTUnit>& context,
-		           const clang::DynTypedNode& node) {
+		try_handle(std::unique_ptr<clang::ASTUnit>&,
+		           const clang::DynTypedNode&) {
 			return false;
 		}
 

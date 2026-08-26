@@ -41,7 +41,7 @@
 
 #include <gc/gc.h>
 
-c4_let_native(gc)() {
+c4_let_native(gc)(void) {
 	GC_gcollect();
 
 	c4_datum out;
@@ -49,7 +49,7 @@ c4_let_native(gc)() {
 	return out;
 }
 
-c4_let_native(gc_stat)() {
+c4_let_native(gc_stat)(void) {
 	GC_gcollect();
 
 	fprintf(stderr, "heap=%zu free=%zu live=%zu\n",

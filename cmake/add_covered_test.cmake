@@ -53,8 +53,8 @@ function(add_covered_test)
     add_executable("${test_name}" ${act_SOURCES})
     target_link_libraries("${test_name}" PRIVATE
                           internal-coverage
-                          internal-warnings
                           ${act_LIBRARIES})
+    generate_warnings("${test_name}" PRIVATE)
 
     if (act_CATCH OR act_CATCH_OWNMAIN)
         catch_discover_tests("${test_name}"

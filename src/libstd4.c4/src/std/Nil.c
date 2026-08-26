@@ -41,7 +41,7 @@
 #include "typeid.h"
 #include "types.h"
 
-c4_let_native(Nil)() {
+c4_let_native(Nil)(void) {
 	c4_datum_type* type = GC_NEW(c4_datum_type);
 	*type = C4_Nil;
 

@@ -318,9 +318,9 @@ namespace c4rt2c {
 		runtime_fn _rt_seq_tt;               // datum* seq_tt(datum* thunks, fn K)
 		runtime_fn _rt_seq_tt2;              // datum* seq_tt2(completion* self, datum* val)
 		runtime_fn _rt_set_thunk_args;       // void set_thunk_args(datum* datum,
-		;                                    //                     datum* argv, i32 argv_sz)
+		//                                                          datum* argv, i32 argv_sz)
 		runtime_fn _rt_merge_argv;           // datum* merge_argv(datum* argv1, i32 argv1_sz,
-		;                                    //                   datum* argv2, i32 argv2_sz)
+		//                                                        datum* argv2, i32 argv2_sz)
 
 		runtime_fn _gc_malloc;
 		runtime_fn _gc_debug_malloc;

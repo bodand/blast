@@ -42,7 +42,7 @@
 #include <c4rt3/c4rt.h>
 
 c4_extern uint32_t
-std4_typeid_typeid();
+std4_typeid_typeid(void);
 
 #define \
 c4_datum_from_typeid(type, out) \

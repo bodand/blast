@@ -37,7 +37,7 @@
 include(CheckCXXCompilerFlag)
 
 function(checkwarningflag OptionName CacheName)
-    if (OptionName MATCHES [[^/]]) # MSVC-style args are passed as-is
+    if (OptionName MATCHES [[^/|^-]]) # already prefixed args passed as-is
         set(WarningPrefix "")
     else ()
         set(WarningPrefix "-W")
@@ -46,8 +46,12 @@ function(checkwarningflag OptionName CacheName)
     set("HAS_WARNING_${CacheName}" ${HasWarning_${CacheName}} PARENT_SCOPE)
 endfunction()
 
-function(generate_warnings _Interface)
+function(generate_warnings _Interface Mode)
     set(gw_known_warnings
+        -ffunction-sections -fdata-sections -Wl,--gc-sections
+        -fstack-protector-strong
+        /permissive-
+        /Zc:__cplusplus /Zc:preprocessor /EHsc
         # GCC/Clang
         extra pedantic sign-compare error=uninitialized unused cast-qual cast-align
         abstract-vbase-init array-bounds-pointer-arithmetic assign-enum consumed
@@ -88,7 +92,7 @@ function(generate_warnings _Interface)
         string(MAKE_C_IDENTIFIER "${warn}" CacheName)
         checkwarningflag("${warn}" ${CacheName})
         if (HAS_WARNING_${CacheName})
-            if (warn MATCHES [[^/]]) # MSVC-style args are passed as-is
+            if (warn MATCHES [[^/|^-]]) # prefixed args are passed as-is
                 set(WarningPrefix "")
             else ()
                 set(WarningPrefix "-W")
@@ -97,5 +101,5 @@ function(generate_warnings _Interface)
         endif ()
     endforeach ()
 
-    target_compile_options("${_Interface}" INTERFACE ${gw_found_warnings})
+    target_compile_options("${_Interface}" ${Mode} ${gw_found_warnings})
 endfunction()

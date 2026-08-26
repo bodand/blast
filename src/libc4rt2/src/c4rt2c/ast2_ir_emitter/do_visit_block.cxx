@@ -86,7 +86,7 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 
 	const auto ptr_t = llvm::PointerType::get(_context, 0);
 	const auto argv = _runtime.allocate_array(argv_sz, 8, "block-obj-closure");
-	std::ranges::for_each(closed_over, [&, this, i=0](const auto& sym) mutable {
+	std::ranges::for_each(closed_over, [&, this, i=0u](const auto& sym) mutable {
 		const auto ref = sym.references();
 		ASSERT(ref);
 
@@ -103,6 +103,6 @@ c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
 		"value",
 		datum_fn
 	);
-	expr->emplace_attribute<already_thunk_attribute>("thunk?");
+	expr->emplace_attribute<bool_attr>("thunk?", true);
 	if (obj.tail_call()) expr->emplace_attribute<bool_attr>("tail-literal?", true);
 }

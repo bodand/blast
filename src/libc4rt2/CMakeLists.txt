@@ -112,7 +112,26 @@ target_include_directories(c4rt3
                            PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
-target_link_libraries(c4rt3 PUBLIC BDWgc::gc PRIVATE ryu)
+target_link_libraries(c4rt3
+                      PUBLIC BDWgc::gc
+                      PRIVATE
+                      #ryu -- see below
+                      )
+
+## Because yet again CMake is a hot steaming pile of horseshit. If you
+# add an OBJECT library as a PRIVATE dependency, which gets wholly absorbed at
+# link time because it is but a list of .o[bj] files, the gracious entity CMake,
+# as it wont to, fucks everything up by conveniently putting it  in the
+# dependency tree, in a way such that if you were to try to install(...) the
+# depender, it tries to pull, the completely absorbed dependee "library".
+# To work around this garbage, we manually patch in the objects from
+# the library AND add include dirs here. If there were a system that could do
+# this for us...
+# -- I'm writing my next shit in raw GNU make.
+target_sources(c4rt3 PRIVATE $<TARGET_OBJECTS:ryu>)
+target_include_directories(c4rt3 PRIVATE
+                           $<TARGET_PROPERTY:ryu,INTERFACE_INCLUDE_DIRECTORIES>
+                           $<TARGET_PROPERTY:ryu,INTERFACE_COMPILE_DEFINITIONS>)
 
 add_library(c4rt2c STATIC
             include/c4rt2c/llvm_value_attribute.hxx
@@ -142,11 +161,6 @@ add_library(c4rt2c STATIC
             src/c4rt2c/ast2_ir_emitter/emit_named_function.cxx
             src/c4rt2c/ast2_ir_emitter/finalize.cxx
             src/c4rt2c/ast2_ir_emitter/thunked_symbol.cxx
-
-            src/c4rt2c/ast2_ir_emitter/function_scope/continue_at.cxx
-            src/c4rt2c/ast2_ir_emitter/function_scope/definition.cxx
-            src/c4rt2c/ast2_ir_emitter/function_scope/function_scope.cxx
-            src/c4rt2c/ast2_ir_emitter/function_scope/start_function.cxx
 
             src/c4rt2c/ast2_ir_emitter/name_manager/format_symbol_stack.cxx
             src/c4rt2c/ast2_ir_emitter/name_manager/global_name.cxx
@@ -253,5 +267,16 @@ target_link_libraries(c4rt2c
                       c4
                       c4_llvm
                       libassert::assert)
+generate_warnings(c4rt2c PRIVATE)
+generate_lto(c4rt2c PRIVATE)
 target_include_directories(c4rt2c
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
+install(FILES $<TARGET_FILE:c4rt3>
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(DIRECTORY include/c4rt3
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+install(TARGETS c4rt3
+        EXPORT c4std)

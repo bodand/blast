@@ -43,10 +43,11 @@ c4_let_native(new_array_sized)(const c4_datum len) {
 
 	int64_t len_i64;
 	c4_datum_coerce_int64(len, &len_i64);
+	const uint64_t len_u64 = (uint64_t)len_i64;
 
-	const c4_array ext = c4_array_new((size_t)len_i64);
-	ext->len = len_i64;
-	for (size_t i = 0; i < (size_t)len_i64; i++) {
+	const c4_array ext = c4_array_new(len_u64);
+	ext->len = len_u64;
+	for (size_t i = 0; i < (const size_t)len_u64; i++) {
 		c4_datum_from_nil(&ext->data[i]);
 	}
 

@@ -84,7 +84,7 @@ build(ast2_ir_emitter& ir, const c4::ast2::expression& expr) {
 		_argv = _rt.allocate_array(_argv_sz, layout.getPointerSize(0), "call-argv");
 		_argv->setName({_symbol.name(), ".argv"});
 
-		std::ranges::for_each(closure_over, [&, i=0](const auto& val) mutable {
+		std::ranges::for_each(closure_over, [&, i=0u](const auto& val) mutable {
 			const auto addr = _builder.CreateGEP(
 				_builder.getPtrTy(0),
 				_argv,

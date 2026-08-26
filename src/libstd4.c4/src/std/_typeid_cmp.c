@@ -40,11 +40,11 @@
 #include "types.h"
 
 int
-_typeid_cmp(c4_datum a, c4_datum b) {
+_typeid_cmp(struct c4_datum_t* a, const c4_datum b) {
 	c4_datum_type* a_type, *b_type;
 	c4_datum_get_typeid(a, &a_type);
 	c4_datum_get_typeid(b, &b_type);
 
-	return *a_type - *b_type;
+	return (int)*a_type - (int)*b_type;
 }
 

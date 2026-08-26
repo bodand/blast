@@ -76,3 +76,4 @@ target_link_libraries(blast
                       c4_llvm
                       c4rt3
                       array)
+generate_warnings(blast PRIVATE)

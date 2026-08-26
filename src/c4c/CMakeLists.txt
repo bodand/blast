@@ -42,6 +42,8 @@ target_link_libraries(c4c PRIVATE
                       sgetopt
                       libassert::assert
                       )
+generate_warnings(c4c PRIVATE)
+generate_lto(c4c)
 target_include_directories(c4c PRIVATE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 

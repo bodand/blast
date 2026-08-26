@@ -34,5 +34,10 @@
 #   C4 source interface inspector
 
 add_executable(c4if src/c4if.cxx)
-target_link_libraries(c4if PRIVATE c4 sgetopt)
+target_link_libraries(c4if
+                      PRIVATE
+                      c4
+                      sgetopt)
+generate_lto(c4if PRIVATE)
+generate_warnings(c4if PRIVATE)
 
