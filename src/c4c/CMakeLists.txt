@@ -44,26 +44,9 @@ target_link_libraries(c4c PRIVATE
                       )
 generate_warnings(c4c PRIVATE)
 generate_lto(c4c)
+generate_sanitizers(c4c)
 target_include_directories(c4c PRIVATE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-if (WIN32)
-    add_custom_command(
-            TARGET c4c POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
-if (MSVC AND BLAST_ENABLE_SANITIZERS)
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:c4c>
-            )
-endif ()
+install(TARGETS c4c
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

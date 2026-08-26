@@ -7,10 +7,13 @@
 .Sh DESCRIPTION
 The
 .Xr c4c 1 ,
-compiler has a set of features that allow special debugging functionality to be compiled into the output.
-This can be accessed by passing the special flag over to the
+compiler has a set of features that allow special debugging functionality to be
+compiled into the output. This can be accessed by passing the special flag over
+to the
 .Fl g
-flag of the compiler.
+flag of the compiler. Some of the flags also allow debugging the functionality
+of the compiler itself, or a build-system wrapping the compiler.
+
 The accepted flags are as follows:
 .Bl -tag -width Ds
 .It Fl g Ar call-trace
@@ -22,6 +25,10 @@ This is primarily useful for finding weird call-paths, because all functions eve
 Emit calls to the Boehm GC's debugging functions instead of normal calls.
 .It Fl g Ar nonrelative-errors
 Emit diagnostics with absolute path. By default paths are made relative to the current working directory.
+.It Fl g Ar trace-loads
+Emit a note diagnostic each time a file is resolved for a
+.Em use
+directive.
 .El
 .Sh AUTHORS
 .An András Bodor Aq Mt bodand@proton.me

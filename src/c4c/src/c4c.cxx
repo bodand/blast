@@ -216,10 +216,14 @@ main(int argc, const char* const* argv) try {
 				diag.report_relative_to("");
 				break;
 			}
+			if (tmp == "trace-loads") {
+				resolver.trace_loads(true);
+				break;
+			}
 			argdie("-g", "unknown debug option, see c4c-debug(7) for valid values");
 		}
 		case 'I':
-			if (opts.arg[0] == '\0') {
+			if (std::string_view(opts.arg) == "-") {
 				resolver.reset_path();
 				break;
 			}

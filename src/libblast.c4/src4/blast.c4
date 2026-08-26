@@ -1,5 +1,5 @@
-use "std.c4"
-use <libarray.a>
+use <array.c4a>
+use <std4.c4a>
 
 let -native blast_init_/1;
 let +blast_init/1 { |builder| &( builder )/0 }

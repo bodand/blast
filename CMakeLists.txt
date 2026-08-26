@@ -37,8 +37,14 @@ project(blAST
 # maybe some time...
 set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
-option(BLAST_BUILD_TESTS "Build the test suite for blAST [Yes]" Yes)
-option(BLAST_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
+set(default_sanitizers)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(default_sanitizers "address,undefined")
+endif ()
+
+option(C4_BUILD_TESTS "Build the test suite for C4 [Yes]" Yes)
+option(C4_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
+option(C4_SANITIZERS "Enable sanitizers" ${default_sanitizers})
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -53,6 +59,7 @@ include(FetchContent)
 
 include(cmake/add_c4_library.cmake)
 include(cmake/add_covered_test.cmake)
+include(cmake/generate_sanitizers.cmake)
 include(cmake/generate_warnings.cmake)
 include(cmake/generate_lto.cmake)
 include(cmake/get_arch.cmake)

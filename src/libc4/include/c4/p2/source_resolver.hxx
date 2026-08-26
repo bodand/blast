@@ -69,7 +69,16 @@ namespace c4::p2 {
 			const auto it = std::ranges::find_if(expected, [&](const auto& path) {
 				return exists(path);
 			});
-			if (it != end(expected)) return *it;
+			if (it != end(expected)) {
+				if (_trace_loads) {
+					_diag.note(pos,
+					           "resolved \"{}\" from \"{}\" as {}",
+					           filename, _diag.relative(initiator.path()),
+					           it->c_str());
+				}
+
+				return *it;
+			}
 
 			_diag.error(pos, "could not resolve used file \"{}\" from \"{}\"",
 			            filename, _diag.relative(initiator.path()));
@@ -81,6 +90,9 @@ namespace c4::p2 {
 
 		archive_file
 		open_archive(const std::filesystem::path& path) const;
+
+		void
+		trace_loads(const bool cond) { _trace_loads = cond; }
 
 	private:
 		std::vector<std::filesystem::path>
@@ -98,6 +110,7 @@ namespace c4::p2 {
 
 		diagnostics_engine& _diag;
 		std::vector<std::filesystem::path> _search_paths;
+		bool _trace_loads = false;
 	};
 }
 

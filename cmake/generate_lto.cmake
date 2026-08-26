@@ -37,7 +37,7 @@ include(CheckIPOSupported)
 
 function(generate_lto _tgt)
     message(CHECK_START "Checking for LTO support")
-    if (BLAST_FORBID_LTO)
+    if (C4_FORBID_LTO)
         message(CHECK_FAIL "forbidden")
         return()
     endif ()

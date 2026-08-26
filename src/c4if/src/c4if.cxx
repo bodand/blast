@@ -156,7 +156,7 @@ main(int argc, const char* const* argv) try {
 			action = &generic_parser::parse_archive;
 			break;
 		case 'I':
-			if (opts.arg[0] == '\0') {
+			if (std::string_view(opts.arg) == "-") {
 				resolver.reset_path();
 				break;
 			}

@@ -43,3 +43,7 @@ target_link_libraries(c4ar PRIVATE
                       )
 generate_lto(c4ar PRIVATE)
 generate_warnings(c4ar PRIVATE)
+generate_sanitizers(c4ar)
+
+install(TARGETS c4ar
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

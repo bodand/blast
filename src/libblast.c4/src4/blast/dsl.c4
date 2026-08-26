@@ -1,4 +1,4 @@
-use "std.c4"
+use <std4.c4a>
 
 let -internal_recurse_matcher/4 { |m ms hs wrapper|
 	let built &(m)/2 nil hs
@@ -23,7 +23,7 @@ let +bound/2 { |name obj| { |ms hs x y any|
 	&(obj)/5 ms hs
 		x 
 		y 
-		str_cat str_cat 
+		str_cat str_cat
 			'.bind("' name '")'
 }}
 

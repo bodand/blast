@@ -311,6 +311,19 @@ namespace c4 {
 				});
 		}
 
+		template<class... Args>
+		decltype(auto)
+		note(const position& position,
+		     fmt::format_string<Args...> diagnostic, Args&&... args) {
+			return diagnostics_bundle(
+				*this,
+				source_diagnostic{
+					source_diagnostic::diag_type::Note,
+					fmt::format(diagnostic, std::forward<Args>(args)...),
+					relative(position)
+				});
+		}
+
 		void
 		emit(const diagnostics_bundle& bundle) const;
 

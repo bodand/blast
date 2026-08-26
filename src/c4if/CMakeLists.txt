@@ -41,3 +41,6 @@ target_link_libraries(c4if
 generate_lto(c4if PRIVATE)
 generate_warnings(c4if PRIVATE)
 
+install(TARGETS c4if
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+

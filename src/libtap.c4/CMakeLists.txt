@@ -39,3 +39,9 @@ add_c4_library(TARGET tap
                   src4/tap.c4
                FLAGS
                   "-I${CMAKE_CURRENT_BINARY_DIR}/../libstd4.c4")
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/tap.c4a"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+
+install(TARGETS tap
+        EXPORT c4std)

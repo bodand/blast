@@ -77,3 +77,8 @@ add_c4_library(TARGET std4
                    src/std/typeid_bless.c
 )
 
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/std4.c4a"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(TARGETS std4
+        EXPORT c4std)

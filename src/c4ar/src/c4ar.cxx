@@ -372,14 +372,15 @@ main(int argc, const char* const* argv) {
 	}
 
 	std::vector<char> formatted_symbols;
-	formatted_symbols.resize(merged_symbol_buffer.size() * 5);
+	formatted_symbols.resize(merged_symbol_buffer.size() * 5 + 1);
 
 	auto to = formatted_symbols.data();
 	auto begin = formatted_symbols.data();
 	std::ranges::for_each(merged_symbol_buffer, [&](auto c) {
+		const auto uc = static_cast<unsigned char>(c);
 		to = std::copy_n("0x", 2, to);
-		if (c < 16) *to++ = '0';
-		auto [ptr, y] = std::to_chars(to, to + 2, c, 16);
+		if (uc < 16) *to++ = '0';
+		auto [ptr, y] = std::to_chars(to, to + 2, uc, 16);
 		to = ptr;
 		*to++ = ',';
 	});

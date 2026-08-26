@@ -36,44 +36,51 @@
 set(BLAST_DEFAULT_RESOURCE_DIR
     ${CMAKE_INSTALL_PREFIX}/share/blast/clang
     CACHE PATH "Default location for the clang resource directory")
-
-add_library(blast STATIC
-            src/blast/blast_build_ast_single.cxx
-            src/blast/blast_build_from_compile_commands.cxx
-            src/blast/blast_init_.cxx
-            src/blast/blast_make_callback.cxx
-            src/blast/blast_make_diagnostic.cxx
-            src/blast/blast_make_ignore_handler.cxx
-            src/blast/blast_match_ast.cxx
-            src/blast/blast_new_unique_binding.cxx
-
-            src/ext-type.hxx
-            src/blast_typeid.cxx
-
-            src/default_resource_dir.in.hxx
-            src/resource_dir.hxx
-            src/resource_dir.cxx
-
-            src/handler/diagnostic_handler.hxx
-            src/handler/handler_base.hxx
-
-            src/gc_box.hxx
-
-            src/compilation_db.hxx
-            src/compilation_db/compilation_db.cxx
-            src/compilation_db/build_tool.cxx
-            )
 configure_file(src/default_resource_dir.in.hxx
                default_resource_dir.hxx
                @ONLY)
-target_include_directories(
-        blast
-        PRIVATE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-target_link_libraries(blast
+add_c4_library(TARGET blast
+               C4_DEPENDS array std4
+               C4_SOURCES
+                   src4/blast.c4
+                   src4/blast/dsl.c4
+               C_SOURCES
+                   src/blast/blast_build_ast_single.cxx
+                   src/blast/blast_build_from_compile_commands.cxx
+                   src/blast/blast_init_.cxx
+                   src/blast/blast_make_callback.cxx
+                   src/blast/blast_make_diagnostic.cxx
+                   src/blast/blast_make_ignore_handler.cxx
+                   src/blast/blast_match_ast.cxx
+                   src/blast/blast_new_unique_binding.cxx
+
+                   src/ext-type.hxx
+                   src/blast_typeid.cxx
+
+                   src/default_resource_dir.in.hxx
+                   src/resource_dir.hxx
+                   src/resource_dir.cxx
+
+                   src/handler/diagnostic_handler.hxx
+                   src/handler/handler_base.hxx
+
+                   src/gc_box.hxx
+
+                   src/compilation_db.hxx
+                   src/compilation_db/compilation_db.cxx
+                   src/compilation_db/build_tool.cxx
+               FLAGS
+                   "-I${CMAKE_CURRENT_BINARY_DIR}/../libstd4.c4"
+                   "-I${CMAKE_CURRENT_BINARY_DIR}/../libarray.c4"
+)
+target_include_directories(blast-objs
+                           PRIVATE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
+target_link_libraries(blast-objs
                       PRIVATE
                       c4_llvm
-                      c4rt3
                       array)
-generate_warnings(blast PRIVATE)
+
+generate_warnings(blast-objs PRIVATE)
+generate_sanitizers(blast-objs)

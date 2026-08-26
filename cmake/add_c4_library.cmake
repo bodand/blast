@@ -47,7 +47,9 @@ function(add_c4_library)
                            $<$<CONFIG:Debug>:-O0>
                            $<$<CONFIG:MinSizeRel>:-Os>
                            $<$<CONFIG:Release>:-O3>
-                           ${cc4_FLAGS}
+                           # Disable standard load paths: if the user has these
+                           # libraries installed, it would find those instead
+                           -I- ${cc4_FLAGS}
                            -o "${obj}" "${CMAKE_CURRENT_SOURCE_DIR}/${src}"
                            DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${src}" c4c ${cc4_C4_DEPENDS}
                            COMMAND_EXPAND_LISTS

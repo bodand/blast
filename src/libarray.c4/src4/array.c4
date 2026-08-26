@@ -1,4 +1,4 @@
-use "std.c4"
+use <std4.c4a>
 
 let +native new_array/0;
 let +native new_array_sized/1;

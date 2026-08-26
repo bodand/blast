@@ -55,6 +55,8 @@ static_assert(std::endian::native == std::endian::little
               || std::endian::native == std::endian::big,
               "Mixed endian hardware detected: please submit a patch");
 
+#define C4_LIEF_MEASURE 0
+
 namespace {
 	using namespace c4::p2::a;
 
@@ -87,9 +89,11 @@ namespace {
 		operator()(const tokens::object& binary) {
 			error_counter = 0;
 
+			#if C4_LIEF_MEASURE
 			auto start = std::chrono::high_resolution_clock::now();
 			std::chrono::high_resolution_clock::time_point parse_start{};
 			std::chrono::high_resolution_clock::time_point parse_end{};
+			#endif
 
 			const auto obj = LIEF::Parser::parse(std::make_unique<LIEF::SpanStream>(binary.bytes));
 			if (!obj) {
@@ -110,7 +114,9 @@ namespace {
 
 				const auto end = data.data() + data.size();
 
+				#if C4_LIEF_MEASURE
 				parse_start = std::chrono::high_resolution_clock::now();
+				#endif
 				std::optional<c4::ast2::symbol> sym;
 				for (auto it = parse_one(&sym, data.begin(), end);
 				     sym;
@@ -137,11 +143,15 @@ namespace {
 						_expressions.push_back(let);
 					}
 				}
+				#if C4_LIEF_MEASURE
 				parse_end = std::chrono::high_resolution_clock::now();
+				#endif
 			}
 
+			#if C4_LIEF_MEASURE
 			auto end = std::chrono::high_resolution_clock::now();
 			std::println(std::clog, "LIEF time: {:%S}\n", end - start - (parse_end - parse_start));
+			#endif
 		}
 
 		template<std::integral I>
@@ -224,7 +234,6 @@ namespace {
 	is_eof(const tokens::token_type& tok) {
 		return std::holds_alternative<tokens::eof>(tok);
 	}
-
 }
 
 std::vector<c4::ast2::let_expression*>
