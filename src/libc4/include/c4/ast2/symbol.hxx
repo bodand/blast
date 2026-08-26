@@ -186,7 +186,7 @@ namespace c4::ast2 {
 		std::string_view _name;
 		unsigned _arity;
 		bool _native = false;
-		std::optional<struct operator_data> _op_data;
+		std::optional<struct operator_data> _op_data{};
 	};
 }
 

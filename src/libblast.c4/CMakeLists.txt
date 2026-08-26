@@ -84,3 +84,6 @@ target_link_libraries(blast-objs
 
 generate_warnings(blast-objs PRIVATE)
 generate_sanitizers(blast-objs)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/blast.c4a"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR})

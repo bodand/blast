@@ -202,12 +202,6 @@ c4::p2::parser::
 parse_operator_let(const enum ast2::let_expression::visibility vis,
                    bool native) {
 	auto op = parse_op_symbol();
-	const auto let = _context.build_let_expression(
-		op.position(),
-		op,
-		nullptr,
-		vis
-	);
 
 	if (native) {
 		_diag.error(op.position(),
@@ -278,6 +272,12 @@ parse_operator_let(const enum ast2::let_expression::visibility vis,
 		break;
 	}
 
+	const auto let = _context.build_let_expression(
+		op.position(),
+		op,
+		nullptr,
+		vis
+	);
 	const auto expr = parse_expression_of_let(op, let);
 
 	if (expr) {

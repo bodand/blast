@@ -44,7 +44,7 @@ endif ()
 
 option(C4_BUILD_TESTS "Build the test suite for C4 [Yes]" Yes)
 option(C4_FORBID_LTO "Instruct the build-system to never enable LTO [No]" No)
-option(C4_SANITIZERS "Enable sanitizers" ${default_sanitizers})
+set(C4_SANITIZERS ${default_sanitizers} CACHE STRING "Enable sanitizers")
 
 set(CMAKE_CXX_STANDARD 23)
 

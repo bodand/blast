@@ -222,3 +222,8 @@ target_include_directories(c4
                            PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            )
 
+install(DIRECTORY include/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(TARGETS c4
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
