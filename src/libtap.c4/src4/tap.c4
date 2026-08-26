@@ -1,4 +1,6 @@
-let tests/1 { |tests|
+use <std4.c4a>
+
+let +tests/1 { |tests|
 	let init
 		bst_insert "start" 1
 		bst_insert "end" 0
@@ -7,15 +9,15 @@ let tests/1 { |tests|
 	&(tests)/1 init
 }
 
-let next_count/1 { |state|
+let -next_count/1 { |state|
 	(state."start") + (state."end")
 }
 
-let step_state/1 { |state|
+let -step_state/1 { |state|
 	bst_insert "end" 1 + (state."end") state
 }
 
-let run_test_case/4 { |cond count msg skip|
+let -run_test_case/4 { |cond count msg skip|
 	if skip {
 		io_println str_cat "ok "
 		           str_cat count
@@ -31,7 +33,7 @@ let run_test_case/4 { |cond count msg skip|
 	}
 }
 
-let ok/3 { |val msg K| { |state|
+let +ok/3 { |val msg K| { |state|
 	let count next_count state
 	let next step_state state
 
@@ -40,7 +42,7 @@ let ok/3 { |val msg K| { |state|
 	&(K)/1 next
 }}
 
-let is/4 { |a b msg K| { |state|
+let +is/4 { |a b msg K| { |state|
 	let count next_count state
 	let next step_state state
 
@@ -49,7 +51,6 @@ let is/4 { |a b msg K| { |state|
 	&(K)/1 next
 }}
 
-let done_testing \{ |state| 
+let +done_testing \{ |state|
 	io_println str_cat state."start" str_cat ".." state."end" 
 }
-

@@ -1,6 +1,6 @@
 # cg3 project
 #
-# Copyright (c) 2022, András Bodor <bodand@proton.me>
+# Copyright (c) 2022, 2026, András Bodor <bodand@proton.me>
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without

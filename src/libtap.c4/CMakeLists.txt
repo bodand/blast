@@ -28,52 +28,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# Originally created: 2026-08-01.
+# Originally created: 2026-08-26.
 #
-# src/std4/CMakeLists.txt --
-#   C4 basic standard library utilities.
+# src/libtap.c4/CMakeLists.txt --
+#   An incomplete and rudimentary TAP14 producer implementation for C4
 
-add_c4_library(TARGET std4
+add_c4_library(TARGET tap
+               C4_DEPENDS std4
                C4_SOURCES
-                   src4/std.c4
-                   src4/gc.c4
-               C_SOURCES
-                   src/std/primitive_op.h
-                   src/std/primitive_add.c
-                   src/std/primitive_sub.c
-                   src/std/primitive_mul.c
-                   src/std/primitive_div.c
-                   src/std/primitive_mod.c
-
-                   src/std/primitive_cmp.h
-                   src/std/primitve_lt.c
-                   src/std/primitve_le.c
-                   src/std/primitve_eq.c
-                   src/std/primitve_ne.c
-                   src/std/primitve_gt.c
-                   src/std/primitve_ge.c
-
-                   src/std/io_print.c
-                   src/std/io_println.c
-                   src/std/io_readln.c
-
-                   src/extra/gc.c
-                   src/std/str_cat.c
-                   src/std/callback.c
-
-                   src/std/Block.c
-                   src/std/External.c
-                   src/std/Float.c
-                   src/std/Integer.c
-                   src/std/Nil.c
-                   src/std/String.c
-
-                   src/std/types.h
-                   src/std/types.c
-                   src/std/typeof.c
-
-                   src/std/typeid.h
-                   src/std/_typeid_cmp.c
-                   src/std/typeid_bless.c
-)
-
+                  src4/tap.c4
+               FLAGS
+                  "-I${CMAKE_CURRENT_BINARY_DIR}/../libstd4.c4")

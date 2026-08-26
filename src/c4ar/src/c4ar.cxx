@@ -335,7 +335,7 @@ main(int argc, const char* const* argv) {
 		merged_symbol_buffer.insert(merged_symbol_buffer.end(), buf.begin(), buf.end());
 	});
 
-	const auto imm_name = "exports__" + out_path.string();
+	const auto imm_name = "exports__" + out_path.filename().string();
 	llvm::LLVMContext context;
 	llvm::Module module(imm_name, context);
 

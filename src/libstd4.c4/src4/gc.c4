@@ -1,2 +1,2 @@
-let native gc/0;
-let native gc_stat/0;
+let +native gc/0;
+let +native gc_stat/0;
