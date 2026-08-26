@@ -35,6 +35,7 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <unistd.h>
 #include <sys/uio.h>
 
@@ -42,7 +43,7 @@
 
 static char newline[] = "\n";
 
-c4_let_native(io_println)(c4_datum d) {
+c4_let_native(io_println)(const c4_datum d) {
 	struct iovec iov[2];
 	iov[1].iov_base = newline;
 	iov[1].iov_len = 1;
@@ -50,7 +51,9 @@ c4_let_native(io_println)(c4_datum d) {
 	assert(c4_datum_coerce_string(d,
 		(char**)&iov[0].iov_base,
 		&iov[0].iov_len) == 0);
-	writev(STDOUT_FILENO, iov, sizeof(iov) / sizeof(iov[0]));
+	int res = 0;
+	do res = writev(STDOUT_FILENO, iov, sizeof(iov) / sizeof(iov[0]));
+	while (res == -1 && errno == EINTR);
 
 	return d;
 }

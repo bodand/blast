@@ -34,9 +34,10 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4/source_file.hxx>
 
-const char*
+C4_ATTR_PURE const char*
 c4::source_file::
 begin() const {
 	return _mmap.data();

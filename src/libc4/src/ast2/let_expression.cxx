@@ -39,6 +39,7 @@
 
 #include <stdbool.h>
 #include <utility>
+#include <c4/cc_attr.hxx>
 #include <libassert/assert.hpp>
 
 c4::ast2::let_expression::let_expression(const c4::position& position,
@@ -69,7 +70,7 @@ c4::ast2::let_expression::value_constant() const noexcept {
 	return _value->constant_evaluated(std::array{_symbol});
 }
 
-bool
+C4_ATTR_PURE bool
 c4::ast2::let_expression::seen_by(const enum visibility vis) const {
 	switch (_visibility) {
 	case v_public:
@@ -83,12 +84,12 @@ c4::ast2::let_expression::seen_by(const enum visibility vis) const {
 	std::unreachable();
 }
 
-const c4::ast2::expression*
+C4_ATTR_PURE const c4::ast2::expression*
 c4::ast2::let_expression::value() const {
 	return _value;
 }
 
-c4::ast2::expression*
+C4_ATTR_PURE c4::ast2::expression*
 c4::ast2::let_expression::value() {
 	return _value;
 }
@@ -109,7 +110,7 @@ c4::ast2::let_expression::introduces_variable() const noexcept {
 	return true;
 }
 
-bool
+C4_ATTR_PURE bool
 c4::ast2::let_expression::declaration() const noexcept {
 	return _value == nullptr;
 }
@@ -127,7 +128,7 @@ c4::ast2::let_expression::function_body() const noexcept {
 	return std::get<block*>(_value->value());
 }
 
-bool
+C4_ATTR_CONST bool
 c4::ast2::let_expression::constant_evaluated(std::span<const ast2::symbol>) const noexcept {
 	return true;
 }

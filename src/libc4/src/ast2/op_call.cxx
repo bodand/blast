@@ -34,6 +34,7 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/expression.hxx>
 
@@ -61,15 +62,16 @@ c4::ast2::binary_op_call::binary_op_call(const c4::position& position,
 	);
 }
 
-const c4::ast2::expression&
+C4_ATTR_PURE const c4::ast2::expression&
 c4::ast2::binary_op_call::left() const noexcept { return *_args[0]; }
 
-const c4::ast2::expression&
+C4_ATTR_PURE const c4::ast2::expression&
 c4::ast2::binary_op_call::right() const noexcept { return *_args[1]; }
 
-bool
+C4_ATTR_CONST bool
 c4::ast2::binary_op_call::constant_evaluated(std::span<const symbol> skips) const noexcept {
 	// TODO: op symbol upgrade : see fn_call::constant_evaluated
+	//   ensure to check if we can remove C4_ATTR_CONST on changes
 	return ast_node::constant_evaluated(skips)
 	       && _args[0]->constant_evaluated(skips)
 	       && _args[1]->constant_evaluated(skips);
@@ -92,12 +94,13 @@ c4::ast2::unary_op_call::unary_op_call(const c4::position& position,
 	);
 }
 
-const c4::ast2::expression&
+C4_ATTR_PURE const c4::ast2::expression&
 c4::ast2::unary_op_call::operand() const noexcept { return *_operand; }
 
-bool
+C4_ATTR_CONST bool
 c4::ast2::unary_op_call::constant_evaluated(std::span<const symbol> skips) const noexcept {
 	// TODO: op symbol upgrade : see fn_call::constant_evaluated
+	//   ensure to check if we can remove C4_ATTR_CONST on changes
 	return ast_node::constant_evaluated(skips)
 	       && _operand->constant_evaluated(skips);
 }

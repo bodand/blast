@@ -38,6 +38,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <c4/cc_attr.hxx>
 
 #include <c4/ast2/ast_context.hxx>
 #include <c4/ast2/symbol.hxx>
@@ -65,7 +66,7 @@ namespace {
 	static_assert(operator_chars.size() == operator_char_replacement.size(),
 	              "replacement set must equal operator set");
 
-	constexpr bool
+	C4_ATTR_PURE constexpr bool
 	is_operator_symbol(const std::string_view name) {
 		const auto idx = name.find_first_of(operator_chars);
 		return idx != std::string_view::npos;
@@ -178,7 +179,7 @@ c4::ast2::symbol::lift_to_context(ast_context& ctx) {
 	_name = ctx.lift_symbol(_name);
 }
 
-unsigned
+C4_ATTR_PURE unsigned
 c4::ast2::symbol::precedence_like() const {
 	/// XXX abysmal hack of prefix operator's having precedence -1
 	if (_op_data) return _op_data->precedence;

@@ -42,6 +42,7 @@
 
 #include <libassert/assert.hpp>
 #include <utility>
+#include <c4/cc_attr.hxx>
 
 namespace {
 	struct bool_attribute final : c4::ast2::tags::typed_attribute<bool> {
@@ -117,7 +118,7 @@ namespace {
 			auto symbols = expr->closure_symbols();
 			result.reserve(result.size() + symbols.size());
 			std::ranges::copy(symbols, std::back_inserter(result));
-			std::erase_if(result, [&skips](const auto& sym) {
+			std::erase_if(result, [&skips](const auto& sym) C4_ATTR_PURE {
 				return std::ranges::find(skips, sym) != skips.end();
 			});
 		}
@@ -164,7 +165,7 @@ c4::ast2::block::effective_context_symbols() const {
 	return result;
 }
 
-std::span<const c4::ast2::expression* const>
+C4_ATTR_PURE std::span<const c4::ast2::expression* const>
 c4::ast2::block::expressions() const {
 	return std::span(_expressions);
 }

@@ -34,11 +34,11 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4rt2c/seq_node.hxx>
 
-llvm::Value*
+C4_ATTR_PURE llvm::Value*
 c4rt2c::seq_leaf::build(llvm::IRBuilder<>&,
                         runtime_emitter&) const {
 	return _value;
 }
-

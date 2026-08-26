@@ -47,7 +47,7 @@ add_library(sgetopt STATIC
             src/sgetopt/subgetopt_here.cxx
             src/sgetopt/subgetopt.cxx
             inc/sgetopt/opts.hxx
-            src/opts/argv0.cxx
+            src/opts/argv0.c
             )
 generate_warnings(sgetopt PRIVATE)
 generate_lto(sgetopt PRIVATE)

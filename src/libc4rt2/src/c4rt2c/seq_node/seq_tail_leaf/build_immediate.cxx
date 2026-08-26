@@ -34,11 +34,12 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4rt2c/seq_node.hxx>
 
 #include <libassert/assert.hpp>
 
-std::optional<c4rt2c::immediate_seq>
+C4_ATTR_COLD std::optional<c4rt2c::immediate_seq>
 c4rt2c::seq_tail_leaf::
 build_immediate(llvm::IRBuilder<>&, runtime_emitter&) const {
 	ASSERT(false, "tail-leaf must be tail-called");

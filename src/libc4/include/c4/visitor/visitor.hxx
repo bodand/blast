@@ -45,18 +45,14 @@ namespace c4::ast2 {
 
 	protected:
 		template<class T>
-		__attribute__ ((nodebug))
-
-		bool
+		C4_AST_ATTR_NODEBUG bool
 		visit_one(const void* untyped, const visitor_aux::type_id tid) {
 			if (visitor_aux::type_id::of<T>() != tid) return false;
 			static_cast<typed_visitor_base<T>*>(this)->do_visit(*static_cast<const T*>(untyped));
 			return true;
 		}
 
-		__attribute__ ((nodebug))
-
-		void
+		C4_AST_ATTR_NODEBUG void
 		visit_impl(const void* raw, const visitor_aux::type_id tid) final {
 			(visit_one<Ts>(raw, tid) || ...);
 		}

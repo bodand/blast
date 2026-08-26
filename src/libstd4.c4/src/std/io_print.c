@@ -35,16 +35,19 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include <c4rt3/c4rt.h>
 
-c4_let_native(io_print)(c4_datum d) {
+c4_let_native(io_print)(const c4_datum d) {
 	char* str;
 	size_t str_sz;
 
 	assert(c4_datum_coerce_string(d, &str, &str_sz) == 0);
-	write(STDOUT_FILENO, str, str_sz);
+	int res = 0;
+	do res = write(STDOUT_FILENO, str, str_sz);
+	while (res == -1 && errno == EINTR);
 
 	return d;
 }

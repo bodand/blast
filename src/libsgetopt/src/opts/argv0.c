@@ -35,4 +35,4 @@
  *   startup.
  */
 
-extern "C" const char* argv0 = "lmao";
+const char* argv0 = "lmao";

@@ -596,7 +596,12 @@ namespace {
 		const bool found_pos = (
 			(args && (new(data) c4::position(args->token_position()), true)) || ...
 		);
-		if (found_pos) return *reinterpret_cast<c4::position*>(data);
+		if (found_pos) {
+			const auto ptr = std::launder(reinterpret_cast<c4::position*>(static_cast<void*>(data)));
+			const auto obj = std::move(*ptr);
+			ptr->~position();
+			return obj;
+		}
 
 		c4::p2::report_failure(diag, std::forward<decltype(args)>(args)...);
 	}

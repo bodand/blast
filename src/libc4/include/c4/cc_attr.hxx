@@ -28,28 +28,22 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Originally created: 2026-08-03.
+ * Originally created: 2026-08-26.
  *
- * src/c4rt2/src/c4rt2c/seq_node/seq_tail_leaf/push --
- *   
+ * src/libc4/include/c4/cc_attr --
+ *   A set of CC specific attributes that help it produce code
  */
+#ifndef BLAST_CC_ATTR_HXX
+#define BLAST_CC_ATTR_HXX
 
-#include <c4/cc_attr.hxx>
-#include <c4/ast2/expression.hxx>
+#ifdef __GNUC__
+#  define C4_ATTR_PURE __attribute__((pure))
+#  define C4_ATTR_CONST __attribute__((const))
+#  define C4_ATTR_COLD __attribute__((cold))
+#else
+#  define C4_ATTR_PURE
+#  define C4_ATTR_CONST
+#  define C4_ATTR_COLD
+#endif
 
-#include <c4rt2c/seq_node.hxx>
-#include <libassert/assert.hpp>
-
-C4_ATTR_COLD std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_tail_leaf::
-push(const c4::ast2::expression* val, ast2_ir_emitter&) {
-	ASSERT(false, "seq_tail_leaf cannot be pushed to", val);
-	return {};
-}
-
-C4_ATTR_COLD std::unique_ptr<c4rt2c::seq_node>
-c4rt2c::seq_tail_leaf::
-push(const c4::ast2::expression* val) {
-	ASSERT(false, "seq_tail_leaf cannot be pushed to", val);
-	return {};
-}
+#endif

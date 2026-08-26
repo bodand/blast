@@ -47,6 +47,7 @@
 #define FMT_STRING(x) x
 #endif
 #include <iostream>
+#include <c4/cc_attr.hxx>
 #include <fmt/color.h>
 
 #include <libassert/assert.hpp>
@@ -215,7 +216,7 @@ c4::position::pseudo_position() {
 	return {"", 1, 1, 1, 1, "", &pseudo_source};
 }
 
-c4::position
+C4_ATTR_CONST c4::position
 c4::position::invalid_file_position(p2::named_source& src) {
 	return {"", 1, 1, 1, 1, "", &src};
 }

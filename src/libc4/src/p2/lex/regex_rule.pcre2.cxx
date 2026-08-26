@@ -182,7 +182,8 @@ c4::p2::regex_rule::match_into(const char*& data,
 
 	const auto res = pcre2_jit_match(
 		re,
-		reinterpret_cast<PCRE2_SPTR>(data), end - data,
+		reinterpret_cast<PCRE2_SPTR>(data),
+		static_cast<size_t>(end - data),
 		0, 0,
 		match_data,
 		nullptr

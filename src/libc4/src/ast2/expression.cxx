@@ -88,8 +88,7 @@ namespace {
 
 		void
 		do_visit(const c4::ast2::let_expression& obj) override {
-			if (const auto& val = obj.value()) obj.value()->accept(*this);
-			// erase(_symbols, obj.symbol());
+			if (obj.value()) obj.value()->accept(*this);
 		}
 
 		void

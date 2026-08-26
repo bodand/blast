@@ -38,10 +38,16 @@
 
 #include <utility>
 
+#ifdef __clang__
+#	define C4_AST_ATTR_NODEBUG __attribute__((nodebug))
+#else
+#	define C4_AST_ATTR_NODEBUG
+#endif
+
 namespace c4::ast2::tags {
 	struct visitable {
 		template<class V>
-		__attribute__ ((nodebug)) auto
+		C4_AST_ATTR_NODEBUG auto
 		accept(this auto&& self, V&& visitor) {
 			return std::forward<V>(visitor).visit(std::forward<decltype(self)>(self));
 		}

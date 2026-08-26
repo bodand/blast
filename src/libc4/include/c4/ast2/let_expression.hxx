@@ -35,6 +35,7 @@
  */
 #ifndef C4_AST2_LET_EXPRESSION_HXX
 #define C4_AST2_LET_EXPRESSION_HXX
+#include <c4/cc_attr.hxx>
 
 #ifndef __clang__
 #pragma GCC diagnostic push
@@ -132,7 +133,7 @@ namespace c4::ast2 {
 		[[nodiscard]] std::optional<unsigned>
 		invocable_with() const noexcept { return std::nullopt; }
 
-		[[nodiscard]] bool
+		[[nodiscard]] C4_ATTR_CONST bool
 		constant_evaluated(std::span<const struct symbol> skips) const noexcept override;
 
 		[[nodiscard]] bool

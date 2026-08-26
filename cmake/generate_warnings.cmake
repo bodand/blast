@@ -34,26 +34,48 @@
 #   Sets them on the given interface target; this is to be used while compiling
 #   every other target to all have the full set of available warnings.
 
+include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
+include(CheckLinkerFlag)
 
 function(checkwarningflag OptionName CacheName)
-    if (OptionName MATCHES [[^/|^-]]) # already prefixed args passed as-is
-        set(WarningPrefix "")
+    if (OptionName MATCHES [[^/|^-]])
+        set(FlagPrefix "")
     else ()
-        set(WarningPrefix "-W")
+        set(FlagPrefix "-W")
     endif ()
-    check_cxx_compiler_flag("${WarningPrefix}${OptionName}" "HasWarning_${CacheName}")
-    set("HAS_WARNING_${CacheName}" ${HasWarning_${CacheName}} PARENT_SCOPE)
+    set(flag ${FlagPrefix}${OptionName})
+
+    if (CMAKE_C_COMPILER_ID MATCHES "MSVC" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        set(STRICT_FLAG "/WX")
+    elseif (CMAKE_C_COMPILER_ID MATCHES "GCC|Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GCC|Clang")
+        set(STRICT_FLAG "-Werror")
+    else ()
+        # XXX pray the cc works as we think it does and properly chokes on
+        # invalid flags now and not in the future
+        set(STRICT_FLAG "")
+    endif ()
+
+    set(CMAKE_REQUIRED_FLAGS "${STRICT_FLAG}")
+
+    check_cxx_compiler_flag("${flag}" "HasCFlag_${CacheName}")
+    check_c_compiler_flag("${flag}" "HasCXXFlag_${CacheName}")
+
+    unset(CMAKE_REQUIRED_FLAGS)
+
+    set("HAS_CXX_FLAG_${CacheName}" ${HasCFlag_${CacheName}} PARENT_SCOPE)
+    set("HAS_C_FLAG_${CacheName}" ${HasCXXFlag_${CacheName}} PARENT_SCOPE)
 endfunction()
 
 function(generate_warnings _Interface Mode)
     set(gw_known_warnings
-        -ffunction-sections -fdata-sections -Wl,--gc-sections
+        -ffunction-sections -fdata-sections
         -fstack-protector-strong
+        -D_FORTIFY_SOURCE=3
         /permissive-
         /Zc:__cplusplus /Zc:preprocessor /EHsc
         # GCC/Clang
-        extra pedantic sign-compare error=uninitialized unused cast-qual cast-align
+        extra pedantic sign-compare error=uninitialized unused cast-qual cast-align=strict
         abstract-vbase-init array-bounds-pointer-arithmetic assign-enum consumed
         conditional-uninitialized deprecated-implementations header-hygiene error=move
         error=documentation-deprecated-sync error=non-virtual-dtor error=infinite-recursion
@@ -66,8 +88,9 @@ function(generate_warnings _Interface Mode)
         nullability-completeness unreachable-code-loop-increment redundant-decls
         suggest-attribute=pure suggest-attribute=const suggest-attribute=cold
         suggest-final-methods duplicated-branches placement-new=2 error=trampolines
-        covered-switch-default
-        logical-op reorder
+        covered-switch-default error=vla error=implicit-fallthrough format=2
+        logical-op reorder lifetime
+        no-shadow
         no-changes-meaning # stfu
         no-unsafe-buffer-usage # todo
         no-exit-time-destructors # todo
@@ -80,26 +103,69 @@ function(generate_warnings _Interface Mode)
         /w14062 /w14165 /w14191 /w14242 /we4263 /w14265 /w14287 /w14296 /we4350 /we4355
         /w14355 /w14471 /we4545 /w14546 /w14547 /w14548 /w14549 /w14557 /we4596 /w14605
         /w14668 /w14768 /w14822 /we4837 /we4928 /we4946 /we4986 /w15032 /w15039 /wd4010
-        /wd5030
+        /wd5030 /w14061 /sdl /RTC1
         4
         /diagnostics:caret
         )
+    set(gw_known_linker_flags
+        "-Wl,--gc-sections" # GCC/Clang strip dead sections
+        "-Wl,--no-undefined"
+        "-Wl,-undefined,error"
+        "-Wl,-z,relro"
+        "-Wl,-z,now"
+        "/OPT:REF"          # MSVC strip dead sections
+        "/OPT:ICF"          # MSVC fold identical COMDATs
+        )
+
     # cannot just check if -Wall, because MSVC also has /Wall, but also accepts -Wall
     # this wouldn't be a problem, but /Wall means literally everything... don't.
-    set(gw_found_warnings $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall>)
+    set(gw_found_warnings
+        "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:GNU,Clang,AppleClang>>:-Wall>"
+        "$<$<AND:$<COMPILE_LANGUAGE:C>,$<C_COMPILER_ID:GNU,Clang,AppleClang>>:-Wall>"
+        "$<$<AND:$<CONFIG:Debug>,$<OR:$<CXX_COMPILER_ID:GNU,Clang,AppleClang>,$<C_COMPILER_ID:GNU,Clang,AppleClang>>>:-Og>"
+        )
+    set(gw_found_linker_flags "")
 
+    ############################################################################
+    # compiler
+    ############################################################################
     foreach (warn IN LISTS gw_known_warnings)
         string(MAKE_C_IDENTIFIER "${warn}" CacheName)
         checkwarningflag("${warn}" ${CacheName})
-        if (HAS_WARNING_${CacheName})
-            if (warn MATCHES [[^/|^-]]) # prefixed args are passed as-is
-                set(WarningPrefix "")
-            else ()
-                set(WarningPrefix "-W")
-            endif ()
-            list(APPEND gw_found_warnings "${WarningPrefix}${warn}")
+
+        if (warn MATCHES "^[-/]")
+            set(WarningPrefix "")
+        else ()
+            set(WarningPrefix "-W")
+        endif ()
+        set(flag "${WarningPrefix}${warn}")
+
+        if (HAS_CXX_FLAG_${CacheName})
+            list(APPEND gw_found_warnings "$<$<COMPILE_LANGUAGE:CXX>:${flag}>")
+        endif ()
+
+        if (HAS_C_FLAG_${CacheName})
+            list(APPEND gw_found_warnings "$<$<COMPILE_LANGUAGE:C>:${flag}>")
+        endif ()
+    endforeach ()
+    target_compile_options("${_Interface}" ${Mode} ${gw_found_warnings})
+
+    ############################################################################
+    # linker
+    ############################################################################
+    foreach (lflag IN LISTS gw_known_linker_flags)
+        string(MAKE_C_IDENTIFIER "${lflag}" CacheName)
+
+        check_linker_flag(CXX "${lflag}" "HasCXXLinker_${CacheName}")
+        if (HasCXXLinker_${CacheName})
+            list(APPEND gw_found_linker_flags "$<$<LINK_LANGUAGE:CXX>:${lflag}>")
+        endif ()
+
+        check_linker_flag(C "${lflag}" "HasCLinker_${CacheName}")
+        if (HasCLinker_${CacheName})
+            list(APPEND gw_found_linker_flags "$<$<LINK_LANGUAGE:C>:${lflag}>")
         endif ()
     endforeach ()
 
-    target_compile_options("${_Interface}" ${Mode} ${gw_found_warnings})
+    target_link_options("${_Interface}" ${Mode} ${gw_found_linker_flags})
 endfunction()

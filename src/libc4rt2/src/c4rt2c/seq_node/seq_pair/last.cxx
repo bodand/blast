@@ -34,8 +34,12 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4rt2c/seq_node.hxx>
 
-std::unique_ptr<c4rt2c::seq_node>*
-c4rt2c::seq_pair::last() { return &_right; }
+C4_ATTR_CONST std::unique_ptr<c4rt2c::seq_node>*
+c4rt2c::seq_pair::
+last() {
+	return &_right;
+}
 

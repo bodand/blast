@@ -34,6 +34,8 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
+
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/dynamic_call.hxx>
 
@@ -46,10 +48,10 @@ c4::ast2::dynamic_call::dynamic_call(const c4::position& position,
 	, _callee{callee}
 	, _args{std::move(args)} { }
 
-const c4::ast2::expression*
+C4_ATTR_PURE const c4::ast2::expression*
 c4::ast2::dynamic_call::callee() const { return _callee; }
 
-std::span<const c4::ast2::expression* const>
+C4_ATTR_PURE std::span<const c4::ast2::expression* const>
 c4::ast2::dynamic_call::args() const { return _args; }
 
 bool

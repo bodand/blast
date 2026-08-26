@@ -34,10 +34,18 @@
  *   
  */
 
-#include <float.h>
+#if __has_include(<float.h>)
+#	include <float.h>
+#else
+#	include <math.h>
+#endif
 #include <c4rt3/c4rt.h>
 
 #include "internal_type.h"
+
+#ifndef NAN
+#	define NAN (0.0/0.0)
+#endif
 
 int
 c4_datum_coerce_double(const c4_datum datum, double* const out) {
@@ -50,17 +58,17 @@ c4_datum_coerce_double(const c4_datum datum, double* const out) {
 		*out = NAN;
 		break;
 	case C4_Integer:
-		*out = (double) datum_int(datum);
+		*out = (double)datum_int(datum);
 		break;
 	case C4_String:
-		*out = (double) datum_str_sz(datum);
+		*out = (double)datum_str_sz(datum);
 		break;
 	case C4_Thunk:
 	case C4_Block:
-		*out = (double)(int64_t) datum_blk(datum);
+		*out = (double)(int64_t)datum_blk(datum);
 		break;
 	case C4_External:
-		*out = (double)(int64_t) datum_ext(datum);
+		*out = (double)(int64_t)datum_ext(datum);
 		break;
 	}
 

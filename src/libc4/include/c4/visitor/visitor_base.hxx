@@ -38,12 +38,16 @@
 
 #include <c4/visitor/typeid.hxx>
 
+#ifdef __clang__
+#	define C4_AST_ATTR_NODEBUG __attribute__((nodebug))
+#else
+#	define C4_AST_ATTR_NODEBUG
+#endif
+
 namespace c4::ast2 {
 	struct visitor_base {
 		template<class T>
-		__attribute__ ((nodebug))
-
-		void
+		C4_AST_ATTR_NODEBUG void
 		visit(const T& visitee) {
 			visit_impl(static_cast<const void*>(&visitee), visitor_aux::type_id::of<T>());
 		}

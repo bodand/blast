@@ -34,6 +34,8 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
+
 #include <c4/ast2/expression.hxx>
 #include <c4/ast2/fn_call.hxx>
 
@@ -44,13 +46,14 @@ c4::ast2::fn_call::fn_call(const c4::position& position,
 	, _sym{sym}
 	, _args{std::move(args)} { }
 
-std::span<const c4::ast2::expression* const>
+C4_ATTR_PURE std::span<const c4::ast2::expression* const>
 c4::ast2::fn_call::args() const { return _args; }
 
-bool
+C4_ATTR_CONST bool
 c4::ast2::fn_call::constant_evaluated(std::span<const symbol> skips) const noexcept {
 	// TODO: this is always false, but symbols should be upgraded to know if the
 	//  function they refer to (eg. built-ins) can be constant evaluated
+	//  take care to remove C4_ATTR_CONST if that happens
 	return ast_node::constant_evaluated(skips)
 	       && std::ranges::all_of(_args, [skips](const expression* const arg) {
 		       return arg->constant_evaluated(skips);

@@ -34,9 +34,10 @@
  *   
  */
 
+#include <c4/cc_attr.hxx>
 #include <c4rt2c/seq_node.hxx>
 
-std::optional<c4rt2c::immediate_seq>
+C4_ATTR_PURE std::optional<c4rt2c::immediate_seq>
 c4rt2c::seq_leaf::
 build_immediate(llvm::IRBuilder<>&, runtime_emitter&) const {
 	if (!_argv) return {};
