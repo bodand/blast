@@ -242,7 +242,7 @@ namespace {
 }
 
 int
-main(int argc, const char* const* argv) {
+main(int argc, const char* const* argv) try {
 	argv0 = argv[0];
 
 	unsigned thread_count = std::thread::hardware_concurrency();
@@ -252,7 +252,7 @@ main(int argc, const char* const* argv) {
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv0;
 	for (int opt;
-	     (opt = subgetopt_r(argc, argv, "hj:o:T:", &opts)) != -1;) {
+	     (opt = subgetopt_r(argc, argv, "+hj:o:T:", &opts)) != -1;) {
 		switch (static_cast<char>(opt)) {
 		case 'j':
 			die_or_parse("-j", opts.arg, thread_count);
@@ -292,7 +292,7 @@ main(int argc, const char* const* argv) {
 	std::string target_error;
 	const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
 	if (!target) {
-		die(2, "{}: fatal: cannot find target triplet {}: {}", target_triple, target_error);
+		die(100, "{}: fatal: cannot find target triplet {}: {}", target_triple, target_error);
 	}
 
 	const auto section_name = llvm_triple.isOSBinFormatMachO() ? "__DWARF,__c4xport" : ".c4xport";
@@ -301,7 +301,7 @@ main(int argc, const char* const* argv) {
 		llvm::objcopy::NameOrPattern::create(section_name, llvm::objcopy::MatchStyle::Literal, [](llvm::Error e) {
 			return e;
 		}));
-	if (err) die(2, "{}: fatal: cannot create matcher for .c4xport");
+	if (err) die(111, "{}: fatal: cannot create matcher for .c4xport");
 
 	llvm::SmallVector<object_worker, 16> workers;
 	workers.reserve(thread_count);
@@ -427,4 +427,12 @@ main(int argc, const char* const* argv) {
 		    out_path.string(),
 		    toString(std::move(arerr)));
 	}
+}
+catch (std::exception& e) {
+	std::cerr << argv0 << ": fatal: " << e.what() << "\n";
+	return 111;
+}
+catch (...) {
+	std::cerr << argv0 << ": fatal: weird error? pls report\n";
+	return 101;
 }

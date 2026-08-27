@@ -1,0 +1,66 @@
+.Dd August 27, 2026
+.Dt C4AR 1
+.Os
+.Sh NAME
+.Nm c4ar
+.Nd create C4 static libraries
+.Sh SYNOPSIS
+.Nm
+.Op Fl +h
+.Op Fl j Ar n
+.Op Fl o Ar file
+.Op Fl T Ar triplet
+.Ar
+.Sh DESCRIPTION
+Creates an archive (static library) from the given object files. This will be
+compatible with the system
+.Xr ar 1
+utility, but contains additional metadata which the C4 tools, such as
+.Xr c4ld 1 ,
+or
+.Xr c4if 1
+can utilize.
+
+The conventional archive filename is
+.Pa *.c4a
+to indicate that this archive file has the additional metadata, but nothing
+enforces this.
+
+The
+.Nm
+program also accepts the following flags:
+.Bl -tag -width Ds
+.It Fl +
+Embed metadata marking that this library will need C++ linkage. This is useful
+if the library itself calls into C++, so when building the executable the
+.Xr c4ld 1
+linker will need to resolve and link the C++ libraries of the system as well.
+.It Fl h
+Print short help text and exit 100.
+.It Fl j Ar n
+Set the amount of worker threads to run for processing the object files to
+.Ar n .
+.It Fl o Ar file
+Generate output into
+.Ar file .
+If not given, the default is
+.Pa lib.c4a .
+
+The process of creating archives from C4 objects is really similar to creating
+normal C or C++ based archives. The difference is a bit of metadata that is
+managed.
+.El
+.Sh EXIT STATUS
+On success,
+.Nm
+exits 0. In case of failure, the following are used:
+.Bl -tag -width Ds
+.It 100
+Invalid invocation. Flags or arguments malformed or missing.
+.It 101
+Unexpected error. Please file a bug report.
+.It 111
+General runtime error: syscall failure or LLVM error.
+.El
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me

@@ -1,0 +1,214 @@
+.Dd August 27, 2026
+.Dt C4-USE 7
+.Os
+.Sh NAME
+.Nm c4-use
+.Nd using external code in C4
+.Sh SYNOPSIS
+.Ic use
+.Op Cm - | Cm ~ | Cm +
+.Pf < Pa library.c4a Ns >
+
+.Ic use
+.Op Cm - | Cm ~
+.Qq Pa source.c4
+.Sh DESCRIPTION
+The C4 language allows both the use of external libraries and referencing files
+within the same
+.Dq project
+or
+.Dq target .
+Both cases of using happen with the adequately named
+.Ic use
+keyword which is then followed by an optional visibility marker
+.Pq see Sx Visibility
+and either a
+.Qq quoted
+or <bracketed> filename. The former is for
+.Sx Source inclusion
+whereas the latter is used for
+.Sx Library inclusion .
+Effectively they both perform the same action: allow code to be reused from
+another source, be it a local file or a library someone already packaged.
+
+Conventionally, one would put
+.Ic use
+keywords at the top of the file, but it is not required. The contents therein
+will, however, only be visible in following expressions. They can be nested on
+the same line as well if separated with some whitespace. In other words, they
+act as arity-1 functions, but are specially handled.
+
+When using external files, the functions referenced are made available only
+within the scope wherein the
+.Ic use
+keyword was used. This makes it possible to only
+.Dq locally
+\(en within a function body \(en pull in some dependency. See
+.Xr BUGS
+however.
+.\"
+.Ss Source inclusion
+When using local files with the
+.Ic use
+.Qq quoted
+syntax, the referenced file is expected to be a fully valid C4 source file that
+can be read and understood by the compiler. Doing this makes all visible
+functions declared within the used file callable from the user file.
+
+The whole file is not parsed, however, only top-level expressions. Most
+importantly, all blocks are thrown away as-is which makes the use-parser faster
+than the actual parser at the cost of it allowing code that is invalid. But
+those have to be compiled by themselves anyhow, which makes this not an issue in
+general.
+
+Source files are not really looked up, more so the used file's name is simply
+interpreted as a relative path from the directory of the user source itself.
+.\"
+.Ss Library inclusion
+When using libraries with the
+.Ic use
+<bracketed>
+syntax, the referenced file must be a
+.Bx
+or SysV/GNU
+.Xr ar 1
+archive that contains at least one object file
+.Pq real or synthetic
+that contains a section named
+.Sy .c4xport
+with a serialized listing
+.Pq for more information on the format see Xr c4-archive 7
+of all exported symbols. Conveniently, the
+.Xr c4c 1
+compiler generates such sections for functions with +public visibility, and the
+.Xr c4ar 1
+archive utility concatenates all of them into one synthetic object. Other,
+non-C4 generated object files (eg. from C) could be part of this archive as well
+as all other contents are ignored.
+
+When at least one library is referenced in this manner by a file, a section in
+the object file named
+.Sy .c4mport
+is generated with the name of the used library file
+.Pq see Xr c4-archive 7 for format information .
+This is later used by the linker to trace transitive library dependencies
+automatically.
+
+Library lookup is performed by using a
+.Dq search path
+within each tool that is consulted for looking up libraries. This is uniformly
+handled across all of these tools. The argument path is then searched in order
+as a relative path to any of these entries, stopping at the first. By default,
+the C4 tools use the following paths on
+.Ux Ns -ish
+operating systems, relative to the installation prefix:
+.Pp
+.Bl -inset -compact
+.It Pf < Pa prefix Ns > Ns / Ns Pa lib
+.It Pf < Pa prefix Ns > Ns / Ns Pa lib64
+.El
+.Pp
+Using the
+.Fl I
+flag on any of these tools, the user can modify this list. Passing it the
+.Cm -
+value completely resets it to an empty list. Giving it a path will append it to
+the current list. This allows using custom non system-wide installation
+locations to be found by
+.Ic use
+expressions.
+.\"
+.Ss Visibility
+The
+.Ic use
+keyword accepts an optional visibility modifier to how control external code can
+see the file the current file uses. This is syntactically the same
+.Po
+.Cm + ,
+.Cm - ,
+or
+.Cm ~
+usually referred to as +public, -private, or ~internal for clarity while keeping
+the read flow of text.
+.Pc
+as used for declaring function visibility within a file, but with a different
+default value
+.Pq -private .
+
+By default, all
+.Ic use
+actions are of
+.Em -private
+visibility. This means that external code that uses this source file will
+.Em NOT
+see any functions that would be transitively used from the files this source
+file uses. This is defensive as to not inadvertently introduce transitive
+dependencies as in with C source file
+.Ic #include
+preprocessor directives.
+
+The more liberal
+.Em ~internal
+visibility allows propagating uses to the file's users. For example, assume that
+file
+.Pa A.c4
+uses \(en with an ~internal modifier \(en file
+.Pa B.c4 .
+Then the main entry point named
+.Pa main.c4
+uses only
+.Pa A.c4 .
+Because, however,
+.Pa A.c4
+used its own dependency with an ~internal modifier, the final user gets the
+functions declared in
+.Em both
+files, whereas if it only included it with a -private modifier, then
+.Pa main.c4
+could only see the functions declared in
+.Pa A.c4 .
+This can be used to create facade use files, that allow subsystems to be easily
+used in other parts of a project, without factoring it out into a custom,
+self managed library.
+
+For library uses only the
+.Em +public
+visibility can be specified
+.Po
+.Ic use
++<bracketed>
+.Pc
+as well. This propagates similarly to the ~internal
+discussed above, but it also escapes to the library interface. That is, this
+object will then export all symbols that the library it used exported. This can
+be used when building extra tools around libraries so that users don't have to
+explicitly use the wrapped library.
+.\"
+.Sh SEE ALSO
+.Xr c4ar 1 ,
+.Xr c4-archive 5
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me
+.Sh BUGS
+Scoped usage can only happen once per file, because the compiler does not
+properly deduplicate those functions, thus it will try to link with functions
+that were deduplicated by LLVM (ie. appended with a unique suffix), which then,
+of course, do not exist. As a consequence, if a source has two or more functions
+that would use the same dependency, it needs to be hoisted to a file-level use
+expression.
+
+While the
+.Ic use
+keyword itself introduces an expression as-is, that would have a normal value,
+currently it is treated as the empty expression
+.Pq Ic ";"
+which has weird properties especially in function calls. Error messages are
+similarly bogus referencing things like argument cutting when using
+.Ic use
+in a function parameter
+.Pq for whatever reason .
+
+The search path is not properly defined for
+.Pf non- Ux Ns -ish
+operating systems. Particularly Windows, which has a completely different
+directory structure.

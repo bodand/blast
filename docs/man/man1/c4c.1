@@ -1,0 +1,148 @@
+.Dd August 27, 2026
+.Dt C4C 1
+.Os
+.Sh NAME
+.Nm c4c
+.Nd compile C4 sources
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl d Ar dump
+.Op Fl g Ar debug
+.Op Fl I Ar dir | Fl I Cm -
+.Op Fl O Ar level
+.Op Fl o Ar file
+.Op Fl T Ar triplet
+.Op Fl t Ar src-type
+.Ar source
+.Sh DESCRIPTION
+The
+.Nm
+program compiles a
+.Em singular
+.Ar source
+file as C4 into an object file. It can also stop midway and dump various other
+internal representations of the same source file.
+
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl d Ar dump
+Stop after creating
+.Ar dump
+state and dump it, instead of compiling until the object file. Possible values
+are as follows:
+.Bl -tag -width "AST"
+.It AST
+Dump the parsed abstract syntax tree of the C4 source. This is an unspecified,
+but mostly human readable representation of the source code.
+.It IR
+Dump the generated LLVM IR of the C4 source. This is mostly useful for debugging
+the compiler itself as this is far removed from the original source.
+.It ASM
+.Em It is currently not implemented.
+It would dump the target assembly representation of the source code. This is
+even more removed from the source than the aforementioned IR.
+.El
+.It Fl g Ar debug
+Enables a debugging feature that helps debugging either the compiler, the
+compiled source, or both. There are various values valid for
+.Ar debug
+documented in
+.Xr c4c-debug 7 .
+.It Fl h
+Print short usage information and exit 100.
+.It Fl I Ar dir
+Add
+.Ar dir
+as a search path when resolving libraries. If the special value
+.Cm -
+is used, the search path is cleared instead. This removes system paths as well.
+.It Fl O Ar level
+Sets the optimization
+The accepted levels are as follows:
+.Bl -tag -width "0"
+.It Cm 0
+The default value \(en no optimization is performed.
+.It Cm 1 | 2 | 3
+Perform optimizations for making the code faster. Higher levels are more
+aggressive, possibly at the cost of code-size.
+.It Cm s
+Perform optimizations for making the code smaller. Balances performance with
+code size, but prefers size.
+.It Cm z
+Perform optimizations for making the code smaller. Radically reduces the code at
+the possibly cost of considerable performance.
+.El
+.It Fl o Ar file
+Set the output to
+.Ar file .
+Defaults to the source's filename with the suffix replaced to
+.Qq .o
+if not set.
+.It Fl T Ar triplet
+Sets the target triplet for LLVM. See their documentation as to what it means.
+.Pq Link in Sx SEE ALSO .
+.It Fl t Ar src-type
+Sets the source's type to
+.Ar src-type
+for this compilation. See
+.Sx Source type
+as to what this means. The accepted values are as follows:
+.Bl -tag -width lib
+.It Cm exec | Cm entry
+Compile this source as an executable entrypoint and produce a
+.Sy _c4_main
+function.
+.It Cm lib
+Compile this source as an auxiliary library source.
+.El
+.El
+
+.Ss Source type
+Since C4 does not have a deliberate executable entrypoint other than falling
+into the code and start executing, all compiled sources must be compiled as
+either
+.Em the single
+entrypoint or auxiliary library sources. Failing in either direction
+.Pq multiple entrypoints or all libraries
+will cause linker failure. If using the bundled
+.Xr c4ld 1
+linker, it has extra error messages to help make sense of these situations.
+
+There is an autodetection algorithm: if there are top-level expressions that
+are not declarations or definitions of functions, then it is compiled as an
+executable entrypoint, otherwise as library source. Note that library does not
+mean as a separately compiled library archive as produced by
+.Xr c4ar 1 ,
+but a source file
+.Ic use Ns -d
+.Pq Xr c4-use 7
+by the entrypoint to do its job.
+.Sh EXIT STATUS
+On success,
+.Nm
+exits 0. In case of failure, the following are used:
+.Bl -tag -width Ds
+.It 1
+Invalid C4 source with syntactic or semantic errors.
+.It 100
+Invalid invocation. Flags or arguments malformed or missing.
+.It 101
+Unexpected error. Please file a bug report.
+.It 111
+General runtime error: syscall failure or LLVM error.
+.El
+.Sh SEE ALSO
+.Lk https://clang.llvm.org/docs/CrossCompilation.html#target-triple LLVM Triplet usage ,
+.Xr c4ar 1 ,
+.Xr c4ld 1 ,
+.Xr c4c-debug 7
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me
+.Sh BUGS
+Currently color output cannot be turned off.
+
+The type autodetection algorithm is not yet implemented. Every source must
+manually be compiled with
+.Fl t Ar lib
+passed to not have an entrypoint.

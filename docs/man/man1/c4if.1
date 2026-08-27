@@ -1,12 +1,13 @@
-.Dd August 23, 2026
+.Dd August 27, 2026
 .Dt C4IF 1
-.Os C4 1.0.0
+.Os
 .Sh NAME
 .Nm c4if
 .Nd utility to check exposed interfaces of C4 sources
 .Sh SYNOPSIS
 .Nm
-.Op Fl ha
+.Op Fl ah
+.Op Fl I Ar dir | Fl I Cm -
 .Op Fl v Ar vis
 .Ar source
 .Sh DESCRIPTION
@@ -17,13 +18,19 @@ source file and outputs C4 code in form of a list of function declarations that
 show the interface provided by the original file.
 
 The options are as follows:
-.Bl -tag -width DS
+.Bl -tag -width Ds
 .It Fl a
 Process
 .Ar source
 as a C4 archive instead of a source file.
 .It Fl h
 Print help information and exit 100.
+.It Fl I Ar dir
+Add
+.Ar dir
+as a search path when resolving libraries. If the special value
+.Cm -
+is used, the search path is cleared instead. This removes system paths as well.
 .It Fl v Ar vis
 Instead of public and internal visibility, print only functions that have a
 visibility of
@@ -38,7 +45,34 @@ for only public functions or
 .Cm - Ns ,
 .Cm private Ns , or
 .Cm all
-for listing all functions. English word options can be passed by unique prefix.
+for listing all functions. English word values can be passed by unique prefix.
+.El
+The output of this program is always valid and parsable as C4. Therefore, it
+could be used to create files with
+.Qq embedded dependencies
+in them. That is, by replacing every
+.Cm use
+line with the output of
+.Xr c4if 1
+the file will become self-contained
+.Em with respect to compilation .
+That is, this will still require linking every dependency, unless you merge the
+object files with some utility. Expect more tools to ease generating source
+amalgamations in the future.
+
+.Sh EXIT STATUS
+On success,
+.Nm
+exits 0. In case of failure, the following are used:
+.Bl -tag -width Ds
+.It 1
+Invalid input format \(en either unparsable C4 source or malformed archive.
+.It 100
+Invalid invocation. Flags or arguments malformed or missing.
+.It 101
+Unexpected error. Please file a bug report.
+.It 111
+General runtime error: syscall failure or LLVM error.
 .El
 .Sh AUTHORS
 .An András Bodor Aq Mt bodand@proton.me

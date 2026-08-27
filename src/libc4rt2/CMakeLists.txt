@@ -270,7 +270,10 @@ target_link_libraries(c4rt2c
 generate_warnings(c4rt2c PRIVATE)
 generate_lto(c4rt2c PRIVATE)
 target_include_directories(c4rt2c
-                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+                           PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+                           )
 
 install(FILES $<TARGET_FILE:c4rt3>
         DESTINATION ${CMAKE_INSTALL_LIBDIR})

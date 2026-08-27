@@ -219,11 +219,14 @@ target_compile_definitions(c4 PRIVATE
                            C4_LEXER_ASSERT_RULES)
 target_include_directories(c4
                            PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-                           PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                           PUBLIC
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                            )
 
 install(DIRECTORY include/
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
 install(TARGETS c4
+        EXPORT c4
         ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")

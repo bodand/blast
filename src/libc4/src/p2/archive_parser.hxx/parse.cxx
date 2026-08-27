@@ -60,8 +60,9 @@ static_assert(std::endian::native == std::endian::little
 namespace {
 	using namespace c4::p2::a;
 
-	constexpr uint16_t mask_native = 0b1000'0000'0000'0000;
-	constexpr uint16_t mask_operator = 0b0100'0000'0000'0000;
+	//                                     0123 4567 8901 2345
+	constexpr uint16_t mask_native =     0b1000'0000'0000'0000;
+	constexpr uint16_t mask_operator =   0b0100'0000'0000'0000;
 	constexpr uint16_t mask_left_assoc = 0b0010'0000'0000'0000;
 	constexpr uint16_t mask_precedence = 0b0000'0000'0111'1111;
 

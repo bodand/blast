@@ -1,0 +1,99 @@
+.Dd August 27, 2026
+.Dt C4-ARCHIVE 1
+.Os
+.Sh NAME
+.Nm c4-archive
+.Nd C4 static library files
+.Sh DESCRIPTION
+The files used as static libraries with C4 use the native format of the system
+.Xr ar 1
+utility. This is some descendant of either a
+.Bx
+or SysV/GNU style archive tool
+.Pq even on Windows .
+
+While these files usually have the suffix
+.Pq extension in other parlance
+of
+.Qq .c4a
+to signify they are not ordinary archives. They, however, are in almost all
+cases usable with tools designed for normal archive files. One needs to pay
+attention as to not accidentally strip out the metadata described below, as some
+operations with C4 tools require it to be present for convenient use, even if
+in all cases it can be worked around.
+
+.Ss Metadata sections
+The C4 archive specifies some sections prefixed with
+.Qq .c4
+to store extraneous information in these object files and archives. When
+consuming archives for any use, all object files are to be looked up in an
+archive. This allows creating archives even with the native system archiver
+.Pq that is Xr ar 1
+instead of the C4 tools'
+.Xr c4ar 1
+utility. All fields are interpreted as if they were concatenated. The
+.Xr c4ar 1
+tool mentioned above physically strips and concatenates these for easier
+processing into a fabricated object file, which results in equivalent behavior.
+
+These sections always use the target's native object file format
+.Pq eg. Xr elf 5 for most Ux descendants
+as the carrier within archives.
+
+The following sections are understood:
+.Bl -tag -width Ds
+.It Sy .c4xport
+A list of symbols
+.Pq functions
+exported from this object file. They are encoded in a binary format that is the
+following:
+.Bl -tag -width "length"
+.It Va length
+The length of the following symbol name in 32bit little endian unsigned integer.
+.It Va name
+The name of the symbol using the number of bytes described by length. It is
+.Em NOT
+.Dv NUL
+terminated.
+.It Va arity
+The arity of the symbol in a 32bit little endian unsigned integer.
+.It Va metadata
+The metadata is two bytes, stored as a 16bit little endian unsigned integer. The
+following information is encoded in the bits by index \(en after converting to
+native format.
+.Bl -tag -width x-xx
+.It 0
+Set if the symbol is a native symbol.
+.It 1
+Set if the symbol is a binary operator.
+.It 2
+Set if the symbol is a left associative binary operator.
+.It 3\(en8
+Reserved, contain garbage. Or the recipe for immortality. We'll never know.
+.It 9\(en15
+Set to the precedence of a binary operator. The maximum value is 100, but all
+seven bits are reserved for this purpose because of obvious reasons.
+.El
+.El
+.It Sy .c4mport
+A long string of
+.Dv NUL
+terminated strings which refer to the names of the imported libraries when
+compiling this project. If this does not exist or is empty, it is taken as no
+.Ic use Ns -s
+were made to libraries. The names are listed as used and not resolved.
+.El
+
+Note that fields are named in such ways to allow XCOFF and PE/COFF object format
+compatibility used by AIX and Windows respectively. They don't spill out
+section names shorter than 8 bytes into a separate string table, making
+processing easier.
+.Sh SEE ALSO
+.Xr ar 1 ,
+.Xr c4ar 1 ,
+.Xr elf 5 ,
+.Xr c4-use 7
+.Sh HISTORY
+The archive format's special fields got first introduced in C4 v0.3.0.
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me

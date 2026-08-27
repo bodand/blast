@@ -30,7 +30,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 4.0)
 endif ()
 
 project(blAST
-        VERSION 0.1.2
+        VERSION 0.3.0
         DESCRIPTION "Scriptable AST scanner"
         LANGUAGES C CXX)
 
@@ -156,6 +156,12 @@ if (TARGET raylib)
 endif ()
 
 add_subdirectory(test)
+add_subdirectory(docs)
+
+install(EXPORT c4
+        FILE c4.cmake
+        NAMESPACE c4::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/c4)
 
 install(EXPORT c4std
         FILE c4std.cmake

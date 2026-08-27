@@ -122,19 +122,19 @@ namespace {
 
 	[[noreturn]] void
 	usage(const char* argv0) {
-		constexpr int w = 7;
+		constexpr int w = 11;
 		std::cerr << "usage: " << argv0 << " [-dEghIOoT] <source>\n"
 				<< "\n"
 				<< "options:\n"
 				<< std::left // don't need to restore, we are exiting imminently
 				<< argdesc(-d, type, Set dump type written to output. By default it is object code.)
-				<< argdesc(-E, , Compile source as executable entrypoint.)
 				<< argdesc(-g, debug, Enable debugging flag for compiling this TU. See c4c-debug(7).)
 				<< argdesc(-h, , Print this help and exit 100.)
 				<< argdesc(-I, dir, Add dir for finding C4 library archives.)
-				<< argdesc(-O, level, Set optimization level. Values are 0-3, s, or z.)
+				<< argdesc(-O, level, Set optimization level. Values are [0], 1-3, s, or z.)
 				<< argdesc(-o, file, The file to use as output. A bare - means STDOUT. Defaults to source with .o suffix.)
-				<< argdesc(-T, triplet, Set target triplet to trp. Same format as LLVM.);
+				<< argdesc(-T, triplet, Set target triplet to triplet. Same format as LLVM.)
+				<< argdesc(-t, src-type, Set source type to compile as. Values are [exec] or lib.);
 		exit(100);
 	}
 
@@ -185,23 +185,20 @@ main(int argc, const char* const* argv) try {
 	bool debug_trace = false;
 	bool debug_gc = false;
 
-	bool build_entrypoint = false;
+	bool build_entrypoint = true;
 
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv[0];
 	for (int opt;
-	     (opt = subgetopt_r(argc, argv, "d:Eg:hI:O:o:T:", &opts)) != -1;) {
+	     (opt = subgetopt_r(argc, argv, "d:g:hI:O:o:T:t:", &opts)) != -1;) {
 		switch (static_cast<char>(opt)) {
 		case 'd':
 			dump_type = opts.arg;
 			if (dump_type == "AST") break;
 			if (dump_type == "IR") break;
-			if (dump_type == "ASM") break;
-			if (dump_type == "LTO") break;
-			argdie("-d", "expected one of AST, IR, ASM, or LTO");
-		case 'E':
-			build_entrypoint = true;
-			break;
+			// if (dump_type == "ASM") break;
+			// if (dump_type == "LTO") break;
+			argdie("-d", "expected one of AST, IR");
 		case 'g': {
 			std::string_view tmp = opts.arg;
 			if (tmp == "call-trace") {
@@ -251,6 +248,18 @@ main(int argc, const char* const* argv) try {
 		case 'T':
 			target_arch = opts.arg;
 			break;
+		case 't': {
+			std::string_view tmp = opts.arg;
+			if (tmp == "entry" || tmp == "exec") {
+				build_entrypoint = true;
+				break;
+			}
+			if (tmp == "lib") {
+				build_entrypoint = false;
+				break;
+			}
+			argdie("-t", "unknown source type option, see c4c(1) for valid values");
+		}
 
 		case 'h':
 		default:
@@ -302,7 +311,7 @@ main(int argc, const char* const* argv) try {
 	const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
 	if (!target) {
 		std::cerr << "fatal: " << target_error << "\n";
-		return 2;
+		return 100;
 	}
 
 	llvm::TargetOptions target_options;
@@ -374,7 +383,7 @@ main(int argc, const char* const* argv) try {
 	if (machine->addPassesToEmitFile(pm, out, nullptr,
 	                                 llvm::CodeGenFileType::ObjectFile)) {
 		std::cerr << "\033[31mfatal:\033[0m target machine cannot produce object files. Bummer.\n";
-		return 100;
+		return 111;
 	}
 
 	pm.run(module);
