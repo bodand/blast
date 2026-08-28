@@ -117,7 +117,6 @@ target_link_libraries(c4-mio INTERFACE
 
 ## LLVM ##
 find_package(LLVM CONFIG REQUIRED PATHS /usr/lib/llvm/22/lib/cmake/llvm NO_DEFAULT_PATH)
-#find_library(LLVM_OBJECT_LIB NAMES LLVMObject PATHS /usr/lib/llvm/22/lib)
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
 ## Clang ##
@@ -128,7 +127,11 @@ target_compile_definitions(c4_llvm INTERFACE ${LLVM_DEFINITIONS_LIST})
 target_include_directories(c4_llvm SYSTEM INTERFACE
                            ${LLVM_INCLUDE_DIRS}
                            ${CLANG_INCLUDE_DIRS})
+target_link_directories(c4_llvm INTERFACE ${LLVM_LIBRARY_DIRS})
 target_link_libraries(c4_llvm INTERFACE clang-cpp LLVM)
+
+add_library(c4_lld INTERFACE)
+target_link_libraries(c4_lld INTERFACE c4_llvm lldELF lldMachO lldCOFF lldMinGW lldCommon) # WASM not because we can't compile to it anyhow
 
 ## Vendored special sub-libraries
 add_subdirectory(src/libsgetopt) # sgetopt from skalibs
@@ -142,6 +145,7 @@ add_subdirectory(src/libc4rt2)
 add_subdirectory(src/c4c)
 add_subdirectory(src/c4ar)
 add_subdirectory(src/c4if)
+add_subdirectory(src/c4ld)
 #add_subdirectory(src/c4i)
 
 ## C4 libraries

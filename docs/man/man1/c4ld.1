@@ -1,0 +1,59 @@
+.Dd August 28, 2026
+.Dt C4C 1
+.Os
+.Sh NAME
+.Nm c4ld
+.Nd link C4 programs
+.Sh SYNOPSIS
+.Nm
+.Op Fl #+h
+.Op Fl I Ar dir | Fl I Cm -
+.Op Fl j Ar n
+.Op Fl l Ar c4lib
+.Op Fl O
+.Op Fl o Ar out
+.Op Fl S Ar stdrt
+.Op Fl T Ar triple
+.Op Fl t Ar type
+.Ar objects ...
+.Op lld-flags
+.Sh DESCRIPTION
+The
+.Nm
+utility wraps a linker and provides an interface that is more natural to use via
+the command line for working with C4 projects. It performs library lookups
+according to C4's semantics. Along with the passed objects it
+.Pq by default
+links the runtime library, and default standard libraries.
+
+Documentation is
+.Ud
+.Sh EXIT STATUS
+On success,
+.Nm
+exits 0. In case of failure, the following are used:
+.Bl -tag -width Ds
+.It 100
+Invalid invocation. Flags or arguments malformed or missing.
+.It 101
+Unexpected error. Please file a bug report.
+.It 111
+General runtime error: syscall failure or LLVM error.
+.El
+.Sh AUTHORS
+.An András Bodor Aq Mt bodand@proton.me
+.Sh BUGS
+.Em Warning:
+this is a massive monstrosity of a binary, including its dependencies. The
+toolchain uses LLVM, so that kind of makes sense. Yet, this
+.Dq linker
+relies on both the clang and lld libraries. This is because the simple act of
+doing
+.Fl l Ar c
+is such an abhorrently ungodly task, that one with a sane mind should not try to
+embark on. Natch, if you care not for portability, that eases things. Even then,
+however, there are the libc entry points and whatnot, like
+.Pa /usr/lib/crt1.o ,
+.Pq or is it Pa /usr/lib64/Scrt1.o?
+which makes this an effort of exceedingly diminishing returns. So we need to get
+clang. And the lld linker to actually link.

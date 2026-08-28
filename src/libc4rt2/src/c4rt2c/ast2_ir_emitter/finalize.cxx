@@ -61,25 +61,9 @@ c4rt2c::ast2_ir_emitter::finalize() {
 		merged_table.insert(merged_table.end(), enty.begin(), enty.end());
 	});
 
-	const auto exports = llvm::ConstantDataArray::get(_context, merged_table);
-	const auto exports_global =
-			// do not fret: the module yoinks ownership
-			new llvm::GlobalVariable(_module,
-			                         exports->getType(),
-			                         true,
-			                         llvm::GlobalValue::PrivateLinkage,
-			                         exports,
-			                         "_c4_exports_table");
-
-	if (const auto& triple = _module.getTargetTriple();
-		triple.isOSBinFormatMachO()) {
-		exports_global->setSection("__DWARF,__c4xport");
-	}
-	else {
-		exports_global->setSection(".c4xport");
-	}
-
-	llvm::appendToUsed(_module, exports_global);
+	const auto assembly = encode_xport(_module.getTargetTriple(), merged_table);
+	if (!assembly) throw std::runtime_error(assembly.error());
+	_module.appendModuleInlineAsm(*assembly);
 
 	_di_builder->finalize();
 }

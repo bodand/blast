@@ -151,9 +151,9 @@ fmt::formatter<c4::source_diagnostic>::format(const c4::source_diagnostic& diag,
 
 	if (pos.expanded_range.empty()) {
 		ret = fmt::format_to(
-				ret, "{}:{}: {} {}\n", pos.filename(), line_number,
-				prefix_from_type(diagnostic_type), diagnostic_string
-			);
+			ret, "{}:{}: {} {}\n", pos.filename(), line_number,
+			prefix_from_type(diagnostic_type), diagnostic_string
+		);
 		return ret;
 	}
 
@@ -219,6 +219,22 @@ c4::position::pseudo_position() {
 C4_ATTR_CONST c4::position
 c4::position::invalid_file_position(p2::named_source& src) {
 	return {"", 1, 1, 1, 1, "", &src};
+}
+
+c4::position
+c4::position::command_line_position(std::string_view merged_args,
+                                    size_t index,
+                                    size_t index_end,
+                                    const char* arg) {
+	static p2::invalid_file_source invalid_file_source("<command-line>");
+	std::string_view arg_str{arg};
+	return {
+		arg_str,
+		1, index,
+		1, index_end,
+		merged_args,
+		&invalid_file_source
+	};
 }
 
 c4::position::position(p2::named_source* source)

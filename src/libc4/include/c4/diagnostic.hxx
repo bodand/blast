@@ -81,6 +81,12 @@ namespace c4 {
 		static position
 		invalid_file_position(p2::named_source& src);
 
+		static position
+		command_line_position(std::string_view merged_args,
+		                      size_t index,
+		                      size_t index_end,
+		                      const char* arg);
+
 		explicit
 		position(p2::named_source* source);
 

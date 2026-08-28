@@ -43,7 +43,7 @@ function(add_c4_library)
         list(APPEND objects "${obj}")
         add_custom_command(OUTPUT "${obj}"
                            VERBATIM COMMAND
-                           c4c
+                           c4c -tlib
                            $<$<CONFIG:Debug>:-O0>
                            $<$<CONFIG:MinSizeRel>:-Os>
                            $<$<CONFIG:Release>:-O3>

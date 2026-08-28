@@ -197,6 +197,7 @@ add_library(c4
             src/source_file/resolve_source_use.cxx
             src/source_file/source_file.cxx
             include/c4/cc_attr.hxx
+            include/c4/demangler.hxx
             )
 configure_file(src/p2/source_resolver/source-config.in.h
                source-config.h

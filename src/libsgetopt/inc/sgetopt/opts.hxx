@@ -37,6 +37,7 @@
 #define BLAST_SGETOPT_OPTS_HXX
 
 #include <concepts>
+#include <iostream>
 #include <ostream>
 
 extern "C" const char* argv0;
@@ -56,12 +57,12 @@ argdie(std::string_view option, std::string_view message) {
 
 template <std::integral I>
 void
-die_or_parse(std::string_view opt, std::string_view option_view, I& output) {
+die_or_parse(const std::string_view flag, std::string_view option_view, I& output) {
 	if (auto [ptr, ec] = std::from_chars(option_view.data(),
 	                                     option_view.data() + option_view.size(),
 	                                     output);
 		ec != std::errc{} || *ptr != '\0') {
-		argdie(opt, std::make_error_code(ec).message());
+		argdie(flag, std::make_error_code(ec).message());
 	}
 }
 

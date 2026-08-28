@@ -38,6 +38,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <expected>
+#include <string>
 
 #include <c4rt2c/runtime_fn.hxx>
 
@@ -52,6 +54,18 @@ namespace llvm {
 }
 
 namespace c4rt2c {
+	std::expected<std::string, std::string>
+	encode_xport(const llvm::Triple& triple,
+	             std::span<const char> data);
+
+	inline std::expected<std::string, std::string>
+	encode_xport(const llvm::Triple& triple,
+	             const std::span<const unsigned char> data) {
+		return encode_xport(triple,
+		                    std::span(reinterpret_cast<const char*>(data.data()),
+		                              data.size()));
+	}
+
 	struct runtime_emitter {
 		runtime_emitter(llvm::LLVMContext& ctx,
 		                llvm::Module& module,

@@ -85,6 +85,43 @@ namespace c4::p2 {
 			return {};
 		}
 
+		std::optional<std::filesystem::path>
+		resolve_link_library(const position& cli_pos,
+		                     const std::string_view library_name) const {
+			std::filesystem::path library_path;
+			if (library_name.starts_with(":")) library_path = library_name.substr(1);
+			else if (library_name.starts_with("/")) library_path = library_name;
+			else (library_path = library_name) += ".c4a";
+
+			if (library_path.is_absolute()) {
+				if (exists(library_path)) return library_path;
+
+				_diag.error(cli_pos, "could not resolve used file \"{}\" from \"{}\"",
+								library_name, cli_pos.filename());
+				return {};
+			}
+
+			const auto expected = resolve_paths(library_path.c_str());
+			const auto it = std::ranges::find_if(expected, [&](const auto& path) {
+				return exists(path);
+			});
+			if (it != end(expected)) {
+				if (_trace_loads) {
+					_diag.note(cli_pos,
+					           "resolved \"{}\" from \"{}\" as {}",
+					           library_name,
+					           cli_pos.filename(),
+					           it->c_str());
+				}
+
+				return *it;
+			}
+
+			_diag.error(cli_pos, "could not resolve used file \"{}\" from \"{}\"",
+			            library_name, cli_pos.filename());
+			return {};
+		}
+
 		source_file
 		open_source(const std::filesystem::path& path) const;
 
@@ -98,13 +135,17 @@ namespace c4::p2 {
 		std::vector<std::filesystem::path>
 		resolve_expected(const source_file& initiator,
 		                 const bool library,
-		                 std::string_view filename) const {
+		                 const std::string_view filename) const {
 			if (!library) return {initiator.resolve_source_use(filename)};
+			return resolve_paths(filename);
+		}
 
+		std::vector<std::filesystem::path>
+		resolve_paths(const std::string_view filename) const {
 			std::vector<std::filesystem::path> paths;
 			paths.reserve(_search_paths.size());
 			std::ranges::transform(_search_paths, std::back_inserter(paths),
-			                       [&](const auto& path) { return path / filename; });
+			                       [=](const auto& path) { return path / filename; });
 			return paths;
 		}
 

@@ -60,6 +60,8 @@
 
 #include <libassert/assert.hpp>
 
+#include <c4rt2c/runtime_emitter.hxx>
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -349,51 +351,10 @@ main(int argc, const char* const* argv) try {
 	module.setDataLayout(machine->createDataLayout());
 	module.setTargetTriple(llvm_triple);
 
-	std::string assembly;
-	if (llvm_triple.isOSBinFormatELF()) {
-		assembly += ".section .c4xport,\"\",@progbits\n";
-	}
-	else if (llvm_triple.isOSBinFormatMachO()) {
-		assembly += ".section __DWARF,__c4xport,regular,debug\n";
-	}
-	else if (llvm_triple.isOSBinFormatCOFF()) {
-		assembly += ".section .c4xport,\"dr\"\n";
-	}
-	else if (llvm_triple.isOSBinFormatWasm()) {
-		assembly += ".section .custom_section.c4xport,\"\",@\n";
-	}
-	else if (llvm_triple.isOSBinFormatXCOFF()) {
-		assembly += ".csect .c4xport[RO]\n";
-	}
-	else {
-		die(100, "{}: fatal: unsupported target format: {}: please patch LLVM's "
-		    "inline assembly to support your arch",
-		    llvm_triple.getTriple());
-	}
+	const auto assembly = c4rt2c::encode_xport(llvm_triple, merged_symbol_buffer);
+	if (!assembly) die(100, "{}: fatal: {}", assembly.error());
 
-	std::vector<char> formatted_symbols;
-	formatted_symbols.resize(merged_symbol_buffer.size() * 5 + 1);
-
-	auto to = formatted_symbols.data();
-	auto begin = formatted_symbols.data();
-	std::ranges::for_each(merged_symbol_buffer, [&](auto c) {
-		const auto uc = static_cast<unsigned char>(c);
-		to = std::copy_n("0x", 2, to);
-		if (uc < 16) *to++ = '0';
-		auto [ptr, y] = std::to_chars(to, to + 2, uc, 16);
-		to = ptr;
-		*to++ = ',';
-	});
-	ASSERT(to >= begin, "writing stuff only goes forward");
-
-	assembly += ".byte ";
-	if (to - begin != 0) {
-		assembly.append(formatted_symbols.data(),
-		                static_cast<size_t>(to - begin - 1)); // skip last ','
-	}
-	assembly += "\n";
-
-	module.appendModuleInlineAsm(assembly);
+	module.appendModuleInlineAsm(*assembly);
 
 	llvm::SmallString<8192> pseudo_file_buf;
 	llvm::raw_svector_ostream out(pseudo_file_buf);
