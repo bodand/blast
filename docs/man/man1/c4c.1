@@ -89,6 +89,8 @@ for this compilation. See
 .Sx Source type
 as to what this means. The accepted values are as follows:
 .Bl -tag -width lib
+.It Cm auto
+Automatically tries to detect what kind of source this is. See below.
 .It Cm exec | Cm entry
 Compile this source as an executable entrypoint and produce a
 .Sy _c4_main
@@ -111,8 +113,10 @@ linker, it has extra error messages to help make sense of these situations.
 
 There is an autodetection algorithm: if there are top-level expressions that
 are not declarations or definitions of functions, then it is compiled as an
-executable entrypoint, otherwise as library source. Note that library does not
-mean as a separately compiled library archive as produced by
+executable entrypoint, otherwise as library source. Except if there are no
+let-s either in the source, in which case it is an empty executable entrypoint.
+Note that library here does not mean as a separately compiled library archive as
+produced by
 .Xr c4ar 1 ,
 but a source file
 .Ic use Ns -d
@@ -141,8 +145,3 @@ General runtime error: syscall failure or LLVM error.
 .An András Bodor Aq Mt bodand@proton.me
 .Sh BUGS
 Currently color output cannot be turned off.
-
-The type autodetection algorithm is not yet implemented. Every source must
-manually be compiled with
-.Fl t Ar lib
-passed to not have an entrypoint.

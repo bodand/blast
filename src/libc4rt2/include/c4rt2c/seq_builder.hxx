@@ -61,12 +61,16 @@ namespace c4rt2c {
 
 		void
 		build(llvm::IRBuilder<>& builder,
-		      runtime_emitter& rt,
-		      llvm::Value* K) const;
+				runtime_emitter& rt,
+				llvm::Value* K) const;
 
 		~seq_builder();
 
+		[[nodiscard]] bool
+		empty() const noexcept { return _empty; }
+
 	private:
+		bool _empty{true};
 		std::unique_ptr<seq_node> _root;
 		std::unique_ptr<seq_node>* _last;
 	};

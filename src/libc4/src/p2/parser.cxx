@@ -410,6 +410,7 @@ c4::p2::parser::parse_let_expression() {
 	if (const auto let = expect_token<tokens::let>();
 		!let)
 		report_failure(_diag, let);
+	_has_local_let = true;
 	next_relevant();
 
 	auto vis = ast2::let_expression::v_internal;

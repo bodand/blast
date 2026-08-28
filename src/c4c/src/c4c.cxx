@@ -138,10 +138,12 @@ namespace {
 		exit(100);
 	}
 
+	enum class build_type { exec_entry, lib_entry, auto_detect };
+
 	std::optional<std::string>
-	make_libinit_name(const bool build_entrypoint,
+	make_libinit_name(const build_type build_entrypoint,
 	                  const std::filesystem::path& src) {
-		if (build_entrypoint) return {};
+		if (build_entrypoint == build_type::exec_entry) return "_c4_main";
 
 		const auto rel = relative(src).make_preferred().replace_extension();
 		auto rel_str = rel.string();
@@ -185,7 +187,7 @@ main(int argc, const char* const* argv) try {
 	bool debug_trace = false;
 	bool debug_gc = false;
 
-	bool build_entrypoint = true;
+	build_type build_entrypoint = build_type::auto_detect;
 
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv[0];
@@ -251,11 +253,15 @@ main(int argc, const char* const* argv) try {
 		case 't': {
 			std::string_view tmp = opts.arg;
 			if (tmp == "entry" || tmp == "exec") {
-				build_entrypoint = true;
+				build_entrypoint = build_type::exec_entry;
 				break;
 			}
 			if (tmp == "lib") {
-				build_entrypoint = false;
+				build_entrypoint = build_type::lib_entry;
+				break;
+			}
+			if (tmp == "auto") {
+				build_entrypoint = build_type::auto_detect;
 				break;
 			}
 			argdie("-t", "unknown source type option, see c4c(1) for valid values");
@@ -343,19 +349,21 @@ main(int argc, const char* const* argv) try {
 
 	pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
 
-	const bool decl_only_rt = !build_entrypoint;
+	const bool decl_only_rt = build_entrypoint == build_type::lib_entry;
 	c4rt2c::runtime_emitter rt_emitter(context, module, builder, decl_only_rt);
 	rt_emitter.set_debug_trace(debug_trace);
 	rt_emitter.set_memory_debug(debug_gc);
 
 	const auto library_init_fn = make_libinit_name(build_entrypoint, src_path);
 	c4rt2c::ast2_ir_emitter ir(module, builder, std::move(rt_emitter), library_init_fn);
+	ir.has_local_let(parser.has_local_let());
 	ir.init(src_path);
 
 	ir.declare_symbols(ast_context);
 	std::ranges::for_each(script, [&ir](const auto& expr) { expr->accept(ir); });
 
-	ir.finalize();
+	ir.finalize(build_entrypoint == build_type::exec_entry,
+	            build_entrypoint == build_type::lib_entry);
 
 	llvm::ModulePassManager mod_pm;
 	if (opt_level == llvm::OptimizationLevel::O0) {

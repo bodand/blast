@@ -35,15 +35,58 @@
  */
 
 #include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/Function.h>
 #include <llvm/Transforms/Utils/ModuleUtils.h>
 
 #include <c4rt2c/ast2_ir_emitter.hxx>
 #include <llvm/IR/Module.h>
 
 void
-c4rt2c::ast2_ir_emitter::finalize() {
-	_seq_builder.build(_builder, _runtime, _mainK);
-	if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+c4rt2c::ast2_ir_emitter::
+finalize(const bool want_main,
+         const bool want_lib) {
+	if (want_main) {
+		// use explicitly asked for main (=exec entry), give it to them
+		_c4_main->setName("_c4_main");
+		_seq_builder.build(_builder, _runtime, _mainK);
+		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+	}
+	else if (want_lib) {
+		// use explicitly asked for library (=lib entry), give it to them
+		_seq_builder.build(_builder, _runtime, _mainK);
+		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+	}
+	else {
+		// we need to figure out what the user meant from vibes
+		const bool did_stuff_in_entry = !_c4_main->getEntryBlock().empty()
+		                                || !_seq_builder.empty();
+		const bool defined_a_function = _has_local_let;
+
+		if (did_stuff_in_entry) {
+			// if there is stuff in the entry, we need to keep it anyhow. At some
+			// point in the future, library entry points may become non-dead code
+			_c4_main->setName("_c4_main");
+			_seq_builder.build(_builder, _runtime, _mainK);
+			if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+		}
+		else {
+			// we don't have anything in the entry point, which would suggest lib
+			// but if don't have functions, an empty file is an exec
+			if (defined_a_function) {
+				// we have a function, but nothing in the entry point -- this means
+				// the most likely use is a library, so we can just drop the empty
+				// library entry point
+				_c4_main->eraseFromParent();
+			}
+			else {
+				// and so it is an exec, we need to finalize the entrypoint which
+				// will ultimately do absolutely nothing, but alas
+				_c4_main->setName("_c4_main");
+				_seq_builder.build(_builder, _runtime, _mainK);
+				if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
+			}
+		}
+	}
 
 	std::ranges::sort(_export_table);
 	const auto [from, to] = std::ranges::unique(_export_table);

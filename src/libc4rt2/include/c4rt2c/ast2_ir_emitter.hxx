@@ -41,6 +41,7 @@
 #include <string_view>
 
 #include <c4/ast2/fwd.hxx>
+#include <c4/p2/parser.hxx>
 
 #include <c4rt2c/fn_call_gen.hxx>
 #include <c4rt2c/runtime_emitter.hxx>
@@ -70,9 +71,9 @@ namespace c4rt2c {
 		using builder_type = llvm::IRBuilder<>;
 
 		ast2_ir_emitter(llvm::Module& module,
-		                builder_type& builder,
-		                runtime_emitter&& rt,
-		                const std::optional<std::string>& libinit_name);
+							 builder_type& builder,
+							 runtime_emitter&& rt,
+							 const std::optional<std::string>& libinit_name);
 
 		void do_visit(const c4::ast2::binary_op_call& obj) override;
 
@@ -104,10 +105,15 @@ namespace c4rt2c {
 		init(const std::filesystem::path& fname);
 
 		void
-		finalize();
+		finalize(bool want_main, bool want_lib);
 
 		llvm::Module&
 		module() const noexcept { return _module; }
+
+		void
+		has_local_let(const bool has_local_let) {
+			_has_local_let = has_local_let;
+		}
 
 	private:
 		llvm::LLVMContext& _context;
@@ -120,6 +126,7 @@ namespace c4rt2c {
 		llvm::Function* _c4_main;
 		llvm::Value* _mainK;
 		seq_builder _seq_builder;
+		bool _has_local_let{true};
 
 		std::vector<const c4::ast2::expression*> _expression_stack;
 

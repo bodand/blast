@@ -46,6 +46,7 @@ namespace c4rt2c {
 void
 c4rt2c::seq_builder::
 push(const c4::ast2::expression* expr, ast2_ir_emitter& ir) {
+	_empty = false;
 	auto next = (*_last)->push(expr, ir);
 	if (!next) return;;
 
@@ -56,6 +57,7 @@ push(const c4::ast2::expression* expr, ast2_ir_emitter& ir) {
 void
 c4rt2c::seq_builder::
 push(const c4::ast2::expression* val) {
+	_empty = false;
 	auto next = (*_last)->push(val);
 	_last->swap(next);
 	if (const auto push_to = (*_last)->last()) _last = push_to;

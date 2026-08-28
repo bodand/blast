@@ -112,11 +112,14 @@ namespace c4::p2 {
 		std::vector<ast2::expression*>
 		parse_script();
 
+		[[nodiscard]] bool
+		has_local_let() const noexcept { return _has_local_let; }
+
 	private:
 		static void
 		set_symbol_stack(const ast2::symbol& symbol,
-							  const ast2::let_expression* let,
-							  const ast2::let_expression* memory);
+		                 const ast2::let_expression* let,
+		                 const ast2::let_expression* memory);
 
 		ast2::expression*
 		parse_expression_of_let(const ast2::symbol& symbol,
@@ -164,6 +167,7 @@ namespace c4::p2 {
 
 		ast2::let_expression* _within_let = nullptr;
 		ast2::block* _within_block = nullptr;
+		bool _has_local_let{};
 
 		diagnostics_engine& _diag;
 		ast2::ast_context& _context;
