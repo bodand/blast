@@ -133,7 +133,7 @@ namespace {
 				<< argdesc(-I, dir, Add dir for finding C4 library archives.)
 				<< argdesc(-O, level, Set optimization level. Values are [0], 1-3, s, or z.)
 				<< argdesc(-o, file, The file to use as output. A bare - means STDOUT. Defaults to source with .o suffix.)
-				<< argdesc(-T, triplet, Set target triplet to triplet. Same format as LLVM.)
+				<< argdesc(-T, triple, Set target triple. Same format as LLVM.)
 				<< argdesc(-t, src-type, Set source type to compile as. Values are [exec] or lib.);
 		exit(100);
 	}
@@ -187,7 +187,7 @@ main(int argc, const char* const* argv) try {
 	bool debug_trace = false;
 	bool debug_gc = false;
 
-	build_type build_entrypoint = build_type::auto_detect;
+	auto build_entrypoint = build_type::auto_detect;
 
 	subgetopt opts = SUBGETOPT_ZERO;
 	opts.prog = argv[0];

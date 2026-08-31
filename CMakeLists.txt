@@ -153,6 +153,7 @@ add_subdirectory(src/libarray.c4)
 add_subdirectory(src/libstd4.c4)
 add_subdirectory(src/libblast.c4)
 add_subdirectory(src/libtap.c4)
+add_subdirectory(src/libprcmgr.c4)
 
 find_package(raylib)
 if (TARGET raylib)

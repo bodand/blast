@@ -34,7 +34,7 @@
 function(add_c4_library)
     set(opts "")
     set(oneFlags "TARGET")
-    set(manyFlags "FLAGS;C_SOURCES;C4_SOURCES;C4_DEPENDS")
+    set(manyFlags "FLAGS;C_LIBS;C_SOURCES;C4_SOURCES;C4_DEPENDS")
     cmake_parse_arguments(PARSE_ARGV 0 cc4 "${opts}" "${oneFlags}" "${manyFlags}")
 
     set(objects)
@@ -67,7 +67,7 @@ function(add_c4_library)
                     ${cc4_C_SOURCES})
         generate_warnings(${cobjs} PRIVATE)
         target_link_libraries(${cobjs} PUBLIC
-                              c4rt3 BDWgc::gc)
+                              c4rt3 BDWgc::gc ${cc4_C_LIBS})
         target_include_directories(${cobjs} PUBLIC
                                    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
                                    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)

@@ -1,0 +1,20 @@
+# Utilities for spawning proceses.
+use <std4.c4a>
+use <array.c4a>
+
+let -native raw_environ/0;
+
+let -native ska_spawn/5;
+
+
+let +process_spawn_argv/1 { |argv|
+	ska_spawn 
+		car argv
+		list_to_array argv
+		raw_environ
+		0
+		new_array
+}
+
+let +native wait_pid/1;
+
