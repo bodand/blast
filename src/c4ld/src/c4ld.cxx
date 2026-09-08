@@ -40,6 +40,7 @@
 
 #include <sgetopt/opts.hxx>
 #include <sgetopt/sgetopt.h>
+#include <sgetopt/opts_helper.hxx>
 
 #include <llvm/Support/Process.h>
 #include <llvm/Support/raw_ostream.h>
@@ -84,89 +85,6 @@ namespace {
 		exit(100);
 	}
 
-	struct opts_helper {
-		opts_helper(int& argc, const char* const*& argv)
-			: _argc(argc)
-			, _argv(argv)
-			, _merged(std::accumulate(argv, argv + argc, std::string{}, [](std::string&& acc, const char* arg) {
-				// if (acc.empty()) return std::string(arg);
-				return std::format("{} {}", std::move(acc), arg);
-			})) {
-			opts.prog = argv0;
-		}
-
-		char
-		step(const std::string_view ops) {
-			const int opt = subgetopt_r(_argc, _argv, ops.data(), &opts);
-			if (opt == -1) return 0;
-
-			_option[0] = static_cast<char>(opt);
-			return option_name();
-		}
-
-		c4::position
-		here() const {
-			const auto [index, index_end] = arg_indices();
-			return c4::position::command_line_position(_merged,
-			                                           index,
-			                                           index_end,
-			                                           _option);
-		}
-
-		std::string_view
-		arg() const {
-			return std::string_view(opts.arg);
-		}
-
-		void
-		shift() const {
-			_argc -= opts.ind;
-			_argv += opts.ind;
-		}
-
-	private:
-		std::pair<size_t, size_t>
-		arg_indices() const {
-			auto index = nth_arg_pos(opts.pos, opts.ind);
-			auto index_end = index;
-			if (opts.arg) {
-				--index_end;
-				index -= std::strlen(opts.arg);
-				do --index;
-				while (_merged[index - 1] != option_name());
-			}
-			while (_merged[index - 1] == option_name()
-			       || _merged[index - 1] == '-')
-				--index;
-			++index;
-
-			return {index, index_end};
-		}
-
-		std::size_t
-		nth_arg_pos(const unsigned pos, const int ind) const {
-			return std::accumulate(_argv,
-			                       _argv + ind,
-			                       std::size_t{},
-			                       [](const auto acc, const char* arg) {
-				                       return acc + 1 + std::strlen(arg);
-			                       }) + 1 + pos;
-		}
-
-		char
-		option_name() const noexcept {
-			if (!opts.problem) return _option[0];
-			if (opts.problem == '-') return _option[0];
-			return opts.problem;
-		}
-
-		char _option[2] = {'?', 0};
-		int& _argc;
-		const char* const*& _argv;
-		subgetopt opts = SUBGETOPT_ZERO;
-		std::string _merged;
-	};
-
 	template<std::integral I>
 	bool
 	try_parse(std::string_view str, I& out, const char** endptr = nullptr) {
@@ -198,7 +116,7 @@ main(int argc, const char* const* argv) {
 	std::vector<std::string> libraries;
 
 	std::string suggestion_str;
-	opts_helper helper{argc, argv};
+	sopts::opts_helper helper{argc, argv};
 	while (char opt = helper.step("#+hI:j:L:l:Oo:S:T:t:")) {
 		switch (opt) {
 		case '#':
@@ -264,6 +182,10 @@ main(int argc, const char* const* argv) {
 			}
 			if (helper.arg() == "no-rt3") {
 				erase(standard_libs, ":c4rt3.a");
+				break;
+			}
+			if (helper.arg() == "none") {
+				standard_libs.clear();
 				break;
 			}
 			diag.error(helper.here(), "unrecognized option {} for -S", helper.arg());

@@ -151,6 +151,11 @@ c4::ast2::ast_context::build_expression(binary_op_call* exp, std::vector<symbol>
 	return build_insert<expression>(_nodes, exp, std::move(closure));
 }
 
+c4::ast2::expression*
+c4::ast2::ast_context::build_expression(use* exp, std::vector<symbol>&& closure) {
+	return build_insert<expression>(_nodes, exp, std::move(closure));
+}
+
 c4::ast2::let_expression*
 c4::ast2::ast_context::build_let_expression(const position& position,
                                             const symbol& sym,
@@ -174,6 +179,13 @@ c4::ast2::ast_context::build_binary_op_call(const position& position,
                                             expression* left,
                                             expression* right) {
 	return build_insert<binary_op_call>(_nodes, position, sym, left, right);
+}
+
+c4::ast2::use*
+c4::ast2::ast_context::build_use(const position& position,
+                                 bool library,
+                                 std::string_view name) {
+	return build_insert<use>(_nodes, position, library, name);
 }
 
 std::string_view

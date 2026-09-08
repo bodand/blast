@@ -36,23 +36,27 @@
 
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Module.h>
 #include <llvm/Transforms/Utils/ModuleUtils.h>
 
+#include <libassert/assert.hpp>
+
 #include <c4rt2c/ast2_ir_emitter.hxx>
-#include <llvm/IR/Module.h>
 
 void
 c4rt2c::ast2_ir_emitter::
 finalize(const bool want_main,
          const bool want_lib) {
+	ASSERT((!want_lib && !want_main) || want_lib != want_main);
+
 	if (want_main) {
-		// use explicitly asked for main (=exec entry), give it to them
+		// user explicitly asked for main (=exec entry), give it to them
 		_c4_main->setName("_c4_main");
 		_seq_builder.build(_builder, _runtime, _mainK);
 		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 	}
 	else if (want_lib) {
-		// use explicitly asked for library (=lib entry), give it to them
+		// user explicitly asked for library (=lib entry), give it to them
 		_seq_builder.build(_builder, _runtime, _mainK);
 		if (!_builder.GetInsertBlock()->getTerminator()) _builder.CreateRetVoid();
 	}
@@ -92,6 +96,10 @@ finalize(const bool want_main,
 	const auto [from, to] = std::ranges::unique(_export_table);
 	_export_table.erase(from, to);
 
+	std::ranges::sort(_import_table);
+	const auto [ifrom, ito] = std::ranges::unique(_import_table);
+	_import_table.erase(ifrom, ito);
+
 	const auto total_size = std::accumulate(_export_table.begin(),
 	                                        _export_table.end(),
 	                                        std::size_t{},
@@ -107,6 +115,22 @@ finalize(const bool want_main,
 	const auto assembly = encode_xport(_module.getTargetTriple(), merged_table);
 	if (!assembly) throw std::runtime_error(assembly.error());
 	_module.appendModuleInlineAsm(*assembly);
+
+	merged_table.clear();
+	const auto total_import_size = std::accumulate(_import_table.begin(),
+	                                               _import_table.end(),
+	                                               std::size_t{},
+	                                               [](const auto agg, const auto& elem) {
+		                                               return agg + elem.size();
+	                                               });
+	merged_table.reserve(total_import_size);
+	std::ranges::for_each(_import_table, [&merged_table](const auto& enty) {
+		merged_table.insert(merged_table.end(), enty.begin(), enty.end());
+	});
+
+	const auto assembly_import = encode_mport(_module.getTargetTriple(), merged_table);
+	if (!assembly_import) throw std::runtime_error(assembly_import.error());
+	_module.appendModuleInlineAsm(*assembly_import);
 
 	_di_builder->finalize();
 }

@@ -71,29 +71,42 @@ namespace c4rt2c {
 		using builder_type = llvm::IRBuilder<>;
 
 		ast2_ir_emitter(llvm::Module& module,
-							 builder_type& builder,
-							 runtime_emitter&& rt,
-							 const std::optional<std::string>& libinit_name);
+		                builder_type& builder,
+		                runtime_emitter&& rt,
+		                const std::optional<std::string>& libinit_name);
 
-		void do_visit(const c4::ast2::binary_op_call& obj) override;
+		void
+		do_visit(const c4::ast2::binary_op_call& obj) override;
 
-		void do_visit(const c4::ast2::block& obj) override;
+		void
+		do_visit(const c4::ast2::block& obj) override;
 
-		void do_visit(const c4::ast2::dynamic_call& obj) override;
+		void
+		do_visit(const c4::ast2::dynamic_call& obj) override;
 
-		void do_visit(const c4::ast2::expression& obj) override;
+		void
+		do_visit(const c4::ast2::expression& obj) override;
 
-		void do_visit(const c4::ast2::float_literal& obj) override;
+		void
+		do_visit(const c4::ast2::float_literal& obj) override;
 
-		void do_visit(const c4::ast2::fn_call& obj) override;
+		void
+		do_visit(const c4::ast2::fn_call& obj) override;
 
-		void do_visit(const c4::ast2::integer_literal& obj) override;
+		void
+		do_visit(const c4::ast2::integer_literal& obj) override;
 
-		void do_visit(const c4::ast2::let_expression& obj) override;
+		void
+		do_visit(const c4::ast2::let_expression& obj) override;
 
-		void do_visit(const c4::ast2::string_literal& obj) override;
+		void
+		do_visit(const c4::ast2::string_literal& obj) override;
 
-		void do_visit(const c4::ast2::unary_op_call& obj) override;
+		void
+		do_visit(const c4::ast2::unary_op_call& obj) override;
+
+		void
+		do_visit(const c4::ast2::use& obj) override;
 
 		llvm::GlobalVariable*
 		define_global_var(const c4::ast2::let_expression* gsym);
@@ -190,6 +203,7 @@ namespace c4rt2c {
 		[[nodiscard]] llvm::BasicBlock*
 		define(llvm::Function* fn_decl);
 
+		std::vector<std::vector<uint8_t>> _import_table;
 		std::vector<std::vector<uint8_t>> _export_table;
 	};
 }

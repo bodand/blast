@@ -198,6 +198,9 @@ add_library(c4
             src/source_file/source_file.cxx
             include/c4/cc_attr.hxx
             include/c4/demangler.hxx
+            include/c4/ast2/use.hxx
+            src/ast2/use/use.cxx
+            src/ast2/use/lift_to_context.cxx
             )
 configure_file(src/p2/source_resolver/source-config.in.h
                source-config.h

@@ -278,16 +278,13 @@ main(int argc, const char* const* argv) try {
 	if (argc != 1) usage(argv0);
 
 	const auto src_path = fs::absolute(argv[0]);
-
-
-	c4::ast2::ast_context ast_context;
-
 	const auto src = resolver.open_source(src_path);
 	if (out_path.empty()) {
 		out_path = src_path;
 		out_path.replace_extension(".o");
 	}
 
+	c4::ast2::ast_context ast_context;
 	c4::p2::parser parser(ast_context, diag, resolver, src);
 
 	const auto script = parser.parse_script();

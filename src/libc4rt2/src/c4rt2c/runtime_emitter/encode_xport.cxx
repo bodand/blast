@@ -44,7 +44,7 @@
 std::expected<std::string, std::string>
 c4rt2c::
 encode_xport(const llvm::Triple& triple,
-             std::span<const char> data) {
+             std::span<const unsigned char> data) {
 	std::string assembly;
 	if (triple.isOSBinFormatELF()) {
 		assembly += ".section .c4xport,\"\",@progbits\n";

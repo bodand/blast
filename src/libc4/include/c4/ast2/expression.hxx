@@ -50,6 +50,7 @@
 #include <c4/ast2/op_call.hxx>
 #include <c4/ast2/string_literal.hxx>
 #include <c4/ast2/symbol.hxx>
+#include <c4/ast2/use.hxx>
 
 #include <c4/tags/source_positioned.hxx>
 
@@ -68,7 +69,8 @@ namespace c4::ast2 {
 			dynamic_call*,
 			binary_op_call*,
 			unary_op_call*,
-			block*>;
+			block*,
+			use*>;
 
 		explicit
 		expression(value_type value,

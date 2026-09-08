@@ -48,8 +48,13 @@ add_library(sgetopt STATIC
             src/sgetopt/subgetopt.cxx
             inc/sgetopt/opts.hxx
             src/opts/argv0.c
+            inc/sgetopt/opts_helper.hxx
+            src/opts_helper/opt_helper.cxx
+            src/opts_helper/step.cxx
+            src/opts_helper/here.cxx
+            src/opts_helper/nth_arg_pos.cxx
             )
 generate_warnings(sgetopt PRIVATE)
 generate_lto(sgetopt PRIVATE)
 target_include_directories(sgetopt PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>)
-
+target_link_libraries(sgetopt PRIVATE c4)

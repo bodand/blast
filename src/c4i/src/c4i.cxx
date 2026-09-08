@@ -38,18 +38,22 @@
 #define NOMINMAX
 
 #include <filesystem>
-#include <gc_registrar.hxx>
+#include <memory>
+#include <string>
+#include <string_view>
+
+#include <c4/diagnostic.hxx>
+
+#include <c4/ast2/ast_context.hxx>
 
 #include <c4/p2/parser.hxx>
+#include <c4/p2/source_resolver.hxx>
 #include <c4/p2/lex/lexer.hxx>
-#include <c4rt2/datum.h>
-#include <c4rt2/datum_type.h>
 
-#include <../../c4/include/c4/source_file.hxx>
+#include <c4i/gc_registrar.hxx>
+#include <c4i/lazy_codegen.hxx>
 
 #include <gc/gc.h>
-
-#include <lyra/lyra.hpp>
 
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -70,237 +74,196 @@
 #include <llvm/TargetParser/Host.h>
 
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
-#include <llvm/ExecutionEngine/Orc/LLJIT.h>
+#include <llvm/ExecutionEngine/Orc/CompileUtils.h>
 #include <llvm/ExecutionEngine/Orc/Core.h>
 #include <llvm/ExecutionEngine/Orc/ExecutionUtils.h>
-#include <llvm/ExecutionEngine/Orc/CompileUtils.h>
 #include <llvm/ExecutionEngine/Orc/ExecutorProcessControl.h>
 #include <llvm/ExecutionEngine/Orc/IRCompileLayer.h>
+#include <llvm/ExecutionEngine/Orc/LLJIT.h>
 #include <llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h>
 
-/// XXX -- Absolute hot dogshit fuckery with in-memory binary symbols.
-extern "C" char _end;
+#include <sgetopt/opts.hxx>
+#include <sgetopt/opts_helper.hxx>
 
-struct jit {
-	jit(std::unique_ptr<llvm::orc::ExecutionSession> execution_session,
-	    llvm::orc::JITTargetMachineBuilder jit_builder,
-	    const llvm::DataLayout& data_layout)
-		: _execution_session{std::move(execution_session)}
-		, _data_layout{data_layout}
-		, _mangle{*_execution_session, _data_layout}
-		, _linker{
-			*_execution_session,
-			_execution_session->getExecutorProcessControl().getMemMgr()
-		}
-		, _compiler{
-			*_execution_session,
-			_linker,
-			std::make_unique<llvm::orc::ConcurrentIRCompiler>(std::move(jit_builder))
-		}
-		, _main_jit_dylib{_execution_session->createBareJITDylib("<main>")} {
-		llvm::cantFail(load_gc());
-		_main_jit_dylib.addGenerator(
-			llvm::cantFail(
-				llvm::orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(_data_layout.getGlobalPrefix())
-			)
-		);
+namespace fs = std::filesystem;
 
-		if (jit_builder.getTargetTriple().isOSBinFormatCOFF()) {
-			_linker.setOverrideObjectFlagsWithResponsibilityFlags(true);
-			_linker.setAutoClaimResponsibilityForObjectSymbols(true);
-		}
+namespace {
+	#define argdesc(flag, arg, ...) "   " #flag "  "  << std::setw(w) << #arg << "   " #__VA_ARGS__ "\n"
+
+	[[noreturn]] void
+	usage() {
+		constexpr int w = 5;
+		std::cerr << "usage: " << argv0 << " [-hI] <source>\n"
+				<< "\n"
+				<< "options: \n"
+				argdesc(-h, , Print this help and exit 100.)
+				argdesc(-I, path, Append path to library search path.)
+				//
+				;
+		exit(100);
 	}
 
-	~jit() {
-		if (auto err = _execution_session->endSession())
-			_execution_session->reportError(std::move(err));
-	}
-
-	static llvm::Expected<std::unique_ptr<jit>>
-	create() {
-		auto process_control = llvm::orc::SelfExecutorProcessControl::Create();
-		if (!process_control) return process_control.takeError();
-
-		auto execution_session = std::make_unique<llvm::orc::ExecutionSession>(std::move(*process_control));
-		auto jit_builder = llvm::orc::JITTargetMachineBuilder::detectHost();
-		if (!jit_builder) return jit_builder.takeError();
-
-		auto data_layout = jit_builder->getDefaultDataLayoutForTarget();
-		if (!data_layout) return data_layout.takeError();
-
-		return std::make_unique<jit>(std::move(execution_session), std::move(*jit_builder), std::move(*data_layout));
-	}
-
-	llvm::Error
-	addModule(llvm::orc::ThreadSafeModule thread_safe_module) {
-		return _compiler.add(_main_jit_dylib, std::move(thread_safe_module));
-	}
-
-	llvm::Expected<llvm::orc::ExecutorSymbolDef>
-	lookup(const std::string_view name) {
-		return _execution_session->lookup({&_main_jit_dylib}, _mangle(name));
-	}
-
-	[[nodiscard]] const llvm::DataLayout&
-	data_layout() const { return _data_layout; }
-
-private:
-	llvm::Error
-	load_gc() {
-		llvm::orc::SymbolMap ExtraSymbols;
-		ExtraSymbols[_execution_session->intern("atexit")] = {
-			llvm::orc::ExecutorAddr::fromPtr(reinterpret_cast<void*>(&atexit)),
-			llvm::JITSymbolFlags::Exported
-		};
-		ExtraSymbols[_execution_session->intern("_end")] = {
-			llvm::orc::ExecutorAddr::fromPtr(reinterpret_cast<void*>(&_end)),
-			llvm::JITSymbolFlags::Exported
-		};
-
-		_linker.addPlugin(std::make_unique<c4i::gc_registrar>());
-
-		return _main_jit_dylib.define(llvm::orc::absoluteSymbols(std::move(ExtraSymbols)));
-	}
-
-	std::unique_ptr<llvm::orc::ExecutionSession> _execution_session;
-	llvm::DataLayout _data_layout;
-	llvm::orc::MangleAndInterner _mangle;
-	llvm::orc::ObjectLinkingLayer _linker;
-	llvm::orc::IRCompileLayer _compiler;
-	llvm::orc::JITDylib& _main_jit_dylib;
-};
-
-void
-initialize_targets();
-
-int
-main(int argc, char** argv) {
-	std::filesystem::path src_path;
-	bool show_help = false;
-
-	const auto cli = lyra::cli()
-	                 | lyra::help(show_help).description(
-		                 "Run a C4 script using LLVM's ORC JIT."
-	                 )(
-		                 "Do not compile, print help and exit."
-	                 )
-	                 | lyra::arg(src_path, "source")("The C4 source file to JIT compile.").required()
-			//
-			;
-
-	if (const auto result = cli.parse({argc, argv});
-		!result) {
-		std::cerr << "fatal: " << result.message() << "\n";
-		std::cerr << cli << std::endl;
-		return 1;
-	}
-
-	if (show_help) {
-		std::cout << cli << std::endl;
-		return 1;
-	}
-
-	c4c::source_file src(src_path);
-
-	src_path = absolute(src_path);
-	c4::ast2::ast_context ast_context;
-	c4::p2::lexer lexer(src_path.string(), src.begin(), src.end());
-	c4::diagnostics_engine diagnostics_engine{stderr, false};
-	c4::p2::parser parser(ast_context, diagnostics_engine, std::move(lexer));
-
-	try {
-		initialize_targets();
-		auto jit = jit::create();
-		if (!jit) {
-			std::cerr << "fatal: cannot create JIT instance\n";
-			return 1;
-		}
-		auto* jit_ptr = jit->get();
-
-		const auto script = parser.parse_script();
-		if (diagnostics_engine.errored())
-			return 1;
-
-		auto context = std::make_unique<llvm::LLVMContext>();
-
-		const auto module_id = src_path.string();
-		auto module = std::make_unique<llvm::Module>(module_id, *context);
-		module->setSourceFileName(module_id);
-		module->setDataLayout(jit_ptr->data_layout());
-
-		const auto target_triple = llvm::sys::getDefaultTargetTriple();
-		std::string target_error;
-		const auto target = llvm::TargetRegistry::lookupTarget(target_triple, target_error);
-		if (!target) {
-			std::cerr << "fatal: " << target_error << "\n";
-			return 2;
-		}
-		module->setTargetTriple(target_triple);
-
-		llvm::FunctionPassManager fn_pm;
-		llvm::LoopAnalysisManager loop_am;
-		llvm::FunctionAnalysisManager fn_am;
-		llvm::ModuleAnalysisManager mod_am;
-		llvm::CGSCCAnalysisManager cgscc_am;
-		llvm::PassInstrumentationCallbacks pass_ic;
-		llvm::StandardInstrumentations si(*context, false);
-		si.registerCallbacks(pass_ic, &mod_am);
-
-		llvm::PassBuilder pass_builder;
-		pass_builder.registerModuleAnalyses(mod_am);
-		pass_builder.registerFunctionAnalyses(fn_am);
-		pass_builder.crossRegisterProxies(loop_am, fn_am, cgscc_am, mod_am);
-
-		llvm::IRBuilder<> builder(*context); //todo: ast2_ir_mapper
-		llvm::orc::ThreadSafeModule ts_module(std::move(module), std::move(context));
-		if (auto err = jit_ptr->addModule(std::move(ts_module));
-			err) {
-			std::cerr << "fatal: cannot add module to jit\n";
-			return 1;
-		}
-
-		auto main = jit_ptr->lookup("_C@main");
-		if (!main) {
-			std::ignore = main.takeError();
-			std::cerr << "fatal: cannot find main function\n";
-			return 1;
-		}
-
-		const auto entry = main->getAddress().toPtr<c4_datum_t(*)()>();
-		const auto res = entry();
-
-		return c4rt_datum_coerce_int32(res);
-	}
-	catch (const std::exception& e) {
-		std::cerr << "fatal: " << e.what() << "\n";
-		return 1;
-	}
+	void
+	initialize_targets();
 }
 
-void
-initialize_targets() {
-	LLVMInitializeX86Target();
-	LLVMInitializeX86TargetInfo();
-	LLVMInitializeX86TargetMC();
-	LLVMInitializeX86AsmPrinter();
+int
+main(int argc, const char* const* argv) try {
+	argv0 = argv[0];
 
-	LLVMInitializeAArch64Target();
-	LLVMInitializeAArch64TargetInfo();
-	LLVMInitializeAArch64TargetMC();
-	LLVMInitializeAArch64AsmPrinter();
+	c4::diagnostics_engine diag(stderr);
+	c4::p2::source_resolver resolver(diag);
+	c4::p2::invalid_file_source internal_src("<c4i>");
 
-	LLVMInitializeRISCVTarget();
-	LLVMInitializeRISCVTargetInfo();
-	LLVMInitializeRISCVTargetMC();
-	LLVMInitializeRISCVAsmPrinter();
+	sopts::opts_helper opts{argc, argv};
+	while (char opt = opts.step("hI:")) {
+		switch (opt) {
+		case 'I':
+			if (opts.arg() == "-") {
+				resolver.reset_path();
+				break;
+			}
+			resolver.push_path(opts.arg());
+			break;
 
-	LLVMInitializeSparcTarget();
-	LLVMInitializeSparcTargetInfo();
-	LLVMInitializeSparcTargetMC();
-	LLVMInitializeSparcAsmPrinter();
+		default:
+			diag.error(opts.here(), "unrecognized option {}", opt);
+			[[fallthrough]];
+		case 'h':
+			usage();
+		}
+	}
 
-	LLVMInitializeSystemZTarget();
-	LLVMInitializeSystemZTargetInfo();
-	LLVMInitializeSystemZTargetMC();
-	LLVMInitializeSystemZAsmPrinter();
+	if (diag.errored()) return 100;
+	opts.shift();
+	if (argc < 1) usage();
+	opts.shift(1);
+
+	const auto src_path = fs::absolute(argv[0]);
+	const auto src = resolver.open_source(src_path);
+
+	initialize_targets();
+
+	const auto target_triple = llvm::sys::getDefaultTargetTriple();
+	const auto llvm_triple = llvm::Triple(target_triple);
+
+	std::string target_error;
+	const auto target = llvm::TargetRegistry::lookupTarget(llvm_triple, target_error);
+	if (!target) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot create LLVM target triple: {}",
+		           target_error);
+		return 100;
+	}
+
+	llvm::TargetOptions target_options;
+	target_options.DataSections = true;
+	target_options.FunctionSections = true;
+
+	const auto machine = std::unique_ptr<llvm::TargetMachine>(
+		target->createTargetMachine(llvm_triple,
+		                            "generic", "",
+		                            target_options,
+		                            llvm::Reloc::PIC_));
+
+	llvm::orc::LLJITBuilder jit_builder{};
+	auto data_layout = machine->createDataLayout();
+	jit_builder.setDataLayout(data_layout);
+	// TODO: ponder about why multithreading will break everything
+
+	auto jit_ = jit_builder.create();
+	if (!jit_) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot create LLVM JIT: {}",
+		           toString(jit_.takeError()));
+		return 111;
+	}
+	auto& jit = *jit_;
+	auto& entry_dylib = jit->getMainJITDylib();
+
+	auto self_loader_ = llvm::orc::DynamicLibrarySearchGenerator::
+			GetForCurrentProcess(data_layout.getGlobalPrefix());
+	if (!self_loader_) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot create symbol loader to load from process (c4i): {}",
+		           toString(self_loader_.takeError()));
+		return 111;
+	}
+	auto& self_loader = self_loader_.get();
+	entry_dylib.addGenerator(std::move(self_loader));
+
+	const auto std4_ = resolver.resolve_link_library(
+		c4::position::invalid_file_position(internal_src),
+		"std4");
+	if (!std4_) return 111;
+
+	auto std4_gen_ = llvm::orc::StaticLibraryDefinitionGenerator::Load(
+		jit->getObjLinkingLayer(),
+		std4_->c_str());
+	if (!std4_gen_) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot build loader for std4: {}",
+		           toString(std4_gen_.takeError()))
+		    .note("library resolved to {}", std4_->string());
+		return 111;
+	}
+	entry_dylib.addGenerator(std::move(*std4_gen_));
+
+	const auto c4rt3_ = resolver.resolve_link_library(
+		c4::position::invalid_file_position(internal_src),
+		":libc4rt3.a");
+	if (!c4rt3_) return 111;
+
+	auto c4rt3_gen_ = llvm::orc::StaticLibraryDefinitionGenerator::Load(
+		jit->getObjLinkingLayer(),
+		c4rt3_->c_str());
+	if (!c4rt3_gen_) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot build loader for libc4rt3: {}",
+		           toString(c4rt3_gen_.takeError()))
+		    .note("library resolved to {}", c4rt3_->string());
+		return 111;
+	}
+	entry_dylib.addGenerator(std::move(*c4rt3_gen_));
+
+	// auto codegen = std::make_unique<c4i::lazy_codegen>(
+		// jit->getIRCompileLayer(),
+		// diag,
+		// resolver
+	// );
+	// codegen->add_parsed(src_path, );
+	// entry_dylib.addGenerator(std::move(codegen));
+
+	auto entry_ = jit->lookup("main");
+	if (!entry_) {
+		diag.error(c4::position::invalid_file_position(internal_src),
+		           "cannot find main function");
+		return 111;
+	}
+	const auto entry = entry_.get();
+	const auto entry_ptr = entry.toPtr<int(int, const char* const*)>();
+
+	std::cout << (void*)entry_ptr << "\n";
+
+	return 0;
+}
+catch (const std::exception& e) {
+	std::cerr << argv0 << ": \033[31mfatal:\033[0m " << e.what() << "\n";
+	return 111;
+}
+catch (...) {
+	std::cerr << argv0 << ": \033[31mfatal:\033[0m weird error?\n";
+	return 111;
+}
+
+
+namespace {
+	void
+	initialize_targets() {
+		llvm::InitializeAllTargetInfos();
+		llvm::InitializeAllTargets();
+		llvm::InitializeAllTargetMCs();
+		llvm::InitializeAllAsmParsers();
+		llvm::InitializeAllAsmPrinters();
+	}
 }

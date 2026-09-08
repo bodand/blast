@@ -52,6 +52,7 @@ namespace c4::ast2 {
 	struct string_literal;
 	struct symbol;
 	struct unary_op_call;
+	struct use;
 
 	using ast2_visitor = visitor<
 		binary_op_call,
@@ -63,7 +64,8 @@ namespace c4::ast2 {
 		string_literal,
 		integer_literal,
 		unary_op_call,
-		fn_call
+		fn_call,
+		use
 	>;
 }
 

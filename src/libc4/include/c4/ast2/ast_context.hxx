@@ -60,26 +60,39 @@ namespace c4::ast2 {
 	struct let_expression;
 	struct unary_op_call;
 	struct binary_op_call;
+	struct use;
 
 	struct ast_context final {
+		ast_context() = default;
+
+		ast_context(const ast_context&) = delete;
+
+		ast_context&
+		operator=(const ast_context&) = delete;
+
+		ast_context(ast_context&&) = default;
+
+		ast_context&
+		operator=(ast_context&&) = default;
+
 		block_args*
 		build_block_args(const position& position,
-							  std::span<symbol> args);
+		                 std::span<symbol> args);
 
 		block*
 		build_block(const position& position,
-						std::vector<expression*>&& expressions,
-						block_args* args = nullptr);
+		            std::vector<expression*>&& expressions,
+		            block_args* args = nullptr);
 
 		dynamic_call*
 		build_dynamic_call(const position& position,
-								 expression* callee,
-								 std::vector<expression*>&& args);
+		                   expression* callee,
+		                   std::vector<expression*>&& args);
 
 		fn_call*
 		build_fn_call(const position& position,
-						  const symbol& callee,
-						  std::vector<expression*>&& args);
+		              const symbol& callee,
+		              std::vector<expression*>&& args);
 
 		expression*
 		build_expression(const symbol& sym);
@@ -111,22 +124,28 @@ namespace c4::ast2 {
 		expression*
 		build_expression(binary_op_call* exp, std::vector<symbol>&& closure = {});
 
+		expression*
+		build_expression(use* exp, std::vector<symbol>&& closure = {});
+
 		let_expression*
 		build_let_expression(const c4::position& position,
-									const symbol& sym,
-									expression* expression,
-									enum let_expression::visibility vis);
+		                     const symbol& sym,
+		                     expression* expression,
+		                     enum let_expression::visibility vis);
 
 		unary_op_call*
 		build_unary_op_call(const position& position,
-								  const symbol& sym,
-								  expression* operand);
+		                    const symbol& sym,
+		                    expression* operand);
 
 		binary_op_call*
 		build_binary_op_call(const position& position,
-									const symbol& sym,
-									expression* left,
-									expression* right);
+		                     const symbol& sym,
+		                     expression* left,
+		                     expression* right);
+
+		use*
+		build_use(const position& position, bool library, std::string_view name);
 
 		[[nodiscard]] std::span<const let_expression* const>
 		named_symbols() const noexcept {

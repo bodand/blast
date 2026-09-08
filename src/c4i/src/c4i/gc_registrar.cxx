@@ -34,7 +34,7 @@
  *   
  */
 
-#include <gc_registrar.hxx>
+#include <../include/c4i/gc_registrar.hxx>
 
 #include <llvm/ADT/BitVector.h>
 #include <llvm/ExecutionEngine/Orc/Shared/MemoryFlags.h>

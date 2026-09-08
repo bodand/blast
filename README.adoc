@@ -1,0 +1,45 @@
+= C4 & blAST
+
+This repo contains the implementation of the C4 language and its primary use the blAST library within it.
+Their fate is heavily intertwined, but the language can be used freely of blAST.
+It is a general purpose programming language with an immutable, functional-leaning paradigm, with lazy evaluation and dynamic typing.
+The syntax and structure heavily optimize for the ability to create eDSLs to perform specific tasks.
+
+== C4
+
+The C4 language provides a variety of binaries that perform a specific task in the overall scheme of working with C4 sources.
+They are designed to specifically perform a single task.
+
+[IMPORTANT]
+====
+The language is called C4 because of reasons unrelated to any of the following:
+
+- The C programming language
+- The C3 programming language
+- The m4 macro language
+
+The language design doesn't reflect any of the goals to be solved the above languages.
+Thank you for your understanding.
+====
+
+=== Tools
+
+c4c:: The primary compiler that reads a singular source file and outputs a singular object file. As a compiler should \*khmm*.
+c4ld:: The linker that links together object files with the optionally used libraries (archives).
+c4ar:: Create C4 archives from object files.
+c4if:: Utility to see the interfaces of sources or C4 archives.
+
+More tools are in the works.
+
+=== Libraries
+
+The C4 language provides the following libraries to use from within C4 programs.
+The current implementations of them only work on POSIX systems.
+
+std4.c4a:: The standard library. It is linked by default and can be used with `use <std4.c4a>`.
+
+array.c4a:: The mutable array library. Primarily used for FFI to native code.
+
+tap.c4a:: A rather primitive and incomplete TAP14 producer implementation.
+
+prcmgr.c4a:: A process handling library. Currently requires the skalibs C library.

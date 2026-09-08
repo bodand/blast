@@ -31,43 +31,46 @@
 # Originally created: 2025-03-26.
 #
 # src/c4c/CMakeLists.txt --
-#   CMake project for the C4 Compiler (c4c)s
+#   CMake project for the C4 JIT interpreter (c4i)
 
-add_executable(c4i src/c4i.cxx
-               include/gc_registrar.hxx
-               src/gc_registrar.cxx)
+include(CheckLinkerFlag)
+
+check_linker_flag(CXX "-Wl,--export-dynamic" HAVE_LD_EXPORT_DYNAMIC)
+check_linker_flag(CXX "-Wl,-rdynamic" HAVE_LD_RDYNAMIC)
+
+set(ld_export_flag)
+if (HAVE_LD_EXPORT_DYNAMIC)
+    set(ld_export_flag "-Wl,--export-dynamic")
+elseif (HAVE_LD_RDYNAMIC)
+    set(ld_export_flag "-Wl,-rdynamic")
+else ()
+    message(WARNING "No known way to reexport linked symbols from executable.
+The JIT interpreter may break.")
+endif ()
+
+add_executable(c4i
+               src/c4i.cxx
+               include/c4i/gc_registrar.hxx
+               src/c4i/gc_registrar.cxx
+               include/c4i/lazy_codegen.hxx
+               src/c4i/lazy_codegen/add_parsed.cxx
+               include/c4i/dependee.hxx
+               src/c4i/dependee/source_dependee/emit.cxx)
 
 target_link_libraries(c4i PRIVATE
                       c4
                       c4rt2c
                       c4_llvm
-                      bfg::lyra
+                      sgetopt
                       libassert::assert
                       gc
                       )
 generate_lto(c4i PRIVATE)
 generate_warnings(c4i PRIVATE)
+generate_sanitizers(c4i)
+target_link_options(c4i PRIVATE ${ld_export_flag})
 target_include_directories(c4i PRIVATE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
-if (WIN32)
-    add_custom_command(
-            TARGET c4i POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:ZLIB::ZLIB>
-            $<TARGET_FILE:BDWgc::gc>
-            $<TARGET_FILE_DIR:c4i>
-            )
-endif ()
-if (MSVC AND BLAST_ENABLE_SANITIZERS)
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH msvc_bindir)
-    add_custom_command(
-            TARGET blast POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.dll"
-            "${msvc_bindir}/clang_rt.asan_dynamic-${BLAST_ARCH}.pdb"
-            "${msvc_bindir}/clang_rt.asan_dbg_dynamic-${BLAST_ARCH}.pdb"
-            $<TARGET_FILE_DIR:c4i>
-            )
-endif ()
+install(TARGETS c4i
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")

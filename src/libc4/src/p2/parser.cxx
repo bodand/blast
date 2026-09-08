@@ -163,6 +163,9 @@ parse_use_expression() {
 	                                    use->path());
 	if (!path) return nullptr;
 
+	auto ast_use = _context.build_use(use->token_position(),
+	                                  use->library(),
+	                                  use->path());
 	if (use->library()) {
 		const auto transitive_lib = _resolver.open_archive(*path);
 		archive_parser nested(_context, _diag, transitive_lib);
@@ -177,7 +180,8 @@ parse_use_expression() {
 		intern_lets(lets);
 	}
 
-	return nullptr;
+	ast_use->lift_to_context(_context);
+	return _context.build_expression(ast_use);
 }
 
 c4::ast2::expression*
