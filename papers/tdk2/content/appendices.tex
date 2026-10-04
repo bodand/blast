@@ -1,0 +1,64 @@
+% !TeX spellcheck = hu_HU
+%----------------------------------------------------------------------------
+\appendix
+%----------------------------------------------------------------------------
+\chapter*{\fuggelek}\addcontentsline{toc}{chapter}{\fuggelek}
+\setcounter{chapter}{\appendixnumber}
+%\setcounter{equation}{0} % a fofejezet-szamlalo az angol ABC 6. betuje (F) lesz
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{lstlisting}{section}
+%\numberwithin{tabular}{section}
+
+\section{GCC belső reprezentációk}\label{x:sec:gcc-intr}
+
+Az alábbi listázások a \gls{GCC} belső reprezentációit mutatják be.
+Elsődleges célja a szakasznak, hogy prezentálja, hogy a természetesnek tűnő tulajdonsága a Clang \gls{AST}-nek, hogy részletes és könnyen elérhető, nem elterjedt a nagy, releváns implementációk között:
+még a nyílt forrásúak, mint a \gls{GCC} sem biztosít ilyen lehetőséget.
+
+Az alábbi kimenetek mind \aref{lst:impl-c}.~lista C kódjából készültek.
+Figyelemre méltó, hogy az implicit konverzió {\tt int} típusból {\tt unsigned long} típusba nem jelenik meg: a konkrét 1 érték típusa már az elvárt érték lett.
+
+\begin{lstlisting}[numbers=left,caption={GCC GENERIC reprezentáció}]
+> gcc -c -fdump-tree-original=stdout ast-demo.c
+
+;; Function demo (null)
+;; enabled by -tree-original
+
+
+{
+  return 1;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[numbers=left,caption={GCC GIMPLE reprezentáció}]
+> gcc -c -fdump-tree-gimple=stdout ast-demo.c
+long unsigned int demo ()
+{
+  long unsigned int D.2771;
+
+  D.2771 = 1;
+  return D.2771;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[numbers=left,caption={GCC SSA reprezentáció}]
+> gcc -c -fdump-tree-ssa=stdout ast-demo.c
+
+;; Function demo (demo, funcdef_no=0, decl_uid=2768, cgraph_uid=1, symbol_order=0)
+
+long unsigned int demo ()
+{
+  long unsigned int D.2771;
+  long unsigned int _1;
+
+  <bb 2> :
+  _1 = 1;
+
+  <bb 3> :
+<L0>:
+  return _1;
+
+}
+\end{lstlisting}
+

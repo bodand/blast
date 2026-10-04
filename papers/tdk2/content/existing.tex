@@ -1,0 +1,176 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\chapter{Jelenleg elérhető eszközök}
+%----------------------------------------------------------------------------
+
+Ebben fejezetben a jelenleg létező eszközöket mutatom be.
+Az összehasonlítás alapja jelenleg nem az általános statikus analízissel kapcsolatos képességeik, hanem a helyi, lokális szabályokkal való bővíthetőség.
+Az alább bemutatott eszközök mind ipari használatban vannak, akár nyílt forráskódú, akár egyéb zárt környezetekben.
+Egyes esetekben különböző szabványoknak való megfelelés felülvizsgálatát teszik könnyebbé, de gyakran csak hibás kódok keresésére kerülnek felhasználásra.
+
+\section*{GCC {\tt -fanalyzer}}
+
+A \gls{GCC} projekt \cite{freesoftwarefoundationinc.GCCGNUCompiler2026} C fordítója tartalmaz egy beépített statikus ellenőrző eszközt.
+Ezzel fordítás közben képes olyan analíziseket végezni a normál diagnosztikái mellett, ami statikus analízisnek tekinthető (szimbolikus végrehajtás).
+Azonban ezek csak általánosan érvényes ellenőrzésék, és a fordító módosításán kívül nem támogatnak külső bővítményeket.
+A C++ mód jelenleg (\gls{GCC} 16.2) nem támogatott.
+
+\section*{PVS-Studio}
+
+A PVS-Studio \cite{PVSStudioSolutionEnhance} egy kommersz eszköz, amelyik sok nyelv statikus ellenőrzésére képes.
+Elég sok ellenőrzést támogat, köztük a MISRA csomagokat, amelyek a MISRA konzorcium által specifikált C és C++ \cite{themisraconsortiumlimitedMISRA} nyelvi megszorításokat tartalmazza.
+Saját ellenőrzéséket azonban nem lehetséges megadni direkt módon, bár általános vásárlói kéréseket tartalmaz, a dokumentáció egy szekciója alapján\footnote{\url{https://pvs-studio.com/en/docs/warnings/\#CustomersSpecificRequestsCPP}}.
+
+\section*{SonarQube}
+
+A Sonar \cite{AICodeReview} eszközök széles körben támogatnak nyelveket, amelyeket ellenőrizni képesek.
+Ezek is alapvetően piaci termékek.
+A dokumentáció szerint támogatnak saját ellenőrzéséket egyes nyelvekhez, vagy egy XPath alapú kereséssel vagy Java megoldással, de ez nem teljes a támogatott nyelveik között.
+Jelenleg például C és C++ esetén nem támogatott egyik lehetőség sem\footnote{\url{https://docs.sonarsource.com/sonarqube-server/extension-guide/adding-coding-rules\#custom-rule-support-by-language}}.
+
+\section*{Cppcheck}
+
+Ez egy ingyenes \cite{danielmarjamakiCppcheckToolStatic} és fizetős \cite{cppchecksolutionsab.Cppcheck1Static} verzióban is elérhető eszköz, illetve nyílt forráskódú.
+Az előző két alternatívához hasonlóan, ez támogat különböző konfigurációkat, például a már említett MISRA előírások, de van támogatása saját Python alapú keresésekhez.
+Ezzel közel kerül a keresett célhoz.
+Azonban rendelkezik egy problémával, amelyik jelentősen rontja a használhatóságát: ezek imperatív, manuálisan végrehajtott ellenőrzések egy token folyamon.
+Például \aref{lst:cppcheck}.~kód listázáson látható a Cppcheck forrásához tartozó egy bővítmény ({\it addon}) első pár rendes sora.
+Látszólag tokenenként felépíteni a felismerni kívánt mintákat, bár lehetséges, elég kényelmetlen.
+
+\begin{lstlisting}[numbers=left,language=Python,caption={Cppcheck konverziókat kereső bővítménye},label=lst:cppcheck]
+# addons/findcasts.py (cppcheck-2.22.0)
+@cppcheck.checker
+def cast(cfg, data):
+    for token in cfg.tokenlist:
+        if token.str != '(' or not token.astOperand1 or token.astOperand2:
+            continue
+        # ... <típus> ) ...
+\end{lstlisting}
+
+\section*{Clang eszközök}
+
+Az LLVM projekt \cite{llvmprojectLLVMCompilerInfrastructure} C fordítója a Clang \cite{llvmprojectClangLanguageFamily} egy könyvtár formájában is elérhető.
+Emiatt nagyon sok eszköz ezt használja, hogy C és C++ kódbázisokhoz különböző eszközöket biztosítson.
+Ilyenek a következő eszközök, mind kettő az LLVM projekt gondozásában:
+
+\begin{enumerate}
+\item {\tt clang-tidy}
+Az elsődleges statikus analízis eszköz.
+Nagy mennyiségben tartalmaz figyelmeztetéseket, mind kódminőség, mind hibaforrások szempontjából.
+Személyre szabható két módon: saját bővítmény fejlesztéséven, amelyben a C++ interfészen keresztül adható meg a saját ellenőrzés, illetve egy YAML konfigurációs fájlban.
+
+\item {\tt clang-query}
+Egy interaktív parancssoros eszköz.
+A megadott mintákra keres találatokat, amelyeket kiír a felhasználó számára.
+\end{enumerate}
+
+Az előző két eszköz a Clang könyvtárának \gls{API} felületéből a Clang \gls{AST}-t használja fel.
+Ennek fontos részlete, hogy a Clang \gls{AST} egy nagyon részletes reprezentációja a tényleges forrásnak, ami tartalmaz minden, akár a kódban nem megjelenő, implicit nyelvi elemeket is.
+Ezt mutatják be \aref{lst:impl-c} és \ref{lst:impl-ast}.~listák: a C nyelvi implicit konverzió módosítás nélkül megjelenik az \gls{AST} reprezentációban.
+Bár ez egy egyszerű példa, de a C és C++ nyelvek sok implicit viselkedéssel rendelkeznek, így a bonyolultabb esetekben ez a viselkedés jelentősen megkönnyíti a részletes keresések megvalósítását.
+
+\begin{lstlisting}[numbers=left,language=c,label=lst:impl-c,caption={Egyszerű C kód implicit konverzióval}]
+unsigned long
+demo() {
+    return 1; /* int -> ulong implicit! */
+}
+\end{lstlisting}
+
+\begin{lstlisting}[numbers=left,label=lst:impl-ast,caption={Clang \gls{AST} reprezentációja egy implicit konverziónak}]
+> clang-22 -Xclang -ast-dump -fsyntax-only ast-demo.c
+TranslationUnitDecl 0x55b2bb95ff38 <<invalid sloc>> <invalid sloc>
+| ... # implicit deklarációk elhagyva
+`-FunctionDecl 0x55b2bb9c75e8 <ast-demo.c:1:1, line:5:1> line:2:1 demo 'unsigned long ()'
+  `-CompoundStmt 0x55b2bb9c7720 <col:8, line:5:1>
+    `-ReturnStmt 0x55b2bb9c7710 <line:4:2, col:9>
+      `-ImplicitCastExpr 0x55b2bb9c76f8 <col:9> 'unsigned long' <IntegralCast>
+        `-IntegerLiteral 0x55b2bb9c76d8 <col:9> 'int' 1
+\end{lstlisting}
+
+Bár ez a tulajdonság természetesnek tűnhet, a másik nagy nyílt forráskódú C és C++ fordító, a \gls{GCC} csomagból nem nyújtja ezt ilyen egyszerűen.
+A belső AST reprezentációt csak saját pluginnal érhető el, és nem számít stabilnak.
+Például, ami jelenleg fontos, hogy nem garantálja minden szintaktikai elem megfelelő reprezentációját.
+Az első szint, ami parancssorból, így külső eszköz számára elérhető módon, értelmes kimenet formájában megkapható az az \un GIMPLE, majd az \gls{SSA} reprezentációja.
+Ezek a kimenetek \aref{x:sec:gcc-intr}.~szakaszban, a függelékben, megtalálhatóak de lényegében csak azt bizonyítják, hogy nem jelenik meg az implicit konverzió a kimenetben.
+Megjegyzendő, hogy sok más állapot is kinyerhető, de ezek mind belső állapotai a fordító egyes fázisainak, és emiatt egyik sem elsődlegesen külső eszközök számára lett kitalálva.
+
+\section{ASTMatchers}
+
+Az előzőekben ismertetett Clang \gls{AST} tehát lehetővé teszi külső programok számára, a C családba tartozó nyelvek (C, C++, Objective-C) feldolgozását, saját elemző (parser) készítése nélkül.
+(Ennek nagyon fontos szerepe van, főleg a C++ értelmezésében, ahol akár C++ kódot kell kiértékelni, hogy egy adott kódrészlet teljesen helyes értelmezését kapjuk a sablonok ({\it template}) és a konstans-kiértékelt ({\it constexpr, consteval}) függvények miatt.)
+
+A puszta szintaxisfa mellett, az általános, magas szintű nyelvi elemekkel foglalkozó programok megvalósítását megkönnyítendő, tartozik az \gls{AST}-hez, egy saját keresőmotor.
+Ez az ASTMatchers \cite{llvmprojectASTMatcherReference} könyvtár, amelyik egy szakterület-specifikus nyelv (\gls{DSL}), beágyazva a C++ gazdanyelvbe.
+Célja, hogy deklaratív minta keresést biztosítson az \gls{AST} felett.
+
+Kihasználva az előzőekben említett tulajdonságát a Clang \gls{AST}-nek, ezt nagyon részletes és aprólékos minták keresését is támogatja.
+Az előbb említett célját be is teljesíti a lényegi részleteket tekintve.
+Egyes esetekben azonban, csak egy imperatív utószűréssel lehet elérni a legfinomabb precizitást.
+Ez minden ASTMatchers alapú rendszernek alapvető problémája, mert maga a biztosított \gls{DSL} nem támogatja a finom hangolt keresések explicit leírását.
+Egyszerű példa, hogy a függvények paraméterszámát nem tudja magától leszűrni: ha kíváncsiak lennénk az összes olyan függvényre, amelyik definíciójában több, mint $5$ paraméter van, akkor szükséges megkeresni minden függvény definíciót, majd még jelentés előtt egy imperatív kódrészletben ellenőrizni, hogy hány paramétere van.
+
+Bár ez részletekbe menő támogatást nyújt az \gls{AST} aprólékos mintázatainak vizsgálatára, úgy, hogy maga a minta keresése javarészt deklaratív marad (\ld a Cppcheck esetén említett problémát), ténylegesen csak sok energia befektetéssel lehetséges hasznosítani.
+
+A lehetőséget külső ellenőrzések megvalósítására a Clang ökoszisztémában, mint erre biztosított eszköz, a {\tt clang-tidy} eszköz kibővíthetősége nyújtja.
+Ez azonban két lehetőséget nyújt: vagy egy teljesen külön C++ projekt karbantartását veszi igénybe, amiben egy saját {\tt clang-tidy} fordítása szükséges \cite{llvmprojectGettingInvolvedExtra}, vagy egy YAML fájlban sztringként adható meg az új minta \cite{llvmprojectQueryBasedCustom}.
+Ezek egyike sem ideális, az alábbi paragrafusok a problémákról szólnak.
+
+A legnagyobb limitáló faktor, hogy a saját {\tt clang-tidy} alapú megoldás nagyon nagy projektenkénti többletmunkát igényel.
+Mivel az LLVM projekt teljes kódbázisa egyetlen monorepóban található (LLVM, Clang, LLD, libc++, stb.), az egész kódbázis pedig masszív.
+Ez az egész problémakör hasonló a fejezet elején említett \gls{GCC} {\tt -fanalyzer} problémájával: mind a \gls{GCC}, mind az LLVM források nagyságrendileg egyforma 1 GiB méretű projektek\footnote{GCC 16.2: 976 MiB, LLVM 23.1.2: 1.1 GiB}.
+Ekkora projekteknek a puszta kezelése nagy erőforrásokat vesz igénybe.
+Bár nyilvánvalóan, mind kettő rendszer képes csak a szükséges elemeket fordítani, mindkét esetben az első fordítás 5--7 percet közelít 32 szálon fordítás esetén, bár ez jelentősen függ a fordítási paraméterektől (mind kettő könnyen elérheti a 17--19 percet).
+Kisebb párhuzamossággal ez még nagyobb, főleg ha a diszk/fájlrendszer lassabban tudja fogadni a sok kis fájlt (SSD/OpenZFS-en történt az előző becslés).
+Megjegyzendő azonban, hogy a \gls{GCC} szituációval ellentétesen, a {\tt clang-tidy} ad egy direkt interfészt egy ilyen ellenőrzés fejlesztésére, míg \gls{GCC} esetén a lényegi {\tt -fanalyzer} kódbázisban kellene ezt megvalósítani.
+
+Érintőleges probléma, hogy szimplán az így kialakuló projekt karbantartása is bonyolult.
+Mivel az egész projekt egy monorepó, így nem lehet egy saját verziót könnyen fenntartani egy saját repóban: szükséges az egyész LLVM projektet lekövetni.
+Emellett extra nehézség, hogy az LLVM könyvtár nem biztosít API stabilitást teljes mértékben.
+A szemantikus verziók értelmében, minden főverziószám szerinti változást vezethet be inkompatibilitást, és az LLVM projekt egy aktívan, lendületesen fejlesztett kódbázis, így gyakran kerülnek kiadásra új verziók.
+Ennek nagy része nem feltétlen érinti a Clang interfészét, így a szóban forgó saját {\it clang-tidy} variánst sem, de a monorepó miatt, sok erőforrásba kerül lépést tartani az LLVM projekttel, hogy ne maradjon le a saját verzió.
+
+A gyakori újrafordítás is elég lassú egy gyors prototípus fejlesztéséhez: maga a dokumentáció \cite{llvmprojectGettingInvolvedExtra} is azt javasolja, hogy magát az ASTMatcher kifejezést egy interaktívan futtatott {\tt clang-query} eszközben írjuk meg, és amint az kész van, építsük bele a {\tt clang-tidy} kódjába.
+
+Ha ezt mind elkerülné egy projekt, marad a másik opció: a YAML konfigurációba építhető ellenőrzések.
+Bár ez nagyon sok problémát megold, hoz magával másikakat.
+
+A legnagyobb jelenlegi problémája, hogy kísérleti fázisban van: magától nem is működik, csak ha az {\tt\it --experimental-custom-checks} kapcsolót megkapja a {\tt clang-tidy}.
+Ez már évek óta így van.
+Nem garantálja az LLVM projekt, hogy verziók között bármilyen stabil interfészt biztosít, így lehet, hogy a teljes konfigurációt át kellhet írni.
+
+Mivel az LLVM kódbázistól megszabadul ez a megoldás, így képes a tényleges minták definiálásra majd annak különböző jelzésére koncentrálni.
+Ez azonban az átlagtól eltérő esetekben nehézségeket tár fel: olyan kódrészletek, amelyek igényelnének olyan kódrészleteket lekezelni, amelyik egy ASTMatcher kifejezéssel nem jól megvalósító, azokat pusztán nem lehet megadni.
+Mivel a YAML kód egy szimpla {\tt ``Query''} mezőt vár, az a dinamicitás, amit eddig a C++ kód biztosított az elveszik.
+Ezt a problémát jobban tetézi, az előzőekben már említett limitációja az ASTMatchers könyvtárnak: az aprólékos keresést imperatív utószűréssel lehet megoldani.
+Ebben az esetben ennek a lehetőségétől javarészt elesünk.
+
+Megjegyzést ér még, hogy mivel a kódot egy YAML fájlban kell írni egy sztringbe, így semmiféle kódkiegészítés vagy szintaxis színezés sem érhető el.
+
+Egy extra probléma még előkerül, ami ennek a megoldásnak okoz problémát és kevésbé feltűnő a saját {\tt clang-tidy} esetén.
+Mivel ez gyakorlatilag csak a {\tt clang-query} interfésznek egy automatizált verziója (\ld a `match' parancsot, mint a {\tt clang-query} parancssorában), így csak a sztringet fordítja egy dinamikus ASTMatcher kifejezésbe.
+Ez azonban csak akkor működik, amikor a használt {\tt clang-tidy} támogatja az adott kifejezés minden elemét.
+Ha a operációs rendszer telepített {\tt clang-tools-extra} csomagját használják a fejlesztők vagy \gls{CI} szerver, akkor ez egy amúgy független rendszer vagy fordító frissítés során elromolhat, amit csak akkor vesznek észre, amikor a {\tt clang-tidy} már nem képes lefuttatni az eddig működő YAML konfigurációt.
+Saját fordított eszköz esetén ez már akkor kiderül, amikor az új LLVM/Clang verzióval fordítanánk, így kijavítható, mielőtt a lényegi fejlesztés során ez problémát okozna.
+
+\section{libTooling}
+
+Marad még egy lehetőség azonban, amit eddig nem említettem: a clang által biztosított, általános eszközök fejlesztésére használatos könyvtár.
+Az eddigi eszközök, mind egy magasabb szintű, konkrét statikus analízissel foglalkozó eszközök.
+Ez egy primitív könyvtár, amelyik általánosan mindenféle forrással kapcsolatos eszköz fejlesztésének támogatását célozza meg.
+
+Bár egy libTooling alapú program jelentősen könnyíti az előzőekben említett problémát, hogy az LLVM forráskóddal szükséges bajlódni, egy másik problémába ütközik.
+Mivel ez a könyvtár alacsonyabb absztrakciós szinten helyezkedik el, mint a {\tt clang-tidy}, így sok olyan kódrészletet, amelyet utóbbi már tartalmaz újra kell implementálni.
+Gyakorlatilag egy saját keretrendszer fejlesztésébe torkollik a folyamat, ami ismételten karbantarthatósági kérdéseket vet fel.
+
+Ennek ellenére, ez tűnik jelenleg a legmegbízhatóbb lehetőségnek: az egyszer lefejlesztett keretrendszernek nem kell a teljes LLVM kódbázist magával hordoznia, nem kell az LLVM projekttel lépést tartani, csak publikus verzió kiadásakor frissíteni.
+Nem kell sztingekben kódot írni sem, és a kompatibilitás javításáig nem rontja el azonnal és véletlen a normál fejlesztési folyamatot.
+Még az LLVM-et sem kell feltétlenül fordítani, mert ezek a könyvtárak gyakran elérhetőek előre fordított formában.
+
+Az imperatív kód utószűréssel kapcsolatos kérdésre még ki kell térni.
+Az előzőekben említett okokból, a direkt ASTMatchers alapú rendszereknek ez mindig is problémája marad.
+Csak egy extra réteg absztrakció tud egy egyszerűbb keretrendszert biztosítani: mivel pont ezt kell megvalósítani, így megfelelő tervezéssel ez a probléma enyhíthető.
+
+Ebben a fejezetben található átfogó értékelésnek megfelelően, a dolgozat többi részében ezen legutolsó opciónál, mint a jelenlegi legkényelmesebb lehetőség, jobb alternatívaként érvelek a saját rendszerem mellett.
+

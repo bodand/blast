@@ -1,0 +1,48 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+%----------------------------------------------------------------------------
+\chapter{Továbbfejlesztési lehetőségek}
+%----------------------------------------------------------------------------
+
+\section{Javítások ajánlása}
+
+A jelenlegi eszköz elsődlegesen a különböző szabályoktól való eltérést hivatott segíteni megkeresni.
+Ennek ellenére, a Clang támogat úgynevezett ``FixIt'' segítségeket.
+Ezek a normál diagnosztikával egyszerre tudnak megjelenni és konkrét javítási lehetőségeket tudnak javasolni a programozó számára.
+
+Ezt a lehetőséget felhasználva, a blAST eszköz képes lenne nem csak a hibákat megjeleníteni, hanem egyes esetekben a konkrét megoldást is képes lehet kiírni a felhasználó számára.
+Ezzel lehetővé válik sokkal egyértelműbb hiba üzeneteket létrehozni.
+
+Ezt vélhetőleg a legjobban egy kibővített C4 ``diagnose'' függvénnyel lehetséges megvalósítani, amelyik a ``fixit'' paramétert is értelmezni képes.
+Például \aref{lst:blast-fixit}.~lista egy lehetséges szintaktikai megoldást mutat be.
+A megtalált kifejezés helyére a megadott szöveget (``something'') fogja felajánlani, mint javított kódrészlet.
+Valós példákban vélhetőleg a kapott találat szöveges reprezentációjának valamilyen módosításaként lenne érdemes a javítást összeállítani.
+
+\begin{lstlisting}[label=lst:blast-fixit,caption={FixIt segítségek blAST-al}]
+blast ast
+	match into callback { |diag|
+		diagnose diag fixit "something"
+	}
+	such call expression
+	that # ...
+\end{lstlisting}
+
+\section{Több nyelv támogatás}
+
+A jelenlegi rendszer specifikusan a Clang alapú C és C++ nyelveket célozza meg.
+Emiatt nagy része a megvalósított C4 szintű elemeknek ezen nyelvek sajátosságait célozzák meg, és sok helyet feltételeznek olyan dolgokat, amelyek specifikusan csak ebben a felállásban igazak.
+
+Ennek ellenére, a legkülsőbb rétege a blAST eszköznek nem követeli meg, hogy ezeket a nyelveket használja.
+A konkrét {\tt such ... that ... } szintaxis például teljesen független minden másik elemtől, mert csak a paramétereinek megfelelő struktúráját hivatott biztosítani.
+Az ASTMatcher kifejezés előállítása után sem tartozik hozzá nyelv specifikus elem: az összerakott kifejezés egy egyszerű sztring formájában utazik a rendszerben, amíg a Clang könyvtárak azt fel nem dolgozzák.
+
+A jövőre való tekintettel, érdemes lehet megnézni, mennyire lehet a többi részét más nyelvekhez illeszteni.
+Például a Java és C\# nyelvek érdekesek lehetnek nagy elterjedtségük miatt.
+Utóbbi esetén a Roslyn \cite{microsoftDotnetRoslyn2026} fordító a Clang könyvtárakhoz hasonló módon sok kapcsolódási pontot biztosít egy C\# projekt kódjának értelmezéséhez, kezeléséhez.
+Ez könnyítheti annak beépítését a blAST keretbe.
+
+Nehézséget a AST-ben kereső rendszer megvalósítása okozhat. 
+Az ASTMatchers könyvtár szöveges minták támogatása miatt nagyon könnyen használható, ha hasonló támogatás nem létezik az említett nyelvekhez, akkor a kereső kifejezések előállítása jelentősen bonyolultabb lesz.
+Ez azonban nem megoldhatatlan, csak a megfelelő elemeket direkt módon összerakó függvényeket kell a C4 nyelv számára elérhetővé tenni, és akkor a többi elem összerakását a jelenlegi blAST/Clang módszerrel ekvivalensen meg lehet csinálni.
+

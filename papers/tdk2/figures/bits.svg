@@ -1,0 +1,43 @@
+<svg xmlns='http://www.w3.org/2000/svg' style='font-size:initial;' class="pikchr" viewBox="0 0 853.148 203.934">
+<text x="103.127" y="75.854" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" dominant-baseline="central">64-bit double</text>
+<text x="467.372" y="75.854" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD</text>
+<text x="90.4781" y="95.854" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" dominant-baseline="central">NaN szabad bitek</text>
+<text x="467.372" y="95.854" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">N           NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN</text>
+<text x="114.82" y="115.854" text-anchor="middle" font-weight="bold" fill="rgb(0,0,0)" dominant-baseline="central">adat bitek</text>
+<text x="467.372" y="115.854" text-anchor="middle" font-family="monospace" fill="rgb(0,0,0)" font-size="125%" dominant-baseline="central">                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</text>
+<path d="M189.596,83.414L189.596,63.254L230.326,22.5247"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(128,128,128);" />
+<text x="209.961" y="32.8094" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(-45 209.961,42.8894)" dominant-baseline="central">előjel</text>
+<path d="M288.236,83.414L288.236,63.254L334.057,17.4335"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(128,128,128);" />
+<text x="311.146" y="30.2638" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(-45 311.146,40.3438)" dominant-baseline="central">kitevő</text>
+<path d="M324.236,103.414L324.236,63.254L385.33,2.16"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(128,128,128);" />
+<text x="354.783" y="22.627" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(-45 354.783,32.707)" dominant-baseline="central">C4 típus</text>
+<path d="M181.676,123.774L181.676,107.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M189.596,123.774L189.596,107.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M181.676,115.854L189.596,115.854"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M185.636,115.854L185.636,130.254L124.542,191.348"  style="fill:none;stroke-width:2.16;stroke-linejoin:round;stroke:rgb(128,128,128);" />
+<text x="155.089" y="150.721" text-anchor="middle" fill="rgb(0,0,0)" transform="rotate(-45 155.089,160.801)" dominant-baseline="central">távoliság</text>
+<path d="M754.508,143.774L754.508,127.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M467.516,143.774L467.516,127.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<polygon points="467.516,135.854 479.036,131.534 479.036,140.174" style="fill:rgb(128,128,128)"/>
+<polygon points="754.508,135.854 742.988,140.174 742.988,131.534" style="fill:rgb(128,128,128)"/>
+<path d="M473.276,135.854L748.748,135.854"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<text x="611.012" y="146.654" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">32-bit egész</text>
+<path d="M754.508,163.774L754.508,147.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M324.236,163.774L324.236,147.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<polygon points="324.236,155.854 335.756,151.534 335.756,160.174" style="fill:rgb(128,128,128)"/>
+<polygon points="754.508,155.854 742.988,160.174 742.988,151.534" style="fill:rgb(128,128,128)"/>
+<path d="M329.996,155.854L748.748,155.854"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<text x="539.372" y="166.654" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">48-bit mutató</text>
+<path d="M754.508,183.774L754.508,167.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M681.068,183.774L681.068,167.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<path d="M324.236,183.774L324.236,167.934"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<polygon points="324.236,175.854 335.756,171.534 335.756,180.174" style="fill:rgb(128,128,128)"/>
+<polygon points="681.068,175.854 669.548,180.174 669.548,171.534" style="fill:rgb(128,128,128)"/>
+<path d="M329.996,175.854L675.308,175.854"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<text x="502.652" y="186.654" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">beágyazott szöveg</text>
+<polygon points="681.068,175.854 692.588,171.534 692.588,180.174" style="fill:rgb(128,128,128)"/>
+<polygon points="754.508,175.854 742.988,180.174 742.988,171.534" style="fill:rgb(128,128,128)"/>
+<path d="M686.828,175.854L748.748,175.854"  style="fill:none;stroke-width:2.16;stroke:rgb(128,128,128);" />
+<text x="717.788" y="186.654" text-anchor="middle" fill="rgb(0,0,0)" dominant-baseline="central">NUL</text>
+</svg>
+

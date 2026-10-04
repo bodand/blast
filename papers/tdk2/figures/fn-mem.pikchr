@@ -1,0 +1,93 @@
+ind = 8pt
+ln = 10pt
+
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
+
+Base0: dot invis
+
+Data0: text "FFFFFFFFAAaaCCXXKKKKK...KKRRRRRRRRR...RR" monospace big fit with .w at Base0.c - (.44, 0)
+
+peght = .11
+
+Start0: dot invis at (Base0.c.x, Data0.sw.y)
+End0: dot invis at (Data0.sw.x + .937, Start0.c.y)
+Mid0: dot invis at ((Start0.c.x + End0.c.x)/2, Start0.c.y)
+
+line color gray <-> from Start0 to End0
+text "függvény" "mutató" with .n at Mid0.s
+line color gray up peght from Start0 - (0, peght/2)
+line color gray up .274 from End0 - (0, peght/2)
+text "0x08" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start1: dot invis at End0
+End1: dot invis at Start1 + (.123, 0)
+Mid1: dot invis at ((Start1.c.x + End1.c.x)/2, Start1.c.y)
+
+line color gray from Start1 to End1
+line color gray up peght from Start1 - (0, peght/2)
+line color gray up peght from End1 - (0, peght/2)
+#text "0x0A" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start2: dot invis at End1
+End2: dot invis at Start2 + (.123, 0)
+Mid2: dot invis at ((Start2.c.x + End2.c.x)/2, Start2.c.y)
+
+line color gray from Start2 to End2
+line color gray up peght from Start2 - (0, peght/2)
+line color gray up peght from End2 - (0, peght/2)
+#text "0x0C" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start3: dot invis at End2
+End3: dot invis at Start3 + (.123, 0)
+Mid3: dot invis at ((Start3.c.x + End3.c.x)/2, Start3.c.y)
+
+line color gray from Start3 to End3
+line color gray up peght from Start3 - (0, peght/2)
+line color gray up peght from End3 - (0, peght/2)
+#text "0x0E" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start4: dot invis at End3
+End4: dot invis at Start4 + (.123, 0)
+Mid4: dot invis at ((Start4.c.x + End4.c.x)/2, Start4.c.y)
+
+line color gray from Start4 to End4
+line color gray up peght from Start4 - (0, peght/2)
+line color gray up .274 from End4 - (0, peght/2)
+text "0x10" monospace with .s at 2nd vertex of last line - (0, .06)
+
+Start5: dot invis at End4
+End5: dot invis at Start5 + (.623, 0)
+Mid5: dot invis at ((Start5.c.x + End5.c.x)/2, Start5.c.y)
+text "kontextus" "(ctx)" with .n at Mid5.s
+
+line <-> color gray from Start5 to End5
+line color gray up peght from Start5 - (0, peght/2)
+line color gray up peght from End5 - (0, peght/2)
+
+Start6: dot invis at End5
+End6: dot invis at Start6 + (.865, 0)
+Mid6: dot invis at ((Start6.c.x + End6.c.x)/2, Start6.c.y)
+text "argumentumok" with .n at Mid6.s
+
+line <-> color gray from Start6 to End6
+line color gray up peght from Start6 - (0, peght/2)
+line color gray up peght from End6 - (0, peght/2)
+
+## lines ##
+
+line color gray from Mid1 down .35 then .4 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "aritás" aligned above
+
+line color gray from Mid2 down .45 then .64 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "arg. száma" aligned above
+
+line color gray from Mid3 down .55 then .64 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "ctx. mérete" aligned above
+
+line color gray from Mid4 down .65 then .78 heading -135
+line invis color gray from 3rd vertex of last line to 2nd vertex of last line "nem használt" aligned above
+
+

@@ -1,0 +1,57 @@
+% !TeX spellcheck = hu_HU
+% !TeX encoding = UTF-8
+% !TeX program = xelatex
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+\selecthungarian
+
+%----------------------------------------------------------------------------
+% Abstract in Hungarian
+%----------------------------------------------------------------------------
+\chapter*{Kivonat}\addcontentsline{toc}{chapter}{Kivonat}
+
+A modern szoftverfejlesztés sok erőforrást fektet a fejlesztés során előállított hibák mihamarabbi megtalálására.
+Ebben, a klasszikus emberi ellenőrzések mellett, különböző automatizált eszközök segítik a fejlesztők munkáját.
+Egyike ilyen eszköznek maguk a fordítóprogramok, amelyek a fordítás során egyre több hibára képesek figyelmeztetésekkel rámutatni a fejlesztő számára.
+
+Azonban sok hibát nem csak a fordítás során érdemes megkeresni.
+A fejlesztés során a fordítási folyamattól független, pusztán erre specializált \un statikus analízis eszközöket használnak – ilyenből létezik megvalósítás sok nyelvhez és környezethez, akár ingyenes és nyílt, akár piaci, licencelt formában.
+Ezek célja, hogy determinisztikus módon megkeressenek a kódban olyan mintákat, amelyeket helytelennek, veszélyesnek gondolnak, hogy azokat javítani lehessen még mielőtt ténylegesen hibás viselkedést okoznak.
+Bár ezek előnye, hogy célirányosan csak hibakeresésre tudnak koncentrálni, sok esetben általános eszközökről van szó, amelyek kiegészítése saját elvárásainkra nehézkes és kényelmetlen.
+Így az általánosan ismert hibákat jól megtalálják, de egyes projektek saját, projekt elvárásait nem tudják könnyedén kielégíteni.
+
+Erre a problémára a dolgozat egy olyan eszközt mutat be, amelyikben saját, programozható mintákat és kódot lehetséges megadni egy C és C++ ellenőrzését végző motornak, ami ennek felhasználásával teljesen személyre szabhatóvá válik.
+A saját fejlesztésű eszközökhöz, vagy egy elterjedt alternatívához képest (clang-tidy) ezt a rugalmasságot, a felhasználó számára kevesebb kóddal tudja biztosítani.
+Emiatt könnyebben lehet projekt szintű idiómák, megkötések, szabályok használatát felülvizsgálni és betartatni.
+
+\vfill
+\selectenglish
+
+
+%----------------------------------------------------------------------------
+% Abstract in English
+%----------------------------------------------------------------------------
+\chapter*{Abstract}\addcontentsline{toc}{chapter}{Abstract}
+
+In modern software development practices, a lot of resources are spent trying to find various errors made during development as early as possible.
+To this end, besides manually checking the produced sources, multiple automated tools help developers.
+One of these tools is the compiler itself, which can produce ever more warning messages, aiding developers during the compilation phase.
+
+It is beneficial not to limit these validations to compilation.
+During development many specialized so called {\it static analysis tools} are used, independently of the compile steps.
+These tools are readily available for a myriad of languages and frameworks in free, open-source and in commercial variants.
+Their aim is to deterministically search for patterns in the project's sources which they deem incorrect or dangerous, which allows developers to more easily find and fix them before they cause invalid program behavior.
+However, these tools are specialized to searching for these patterns which makes them easily applicable, they aim to serve most projects, which makes them hard to customize for one's needs.
+Because of this, they find well-known errors, but have trouble finding project specific requirements and needs.
+
+To solve this, I present a tool that allows programmers to describe their own patterns and code to run on a static-analysis engine for C and C++ projects, allowing its total customization.
+Using this tool requires less code than writing a custom tool, or relying on already existing alternatives such as clang-tidy.
+This property allows easily inspecting and enforcing project specific idioms, rules, and limitations on the source code.
+
+\vfill
+\selectthesislanguage
+
+\newcounter{romanPage}
+\setcounter{romanPage}{\value{page}}
+\stepcounter{romanPage}

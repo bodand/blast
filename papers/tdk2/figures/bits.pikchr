@@ -1,0 +1,86 @@
+ind = 8pt
+ln = 10pt
+
+xbg = 0xf2f2f2
+xred = 0xc63131
+xblue = 0x4674fc
+xgreen = 0x18a52b
+
+Base0: dot invis
+Base1: dot invis at Base0 - (0, ln)
+Base2: dot invis at Base1 - (0, ln)
+Base3: dot invis at Base2 - (0, ln)
+Base4: dot invis at Base3 - (0, ln)
+Base5: dot invis at Base4 - (0, ln)
+
+Lbl0:  text "64-bit double" bold fit with .e at Base0.c
+Data0: text "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" monospace big fit with .w at Base0.c - (.6, 0)
+
+Lbl1:  text "NaN szabad bitek" bold fit with .e at Base1.c + (.06, 0)
+Data1: text "N           NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN" monospace big fit with .w at Base1.c - (.6, 0)
+
+Lbl2:  text "adat bitek" bold fit with .e at Base2.c - (.02, 0)
+Data2: text "                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" monospace big fit with .w at Base2.c - (.6, 0)
+
+
+### 0. sor ###
+S0: line color gray up .14 from Data0.sw + (.735, .07) \
+  then go .4 heading 45
+line invis from 2nd vertex of last line to 3rd vertex of last line "előjel" aligned above
+
+line color gray up .14 from Data0.sw + (1.42, .07) \
+  then go .45 heading 45
+line invis from 2nd vertex of last line to 3rd vertex of last line "kitevő" aligned above
+
+### 1. sor ###
+
+S1: line color gray up .14+1*ln from Data1.sw + (1.67, .07) \
+  then go .6 heading 45
+line invis from 2nd vertex of last line to 3rd vertex of last line "C4 típus" aligned above
+
+## típusok ##
+
+peght = .11
+
+R0: dot invis at Base2 + (.08, 0)
+R1: dot invis at (1st vertex of S0.x, Base2.c.y)
+Rc: dot invis at ((R0.x+R1.x)/2, R0.y)
+
+line color gray up peght from R0 - (0, peght/2)
+line color gray up peght from R1 - (0, peght/2)
+line color gray from R0 to R1
+
+line color gray from Rc down .1 \
+  then .6 heading -135
+line invis from 3rd vertex of last line to 2nd vertex of last line "távoliság" aligned above
+
+Start0: dot invis at (Data2.se.x - 2.663, Base3.c.y)
+End0: dot invis at (Data2.se.x - .67, Base3.c.y)
+
+line color gray up peght from End0 - (0, peght/2)
+line color gray up peght from Start0 - (0, peght/2)
+line <-> color gray from Start0 to End0
+text with .n at last .s + (0, .03) "32-bit egész"
+
+Start1: dot invis at (1st vertex of S1.x, Base4.c.y)
+End1: dot invis at (Data2.se.x - .67, Base4.c.y)
+
+line color gray up peght from End1 - (0, peght/2)
+line color gray up peght from Start1 - (0, peght/2)
+line <-> color gray from Start1 to End1 
+text with .n at last .s + (0, .03) "48-bit mutató"
+
+Start2: dot invis at (1st vertex of S1.x, Base5.c.y)
+Mid2: dot invis at (Data2.se.x - 1.18, Base5.c.y)
+End2: dot invis at (Data2.se.x - .67, Base5.c.y)
+
+line color gray up peght from End2 - (0, peght/2)
+line color gray up peght from Mid2 - (0, peght/2)
+line color gray up peght from Start2 - (0, peght/2)
+
+line <-> color gray from Start2 to Mid2
+text with .n at last .s + (0, .03) "beágyazott szöveg"
+
+line <-> color gray from Mid2 to End2
+text with .n at last .s + (0, .03) "NUL"
+
