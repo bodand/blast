@@ -7,10 +7,10 @@
 
 A fejlesztés során előállított hibák javítása annál olcsóbb, minél hamarabb találják meg őket \cite{boehmSoftwareEngineeringEconomics1984}, \cite{boehmSoftwareDefectReduction2005}.
 Ezt az iparág régóta tudja.
-Ennek megfelelően, a szoftverfejlesztés folyamata során egyre nagyobb és nagyobb hangsúlyt fektetnek az adott fázis helyességének ellenőrzésére.
+Ennek megfelelően, a szoftverfejlesztés folyamata során egyre nagyobb és nagyobb hangsúlyt fektetnek az adott fázis helyességének ellenőrzésére, a használt módszertantól függetlenül.
 Ennek a folyamatnak a forráskód fázisában használt alappillérei azok a különböző eszközök, amelyek automatikusan megvizsgálják a forráskódokat, ezzel segítve a fejlesztők munkáját.
-Bár maguk az eszközök nem helyettesítik a code-review folyamatot, minél több eszközzel lehetséges annak ellenőrzése, annál nagyobb eséllyel lehet elkapni olyan hibákat, amelyek vélhetőleg hibás működést eredményeznek.
-Mivel ezeket a folyamatokat fejlesztés közben lehetséges futtatni, így már akár a kód írása közben a fejlesztő környezetben, akár a lokális fordítás/futtatás során, figyelmeztetik a fejlesztőt az esetleges hiba lehetőségére.
+Bár maguk az eszközök nem helyettesítik a code-review folyamatot, minél több és pontosabb eszközzel lehetséges annak ellenőrzése, annál nagyobb eséllyel lehet elkapni olyan hibákat, amelyek vélhetőleg hibás működést eredményeznek.
+Mivel ezeket a folyamatokat fejlesztés közben is lehetséges futtatni, így már akár a kód írása közben a fejlesztő környezetben, akár a lokális fordítás/futtatás során, figyelmeztetik a fejlesztőt az esetleges hiba lehetőségére.
 
 Kiemelkedő eszközök maguk a fordítóprogramok, amelyek egyre nagyobb arányban képesek hibákra figyelmeztetni a fejlesztőket.
 Egy jó példa, amire már teljesen képesek, a C nyelv printf \cite{theopengroupFprintf2024} függvénycsaládjának ellenőrzése: mivel a formátum sztringnek meg kell egyeznie a paraméterként átadott értékeknek, így a fordító ennek nem teljesülése esetén figyelmeztet.
@@ -20,14 +20,14 @@ Látszik azonban, hogy a fordítók magukban nem elegendőek.
 Megfelelően komplex nyelveknél (ezek közül kiemelkedő \pl a C++), nem képesek minden munkát elvégezni fordítás közben.
 Létezhetnek olyan mintázatok, amelyek helyesek, és akár még látszólag jól is viselkednek, de nem ajánlott új kód írásakor használni ezeket.
 Ennek számos oka lehetséges, például rossz példának ({\it anti-pattern}) számít, vagy szimplán nem biztonságos, mert könnyű elrontani a használatát és van helyette ekvivalens alternatíva.
-A C++ nyelv esetén, ahol a nyelv történelme miatt ezeknek a száma kiemelkedő, erre nagy figyelmet kell fordítani.
+A C++ nyelv esetén, ahol a nyelv történelme miatt ezeknek a száma jóval nagyobb, mint újabb és kisebb nyelvek esetén, erre nagy figyelmet kell fordítani.
 A fejlesztőknek szóló ajánlások egy nagy forrása a {\it C++ Core Guidelines} \cite{bjarnestroustrupCoreGuidelines2026}, amelyik összefoglalja az ajánlott nyelvi eszközöket, és kiemeli, hogy mit és mit nem érdemes csinálni.
 Bár ennek a betartása elsődlegesen a fejlesztő manuális feladata, az ajánlásoknak nagy része már beágyazásra került kész forrás ellenőrző eszközökbe.
 Ez megkönnyíti alkalmazásukat.
 
 Léteznek olyan konkrét statikus analízist végrehajtó eszközök, amelyek pusztán ezzel foglalkoznak.
 Az előző paragrafus vége már utalt erre: ezek kész, futtatható programok, amelyek egy halmaz jól meghatározott ellenőrzést és ajánlást tartalmaznak a kóddal kapcsolatban, majd futtatáskor képesek ezeknek a meghágásaira figyelmeztetni a fejlesztőt.
-Ezeknek a tervezői a lehető legtöbb lehetséges hibaforrásra próbálnak ellenőrzéseket megvalósítani, hogy a végfelhasználó egyszerű konfigurálás után csak futtatnia kelljen azokat.
+Ezeknek a tervezői a lehető legtöbb általában is előfordulú lehetséges hibaforrásra próbálnak ellenőrzéseket megvalósítani, hogy a végfelhasználó egyszerű konfigurálás után csak futtatnia kelljen azokat.
 
 Ezek azonban, egyre növekvő számuk ellenére is még mindig általános elvárások a programkóddal kapcsolatban, amit érdemes figyelembe venni minden szoftverprojekt esetén az adott nyelvben.
 Egyik eddig felsorolt módszer (fordító, Core Guidelines, analízis eszközök) sem adja meg teljességében azt a rugalmasságot, hogy egy konkrét szoftverprojekt saját kritériumait kodifikálja, hogy azt automatikusan tudja ellenőrizni.

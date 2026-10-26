@@ -1,0 +1,5 @@
+if(EXISTS "/home/bodand/src/project/blast/cmake-build-rel-clang22/test/blast-test-b12d07c_tests.cmake")
+  include("/home/bodand/src/project/blast/cmake-build-rel-clang22/test/blast-test-b12d07c_tests.cmake")
+else()
+  add_test(blast-test_NOT_BUILT-b12d07c blast-test_NOT_BUILT-b12d07c)
+endif()

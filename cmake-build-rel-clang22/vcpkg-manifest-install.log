@@ -1,0 +1,62 @@
+Detecting compiler hash for triplet x64-linux...
+Compiler found: /usr/bin/clang++-22
+All requested packages are currently installed.
+Total install time: 109 us
+bdwgc provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(BDWgc CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE BDWgc::gc BDWgc::cord BDWgc::gccpp BDWgc::gctba)
+
+bdwgc provides pkg-config modules:
+
+  # A garbage collector for C and C++
+  bdw-gc
+
+catch2 provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(Catch2 CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE Catch2::Catch2 Catch2::Catch2WithMain)
+
+catch2 provides pkg-config modules:
+
+  # A modern, C++-native test framework for C++14 and above (links in default main)
+  catch2-with-main
+
+  # A modern, C++-native, test framework for C++14 and above
+  catch2
+
+The package fmt provides CMake targets:
+
+    find_package(fmt CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE fmt::fmt)
+
+    # Or use the header-only version
+    find_package(fmt CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE fmt::fmt-header-only)
+
+libassert provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(libassert CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE libassert::assert)
+
+mio provides CMake targets:
+
+  # this is heuristically generated, and may not be correct
+  find_package(mio CONFIG REQUIRED)
+  target_link_libraries(main PRIVATE mio::mio mio::mio-headers)
+
+The package pcre2 is compatible with built-in CMake targets:
+
+    # Each component imports a target:
+    # TARGETS: PCRE2::8BIT PCRE2::16BIT PCRE2::32BIT PCRE2::POSIX
+    find_package(pcre2 CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE PCRE2::8BIT PCRE2::16BIT PCRE2::32BIT PCRE2::POSIX)
+
+The package uni-algo provides CMake targets:
+
+    find_package(uni-algo CONFIG REQUIRED)
+    target_link_libraries(main PRIVATE uni-algo::uni-algo)
+

@@ -1,0 +1,39 @@
+# vim: nospell
+Eobj: box thick "C4_External obj" big fit color orange
+
+Eempty: box dashed "clang::ASTUnit*" big wid Eobj.wid height Eobj.height with .s at .6 above Eobj.n color orange
+
+arrow from Eobj.n to Eempty.s color orange
+line from Eempty.n color orange then .356 heading 10
+F: dot invis at last line.end
+
+line from F then .15 heading -80 color orange
+line from F then .15 heading 100 color orange
+
+line invis from F then .05 heading 10
+F: dot invis at last line.end
+
+line from F then .15 heading -80 color orange
+line from F then .15 heading 100 color orange
+
+line dotted from Eobj.sw - (.2,.2) then right 1.6 \
+  then up until even with F \
+  then up .2 \
+  then left until even with Eobj.sw - (.2,.2) \
+  then down to Eobj.sw - (.2,.2) \
+  color orange
+text "GC kontextus" big bold color orange with .sw at 5th vertex of last line
+
+Ptr: box thick "std::unique_ptr<>" big wid Eobj.wid height Eobj.height with .w at 1 right of Eobj.e color green
+
+Ast: box thick "clang::ASTUnit" big wid Eobj.wid height Eobj.height with .s at .6 above Ptr.n color green
+
+arrow from Ptr.n to Ast.s color green
+
+line dotted from Ptr.sw - (.2,.2) then right 1.6 \
+  then up until even with Ast.n + (0,.2) \
+  then left until even with Ptr.sw - (.2,.2) \
+  then down to Ptr.sw - (.2,.2) \
+  color green
+text "Clang RAII" big bold color green with .sw at 4th vertex of last line
+

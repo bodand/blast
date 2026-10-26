@@ -36,12 +36,14 @@
 #ifndef BLAST_PRIMITIVE_CMP_H
 #define BLAST_PRIMITIVE_CMP_H
 
+#include "dbg_ensure.h"
+
 #define c4_primitive_cmp(p, op) \
 	c4_let_native(p)(c4_datum a, c4_datum b) { \
 		const bool rel = c4_datum_cmp(a, b) op 0; \
 		c4_datum d; \
 	\
-		assert(c4_datum_from_boolean(rel, &d) == 0); \
+		dbg_ensure(== 0, c4_datum_from_boolean(rel, &d)); \
 		return d; \
 	}
 

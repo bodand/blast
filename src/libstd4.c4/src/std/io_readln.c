@@ -40,12 +40,18 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "dbg_ensure.h"
+
 c4_let_native(io_readln)(void) {
 	char buf[8192];
-	assert(fgets(buf, sizeof(buf), stdin) != NULL);
+	if (fgets(buf, sizeof(buf), stdin) == NULL) {
+		c4_datum out;
+		c4_datum_from_nil(&out);
+		return out;
+	}
 	const size_t buf_sz = strcspn(buf, "\n");
 
 	c4_datum out;
-	assert(c4_datum_from_string_sz(buf, buf_sz, &out) >= 0);
+	dbg_ensure(>= 0, c4_datum_from_string_sz(buf, buf_sz, &out));
 	return out;
 }

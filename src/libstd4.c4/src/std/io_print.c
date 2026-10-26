@@ -40,14 +40,17 @@
 
 #include <c4rt3/c4rt.h>
 
-c4_let_native(io_print)(const c4_datum d) {
-	char* str;
-	size_t str_sz;
+#include "dbg_ensure.h"
 
-	assert(c4_datum_coerce_string(d, &str, &str_sz) == 0);
+c4_let_native(io_print)(const c4_datum d) {
+	char* str = NULL;
+	size_t str_sz = 0;
 	int res = 0;
+
+	dbg_ensure(== 0, c4_datum_coerce_string(d, &str, &str_sz));
 	do res = write(STDOUT_FILENO, str, str_sz);
 	while (res == -1 && errno == EINTR);
 
 	return d;
 }
+

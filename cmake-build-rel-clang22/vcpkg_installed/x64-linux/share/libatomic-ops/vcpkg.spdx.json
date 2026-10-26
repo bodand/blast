@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/libatomic-ops-x64-linux-7.8.2-6be3f970-05c9-48e1-a6b3-f109711b95bc",
+  "name": "libatomic-ops:x64-linux@7.8.2 70759e129b3c18297b146e73a5695ea632375a1e4bb4b4f5383191d386516b5e",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-2025-02-11-bec4296bf5289dc9ce83b4f5095943e44162f9c2"
+    ],
+    "created": "2026-10-18T09:15:25Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "libatomic-ops",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "7.8.2",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg@46231da262a01373e326ad31eeb8ac03cecbbeb3",
+      "homepage": "https://github.com/ivmai/libatomic_ops",
+      "licenseConcluded": "MIT OR GPL-2.0-or-later",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "The atomic_ops project (Atomic memory update operations portable implementation)",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "libatomic-ops:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "70759e129b3c18297b146e73a5695ea632375a1e4bb4b4f5383191d386516b5e",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "MIT OR GPL-2.0-or-later",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-0",
+      "name": "ivmai/libatomic_ops",
+      "downloadLocation": "git+https://github.com/ivmai/libatomic_ops@v7.8.2",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6b0ab1c01600346413184f66eaff1f707d1bc46fad9fd52ac855f2c66a55097dfad620c68b898459527142c1eb7ba50fde34498f962f24cec83268500c5bcccb"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libatomic-ops/46231da262a01373e326ad31eeb8ac03cecbbeb3/vcpkg.json",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4dbaa34ffb541183f59486e1245153955e599c25b3ef2d2e6549645090b70e27"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libatomic-ops/46231da262a01373e326ad31eeb8ac03cecbbeb3/portfile.cmake",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "311ffffc6620a63e0523605bdadd4c034c295c59db1844616e35d919442cc1f0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

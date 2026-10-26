@@ -1,0 +1,148 @@
+Package: vcpkg-cmake-config
+Version: 2024-05-23
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 61a61de82743fe11b58138817916aaf243af0176cea88aca2bf4bcc35355da3f
+Status: install ok installed
+
+Package: vcpkg-cmake
+Version: 2024-04-23
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 820124de3538cb21091acddc4e53cf94c2cd47fcba166f5c847074174bbb60fe
+Status: install ok installed
+
+Package: libatomic-ops
+Version: 7.8.2
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 70759e129b3c18297b146e73a5695ea632375a1e4bb4b4f5383191d386516b5e
+Description: The atomic_ops project (Atomic memory update operations portable implementation)
+Status: install ok installed
+
+Package: bdwgc
+Version: 8.2.8
+Depends: libatomic-ops, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 30b8bc8481ace0662201a4a18d7a5ffcdd17c8cd69255a55d60bb6943c407e14
+Description: The Boehm-Demers-Weiser conservative C/C++ Garbage Collector (libgc, bdwgc, boehm-gc)
+Status: install ok installed
+
+Package: catch2
+Version: 3.7.1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: b2af07f57ef3b46c716307557e010a3a15ab4991390b99e4b718914514c33ca5
+Description: A modern, C++-native, test framework for unit-tests, TDD and BDD.
+Status: install ok installed
+
+Package: fmt
+Version: 11.0.2
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 02cbedf6978f2684bc28a831b790b04f9faace0d1b9c168ab0b51907ef8fd43f
+Description: {fmt} is an open-source formatting library providing a fast and safe alternative to C stdio and C++ iostreams.
+Status: install ok installed
+
+Package: magic-enum
+Version: 0.9.6
+Port-Version: 1
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: a1b2c2fff58aa601b0315df8e3dc60043f4f597fde2c3e0955e1218a549408ee
+Description: Header-only C++17 library provides static reflection for enums, work with any enum type without any macro or boilerplate code.
+Status: install ok installed
+
+Package: zstd
+Version: 1.5.6
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 68d3d5d217627f90f29f3ff0d6401d8d561e8139b1651d21958dee3db5640167
+Description: Zstandard - Fast real-time compression algorithm
+Status: install ok installed
+
+Package: zlib
+Version: 1.3.1
+Depends: vcpkg-cmake
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 4575a5ad528b4d263a067fdea9dee0b35841aed53a2de800cdcafd80fbdaa776
+Description: A compression library
+Status: install ok installed
+
+Package: libdwarf
+Version: 0.11.0
+Depends: vcpkg-cmake, vcpkg-cmake-config, zlib, zstd
+Architecture: x64-linux
+Multi-Arch: same
+Abi: f003ab2970a33fa789d63d95986a8c74a03d864ddab9f6ea13d2d9a8fd7c1ed3
+Description: A library for reading DWARF2 and later DWARF.
+Status: install ok installed
+
+Package: cpptrace
+Version: 0.7.2
+Depends: libdwarf, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: c6ca09a502e7ca3fcaba17b829982e1dfbee095a1e0b1a2e77491e45f718ed34
+Description: Simple, portable, and self-contained stacktrace library for C++11 and newer
+Status: install ok installed
+
+Package: libassert
+Version: 2.1.1
+Depends: cpptrace, magic-enum, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: ef7733f4ca5ff5e084a088aa42816ee08bc062afc4e2b9baf54925f45440cfb9
+Description: The most over-engineered C++ assertion library
+Status: install ok installed
+
+Package: mio
+Version: 2023-03-03
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 3890abf1ec09f00cad325abf24a7a7ef6245d5eac432c9943f9d3b6bcc309e2c
+Description: Cross-platform header-only C++11 library for memory mapped file IO.
+Status: install ok installed
+
+Package: pcre2
+Version: 10.43
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: d46c3d9e92e0d7feb369e7870bb9eb1a0af62c4dbd96227b9ecd1c1b33000648
+Description: Regular Expression pattern matching using the same syntax and semantics as Perl 5.
+Default-Features: platform-default-features
+Status: install ok installed
+
+Package: pcre2
+Feature: jit
+Architecture: x64-linux
+Multi-Arch: same
+Description: Enable support for Just-In-Time compiling regex matchers
+Status: install ok installed
+
+Package: pcre2
+Feature: platform-default-features
+Architecture: x64-linux
+Multi-Arch: same
+Description: Enable default features
+Status: install ok installed
+
+Package: uni-algo
+Version: 1.2.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 1c19b250d79670f7f8a0ba17233d31b55c460f0838324d023116c45c6294cfd7
+Description: Unicode Algorithms Implementation
+Status: install ok installed
+

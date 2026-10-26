@@ -1,13 +1,18 @@
 DOCUMENT=thesis
 #MODE=-interaction=batchmode
 
+.PHONY: figures all clean pdflatex xelatex lualatex compile_xelatex compile_pdflatex compile_lualatex
+
 all: clean pdflatex
 	echo
+
+figures:
+	$(MAKE) -C figures all
 
 xelatex: compile_xelatex
 	mv $(DOCUMENT)-xelatex.pdf $(DOCUMENT).pdf
 
-compile_xelatex:
+compile_xelatex: figures
 	xelatex $(MODE) $(DOCUMENT)
 	bibtex $(DOCUMENT)
 	xelatex $(MODE) $(DOCUMENT)
@@ -17,7 +22,7 @@ compile_xelatex:
 pdflatex: compile_pdflatex
 	mv $(DOCUMENT)-pdflatex.pdf $(DOCUMENT).pdf
 
-compile_pdflatex:
+compile_pdflatex: figures
 	pdflatex $(MODE) $(DOCUMENT)
 	bibtex $(DOCUMENT)
 	pdflatex $(MODE) $(DOCUMENT)
@@ -29,7 +34,7 @@ compile_pdflatex:
 lualatex: compile_lualatex
 	mv $(DOCUMENT)-lualatex.pdf $(DOCUMENT).pdf
 
-compile_lualatex:
+compile_lualatex: figures
 	lualatex $(MODE) $(DOCUMENT)
 	bibtex $(DOCUMENT)
 	lualatex $(MODE) $(DOCUMENT)

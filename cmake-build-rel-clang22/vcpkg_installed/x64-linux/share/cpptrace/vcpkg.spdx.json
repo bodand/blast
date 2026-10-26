@@ -1,0 +1,132 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/cpptrace-x64-linux-0.7.2-0d5fabc7-a12d-4d55-b937-8c5a7d0a0e0a",
+  "name": "cpptrace:x64-linux@0.7.2 c6ca09a502e7ca3fcaba17b829982e1dfbee095a1e0b1a2e77491e45f718ed34",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-2025-02-11-bec4296bf5289dc9ce83b4f5095943e44162f9c2"
+    ],
+    "created": "2026-10-18T09:15:49Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-2"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-2",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "cpptrace",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "0.7.2",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg@1ca7b77365f1ebaa6b02fe8aa6bac200867303cb",
+      "homepage": "https://github.com/jeremy-rifkin/cpptrace",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "Simple, portable, and self-contained stacktrace library for C++11 and newer",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "cpptrace:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "c6ca09a502e7ca3fcaba17b829982e1dfbee095a1e0b1a2e77491e45f718ed34",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-0",
+      "name": "jeremy-rifkin/cpptrace",
+      "downloadLocation": "git+https://github.com/jeremy-rifkin/cpptrace@v0.7.2",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "476db9964d4b8b353015e998e6e74ff811957f05319d8066bafd3f0858c945e7bdfd922f286ca6152a3094c5ad93ccac0790d70e248223c129020eddd7eee72d"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/cpptrace/1ca7b77365f1ebaa6b02fe8aa6bac200867303cb/portfile.cmake",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "09b7da685390d70dcac07b0e505eb584b966431b98243c32ddf36d1daf11d636"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/cpptrace/1ca7b77365f1ebaa6b02fe8aa6bac200867303cb/vcpkg.json",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "6c220dd4f606ee0f2a1706a190b14ead2a9dd51da3d0b2d7accd6c1c783fb727"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/cpptrace/1ca7b77365f1ebaa6b02fe8aa6bac200867303cb/usage",
+      "SPDXID": "SPDXRef-file-2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "27ac883d5781b7a4f414cb92dd489ee1624ff3abeaccc2744e734c7f65756b9f"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

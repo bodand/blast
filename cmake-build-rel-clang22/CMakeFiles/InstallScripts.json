@@ -1,0 +1,23 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libsgetopt/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libryu/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libc4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libc4rt2/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/c4c/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/c4ar/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/c4if/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/c4ld/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libarray.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libstd4.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libblast.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libtap.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libprcmgr.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libraylib.c4/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/test/cmake_install.cmake",
+		"/home/bodand/src/project/blast/cmake-build-rel-clang22/docs/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

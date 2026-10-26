@@ -188,7 +188,7 @@ namespace {
 			clang::DiagnosticOptions opts{};
 			opts.ShowColors = llvm::sys::Process::StandardErrHasColors();
 
-			// hosted out of loop as to not consistently reallocate 1 sized arrays
+			// hoisted out of loop as to not consistently reallocate 1 sized arrays
 			std::vector<std::unique_ptr<clang::ASTUnit>> units;
 			units.reserve(1);
 
@@ -223,6 +223,8 @@ namespace {
 				auto&& unit = units.front();
 				_callback.set_ast(std::move(unit));
 				_callback.match(_finder);
+
+				GC_gcollect();
 			}
 
 			GC_unregister_my_thread();

@@ -351,7 +351,9 @@ main(int argc, const char* const* argv) try {
 	module.setDataLayout(machine->createDataLayout());
 	module.setTargetTriple(llvm_triple);
 
-	const auto assembly = c4rt2c::encode_xport(llvm_triple, merged_symbol_buffer);
+	const auto assembly = c4rt2c::encode_xport(llvm_triple, 
+			{reinterpret_cast<const unsigned char*>(merged_symbol_buffer.data()), 
+			merged_symbol_buffer.size()});
 	if (!assembly) die(100, "{}: fatal: {}", assembly.error());
 
 	module.appendModuleInlineAsm(*assembly);

@@ -12,7 +12,7 @@ Ennek ellenére, a Clang támogat úgynevezett ``FixIt'' segítségeket.
 Ezek a normál diagnosztikával egyszerre tudnak megjelenni és konkrét javítási lehetőségeket tudnak javasolni a programozó számára.
 
 Ezt a lehetőséget felhasználva, a blAST eszköz képes lenne nem csak a hibákat megjeleníteni, hanem egyes esetekben a konkrét megoldást is képes lehet kiírni a felhasználó számára.
-Ezzel lehetővé válik sokkal egyértelműbb hiba üzeneteket létrehozni.
+Ezzel lehetővé válik sokkal egyértelműbb hiba üzeneteket létrehozni, amik javítják a felhasználási élményt.
 
 Ezt vélhetőleg a legjobban egy kibővített C4 ``diagnose'' függvénnyel lehetséges megvalósítani, amelyik a ``fixit'' paramétert is értelmezni képes.
 Például \aref{lst:blast-fixit}.~lista egy lehetséges szintaktikai megoldást mutat be.
@@ -28,10 +28,10 @@ blast ast
 	that # ...
 \end{lstlisting}
 
-\section{Több nyelv támogatás}
+\section{Több nyelv támogatása}
 
 A jelenlegi rendszer specifikusan a Clang alapú C és C++ nyelveket célozza meg.
-Emiatt nagy része a megvalósított C4 szintű elemeknek ezen nyelvek sajátosságait célozzák meg, és sok helyet feltételeznek olyan dolgokat, amelyek specifikusan csak ebben a felállásban igazak.
+Emiatt nagy része a megvalósított C4 szintű elemeknek ezen nyelvek sajátosságait célozzák meg, és sok helyen feltételeznek olyan dolgokat, amelyek specifikusan csak ebben a felállásban igazak.
 
 Ennek ellenére, a legkülsőbb rétege a blAST eszköznek nem követeli meg, hogy ezeket a nyelveket használja.
 A konkrét {\tt such ... that ... } szintaxis például teljesen független minden másik elemtől, mert csak a paramétereinek megfelelő struktúráját hivatott biztosítani.

@@ -21,8 +21,8 @@ let +such/2 { |obj modif| { |ms hs|
 
 let +bound/2 { |name obj| { |ms hs x y any|
 	&(obj)/5 ms hs
-		x 
-		y 
+		x
+		y
 		str_cat str_cat
 			'.bind("' name '")'
 }}

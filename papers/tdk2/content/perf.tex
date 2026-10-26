@@ -2,8 +2,138 @@
 % !TeX encoding = UTF-8
 % !TeX program = xelatex
 %----------------------------------------------------------------------------
-\chapter{Hatékonyság}
+\chapter{Hatékonyság}\label{ch:perf}
 %----------------------------------------------------------------------------
 
-A blAST párhuzamos, és nem tartja a feldolgozott \gls{AST} egységeket memóriában feldolgozás után.
+A blAST párhuzamos, és nem tartja a feldolgozott \gls{AST} egységeket memóriában feldolgozás után, csak az nyers eredmény szövegét.
+Ez előnyét képzi a naiv clang libTooling eszközökhöz képes, amelyek minden esetben a teljes projektet próbálják memóriában tartani, és sorban dolgozzák fel a bemenetüket.
+
+A {\tt clang-query} extra nehézsége, hogy parancssori paraméterben várja el az ellenőrizendő fájlokat.
+Ezt a fájllistát elő is kell állítani valami alapján, és emiatt nagy projektek esetén több különálló példányt kell indítani belőle, mert a forrásfájlok száma meghaladja az operációs rendszer által megadott parancssori paraméterszámot.
+
+A használt LLVM/Clang verzió 22, mind a konkrét clang-query, mind a blAST által használt könyvtárban.
+
+Az alábbi forráskódok lettek ez kipróbálva: 
+\begin{enumerate}
+\item {\bf systemd} A systemd eszközkészlet.
+Ez egy méretben nagy, de C kódbázis, ami az eredményeken is látszik.
+Azért erre esett a választás a C-t reprezentálni -- \pl egy kernel helyett -- mert a fordítási rendszere képes natívan fordítási adatbázist készíteni.
+\item {\bf blAST} A blAST projekt saját forrása.
+Ez C++20 kódbázis, nem kiemelkedően nagy, de már elegendő ahhoz, hogy értelmes futásidőket lehessen vizsgálni az elemzéséről.
+\item {\bf LLVM} Az LLVM 23.1.2 projektben az llvm, clang, clang-tools-extra, flang, lld, lldb, polly és bolt alprojektek bekapcsolásával.
+Ez egy nagyon nagy része az LLVM kódbázisnak, amivel a mérés célja, hogy az eszközöket nagy terhelés esetén is megvizsgálja.
+A használt konfiguráció így nagyságrendileg $11\,000$ forrásfájlt jelent.
+\end{enumerate}
+
+A mérés megvalósításához a Linux cgroups képessége került felhasználásra.
+Ez az az alrendszer, amelyik a híres Docker ökoszisztéma konténereinek az erőforrást limitáló részeit valósítják meg.
+Erre azért volt szükség, \pl egy egyszerű GNU {\tt /bin/time} programmal ellentétben, amelyik képes a mért idő mellett használt memóriát is mérni, mert a {\tt clang-query} méréseknél sok gyerek folyamatot indul.
+Emiatt se a tényleges processzor-időt se a memória használatot nem lehetséges könnyen mérni a teljes folyamat családra, csak a direkt leszármazottra, amelyik hamis értékeket mutatna -- kiemelkedően a memória kapcsán.
+
+Az előbbiek miatt, a következő módszer került használatra:
+a mérés elején egy külön cgroup példányba kerül elhelyezésre egy shell ({\tt /bin/sh}, ami a konkrét használt gépen {\tt /usr/bin/bash}), úgy, hogy a gyökér cgroup {\tt cgroup.subtree\_control} fájljában a {\tt "+cpu +memory"} paraméterekkel a cgroup példányban bekapcsolásra kerül a processzor és memória felügyelete.
+Amint ez elkészült, a ténylegesen mért parancsot futtató shell-t egy-egy levél cgroupba kerülnek elhelyezésre a mérés gyökér cgroupja alatt.
+A futás során a tényleges idő méréshez (a Linux kernel csak a processzor-időt méri) az előbb már említett {\tt /bin/time} alatt futtatjuk.
+Az ebből kapott falióra időből ({\tt wall-clock}) és a processzor időt a leszármazott cgroup {\tt cpu.stat} fájlból kiolvasva előállítható a processzorokra osztott százalékos kihasználtság.
+Hasonlóan a {\tt memory.peak} fájlból kiolvasható a teljes cgroup által maximum használt memória.
+Alább ezt a három adatot (falióra idő, arányos CPU-kihasználtság, max memória) használom fel.
+
+Az előbbiekben már említett {\tt sh} lépésnek az oka, hogy mind kettő eszköz esetén szükség volt különböző parancsokra a tényleges futtatáson kívül.
+A blAST esetében a fordítási és linkelési lépések is bele vannak számítva az időbe, míg a {\tt clang-query} esetén {\tt compile\_commands.json} fájlból az egyes fájlok kinyerése, majd az xargs program használatával való indítása.
+A használt rendszeren a {\tt /bin/sh} a Bash 5.3-as verziója.
+
+A mért parancsok a következőek, mindegyik esetben 10 darab futtatás történt.
+\sloppy
+\begin{description}
+\item[clang-query]
+{}
+Az alapértelmezett {\tt clang-query} futtatási mód, egy parancsnak a lehető legtöbb forrás átadásával, sorosan végrehajtva.
+Fontos kiemelni a {\tt\bf -n128} paramétert: ezzel xargs csak maximum 128 darab fájllal indít egy-egy {\tt clang-query} folyamatot.
+Ez ténylegesen csak az LLVM projekt méréseinél kerül használatra, mert ott a mérés közben ennél több fájllal futtatás esetén sajnos az kernel túl sok memória használat miatt a folyamatot kilövi.
+Bár ez torzítja a tényleges memória használatot, de cserébe jobban közelíti a tényleges helyzetet, amiben a valóságban sem lenne lehetséges egyben az egészet lefuttatni.
+\begin{lstlisting}[numbers=none,language=sh]
+jq '.[].file' compile_commands.json | xargs -n128 clang-query -c \
+	'match varDecl(hasGlobalStorage(), unless(isStaticLocal()), isExpansionInMainFile())
+		.bind("_1791115012909176658140675516733376CAUZCQKA")'
+\end{lstlisting}
+\item[clang-query32]
+A GNU xargs párhuzamosítását kihasználva, egyszerre akár 32 {\tt clang-query} indítása, fájlonként külön.
+Ez nem szabványos POSIX képessége az xargs-nak, és az alább látható módon nem garantál helyes kimenetet, mert összefonódhatnak az egyes {\tt clang-query} folyamatok szabványos kimenetekre írt diagnosztikái.
+Ennek helyes megvalósítása extra kódot igényelne.
+A mérés szempontjából azonban megfelel, mert általában jó a kimenet, és a mérés lényege, hogy meglévő más eszközökből komponálva mit lehet elérni, és nem másik kódbázis fejlesztése erre a feladatra.
+\begin{lstlisting}[numbers=none,language=sh]
+jq '.[].file' compile_commands.json | xargs -P32 -n1 clang-query -c \
+	'match varDecl(hasGlobalStorage(), unless(isStaticLocal()), isExpansionInMainFile())
+		.bind("_1791115012909176658140675516733376CAUZCQKA")'
+\end{lstlisting}
+\item[blAST]
+Ez az alapértelmezett blAST fordítási és futtatási paraméterekkel.
+A tényleges futtatás csak az utolsó {``{\tt./msr}''} lépés, azonban a fordítási lépéseket is tartalmazza a mérés.
+Ez a végeredményben nem számottevő egy köztes mérés alapján, azonban így teljes az eszköz használatának ideje.
+Az alább említett párhuzamos xargs-al ellentétben, a blAST lekezeli a kimenet összefonódásának problémáját.
+\begin{lstlisting}[numbers=none,language=sh]
+c4c msr.c4 && \
+	c4ld -o msr -+ -lblast -larray msr.o -L/usr/lib/llvm/22/lib -lLLVM-22 -lclang-cpp -Wl,-rpath,/usr/lib/llvm/22/lib && \
+	./msr
+\end{lstlisting}
+\end{description}
+\fussy
+
+\section{Eredmények kiértékelése}
+
+A futtatások eredménye látható \aref{fig:time} és \aref{fig:mem}.~ábrákon.
+Az adatpont a mért adatok mediánja, az első és harmadik kvartilissel.
+Látható, hogy a mért eredmények stabilak.
+
+A futási időben az mutatkozik, hogy amíg nem nagyon nagy és komplex a kódbázis, addig az {\tt xargs -P} bővítménnyel a leggyorsabb a feldolgozás.
+Ezt követi 1--2 másodperccel lemaradva a blAST.
+A C és C++ nyelvek nem jelentenek nagy különbséget, ez látható a systemd és blAST esetén is.
+
+A valószínű ok erre, hogy ezek a forrásfájlok nem elég komplexek arra, hogy elegendő ideig lefoglalják a feldolgozásukra kiosztott számítási egységet (szál, processz), így arányaiban sok idő megy el az ,,ütemezésre'' a tényleges feldolgozásra szánt időhöz képest.
+Ennek az érvnek alapjául a processzor kihasználtságot gondolom: a párhuzamos xargs esetén ez 2826\% (systemd) és 2570\% (blAST), míg blAST számára ezek csak 2560\% és 2526\%.
+Mivel egyik rendszer sem telítette a rendszert, így a párhuzamos xargs számára drágább folyamatindítást elnyelte a magasabb processzor felhasználás.
+Emiatt azonban a sebesség kérdése az egyszálú végrehajtási sebességre redukálódott, amiben a C++ le tudta verni a blAST által használt dinamikusan típusos C4 nyelvet.
+
+Amikor azonban megnő a források mérete {\it és} komplexitása, akkor a blAST kb.~200 másodperccel gyorsabb, mint a párhuzamos {\tt xargs}.
+Ebben az esetben mind két megoldás 3110\% processzor kihasználtság körül tudott futni (blAST~3109\%, parallel {\tt xargs}~3113\%), ami a teljes gép kihasználtságát jelenteti gyakorlatilag.
+
+Ez a felállás már kedvezett a blAST architektúrájának, amelyik a többszáluságot kihasználva előre létrehozott munkás szálakkal csak egy időben egyszerre a {\tt clone(2)} Linux rendszerhívás költségét.
+Az eddig esetekben ellentétben, a több processzor használattal nem tudta a folyamat alapú párhuzamosítás megelőzni a szál alapú, de egyesével kevésbé hatékony (dinamikus típusok, \gls{GC}) blAST rendszert.
+És míg egyes fájlok hosszabb feldolgozása pedig lehetővé tette a rendszer telítését, a nagy mennyiség miatt az apróbb nyereségek fájlonként felduzzadtak a végül tapasztalt kb.~200 másodperces különbséggé a teljes futásra.
+
+\begin{figure}[htb]
+	\centering
+	\input{figures/time.tex}
+	\caption{Ellenőrzési idő projektenként}
+	\label{fig:time}
+\end{figure}
+
+A memória felhasználás kevésbé érdekes, egy észrevétel különbségével.
+Míg az idő grafikonokon az látszik, hogy verseny van a processzor telítéséig, majd utána az ismert szál/folyamat alapú párhuzamosítású rendszerek tulajdonságainak megfelelő a kimenet, a memória esetén a rendszerek azonosan viselkednek processzor telítettségtől függetlenül.
+
+A tényleges különbséget a feldolgozott nyelv adja meg.
+A mérések között található C projekt, a systemd, esetén a {\tt clang-query} nyer nagyságrenddel.
+Ezeknél mind a két párhuzamosító rendszer -- vélhetőleg pont ezen viselkedésből adódó extra erőforrás igények miatt -- jóval több memóriát használnak az egyszerű egy szálú feldolgozáshoz képest.
+Nyilván, ennek az előnyét a már tárgyalt sebességben nyerik a rendszerek; az érdekesség, hogy itt van egy előnye annak, hogy ne párhuzamosan kerüljön futtatásra a {\tt clang-query}.
+Az alábbiakban látszik, hogy ez nem egyöntetűen igaz tulajdonság.
+
+A C++ projektek esetén azonban az egy szálú {\tt clang-query} memóriájáról az látszik, hogy sok esetben effektíve nem használható ilyen módon, mert az egész projektet próbálja memóriában tartani.
+Az előzőekben említett {\tt\bf -n128} kapcsolóra emiatt volt szükség az LLVM folyamatnál, mert így csak 128 fájlnyi blokkokban kísérli ezt meg.
+Érdemes megjegyezni, hogy ezzel is kb.~45~GB memóriát igyényelt, ahogy látható \aref{fig:mem}.~ábrán, különben akkora lenne a száma, hogy nem tudtam 64~GB fizikai memóriával lefuttatni.
+
+A másik másik két rendszer aránya azonos: az amúgy natív kódban megírt, manuálisan kezelt memóriájú {\tt clang-query} jelentősen kevesebb memóriát használ ha csak egy darab fájlt kell feldolgoznia.
+
+Ezzel szemben a dinamikusan típusos, \gls{GC}-t használó futtató környezettel rendelkező blAST nagyságrendileg közel 2--3\texttimes\ memóriát használhat ugyanarra a feladatra.
+Ez kevésbé limitáló, mint az egy parancsként indított {\tt clang-query} esetén, hiszen végfelhasználók számára elérhető hardveren sikeresen lefutott az egyik legnagyobb nyílt C++ forráskódon, utóbbival ellentétben.
+
+\begin{figure}[htb]
+	\centering
+	\input{figures/mem.tex}
+	\caption{Memória használat ellenőrzés közben projektenként}
+	\label{fig:mem}
+\end{figure}
+
+Összességében az látható, hogy a blAST rendszer sebességben megállja a helyét a jelenleg meglévő eszközökhöz képest.
+Bár jelentősen pazarlóbb memória tekintetében, normál méretű projektek esetén ez nem okoz várhatóan problémát.
+Azonban, a konkrét memória használat kivizsgálása egy-egy futás ésetén és a talált problémák javítása egy fontos jövőbeli feladat marad.
 

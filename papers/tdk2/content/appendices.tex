@@ -19,7 +19,7 @@ még a nyílt forrásúak, mint a \gls{GCC} sem biztosít ilyen lehetőséget.
 Az alábbi kimenetek mind \aref{lst:impl-c}.~lista C kódjából készültek.
 Figyelemre méltó, hogy az implicit konverzió {\tt int} típusból {\tt unsigned long} típusba nem jelenik meg: a konkrét 1 érték típusa már az elvárt érték lett.
 
-\begin{lstlisting}[numbers=left,caption={GCC GENERIC reprezentáció}]
+\begin{lstlisting}[numbers=left,caption={GCC GENERIC reprezentáció},language=c]
 > gcc -c -fdump-tree-original=stdout ast-demo.c
 
 ;; Function demo (null)
@@ -31,7 +31,7 @@ Figyelemre méltó, hogy az implicit konverzió {\tt int} típusból {\tt unsign
 }
 \end{lstlisting}
 
-\begin{lstlisting}[numbers=left,caption={GCC GIMPLE reprezentáció}]
+\begin{lstlisting}[numbers=left,caption={GCC GIMPLE reprezentáció},language=c]
 > gcc -c -fdump-tree-gimple=stdout ast-demo.c
 long unsigned int demo ()
 {
@@ -42,7 +42,7 @@ long unsigned int demo ()
 }
 \end{lstlisting}
 
-\begin{lstlisting}[numbers=left,caption={GCC SSA reprezentáció}]
+\begin{lstlisting}[numbers=left,caption={GCC SSA reprezentáció},language=c]
 > gcc -c -fdump-tree-ssa=stdout ast-demo.c
 
 ;; Function demo (demo, funcdef_no=0, decl_uid=2768, cgraph_uid=1, symbol_order=0)
@@ -60,5 +60,37 @@ long unsigned int demo ()
   return _1;
 
 }
+\end{lstlisting}
+
+\begin{lstlisting}
+CC=clang CXX=clang++ CFLAGS="-ffunction-sections -fdata-sections" CXXFLAGS="-ffunction-sections -fdata-sections" LDFLAGS="-fuse-ld=mold -Wl,--gc-sections" CFLAGS_FOR_TARGET="-ffunction-sections -fdata-sections" CXXFLAGS_FOR_TARGET="-ffunction-sections -fdata-sections" ../gcc-16.2.0/configure --enable-lto --enable-host-pie --program-suffix=-16 --prefix=/usr/local --enable-compressed-debug-sections=all --disable-multilib --enable-threads=posix --enable-__cxa_atexit --enable-plugins --enable-linker-build-id --disable-werror --disable-nls --enable-default-pie --enable-default-ssp --enable-checking=release --with-linker-hash-style=gnu --disable-sjlj-exceptions  --enable-languages=c,c++,lto --disable-bootstra
+\end{lstlisting}
+
+\section{A mért blAST program}\label{x:sec:measured}
+
+Az alábbi program listázásban látható, hogy mi a ténylegesen mért blAST program forrása \aref{ch:perf}.~fejezetben.
+Alapvetően semmi különleges nincs benne: az elején a rendszeren található Clang könyvtár helyével inicializálja a blAST könyvtárat, majd az egyik méréshez használt fordítási adatbázist beolvassa.
+Az adott méréshez a megfelelő került futtatásra.
+
+Maga a lekérdezés egyszerűen egy diagnosztikába megy, és megtalál minden globális élettartamú változót, amelyik nem egy függvény statikus lokálisa és nem egy {\tt \#include} során került feldolgozásra a futás során, hanem ténylegesen az ellenőrzött forrásokban található.
+
+\begin{lstlisting}[numbers=left,caption={A mérések során használt blAST program}]
+use <std4.c4a>
+use <blast.c4a>
+
+blast_init resource_dir "/usr/lib/llvm/22/lib/clang/22"
+
+#let ast blast_build_from_compile_commands "/home/bodand/src/build/llvm-23.1.2-build/compile_commands.json"
+#let ast blast_build_from_compile_commands "/home/bodand/src/project/blast/cmake-build-rel-clang22/compile_commands.json"
+let ast blast_build_from_compile_commands "/home/bodand/src/build/systemd-262.1/build/compile_commands.json"
+
+blast ast
+	match into diagnostic "global variable defined"
+	such variable declaration
+	which global
+		 , ~static_local
+		 , (expanded in main_file)
+		 , nil
+end_blast
 \end{lstlisting}
 

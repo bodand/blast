@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/bdwgc-x64-linux-8.2.8-a91ecbcf-8d3e-4ac8-b23d-d01b0b4992ef",
+  "name": "bdwgc:x64-linux@8.2.8 30b8bc8481ace0662201a4a18d7a5ffcdd17c8cd69255a55d60bb6943c407e14",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-2025-02-11-bec4296bf5289dc9ce83b4f5095943e44162f9c2"
+    ],
+    "created": "2026-10-18T09:15:27Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "bdwgc",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "8.2.8",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg@559f0b9bb0a7a06b28daae296f7080760268f5dd",
+      "homepage": "https://www.hboehm.info/gc/",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "The Boehm-Demers-Weiser conservative C/C++ Garbage Collector (libgc, bdwgc, boehm-gc)",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "bdwgc:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "30b8bc8481ace0662201a4a18d7a5ffcdd17c8cd69255a55d60bb6943c407e14",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-0",
+      "name": "ivmai/bdwgc",
+      "downloadLocation": "git+https://github.com/ivmai/bdwgc@v8.2.8",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "da03597f7c947dd54adc3a489b781540d905b92ffb5fb6487d0c8b5121b301522ab07bdbda0a8930c7ac7655c7048d1dd0853786a56a7ff248e96745f0e36f43"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/bdwgc/559f0b9bb0a7a06b28daae296f7080760268f5dd/portfile.cmake",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "7dcb89a448425cf164d6b2df71a72df4a4c8d29ab5c9c220bcd53eaff3a26fdf"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/bdwgc/559f0b9bb0a7a06b28daae296f7080760268f5dd/vcpkg.json",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1b1b22c1a374da902034552f9df3b96e7ecbd263be968d205008e134939ef9fa"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

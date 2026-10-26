@@ -1,0 +1,71 @@
+down
+file "src1.c" mono big fit
+move .1
+file "src2.c" mono big fit
+move .1
+dot
+move .07
+dot
+move .07
+dot
+move .1
+file "srcN.c" mono big fit
+
+D: line from first file.nw + (-.1,.1) \
+  then down until even with last file.sw - (.1,.1) \
+  then right until even with last file.se + (.1,.1) \
+  then up until even with first file.nw + (0,.1) \
+  then to first file.nw + (-.1,.1)
+text "források" with .sw at D.nw
+
+Lbase: dot invis at .2 right of 1/2<3rd vertex of D, 4th vertex of D>
+Lin: dot at Lbase +(0,.075)
+
+spline dashed from 1st file.e right .03 then down then to Lin color red
+
+spline dashed from 2nd file.e right .03 then to Lin color blue
+
+box with .s at Lbase width .15 height .15 fill white
+spline from 19/24<last box.nw,last box.ne> up .05 \
+  then .03 heading -45 \
+  then .02 heading -90 \
+  then .02 heading -90 \
+  then .03 heading -135 \
+  then down .05
+Lout: dot at Lbase +(0,.075)
+
+
+T1base: dot invis at .7 right of 2/3<3rd vertex of D, 4th vertex of D>
+T2base: dot invis at .7 right of 1/3<3rd vertex of D, 4th vertex of D>
+
+sq = .2
+T1: spline -> from T1base then sq heading 45 then 2*sq heading 135 then 2*sq heading 45 then 2*sq heading 135 then 2*sq heading 45 then 2*sq heading 135 color red
+
+T2: spline -> from T2base then sq heading 45 then 2*sq heading 135 then 2*sq heading 45 then 2*sq heading 135 then 2*sq heading 45 then 2*sq heading 135 color blue
+
+
+T1mf: box "MatchFinder" big fit with .nw at T1base - (-.1,.1) color red
+T2mf: box "MatchFinder" big fit with .nw at T2base - (-.1,.1) color blue
+
+spline -> dashed color red from Lout right .2 then .15 heading 40 then to T1mf.w
+
+spline -> dashed color blue from Lout right .2 then .7 heading 170 then to T2mf.w
+
+right
+E0: box "callExpr(...)" big fit at (1,1)
+move .1
+E1: box "decl(...)" big fit
+
+D: line from E0.nw + (-.1,.1) \
+  then down until even with E1.sw - (.1,.1) \
+  then right until even with E1.se + (.1,.1) \
+  then up until even with E1.nw + (0,.1) \
+  then to E0.nw + (-.1,.1)
+text "keresett minták" with .sw at D.nw
+
+spline dotted -> from T1mf.n to E0.s color T1mf.color
+spline dotted -> from T1mf.n to E1.s color T1mf.color
+
+spline dotted -> from T2mf.n up .1 then 1 heading 60 then to E0.s color T2mf.color
+spline dotted -> from T2mf.n up .1 then 1 heading 60 then to E1.s color T2mf.color
+

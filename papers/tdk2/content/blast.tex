@@ -6,5 +6,102 @@
 %----------------------------------------------------------------------------
 
 Ebben a fejezetben mutatom be a saját fejlesztésű blAST eszközt.
-Ennek az eszköznek a célja, hogy egy magas szintű, dinamikus szkriptnyelvben biztosítson lehetőséget projekt specifikus ellenőrzések megvalósítására.
+Ennek az eszköznek a célja, hogy egy magas szintű, dinamikus nyelvben biztosítson lehetőséget projekt specifikus ellenőrzések megvalósítására.
+
+\section{A C4 nyelv}
+
+A használt nyelv a saját fejlesztésű C4 programozási nyelv \cite{bodorAltalanosCeluProgramnyelv2025}.
+Ez egy immutábilis, dinamikusan típusos, lusta kiértékelésű funkcionális nyelv, amelyik az LLVM infrastruktúrát felhasználva natív kódra fordul.
+
+A nyelv erőssége, hogy direkt céljának tekinti, hogy beágyazott szakterület-specifikus nyelveket (\gls{eDSL}) lehessen benne könnyedén magvalósítani.
+Ennek okán, nagyon minimális szintaktikával rendelkezik, és a függvények kompozíciójából állítja elő még a gyakori nyelvi elemeket is.
+Ez a rugalmasság biztosítja, hogy a blAST nevű eszköz nagyon szabadon szabhatja meg a számára előnyős nyelvi elemeket.
+
+A nyelv részletes tárgyalása most nem fog megtörténni, csak a fontos nyelvi elemeket mutatom be, hogy az alábbiak érhetőek legyenek.
+A megvalósítás belső részeiről a továbbiakban szó esik, ahol azon részletek fontossá válnak, itt magáról a nyelvről egy általános leírás szerepel.
+
+\subsection*{Függvények}
+
+A C4 függvények létrehozásához a {\tt\bf let} kulcsszót lehet használni, amelyik utána a függvény nevét, aritását, majd törzsét kell megadni.
+Mivel dinamikusan típusos a nyelv, így típusokat nem kell feltüntetni, az artiásnak azonban egyeznie kell.
+Deklarálni a törzs helyett egy pontosvessző megadásával lehet.
+
+A változók is függvények, így ugyanezen szintaktika tartozik definiálásukhoz.
+Annyi a különbség, hogy nulla paramétert vesznek át (0 az aritásuk), és egy nem blokk kifejezést tartalmaznak.
+
+Függvényt meghívni, csak ha az előre ismert lehetséges.
+Ilyenkor, a függvény neve után bármilyen szóközzel (whitespace) elválasztva kell megadni 
+
+\begin{lstlisting}
+let foo/2 { |a b| a + b }
+io_println foo 1 2
+\end{lstlisting}
+
+Változókban tárolt vagy függvényből visszakapott kifejezéseket függvényként meghívni a {\tt{\bf \&({\sl EXPR})/{\sl N}} ARG...} struktúrával lehet.
+Az {\sl EXPR} kifejezés helyén bármilyen kifejezés állhat -- még primitív értékeket, mint az egészeket is meg lehet hívni.
+A paramétereket ilyen esetben nem tudja a fordító kitalálni, így meg kell adni hány darab {\sl ARG} kifejezés áll argumentumként.
+Többet lehet megadni, ezek pusztán nem kerülnek felhasználásra, kevesebb esetén a működés definiálatlan.
+Elsődleges felhasználás blokk értékek (más nyelvekben: lambdák, függvény objektumok, delegate-ek) meghívása.
+
+\begin{lstlisting}
+let make_adder/1 { |x| 
+	{ |y| x + y } # ez a blokk a visszatérési érték
+}
+io_println &(42)/1 "szöveg"      # => 42 (fölösleges paraméter figyelmen kívül hagyva)
+io_println &(make_adder 20)/1 22 # => 42
+\end{lstlisting}
+
+\subsection*{Operátorok}
+
+Operátorokat a függvényekhez hasonlóan lehet bevezetni.
+Teljesen saját operatárokat is lehet készíteni, azonban a komment karakterrel (kettőskereszt (\#)) nem kezdődhetnek.
+Bináris operátor esetén a precedenciát és asszociativitást is meg kell adni, ami alapján fognak elemzés során zárójeleződni.
+
+\begin{lstlisting}
+let (~)/1 { |x| -x }
+let (~)/2 left 30 { |x y| x - y }
+io_println 1 ~ 2 ~ ~1 # = ((1 - 2) - (-1))
+\end{lstlisting}
+
+\subsection*{Csomagok}
+
+A C4 nyelv csomagokba való szervezést statikus könyvtárak (archívumok) segítségével teszi lehetővé.
+Minden függvény (és operátor) lehet publikus ($+$), belső használatú (internal, \textasciitilde) és privát ($-$).
+A publikus függvények láthatóak lesznek a könyvtár interfészén is, a belső használatúak csak másik lokális fájlokban elérhetőek.
+Privátok mindig csak a saját fájlban láthatóak.
+
+Alapból minden belső használatú, minden más láthatóságot a függvény neve előtt kell megadni a {\tt\bf let} kulcsszó után.
+
+Használni másik fájlokat kétféle módon lehet: a {\tt {\bf use} "file.c4"} szintaktika egy lokális fájl függvényeit teszi elérhetővé, 
+a {\tt {\bf use} <lib.c4a>} pedig egy könyvtárét.
+
+\subsection*{Natív interoperabilitás}
+
+C és C4 között támogatott az idegen függvények (foreign function) hívása.
+A fordító a konkrét lustán kiértékelt környezetből való natív függvény hívásához szükséges munka nagy részét elvégzi.
+
+A C4 oldalon a függvényt csak deklarálni szabad, és a {\tt\bf native} kontextus függő kulcsszót kell használni.
+Ilyenkor egy ``c4sym\_''-el prefixelt nevű C függvényt fog keresni a linker a program összeállításakor.
+Ennek annyi paramétere kell, hogy legyen, amennyi az aritásként lett megadva a C4 függvény deklarálásakor, különben a viselkedés nem definiált.
+Indirekt meghíváskor ennek is lehet azonban több paramétert átadni.
+
+A C-ben definiált függvény minden paramétere {\tt c4\_datum}, amelyik kezeléséhez függvények a ``c4rt3/c4rt.h'' fájlban találhatóak.
+A konkrét definiáláskor használható az ugyanezen fejlécben található {\tt {\bf c4\_let\_native}()} segédmakró, aminek a konkrét C4 oldali függvénynevet elég megadni.
+
+\begin{lstlisting}
+let native foo/2;
+# c4_let_native(foo)(c4_datum a, c4_datum b) { ... }
+\end{lstlisting}
+
+A C oldalról a {\tt c4\_call} és {\tt c4\_apply} függvényekkel lehetséges egy objektum kiértékelését kérni (a nyelv lusta volta miatt lehetnek kiértékeletlen értékek) illetve egy kifejezést átadott paraméterekkel meghívni.
+Utóbbi analóg a {\tt \&()/N} szintaktikával.
+
+Érdemes megjegyezni, hogy a C oldalon nem garantálható az immutábilitás: a paraméterekben kapott értéket C kód számára módosíthatóak.
+Ez azonban nem jól viselkedő programokat eredményezhet, így hivatalosan nem definiált működést jelent.
+Amit azonban lehetséges szabadon módosítani, azok egyéb C kódban elérhető globális változók.
+Ezekre nem tesz megkötést a rendszer, és emiatt azt sem feltételezi, hogy natív függvények függvényként viselkednek: függhetnek tehát a C globálisok állapotától is.
+
+\input content/blast-prime
+
+\input content/blast-arch
 

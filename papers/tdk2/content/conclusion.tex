@@ -6,3 +6,26 @@
 \addcontentsline{toc}{chapter}{Összegzés}
 %----------------------------------------------------------------------------
 
+A dolgozat során bemutattam, hogy a jelenlegi eszközök nem tudják kielégíteni a projektek sajátos módú ellenőrzését.
+Ezek egy közösen kidolgozott, általánosan elfogadott statikus ellenőrzéseket tudnak könnyedén és hatékonyan végrehajtani, de problémába kerülnek, amikor projekt vagy cég specifikus ellenőrzéseket szeretnének a fejlesztők végrehajtani.
+
+Erre a problémára nyújtott megoldásomat, a blAST, eszközt mutattam be a dolgozat elkövetkező részeiben.
+Ehhez nagyon röviden ismertettem a C4 programozási nyelvet, amelyen a könyvtár íródott.
+Ezt a nyelvet használják a blAST programok, mind az analízisek leírására, mind a kódrészletek, amelyeket találatok esetén hajt végre.
+
+A dolgozat bemutatta, hogy a blAST könyvtár hogyan épül fel, és milyen elemeket használ az C4 rétegből.
+Ezek között, elsőként a \gls{eDSL} került bemutatásra.
+Ebben a blAST által használt függvények kompozíció alapú leírását mutatta be, ami lehetővé teszi a szintaktika felhasználói oldalról való kibővítését.
+
+Következőképpen, röviden bemutatta, hogy a C4 dinamikus, lustán kiértékelt értékeit, hogyan lehetséges összekötni a C++ által használt statikus típusokkal.
+Ezeket az elemeket a használt LLVM és Clang könyvtárak interfészeinek megvalósításaihoz való kapcsolásáról is szó esett.
+
+Végül a dolgozat bemutatott pár olyan konkrét példa felhasználási lehetőséget, amelyikre a blAST eszköz direkt módon felhasználható.
+Ezek a projektek specifikusan a blAST eszköz dinamikus ellenőrzéseit használják ki, amit a másik eszközök általános felhasználásra tervezett elemei nem tudnak nyújtani.
+
+A dolgozat végzett egy egyszerű sebességmérést az egyik legközelebbi eszközzel szemben, több különböző profilú forráskódon.
+Ebben látszott, hogy bár nagyobb memória igénnyel rendelkezik a blAST alapú rendszer, mint egy egyszerű több folyamatban elindított egyszálú ellenőrző eszköz, sebességben nagy projektek esetén akár 200 másodperccel is gyorsabban futhat.
+Kis projektek esetén pedig általában minimálisan van az alternatíva mögött: kb.~2 másodperc lemaradással sikeresen tud lefutni, a párhuzamos folyamatokkal futtatott {\tt clang-query} után.
+
+Végül a dolgozat zárása képpen, tárgyaltam olyan további fejlesztéseket, amelyek javítani lennének képesek a felhasználói élményt a blAST eszköz használata közben.
+

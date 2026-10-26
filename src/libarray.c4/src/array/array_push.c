@@ -39,11 +39,13 @@
 
 #include <c4/array.h>
 
+#include "dbg_ensure.h"
+
 c4_let_native(array_push)(const c4_datum arr, const c4_datum datum) {
 	const uint32_t array_exttype = c4_array_external_typeid();
 
-	void* impl_raw;
-	assert(c4_datum_get_external(arr, array_exttype, &impl_raw) == 0);
+	void* impl_raw = NULL;
+	dbg_ensure(== 0, c4_datum_get_external(arr, array_exttype, &impl_raw));
 	const c4_array impl = impl_raw;
 
 	c4_array_ensure_more(impl, 1);

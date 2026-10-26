@@ -37,6 +37,8 @@ add_c4_library(TARGET prcmgr
                C_LIBS skarnet array
                C4_SOURCES
                   src4/prcmgr.c4
+               C4_DEPENDS
+                  std4 array
                FLAGS
                   "-I${CMAKE_CURRENT_BINARY_DIR}/../libstd4.c4"
                   "-I${CMAKE_CURRENT_BINARY_DIR}/../libarray.c4"

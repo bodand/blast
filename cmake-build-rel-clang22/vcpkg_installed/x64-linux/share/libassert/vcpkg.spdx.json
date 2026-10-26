@@ -1,0 +1,110 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/libassert-x64-linux-2.1.1-43671dd4-5f2e-4172-a38a-febfb01d4a24",
+  "name": "libassert:x64-linux@2.1.1 ef7733f4ca5ff5e084a088aa42816ee08bc062afc4e2b9baf54925f45440cfb9",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-2025-02-11-bec4296bf5289dc9ce83b4f5095943e44162f9c2"
+    ],
+    "created": "2026-10-18T09:15:53Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "libassert",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "2.1.1",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg@e9c861c266c7d3f9aaa55db711cc1af2edd70a13",
+      "homepage": "https://github.com/jeremy-rifkin/libassert",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "The most over-engineered C++ assertion library",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "libassert:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "ef7733f4ca5ff5e084a088aa42816ee08bc062afc4e2b9baf54925f45440cfb9",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "MIT",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-0",
+      "name": "jeremy-rifkin/libassert",
+      "downloadLocation": "git+https://github.com/jeremy-rifkin/libassert@v2.1.1",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6044d85f495df6b1a5e3ddac05aac7542112e7131bf5108c2a19cf391fa42d0639cfa57c3e6ba99d8758f3ca68cb9fe7cf5e8052559db2cc7cceb327bf12b983"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libassert/e9c861c266c7d3f9aaa55db711cc1af2edd70a13/portfile.cmake",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1c2fb17ddee6730b053629ba069cf365bb1b782e9da4b528a0672e7ab0ab8698"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libassert/e9c861c266c7d3f9aaa55db711cc1af2edd70a13/vcpkg.json",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "2d5daf36d45139a0a9225dc4ace410aefc269f63a6d867a0ad883d002d6e8137"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

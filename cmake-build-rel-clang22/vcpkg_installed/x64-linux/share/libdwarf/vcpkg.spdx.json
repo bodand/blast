@@ -1,0 +1,220 @@
+{
+  "$schema": "https://raw.githubusercontent.com/spdx/spdx-spec/v2.2.1/schemas/spdx-schema.json",
+  "spdxVersion": "SPDX-2.2",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "documentNamespace": "https://spdx.org/spdxdocs/libdwarf-x64-linux-0.11.0-eb1db750-1fa5-4edb-90f8-afe86cd11ca3",
+  "name": "libdwarf:x64-linux@0.11.0 f003ab2970a33fa789d63d95986a8c74a03d864ddab9f6ea13d2d9a8fd7c1ed3",
+  "creationInfo": {
+    "creators": [
+      "Tool: vcpkg-2025-02-11-bec4296bf5289dc9ce83b4f5095943e44162f9c2"
+    ],
+    "created": "2026-10-18T09:15:45Z"
+  },
+  "relationships": [
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "GENERATES",
+      "relatedSpdxElement": "SPDXRef-binary"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-0"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-1"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-2"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-3"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-4"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-5"
+    },
+    {
+      "spdxElementId": "SPDXRef-port",
+      "relationshipType": "CONTAINS",
+      "relatedSpdxElement": "SPDXRef-file-6"
+    },
+    {
+      "spdxElementId": "SPDXRef-binary",
+      "relationshipType": "GENERATED_FROM",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-0",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-1",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-2",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-3",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-4",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-5",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    },
+    {
+      "spdxElementId": "SPDXRef-file-6",
+      "relationshipType": "CONTAINED_BY",
+      "relatedSpdxElement": "SPDXRef-port"
+    }
+  ],
+  "packages": [
+    {
+      "name": "libdwarf",
+      "SPDXID": "SPDXRef-port",
+      "versionInfo": "0.11.0",
+      "downloadLocation": "git+https://github.com/Microsoft/vcpkg@ff0cf59a7fe26e200483302657d4e878d2038d39",
+      "homepage": "https://github.com/davea42/libdwarf-code",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "description": "A library for reading DWARF2 and later DWARF.",
+      "comment": "This is the port (recipe) consumed by vcpkg."
+    },
+    {
+      "name": "libdwarf:x64-linux",
+      "SPDXID": "SPDXRef-binary",
+      "versionInfo": "f003ab2970a33fa789d63d95986a8c74a03d864ddab9f6ea13d2d9a8fd7c1ed3",
+      "downloadLocation": "NONE",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "comment": "This is a binary package built by vcpkg."
+    },
+    {
+      "SPDXID": "SPDXRef-resource-0",
+      "name": "davea42/libdwarf-code",
+      "downloadLocation": "git+https://github.com/davea42/libdwarf-code@v0.11.0",
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5c8e01e3a2c559515af1833c2b7626634e74bd2f3de2e3ff4fc2127ac68885af9ee339608fc274499fae7326bbe7af41bc471ba4d807145c00c6cd0010a4b1aa"
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/portfile.cmake",
+      "SPDXID": "SPDXRef-file-0",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c05fca6ab488140905a6f283de1241d4c0a8e1e6922df500e2b58231f50af25b"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/dependencies.diff",
+      "SPDXID": "SPDXRef-file-1",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "cfbe4fb133cdff222d39882e3240d32d7ff5b849cf9a0c556233a6ed6415c182"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/msvc-runtime.diff",
+      "SPDXID": "SPDXRef-file-2",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "53d2733bfe8446d8f6594ace33aa4dcd6d8e7e564c42f343317973f4c2b5a322"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/include-dir.diff",
+      "SPDXID": "SPDXRef-file-3",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ccc91d8445b5270c70ff7b28f635154a818b7351a0878ade9650dd48b0564813"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/off_t.diff",
+      "SPDXID": "SPDXRef-file-4",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "4094dd1ee7a6b78f41f6196d7153d4d282a2c6dcae0b964f083e3f5425374727"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/vcpkg.json",
+      "SPDXID": "SPDXRef-file-5",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "88338b2f8e1b6ee6278bbbbdef39b486b1b73d8935662544695e458afa9fefd9"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    },
+    {
+      "fileName": ".//home/bodand/src/project/blast/vcpkg/buildtrees/versioning_/versions/libdwarf/ff0cf59a7fe26e200483302657d4e878d2038d39/dwarfdump-conf.diff",
+      "SPDXID": "SPDXRef-file-6",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "3acba6c02b05b78ac8100f8caeab95428e9938deae52bf7ed79da768ab1c2ec2"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "copyrightText": "NOASSERTION"
+    }
+  ]
+}

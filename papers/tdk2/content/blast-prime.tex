@@ -1,0 +1,270 @@
+\section{A blAST használata}
+
+\subsection{A blAST programok fordítása}
+
+A blAST az előbb bevezetett C4 nyelven belül megvalósított \gls{eDSL}.
+Ez a {\tt blast.c4a} csomag felhasználásával lehet elérni.
+Ennek megfelelően, a C4 eszközökön keresztül lehetséges a használata.
+A fordításhoz a {\tt c4c} programmal állítható elő a fordított objektumfájl (object file).
+Ezt a {\tt c4ld} linkerrel lehetséges futtatható fájlokká összeilleszteni.
+Itt meg kell adni a konkrét rendszerre telepített LLVM és Clang könyvtárakat -- ezek puszta méretük miatt nincsenek belecsomagolva a blAST könyvtárba.
+Egy lehetséges parancssorozatot lehet látni \aref{lst:blastcc}.~listában, de lehetséges, hogy az utolsó két kapcsolót (amelyek egy beágyazott LLD linker számára kerülnek átadásra) finomítani kell.
+Az {\tt llvm-config} parancs ebben segítséget nyújthat.
+
+\begin{lstlisting}[language=sh,caption={Egy blAST program fordításának lépései},label=lst:blastcc]
+> c4c my-query.c4
+> c4ld -o my-query -+ -lblast -larray my-query.o -lLLVM-22 -lclang-cpp
+\end{lstlisting}
+
+A blAST-el fordított verziónak egyeznie kell a linker paraméterben megadott verzióval.
+Ha a két LLVM verzió kompatibilis működhet eltérő esetben is, de ez nem garantált, és nem valószínű, mert LLVM-nek nem stabil a bináris interfésze.
+
+Röviden megjegyzendő, hogy folyamatban van egy {\tt c4i} LLVM \gls{JIT} alapú bináris, amelyikkel külön fordítás nélkül futtathatóak C4 alapú programok.
+Sajnos a dolgozat írásáig azonban nem készült el.
+
+\subsection{A blAST programok összetétele}
+
+Egy blAST program kettő előzetes, és kettő lényegi lépésből áll.
+Utóbbi kettőt akárhányszor végre lehet hajtani a program teljes élettartama alatt, így akár komplex, projektek között végzett ellenőrzéseket is lehet végrehajtani.
+
+A legelső lépés, a {\tt blast.c4a} csomag használta.
+Az első rendes függvényhívás előtt azonban inicializálni is kell a blAST könyvárat: ezzel igazából a Clang számára szükséges rendszerfájlok helyét kell megadni.
+Alapértelmezetten az {\tt /usr} előtag alatt keresi ezeket a fájlokat, ha esetleg máshova került ezek telepítése, akkor azt kell megadni.
+Egyes helyeken verziótól függő helyet kaptak (\pl {\tt /usr/lib/llvm/22}), így ilyenkor a megfelelő verzióhoz tartozó fejléceket kell megadni.
+Ez egy globális tulajdonság, így programonként csak egyszer lehetséges beállítani, a {\tt blast\_init} függvény segítségével.
+Példakód látható \aref{lst:blast-init}.~listában.
+Az összes alábbi kódrészletek az itt említett inicializálást feltételezik, de külön nem jelenítik meg.
+
+\begin{lstlisting}[caption={A blAST könyvár inicializálása},label=lst:blast-init]
+use <blast.c4a>
+
+# alapértélmzéshez blast_init with_defaults
+blast_init resource_dir "/usr/lib/llvm/22/lib/clang/22"
+\end{lstlisting}
+
+Amint elő lett készítve a blAST könyvtár, lehet a tényleges kereséseket megvalósítani.
+Ez két lépésből áll: a forráskódok megadása, majd a konkrét lekérdezések megírása.
+
+\subsubsection*{Konkrét fájlok ellenőrzése}
+
+A forráskódokat kétféle módon lehet a blAST számára átadni.
+Egyik lehetőség, hogy konkrétan a keresni kívánt fájlokat adjuk meg.
+Ilyenkor a fájl fordításához használandó kapcsolókat is meg kell adni, olyan formátumban, amelyet maga a {\tt clang} vagy {\tt clang++} parancssor képes lenne feldolgozni.
+Ennek a motivációját az alábbi szakasz részletesen tárgyalja.
+Szintaktikája magából a fájlból, majd egy \cfn nil/0 végű listából áll, amely a kapcsolókat tartalmazza.
+Konkrét példa látható \aref{lst:blast-single}.~listában.
+Egyéb kiemelkedő figyelmet érdemlő szituáció a más rendszerekre való kereszt-fordítás ({\it cross-compiling}), amelyben a konkrét rendszer viselkedése változtathatja a kód értelmezését (\pl egyes fejlécek lehet, hogy nem léteznek a célrendszeren).
+
+\begin{lstlisting}[caption={Egyszeri források megadása},label=lst:blast-single]
+let src_ast blast_build_ast_single "source.c"
+  "--target=sparc-sun-netbsd",
+  "-ansi",
+  "-Dmakro",
+  nil
+\end{lstlisting}
+
+\subsubsection*{Fordítási adatbázis}\label{subsec:compdb}
+
+A Clang könyvtárakban a fordítási adatbázis ({\it compilation database}, az alapértelmezett esetben egy {\tt compile\_commands.json} nevű JSON fájl formájában) látja el azt a feladatot, hogy a feldolgozó eszköz tudja, milyen paraméterekkel került fordításra egy-egy adott projekt fájlja, hogy helyesen tudja azt értelmezni.
+
+A C és C++ nyelvekben ennek nagyon nagy jelentősége van, akár azt is el tudja dönteni, hogy egyáltalán melyik fájl számít szintaktigailag helyesnek.
+Egy nagyon egyszerű példakód látható \aref{lst:modbrk}.~listában.
+Bár két rendes sorból áll, legalább három féle módon lehetséges értelmezni a fordítási paraméterek függvényében.
+Látszik alább, hogy egyik példa az előfeldolgozón keresztül módosítja a forrás értelmezését, ami alapvetően nem meglepő.
+De a másik kettő példától az is látszik, hogy erre nincs feltétlen szükség.
+A bemutatott példán kívül is lehet még sok ilyen helyzetet előállítani, például architektúra függő beépített függvényekkel.
+
+\begin{lstlisting}[language=c++,label=lst:modbrk,caption={Egyszerű kódrészlet egy module struktúrával ({\tt modbrk.cxx})}]
+struct module { };
+
+module valami;
+\end{lstlisting}
+
+\begin{description}
+\item[C++20 előtti verziókkal]
+Minden {\tt -std=c++\bf 17} formájú kapcsoló, amelyik C++17 vagy annál öregebb C++ verziót határoz meg, sikeresen fordítja a kódot.
+\begin{lstlisting}[language=sh]
+> clang++ -c -std=c++17 modbrk.cxx
+\end{lstlisting}
+
+\item[C++20 és utána következő verziókkal]
+A C++20-ban bevezetett {\tt module} kontextus függő kulcsszó miatt ez a kód már így nem fordul.
+\begin{lstlisting}[language=sh]
+> clang++ -c -std=c++20 modbrk.cxx
+modbrk.cxx:3:1: error: module declaration must occur at the start of the translation unit
+    3 | module valami;
+      | ^
+modbrk.cxx:1:1: note: add 'module;' to the start of the file to introduce a global module fragment
+    1 | struct module { };
+      | ^
+modbrk.cxx:3:8: fatal error: module 'valami' not found
+    3 | module valami;
+      |        ^~~~~~~
+2 errors generated.
+\end{lstlisting}
+
+\item[Makró felüldefiniálásával]
+Bármelyik verzióban fordíthatóvá tehető, ha a fordító előtt az előfeldolgozó (preprocessor) szimplán átnevezi a problémás {\tt module} szót.
+\begin{lstlisting}[language=sh]
+> clang++ -c -std=c++20 -Dmodule=valami_mas modbrk.cxx
+\end{lstlisting}
+\end{description}
+
+Ezen rugalmasság miatt van szüksége minden adott fájl feldolgozásához a teljes parancssorhoz, amivel a tényleges projekt fordítása során kerül fordításra.
+Az előző szekcióban ezért kellett megadni a teljes kapcsolólistát, általában pedig a fordítási adatbázisra ezért van szükség.
+
+Az ilyen adatbázisokat a blAST számára direkt módon át lehet adni, és akkor automatikusan az összes forrásfájlt ellenőrzi a program számunkra.
+Ez lehetővé teszi a teljes projekteken keresztül végrehajtott kereséseket extra konfiguráció vagy kód nélkül.
+Az ellenőrzött fájlok szűréssel előállított vagy bármi más módon vett részhalmazuk megadása tényleges ellenőrzésre jelenleg még nem támogatott.
+Ennek a szintaktikája látható \aref{lst:blast-compdb}.~listán, bár nincs hozzá külön saját \gls{DSL} jellegű forma, csak egy egyszerű függvényhívás.
+
+Érdemes itt kiemelni, hogy a C4 nyelv kiértékelése lusta.
+Emiatt a fordítási adatbázis megadása azonnal nem értékeli ki azt, csak amikor -- ha egyáltalán -- ténylegesen használatba kerül az.
+Ezt fel lehet használni arra, hogy sok különböző fordítási adatbázist támogatunk, és a kód később dönti csak el, hogy melyiket használja valójában.
+Ilyen lehet, \pl egy ``Debug'' és egy ``Release'' verzió, amelyiket utána valami környezeti változó, vagy hasonló futásidejű érték alapján dönt el, hogy melyiken futtassa le, anélkül, hogy definiáláshoz sok különböző értéket kellene megadni.
+
+\begin{lstlisting}[caption={Fordítási adatbázis megadása},label=lst:blast-compdb]
+let ast blast_build_from_compile_commands "compile_commands.json"
+
+let rel_ast blast_build_from_compile_commands "release/compile_commands.json"
+let dbg_ast blast_build_from_compile_commands "debug/compile_commands.json"
+
+# "when c t else f" a C-ből ismert "c ? t : f" operátorral azonos viselkedésű
+let used_ast when (env "CI" == 1) rel_ast else dbg_ast
+\end{lstlisting}
+
+\subsection{Lekérdezések blAST programokban}
+
+A lekérdezések képzik a legfontosabb részét a blAST alapú programoknak, ezek ebben a szakaszban kerülnek ismertetésre.
+Általánosan egy SQL nyelvhez hasonló szintaktikájuk van, amelyik lehetővé teszi, hogy maguk a lekérdezések deklaratív módon a lényegi részekre fokuszáljanak.
+
+Minden lekérdezések a \cfn blast/2 függvénnyel kezdődik és az \cfn end\_blast/0 függvényig tart.
+A kettő között a blAST lekérdezések \gls{eDSL} szintaktikáját várják.
+Ennek első paramétere, azon \gls{AST} érték, amelyeket az előző szekciók alapján a program definiált.
+Ezt követik az keresések és az extra találatokat lekezelő függvények.
+Az alábbi bekezdések ezeket írják le, majd \aref{lst:complex}.~listában látható egy összesített, komplexebb példa, amelyiken láthatóak ez egyes szintaktikai darabok összeszedve.
+
+\subsubsection*{Keresések}
+
+A blAST programok keresései elsődlegesen a {,,{\tt match into}''} függvényekkel kezdődnek, amelyet egy találatot kezelő függvény törzse követ.
+Ezekről alább lesz részletesen szó.
+A kezelő függvényt követi a tényleges lekérdezés kifejezése: itt kerül megadásra, milyen elemeket kell visszaadni az előbb definiált kezelő függvénynek.
+Alapvetően három fő lehetőség van: vagy egy kifejezést keres az \cfn expression/0 függvénnyel, egy parancsot a \cfn statement/0-el, vagy egy deklarációt a \cfn declaration/0 megadásával.
+Megjegyzendő, hogy a definíció is egy deklaráció fajta.
+
+\begin{lstlisting}[caption={Különböző lekérdezések blAST-al},label={lst:queries}]
+blast used_ast
+  match into # <...>
+  any declaration
+
+  match into # <...>
+  such declaration
+  that is named "foo"
+end_blast
+\end{lstlisting}
+
+Azt, hogy konkrétan milyen feltételek mentén kell ezeket megkeresni -- vagy akár az összes adott csúcsot az \gls{AST}-ben -- azt két szintaxist képző függvény adja meg: a \cfn any/1 és a ,,{\tt such/2 \rm ... \tt that/1 \rm ...}'' pár.
+Ezek nevük alapján elvárt módon viselkednek: az \cfn any/1 után álló típusból az összes átadásra kerül a kezelő függvénynek, míg a \cfn such/2 {\it fajta} \cfn that/1 {\it feltétel}' konstrukció esetén, csak a megadott {\it feltétel} által ki nem szűrt elemek kerülnek tovább.
+
+Szűrni azonban nem csak a \cfn such/2 függvénnyel lehetséges: a konkrétan keresett elem alfajtáját a megfelelő fő fajtát választó függvény hívásakor kell megadni, nem utólagosan.
+Tehát, ha nem bármilyen deklarációt, csak függvény deklarációt kell megkeresni, azt a \cfn declaration/0 függvénynél kell megadni.
+Példa az ilyen módon megadott specializált lekérdezésekre látható alább.
+
+\begin{lstlisting}
+blast used_ast
+  match into # <...>
+  any function declaration
+
+  match into # <...>
+  any call expression
+end_blast
+\end{lstlisting}
+
+A szűrésben a \cfn that/1 függvény után egy olyan kifejezést lehet megadni, amelyik a az előzőek szerint megadott típusú \gls{AST} elemei közül választja ki, a keresetteket.
+Ehhez számos függvény érhető el, \pl \cfn static/0, \cfn expanded/1, \cfn named/1.
+A teljes listát nem sorolom fel, de az ASTMatcher konstrukcióknak megfelelő függvények elérhetőek.
+
+Van pár speciális közülük: \cfn allOf/1, \cfn anyOf/1, \cfn eachOf/1 és az \cfn isnt/1.
+Azok, amelyek ,,Of''-al végzőnek egy C4 listát várnak a konkrét paraméterükként, ahol mindegyik elem magukban egy szűrő.
+Ezek közül az \cfn allOf/1 esetén mindegyiknek, másik két esetben az egyiknek kell teljesülnie a találat sikerességéhez.
+A különbség, hogy az \cfn eachOf/1 esetén a belső értékek közül, mindegyik amelyik sikeres azt kezelő függvény (ha van hozzá csatolva) meg fogja kapni lekezelésre, míg az \cfn anyOf/1 esetén csak az elsőt kezeli.
+A nevesített kezelőket \ld az alábbi szakaszban.
+
+Az \cfn isnt/1 függvény negál egy másik szűrőt.
+Lehetséges ugyan erre a célra az \cfn (\~)/1 prefix operátort is használni.
+Utóbbi listák esetén hasznos lehet, hogy a \cfn (,)/2 operátor precedenciája ne zavarja a megfelelő kiértékelést, úgy mint a függvényeknél.
+
+Végül, a \cfn that/1 függvényt lehetséges lecserélni: alternatívája a \cfn which/1 függvény, ami egy listát vár, amelyiknek elemeiről mind elvárja, hogy igazak legyenek.
+Ez különbözik, az \cfn allOf/1 függvénytől annyiban, hogy utóbbi egy saját {\tt "allOf(\dots)"} szűrőt helyez el a lekérdezésben, míg a \cfn which/1 a kapott paramétereit a szülő szűrőnek, mint lista átadja.
+Ennek előnye, hogy vannak olyan szűrők, amelyek képesek több értéket értelmezni, mint paraméter.
+
+Az eddigiekben kerültem a kezelő függvények megadását.
+Ezek azok a függvények, amelyek a sikeres találatokat a blAST programot futtató számára hasznosíthatóvá teszik a keresést.
+
+Egy utolsó megjegyzést még érdemes megtenni: mivel minden az előzőekben tárgyalt függvény csak normál C4 vagy C4 natív kódként került implementálásra, amennyiben külső kód fenntartja a megfelelő interfészeket, amelyet a többi függvény elvár, szabadon bővíthető a rendszer.
+Egy jó példa lehet, egy saját szűrő függvény, mert gyakran szűr valaki arra, hogy egy hívott függvény neve ,,{\tt malloc}'' vagy ,,{\tt calloc}''.
+Ehhez alapvetően ki kellene írni, hogy {\tt anyOf (named "malloc"), (named "calloc"), nil}.
+De mivel ezek mind csak primitív C4 függvények, így saját szűrőt az alábbi módon lehet könnyen létrehozni, és használni is.
+Ez a kód azokat a függvényhívás kifejezéseket keresi meg, amelyek az előbb említett két függvény valamelyikét hívják.
+(Az \cfn is/1 függvény opcionális, csak a kifejezések olvashatóságának könnyítését szolgálja, szemantikailag semmit nem csinál.)
+
+\begin{lstlisting}
+let memcall \anyOf (named "malloc"), (named "calloc"), nil
+# ...
+such call expression
+that calls
+  such function declaration that is memcall
+\end{lstlisting}
+
+\subsubsection*{Nevesített találatokat kezelő függvények}
+
+Egyes komplex lekérdezések esetén hasznos a rész elemeket megnevezni.
+Ezek előnye, hogy a nagy lekérdezések részeivel is lehetséges találatokat kezelő függvényt rendelni, anélkül, hogy duplikálni kéne annak logikáját egy másik lekérdezésbe.
+Ez esetlegesen nem is egyszerűen megvalósítható, mert lehet, hogy csak olyan specifikus esetekben kerül elő, amelyek a nagy lekérdezés kontextusában állnak csak elő.
+Az alább látható \aref{lst:complex}.~listában a {``{\tt malloc}''} nevű deklarációk csak akkor kerülnek megtalálásra, ha legalább egy helyen meghívásra kerülnek.
+Ezt nem könnyű, ha egyáltalán lehetséges, külön lekérdezésben replikálni.
+
+Az ilyen esetek megoldására lehet elnevezni belső találatokat.
+Ezek a ,{\tt declaration/0}' és ,{\tt expression/0}' függvények és két módon lehet nevet rendelni hozzájuk:
+\begin{itemize}
+\item
+A {,{\tt (@\#)/2}'} operátorral, direkt a nevet megadva a találatot bevezető függvény után.
+A már említett \aref{lst:complex}.~listában ez látható.
+
+\item
+A {,{\tt bound/2}'} függvénnyel, direkt a nevet a találatot bevezető függvény és módosítói előtt.
+A már említett \aref{lst:complex}.~listában láthatóval ekvivalens a következő lista:
+\begin{lstlisting}
+such bound "malloc" function declaration
+that is named "malloc"
+\end{lstlisting}
+\end{itemize}
+Ezen két szintaxis teljesen ekvivalens, az operátor a függvénnyel van implementálva.
+
+A blAST keresések \gls{DSL}-jének legfelső szintjén -- ahova a ,{\tt match/2}' függvényeket is kell írni -- meg lehet adni ,,{\tt handle}'' függvényeket.
+Ezeken keresztül lehet megadni, hogy az előzőek szerint elnevezett belső találatok esetén, milyen kódrészlet fusson le.
+A paraméterezésük a név után azonosa a ,{\tt match/2}' függvény első paraméterével.
+Erről \ld az előző szakaszt.
+
+Ha elnevezésre kerül egy belső találat, de nem kerül hozzá kezelő függvény, akkor találatkor egy figyelmeztető diagnosztika megjelenik, hogy nem talált kezelő függvényt az adott nevű találathoz a blAST kiértékelő motorja.
+Ennek a formátuma a normális diagnosztikai formátum, amivel a megadott ,,{\tt diagnostic/1}'' kezelők is kiírják a találatokat.
+
+\begin{lstlisting}[caption={Összetett keresések blAST-ban},label={lst:complex}]
+blast used_ast
+	match into diagnostic "dynalloc_call"
+	such call expression
+	that calls
+		such function declaration@#"malloc"
+		that is named "malloc"
+
+	match into diagnostic "global variable defined"
+	such variable declaration
+	which global
+		 , ~static_local
+		 , (expanded in main_file)
+		 , nil
+	
+	handle "malloc" with diagnostic "malloc declared here"
+end_blast
+\end{lstlisting}
+

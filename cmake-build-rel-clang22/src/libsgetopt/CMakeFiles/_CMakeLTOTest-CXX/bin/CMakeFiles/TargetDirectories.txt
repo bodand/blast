@@ -1,0 +1,4 @@
+/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libsgetopt/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libsgetopt/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libsgetopt/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/edit_cache.dir
+/home/bodand/src/project/blast/cmake-build-rel-clang22/src/libsgetopt/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/rebuild_cache.dir
