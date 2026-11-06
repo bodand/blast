@@ -43,7 +43,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 
-#include "../../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/ExecutionEngine/GenericValue.h"
+#include <llvm/ExecutionEngine/GenericValue.h>
 
 namespace {
 	struct void_tag { };

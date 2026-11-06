@@ -52,7 +52,8 @@
 
 #include "already_thunk_attribute.hxx"
 #include "bool_attr.hxx"
-#include "../../../../../vcpkg/buildtrees/llvm/src/org-18.1.6-e754cb1d0b.clean/llvm/include/llvm/IR/Verifier.h"
+
+#include <llvm/IR/Verifier.h>
 
 void
 c4rt2c::ast2_ir_emitter::do_visit(const c4::ast2::block& obj) {
